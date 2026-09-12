@@ -1,10 +1,13 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Phone, Search, PhoneCall, BookOpen, Users2, Plus, Clock3, Flag } from 'lucide-react';
+import { Phone, Search, PhoneCall, BookOpen, Users2, Plus, Clock3, Flag, History, Pencil, Trash2 } from 'lucide-react';
 import { supabase, Driver, CallLog, CallReason, CallOutcome, CallScript } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { timeAgo } from '../lib/utils';
 import Modal from '../components/Modal';
 import FlagToITDrawer from '../components/FlagToITDrawer';
+import ViewToggle, { ViewMode } from '../components/ViewToggle';
+import DataTable from '../components/DataTable';
+import EntryActions from '../components/EntryActions';
 
 type Tab = 'queue' | 'directory' | 'scripts';
 
@@ -12,8 +15,12 @@ const STAGE_LABEL: Record<string, string> = {
   applying: 'Applying', training: 'Training', active: 'Active', waiting: 'Waiting', flagged: 'Flagged', inactive: 'Inactive',
 };
 
+interface ScriptDrawerState { script: CallScript | null; startEditing: boolean }
+
 export default function CallCenterPage() {
   const [tab, setTab] = useState<Tab>('queue');
+  const [directoryView, setDirectoryView] = useState<ViewMode>('cards');
+  const [scriptsView, setScriptsView] = useState<ViewMode>('cards');
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [logs, setLogs] = useState<CallLog[]>([]);
   const [reasons, setReasons] = useState<CallReason[]>([]);
@@ -21,7 +28,8 @@ export default function CallCenterPage() {
   const [scripts, setScripts] = useState<CallScript[]>([]);
   const [loading, setLoading] = useState(true);
   const [callDriver, setCallDriver] = useState<Driver | null>(null);
-  const [scriptDrawerOpen, setScriptDrawerOpen] = useState(false);
+  const [historyDriver, setHistoryDriver] = useState<Driver | null>(null);
+  const [scriptDrawer, setScriptDrawer] = useState<ScriptDrawerState | null>(null);
 
   const load = useCallback(async () => {
     const [d, l, r, o, s] = await Promise.all([
@@ -45,6 +53,7 @@ export default function CallCenterPage() {
       .channel('call-center-feed')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'call_logs' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'call_scripts' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
@@ -88,6 +97,17 @@ export default function CallCenterPage() {
           <TabButton active={tab === 'directory'} onClick={() => setTab('directory')} icon={Users2} label="Directory" />
           <TabButton active={tab === 'scripts'} onClick={() => setTab('scripts')} icon={BookOpen} label="Scripts" />
         </div>
+        <div className="flex items-center gap-2">
+          {tab === 'directory' && <ViewToggle value={directoryView} onChange={setDirectoryView} />}
+          {tab === 'scripts' && (
+            <>
+              <ViewToggle value={scriptsView} onChange={setScriptsView} />
+              <button onClick={() => setScriptDrawer({ script: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
+                <Plus size={14} /> Add Script
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {loading && <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-14 skeleton rounded-xl" />)}</div>}
@@ -115,31 +135,70 @@ export default function CallCenterPage() {
         </div>
       )}
 
-      {!loading && tab === 'directory' && <Directory drivers={drivers} logs={logs} onCall={setCallDriver} />}
+      {!loading && tab === 'directory' && (
+        <Directory
+          drivers={drivers}
+          logs={logs}
+          view={directoryView}
+          onCall={setCallDriver}
+          onViewHistory={setHistoryDriver}
+        />
+      )}
 
       {!loading && tab === 'scripts' && (
-        <div className="space-y-3">
-          <div className="flex justify-end">
-            <button onClick={() => setScriptDrawerOpen(true)} className="btn-primary flex items-center gap-1.5">
-              <Plus size={14} /> Add Script
-            </button>
-          </div>
+        <>
           {scripts.length === 0 && <EmptyState icon={BookOpen} text="No scripts yet. Add one to help the team handle calls consistently." />}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {scripts.map((s) => {
-              const reason = reasons.find((r) => r.id === s.reason_id);
-              return (
-                <div key={s.id} className="card p-3.5">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[13px] font-medium">{s.title}</p>
-                    {reason && <span className="text-[10px] font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-1.5 py-0.5 rounded-full">{reason.label}</span>}
+          {scripts.length > 0 && scriptsView === 'cards' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {scripts.map((s) => {
+                const reason = reasons.find((r) => r.id === s.reason_id);
+                return (
+                  <div
+                    key={s.id}
+                    onClick={() => setScriptDrawer({ script: s, startEditing: false })}
+                    className="card p-3.5 cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <p className="text-[13px] font-medium">{s.title}</p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {reason && <span className="text-[10px] font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-1.5 py-0.5 rounded-full">{reason.label}</span>}
+                        <EntryActions
+                          onView={() => setScriptDrawer({ script: s, startEditing: false })}
+                          onEdit={() => setScriptDrawer({ script: s, startEditing: true })}
+                          canEdit
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[12px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap line-clamp-3">{s.body}</p>
                   </div>
-                  <p className="text-[12px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{s.body}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                );
+              })}
+            </div>
+          )}
+          {scripts.length > 0 && scriptsView === 'table' && (
+            <DataTable
+              rows={scripts}
+              keyFn={(s) => s.id}
+              onRowClick={(s) => setScriptDrawer({ script: s, startEditing: false })}
+              columns={[
+                { header: 'Title', render: (s) => <span className="font-medium">{s.title}</span> },
+                { header: 'Reason', render: (s) => reasons.find((r) => r.id === s.reason_id)?.label ?? 'General / any' },
+                { header: 'Preview', className: 'max-w-sm truncate', render: (s) => s.body },
+                {
+                  header: '',
+                  className: 'text-right',
+                  render: (s) => (
+                    <EntryActions
+                      onView={() => setScriptDrawer({ script: s, startEditing: false })}
+                      onEdit={() => setScriptDrawer({ script: s, startEditing: true })}
+                      canEdit
+                    />
+                  ),
+                },
+              ]}
+            />
+          )}
+        </>
       )}
 
       {callDriver && (
@@ -154,8 +213,23 @@ export default function CallCenterPage() {
         />
       )}
 
-      {scriptDrawerOpen && (
-        <AddScriptDrawer reasons={reasons} onClose={() => setScriptDrawerOpen(false)} onSaved={load} />
+      {historyDriver && (
+        <CallHistoryDrawer
+          driver={historyDriver}
+          logs={logs.filter((l) => l.driver_id === historyDriver.id)}
+          onClose={() => setHistoryDriver(null)}
+          onLogCall={() => { setCallDriver(historyDriver); setHistoryDriver(null); }}
+        />
+      )}
+
+      {scriptDrawer && (
+        <ScriptDrawer
+          script={scriptDrawer.script}
+          startEditing={scriptDrawer.startEditing}
+          reasons={reasons}
+          onClose={() => setScriptDrawer(null)}
+          onSaved={load}
+        />
       )}
     </div>
   );
@@ -179,7 +253,19 @@ function EmptyState({ icon: Icon, text }: { icon: typeof Phone; text: string }) 
   );
 }
 
-function Directory({ drivers, logs, onCall }: { drivers: Driver[]; logs: CallLog[]; onCall: (d: Driver) => void }) {
+function Directory({
+  drivers,
+  logs,
+  view,
+  onCall,
+  onViewHistory,
+}: {
+  drivers: Driver[];
+  logs: CallLog[];
+  view: ViewMode;
+  onCall: (d: Driver) => void;
+  onViewHistory: (d: Driver) => void;
+}) {
   const [search, setSearch] = useState('');
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -193,26 +279,115 @@ function Directory({ drivers, logs, onCall }: { drivers: Driver[]; logs: CallLog
         <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or phone" className="input pl-8" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-        {filtered.map((d) => {
-          const callCount = logs.filter((l) => l.driver_id === d.id).length;
-          const last = logs.find((l) => l.driver_id === d.id);
-          return (
-            <button key={d.id} onClick={() => onCall(d)} className="card p-3.5 text-left hover:shadow-md hover:border-brand/30 transition-all">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[13px] font-medium truncate">{d.full_name}</p>
-                <Phone size={13} className="text-brand-500 shrink-0" />
+
+      {view === 'cards' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+          {filtered.map((d) => {
+            const callCount = logs.filter((l) => l.driver_id === d.id).length;
+            const last = logs.find((l) => l.driver_id === d.id);
+            return (
+              <div key={d.id} onClick={() => onCall(d)} className="card p-3.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[13px] font-medium truncate">{d.full_name}</p>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onViewHistory(d); }}
+                      title="View call history"
+                      className="btn-ghost p-1.5"
+                    >
+                      <History size={13} />
+                    </button>
+                    <Phone size={13} className="text-brand-500" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400">{d.phone} · {STAGE_LABEL[d.stage]}</p>
+                <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
+                  <Clock3 size={10} /> {callCount === 0 ? 'Never called' : `${callCount} call${callCount === 1 ? '' : 's'} · last ${timeAgo(last!.created_at)}`}
+                </p>
               </div>
-              <p className="text-[11px] text-gray-400">{d.phone} · {STAGE_LABEL[d.stage]}</p>
-              <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
-                <Clock3 size={10} /> {callCount === 0 ? 'Never called' : `${callCount} call${callCount === 1 ? '' : 's'} · last ${timeAgo(last!.created_at)}`}
-              </p>
-            </button>
-          );
-        })}
-        {filtered.length === 0 && <p className="text-[13px] text-gray-400 col-span-full text-center py-8">No drivers found.</p>}
-      </div>
+            );
+          })}
+          {filtered.length === 0 && <p className="text-[13px] text-gray-400 col-span-full text-center py-8">No drivers found.</p>}
+        </div>
+      )}
+
+      {view === 'table' && (
+        <DataTable
+          rows={filtered}
+          keyFn={(d) => d.id}
+          emptyLabel="No drivers found."
+          onRowClick={(d) => onCall(d)}
+          columns={[
+            { header: 'Name', render: (d) => <span className="font-medium">{d.full_name}</span> },
+            { header: 'Phone', render: (d) => d.phone },
+            { header: 'Stage', render: (d) => STAGE_LABEL[d.stage] },
+            {
+              header: 'Calls',
+              render: (d) => {
+                const callCount = logs.filter((l) => l.driver_id === d.id).length;
+                const last = logs.find((l) => l.driver_id === d.id);
+                return callCount === 0 ? 'Never called' : `${callCount} · last ${timeAgo(last!.created_at)}`;
+              },
+            },
+            {
+              header: '',
+              className: 'text-right',
+              render: (d) => (
+                <button onClick={(e) => { e.stopPropagation(); onViewHistory(d); }} title="View call history" className="btn-ghost p-1.5">
+                  <History size={13} />
+                </button>
+              ),
+            },
+          ]}
+        />
+      )}
     </div>
+  );
+}
+
+function CallHistoryDrawer({
+  driver,
+  logs,
+  onClose,
+  onLogCall,
+}: {
+  driver: Driver;
+  logs: CallLog[];
+  onClose: () => void;
+  onLogCall: () => void;
+}) {
+  return (
+    <Modal open onClose={onClose} title={`${driver.full_name}'s Call History`} subtitle={`${logs.length} call${logs.length === 1 ? '' : 's'} logged`} maxWidth="max-w-lg">
+      <div className="space-y-3">
+        {logs.length === 0 ? (
+          <div className="py-6 text-center">
+            <Phone size={24} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
+            <p className="text-[13px] text-gray-400">No calls logged with this driver yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-1.5 max-h-96 overflow-y-auto">
+            {logs.map((l) => (
+              <div key={l.id} className="p-2.5 rounded-lg border border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[12px] font-medium">{l.reason?.label ?? 'Call'}</p>
+                  <span className="text-[10px] text-gray-400 shrink-0">{timeAgo(l.created_at)}</span>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  {l.outcome?.label ?? 'No outcome'} · by {l.caller?.full_name ?? 'Unknown'}
+                </p>
+                {l.note && <p className="text-[12px] text-gray-600 dark:text-gray-300 mt-1.5">{l.note}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <button onClick={onClose} className="btn-ghost">Close</button>
+          <button onClick={onLogCall} className="btn-primary flex items-center gap-1.5">
+            <Phone size={13} /> Log a Call
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -329,11 +504,24 @@ function LogCallDrawer({
   );
 }
 
-function AddScriptDrawer({ reasons, onClose, onSaved }: { reasons: CallReason[]; onClose: () => void; onSaved: () => void }) {
+function ScriptDrawer({
+  script,
+  startEditing,
+  reasons,
+  onClose,
+  onSaved,
+}: {
+  script: CallScript | null;
+  startEditing: boolean;
+  reasons: CallReason[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const { profile } = useAuth();
-  const [title, setTitle] = useState('');
-  const [reasonId, setReasonId] = useState('');
-  const [body, setBody] = useState('');
+  const [editing, setEditing] = useState(startEditing);
+  const [title, setTitle] = useState(script?.title ?? '');
+  const [reasonId, setReasonId] = useState(script?.reason_id ?? '');
+  const [body, setBody] = useState(script?.body ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -341,12 +529,10 @@ function AddScriptDrawer({ reasons, onClose, onSaved }: { reasons: CallReason[];
     if (!title.trim() || !body.trim()) return;
     setSaving(true);
     setError('');
-    const { error: err } = await supabase.from('call_scripts').insert({
-      title: title.trim(),
-      reason_id: reasonId || null,
-      body: body.trim(),
-      created_by: profile!.id,
-    });
+    const payload = { title: title.trim(), reason_id: reasonId || null, body: body.trim() };
+    const { error: err } = script
+      ? await supabase.from('call_scripts').update(payload).eq('id', script.id)
+      : await supabase.from('call_scripts').insert({ ...payload, created_by: profile!.id });
     setSaving(false);
     if (err) {
       setError(err.message);
@@ -356,33 +542,58 @@ function AddScriptDrawer({ reasons, onClose, onSaved }: { reasons: CallReason[];
     onClose();
   };
 
+  const remove = async () => {
+    if (!script) return;
+    setSaving(true);
+    await supabase.from('call_scripts').delete().eq('id', script.id);
+    setSaving(false);
+    onSaved();
+    onClose();
+  };
+
   return (
-    <Modal open onClose={onClose} title="Add a Call Script" maxWidth="max-w-md">
+    <Modal open onClose={onClose} title={script ? script.title : 'Add a Call Script'} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
           <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Title</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className="input" placeholder="e.g. App confusion walkthrough" />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!editing} className="input" placeholder="e.g. App confusion walkthrough" />
         </div>
         <div>
           <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Applies to reason (optional)</label>
-          <select value={reasonId} onChange={(e) => setReasonId(e.target.value)} className="input">
+          <select value={reasonId} onChange={(e) => setReasonId(e.target.value)} disabled={!editing} className="input">
             <option value="">General / any reason</option>
             {reasons.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-[12px] font-medium mb-1.5 text-gray-500">What to say</label>
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} className="input resize-none" placeholder="Mwaramutse! I'm calling from Kivu Ride…" />
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} disabled={!editing} rows={6} className="input resize-none" placeholder="Mwaramutse! I'm calling from Kivu Ride…" />
         </div>
 
         {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
-          <button onClick={onClose} className="btn-ghost">Cancel</button>
-          <button onClick={save} disabled={saving || !title.trim() || !body.trim()} className="btn-primary disabled:opacity-50">
-            {saving ? 'Saving…' : 'Add Script'}
-          </button>
-        </div>
+        {editing ? (
+          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+            {script ? (
+              <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
+                <Trash2 size={13} /> Remove
+              </button>
+            ) : <span />}
+            <div className="flex gap-2">
+              <button onClick={() => (script ? setEditing(false) : onClose())} className="btn-ghost">Cancel</button>
+              <button onClick={save} disabled={saving || !title.trim() || !body.trim()} className="btn-primary disabled:opacity-50">
+                {saving ? 'Saving…' : script ? 'Save Changes' : 'Add Script'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+            <button onClick={onClose} className="btn-ghost">Close</button>
+            <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">
+              <Pencil size={13} /> Edit
+            </button>
+          </div>
+        )}
       </div>
     </Modal>
   );

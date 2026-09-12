@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Calendar, Lock, Users2, Globe2, Shield, Plus, ListPlus } from 'lucide-react';
+import { Calendar, Lock, Users2, Globe2, Shield, Plus, ListPlus, Pencil } from 'lucide-react';
 import { supabase, Meeting, MeetingVisibility, Profile } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { formatDateLabel, todayStr } from '../lib/utils';
 import Avatar from '../components/Avatar';
 import Modal from '../components/Modal';
 import CreateMeetingModal from '../components/CreateMeetingModal';
+import ViewToggle, { ViewMode } from '../components/ViewToggle';
+import DataTable from '../components/DataTable';
+import EntryActions from '../components/EntryActions';
 
 const VISIBILITY_META: Record<MeetingVisibility, { label: string; icon: typeof Lock }> = {
   private: { label: 'Only me', icon: Lock },
@@ -15,10 +18,13 @@ const VISIBILITY_META: Record<MeetingVisibility, { label: string; icon: typeof L
 };
 
 export default function MeetingsPage() {
+  const { profile } = useAuth();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<Meeting | null>(null);
+  const [editMeeting, setEditMeeting] = useState<Meeting | null>(null);
+  const [view, setView] = useState<ViewMode>('cards');
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -39,17 +45,22 @@ export default function MeetingsPage() {
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
+  const canEditMeeting = (m: Meeting) => profile?.id === m.author_id || profile?.role === 'managing_director';
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold">Meeting Notes</h2>
           <p className="text-xs text-gray-400 mt-0.5">{meetings.length} note{meetings.length === 1 ? '' : 's'}</p>
         </div>
-        <button onClick={() => setCreateOpen(true)} className="btn-primary flex items-center gap-1.5">
-          <Plus size={15} />
-          <span>New Note</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <ViewToggle value={view} onChange={setView} />
+          <button onClick={() => setCreateOpen(true)} className="btn-primary flex items-center gap-1.5">
+            <Plus size={15} />
+            <span>New Note</span>
+          </button>
+        </div>
       </div>
 
       {loading && (
@@ -65,38 +76,84 @@ export default function MeetingsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-        {meetings.map((m) => {
-          const Meta = VISIBILITY_META[m.visibility];
-          return (
-            <button
-              key={m.id}
-              onClick={() => setSelected(m)}
-              className="card p-3.5 flex items-start gap-3 text-left hover:shadow-md hover:-translate-y-0.5 transition-all animate-fade-in"
-            >
-              <Avatar name={m.author?.full_name ?? 'User'} url={m.author?.avatar_url} size="sm" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium truncate">{m.title}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">{m.author?.full_name} · {formatDateLabel(m.date)}</p>
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full mt-1.5">
-                  <Meta.icon size={10} /> {Meta.label}
-                </span>
+      {!loading && meetings.length > 0 && view === 'cards' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+          {meetings.map((m) => {
+            const Meta = VISIBILITY_META[m.visibility];
+            return (
+              <div
+                key={m.id}
+                onClick={() => setSelected(m)}
+                className="card p-3.5 flex items-start gap-3 text-left cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all animate-fade-in"
+              >
+                <Avatar name={m.author?.full_name ?? 'User'} url={m.author?.avatar_url} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-1.5">
+                    <p className="text-[13px] font-medium truncate">{m.title}</p>
+                    <EntryActions
+                      onView={() => setSelected(m)}
+                      onEdit={() => setEditMeeting(m)}
+                      canEdit={canEditMeeting(m)}
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{m.author?.full_name} · {formatDateLabel(m.date)}</p>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full mt-1.5">
+                    <Meta.icon size={10} /> {Meta.label}
+                  </span>
+                </div>
               </div>
-            </button>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!loading && meetings.length > 0 && view === 'table' && (
+        <DataTable
+          rows={meetings}
+          keyFn={(m) => m.id}
+          onRowClick={(m) => setSelected(m)}
+          columns={[
+            { header: 'Title', render: (m) => <span className="font-medium">{m.title}</span> },
+            { header: 'Author', render: (m) => m.author?.full_name ?? 'Unknown' },
+            { header: 'Date', render: (m) => formatDateLabel(m.date) },
+            {
+              header: 'Visibility',
+              render: (m) => {
+                const Meta = VISIBILITY_META[m.visibility];
+                return (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
+                    <Meta.icon size={10} /> {Meta.label}
+                  </span>
+                );
+              },
+            },
+            {
+              header: '',
+              className: 'text-right',
+              render: (m) => (
+                <EntryActions onView={() => setSelected(m)} onEdit={() => setEditMeeting(m)} canEdit={canEditMeeting(m)} />
+              ),
+            },
+          ]}
+        />
+      )}
 
       <CreateMeetingModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={load} />
+      <CreateMeetingModal open={!!editMeeting} meeting={editMeeting} onClose={() => setEditMeeting(null)} onCreated={load} />
 
       {selected && (
-        <MeetingDetailDrawer meeting={selected} onClose={() => setSelected(null)} />
+        <MeetingDetailDrawer
+          meeting={selected}
+          canEdit={canEditMeeting(selected)}
+          onClose={() => setSelected(null)}
+          onEdit={() => { setEditMeeting(selected); setSelected(null); }}
+        />
       )}
     </div>
   );
 }
 
-function MeetingDetailDrawer({ meeting, onClose }: { meeting: Meeting; onClose: () => void }) {
+function MeetingDetailDrawer({ meeting, canEdit, onClose, onEdit }: { meeting: Meeting; canEdit: boolean; onClose: () => void; onEdit: () => void }) {
   const { profile } = useAuth();
   const Meta = VISIBILITY_META[meeting.visibility];
   const [addingTask, setAddingTask] = useState(false);
@@ -144,9 +201,16 @@ function MeetingDetailDrawer({ meeting, onClose }: { meeting: Meeting; onClose: 
 
   return (
     <Modal open onClose={onClose} title={meeting.title} subtitle={`${meeting.author?.full_name ?? ''} · ${formatDateLabel(meeting.date)}`} maxWidth="max-w-lg">
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-full mb-4">
-        <Meta.icon size={11} /> {Meta.label}
-      </span>
+      <div className="flex items-center justify-between mb-4">
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-full">
+          <Meta.icon size={11} /> {Meta.label}
+        </span>
+        {canEdit && (
+          <button onClick={onEdit} className="btn-ghost flex items-center gap-1.5 text-brand-600 dark:text-brand-300">
+            <Pencil size={13} /> Edit
+          </button>
+        )}
+      </div>
 
       <p className="text-[13px] leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap mb-6">
         {meeting.notes || <span className="text-gray-400">No notes written.</span>}

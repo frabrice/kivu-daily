@@ -1,18 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from './Modal';
-import { supabase } from '../lib/supabase';
+import { supabase, Announcement } from '../lib/supabase';
 
 interface CreateAnnouncementModalProps {
   open: boolean;
+  announcement?: Announcement | null;
   onClose: () => void;
   onCreated?: () => void;
 }
 
-export default function CreateAnnouncementModal({ open, onClose, onCreated }: CreateAnnouncementModalProps) {
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
+export default function CreateAnnouncementModal({ open, announcement, onClose, onCreated }: CreateAnnouncementModalProps) {
+  const [title, setTitle] = useState(announcement?.title ?? '');
+  const [body, setBody] = useState(announcement?.body ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setTitle(announcement?.title ?? '');
+      setBody(announcement?.body ?? '');
+      setError('');
+    }
+  }, [open, announcement]);
 
   const reset = () => {
     setTitle('');
@@ -24,16 +33,28 @@ export default function CreateAnnouncementModal({ open, onClose, onCreated }: Cr
     if (!title.trim()) return;
     setLoading(true);
     setError('');
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error: insertError } = await supabase.from('announcements').insert({
-      author_id: user?.id,
-      title: title.trim(),
-      body: body.trim(),
-    });
-    setLoading(false);
-    if (insertError) {
-      setError(insertError.message);
-      return;
+    if (announcement) {
+      const { error: updateError } = await supabase
+        .from('announcements')
+        .update({ title: title.trim(), body: body.trim() })
+        .eq('id', announcement.id);
+      setLoading(false);
+      if (updateError) {
+        setError(updateError.message);
+        return;
+      }
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error: insertError } = await supabase.from('announcements').insert({
+        author_id: user?.id,
+        title: title.trim(),
+        body: body.trim(),
+      });
+      setLoading(false);
+      if (insertError) {
+        setError(insertError.message);
+        return;
+      }
     }
     reset();
     onCreated?.();
@@ -41,7 +62,7 @@ export default function CreateAnnouncementModal({ open, onClose, onCreated }: Cr
   };
 
   return (
-    <Modal open={open} onClose={() => { reset(); onClose(); }} title="Broadcast an Announcement">
+    <Modal open={open} onClose={() => { reset(); onClose(); }} title={announcement ? 'Edit Announcement' : 'Broadcast an Announcement'}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -77,7 +98,7 @@ export default function CreateAnnouncementModal({ open, onClose, onCreated }: Cr
             Cancel
           </button>
           <button type="submit" disabled={loading || !title.trim()} className="btn-primary disabled:opacity-50">
-            {loading ? 'Posting…' : 'Post Announcement'}
+            {loading ? 'Saving…' : announcement ? 'Save Changes' : 'Post Announcement'}
           </button>
         </div>
       </form>

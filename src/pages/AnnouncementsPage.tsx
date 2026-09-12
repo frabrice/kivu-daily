@@ -1,16 +1,20 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Megaphone, Trash2 } from 'lucide-react';
+import { Megaphone, Trash2, Pencil } from 'lucide-react';
 import { supabase, Announcement } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { timeAgo } from '../lib/utils';
 import Avatar from '../components/Avatar';
 import CreateAnnouncementModal from '../components/CreateAnnouncementModal';
+import ViewToggle, { ViewMode } from '../components/ViewToggle';
+import DataTable from '../components/DataTable';
 
 export default function AnnouncementsPage() {
   const { profile } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editAnnouncement, setEditAnnouncement] = useState<Announcement | null>(null);
+  const [view, setView] = useState<ViewMode>('cards');
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -38,12 +42,15 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="space-y-4">
-      {isMD && (
-        <button onClick={() => setCreateOpen(true)} className="btn-primary flex items-center justify-center gap-2 py-3 w-full">
-          <Megaphone size={18} />
-          <span>Broadcast an Announcement</span>
-        </button>
-      )}
+      <div className="flex items-center justify-between gap-2.5">
+        <ViewToggle value={view} onChange={setView} />
+        {isMD && (
+          <button onClick={() => setCreateOpen(true)} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
+            <Megaphone size={15} />
+            <span>Broadcast</span>
+          </button>
+        )}
+      </div>
 
       {loading && (
         <div className="space-y-3">
@@ -58,30 +65,67 @@ export default function AnnouncementsPage() {
         </div>
       )}
 
-      <div className="space-y-3">
-        {announcements.map((a) => (
-          <div key={a.id} className="card p-5 animate-fade-in">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3 mb-2">
-                <Avatar name={a.author?.full_name ?? 'MD'} url={a.author?.avatar_url} size="sm" />
-                <div>
-                  <p className="text-sm font-medium">{a.author?.full_name ?? 'Managing Director'}</p>
-                  <p className="text-xs text-gray-400">{timeAgo(a.created_at)}</p>
+      {!loading && announcements.length > 0 && view === 'cards' && (
+        <div className="space-y-3">
+          {announcements.map((a) => (
+            <div key={a.id} className="card p-5 animate-fade-in">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 mb-2">
+                  <Avatar name={a.author?.full_name ?? 'MD'} url={a.author?.avatar_url} size="sm" />
+                  <div>
+                    <p className="text-sm font-medium">{a.author?.full_name ?? 'Managing Director'}</p>
+                    <p className="text-xs text-gray-400">{timeAgo(a.created_at)}</p>
+                  </div>
                 </div>
+                {isMD && (
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button onClick={() => setEditAnnouncement(a)} className="text-gray-300 hover:text-brand-500 transition-colors p-1">
+                      <Pencil size={14} />
+                    </button>
+                    <button onClick={() => remove(a.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                )}
               </div>
-              {isMD && (
-                <button onClick={() => remove(a.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1">
-                  <Trash2 size={15} />
-                </button>
-              )}
+              <h3 className="font-semibold text-base mb-1">{a.title}</h3>
+              {a.body && <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{a.body}</p>}
             </div>
-            <h3 className="font-semibold text-base mb-1">{a.title}</h3>
-            {a.body && <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{a.body}</p>}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && announcements.length > 0 && view === 'table' && (
+        <DataTable
+          rows={announcements}
+          keyFn={(a) => a.id}
+          columns={[
+            { header: 'Title', render: (a) => <span className="font-medium">{a.title}</span> },
+            { header: 'Message', className: 'max-w-sm truncate', render: (a) => a.body ?? '—' },
+            { header: 'Author', render: (a) => a.author?.full_name ?? 'Managing Director' },
+            { header: 'Posted', render: (a) => timeAgo(a.created_at) },
+            {
+              header: '',
+              className: 'text-right',
+              render: (a) =>
+                isMD ? (
+                  <div className="flex items-center justify-end gap-0.5">
+                    <button onClick={() => setEditAnnouncement(a)} className="btn-ghost p-1.5"><Pencil size={13} /></button>
+                    <button onClick={() => remove(a.id)} className="btn-ghost p-1.5 text-red-500"><Trash2 size={13} /></button>
+                  </div>
+                ) : null,
+            },
+          ]}
+        />
+      )}
 
       <CreateAnnouncementModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={load} />
+      <CreateAnnouncementModal
+        open={!!editAnnouncement}
+        announcement={editAnnouncement}
+        onClose={() => setEditAnnouncement(null)}
+        onCreated={load}
+      />
     </div>
   );
 }

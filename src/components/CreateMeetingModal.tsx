@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from './Modal';
-import { supabase, MeetingVisibility } from '../lib/supabase';
+import { supabase, Meeting, MeetingVisibility } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { todayStr } from '../lib/utils';
 
 interface CreateMeetingModalProps {
   open: boolean;
+  meeting?: Meeting | null;
   onClose: () => void;
   onCreated?: () => void;
 }
 
-export default function CreateMeetingModal({ open, onClose, onCreated }: CreateMeetingModalProps) {
+export default function CreateMeetingModal({ open, meeting, onClose, onCreated }: CreateMeetingModalProps) {
   const { profile } = useAuth();
 
   const VISIBILITY_OPTIONS: { value: MeetingVisibility; label: string; hint: string }[] = [
@@ -19,12 +20,22 @@ export default function CreateMeetingModal({ open, onClose, onCreated }: CreateM
     { value: 'department', label: 'Share with my department', hint: profile?.department?.name ?? 'Everyone in your department' },
     { value: 'company', label: 'Share with everyone', hint: 'The whole company' },
   ];
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState(todayStr());
-  const [notes, setNotes] = useState('');
-  const [visibility, setVisibility] = useState<MeetingVisibility>('private');
+  const [title, setTitle] = useState(meeting?.title ?? '');
+  const [date, setDate] = useState(meeting?.date ?? todayStr());
+  const [notes, setNotes] = useState(meeting?.notes ?? '');
+  const [visibility, setVisibility] = useState<MeetingVisibility>(meeting?.visibility ?? 'private');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setTitle(meeting?.title ?? '');
+      setDate(meeting?.date ?? todayStr());
+      setNotes(meeting?.notes ?? '');
+      setVisibility(meeting?.visibility ?? 'private');
+      setError('');
+    }
+  }, [open, meeting]);
 
   const reset = () => {
     setTitle('');
@@ -38,17 +49,19 @@ export default function CreateMeetingModal({ open, onClose, onCreated }: CreateM
     if (!title.trim()) return;
     setLoading(true);
     setError('');
-    const { error: insertError } = await supabase.from('meetings').insert({
-      author_id: profile!.id,
+    const payload = {
       title: title.trim(),
       date,
       notes: notes.trim(),
       visibility,
       department_id: visibility === 'department' ? profile?.department_id ?? null : null,
-    });
+    };
+    const { error: err } = meeting
+      ? await supabase.from('meetings').update(payload).eq('id', meeting.id)
+      : await supabase.from('meetings').insert({ ...payload, author_id: profile!.id });
     setLoading(false);
-    if (insertError) {
-      setError(insertError.message);
+    if (err) {
+      setError(err.message);
       return;
     }
     reset();
@@ -57,7 +70,7 @@ export default function CreateMeetingModal({ open, onClose, onCreated }: CreateM
   };
 
   return (
-    <Modal open={open} onClose={() => { reset(); onClose(); }} title="New Meeting Note" maxWidth="max-w-lg">
+    <Modal open={open} onClose={() => { reset(); onClose(); }} title={meeting ? 'Edit Meeting Note' : 'New Meeting Note'} maxWidth="max-w-lg">
       <form
         onSubmit={(e) => {
           e.preventDefault();
