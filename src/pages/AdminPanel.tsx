@@ -105,8 +105,8 @@ export default function AdminPanel() {
                     <button
                       onClick={() => resendInvite(p.id)}
                       disabled={resendingId === p.id}
-                      title="Resend invite email"
-                      className="btn-ghost p-1.5 disabled:opacity-50"
+                      title="Send them an email to set their password and activate the account"
+                      className="btn-ghost flex items-center gap-1.5 text-brand-600 dark:text-brand-300 disabled:opacity-50"
                     >
                       {resendingId === p.id ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -115,6 +115,7 @@ export default function AdminPanel() {
                       ) : (
                         <Send size={14} />
                       )}
+                      Activate
                     </button>
                   )}
                   <button onClick={() => setEditUser(p)} className="btn-ghost">Edit</button>
@@ -129,7 +130,7 @@ export default function AdminPanel() {
                 <p className="text-[11px] text-red-500 mt-2">{resendResult.error}</p>
               )}
               {resendResult?.id === p.id && !resendResult.error && (
-                <p className="text-[11px] text-positive mt-2">Invite resent to {p.email}</p>
+                <p className="text-[11px] text-positive mt-2">Activation email sent to {p.email}</p>
               )}
             </div>
           ))}
