@@ -3,7 +3,7 @@ import { supabase, Profile, Department } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import Avatar from '../components/Avatar';
 import Modal from '../components/Modal';
-import { UserCog, Building2, Trash2, UserPlus, Loader2, Mail, Shield } from 'lucide-react';
+import { UserCog, Building2, Trash2, UserPlus, Loader2, Mail, Shield, Send, Check } from 'lucide-react';
 
 export default function AdminPanel() {
   const { profile } = useAuth();
@@ -14,6 +14,8 @@ export default function AdminPanel() {
   const [editUser, setEditUser] = useState<Profile | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newDept, setNewDept] = useState('');
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resendResult, setResendResult] = useState<{ id: string; error: string | null } | null>(null);
 
   const load = async () => {
     const [p, d] = await Promise.all([
@@ -47,6 +49,18 @@ export default function AdminPanel() {
     load();
   };
 
+  const resendInvite = async (id: string) => {
+    setResendingId(id);
+    setResendResult(null);
+    const { data, error } = await supabase.functions.invoke('resend-invite', { body: { user_id: id } });
+    setResendingId(null);
+    if (error || !data?.success) {
+      setResendResult({ id, error: data?.email_error || error?.message || 'Failed to resend invite' });
+    } else {
+      setResendResult({ id, error: null });
+    }
+  };
+
   if (profile?.role !== 'managing_director') {
     return <div className="text-center text-gray-400 py-12 text-[13px]">Access denied. Managing Director only.</div>;
   }
@@ -74,22 +88,49 @@ export default function AdminPanel() {
       {tab === 'employees' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
           {profiles.map((p) => (
-            <div key={p.id} className="card p-3.5 flex items-center gap-3">
-              <Avatar name={p.full_name} url={p.avatar_url} size="md" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium truncate">{p.full_name}</p>
-                <p className="text-[11px] text-gray-400 truncate">
-                  {p.role === 'managing_director' ? 'Managing Director' : p.department?.name ?? 'No department'}
-                </p>
+            <div key={p.id} className="card p-3.5">
+              <div className="flex items-center gap-3">
+                <Avatar name={p.full_name} url={p.avatar_url} size="md" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium truncate">{p.full_name}</p>
+                  <p className="text-[11px] text-gray-400 truncate">
+                    {p.role === 'managing_director' ? 'Managing Director' : p.department?.name ?? 'No department'}
+                  </p>
+                  {p.force_password_change && (
+                    <p className="text-[10px] font-medium text-orange-600 dark:text-orange-400 mt-0.5">Pending setup</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {p.force_password_change && (
+                    <button
+                      onClick={() => resendInvite(p.id)}
+                      disabled={resendingId === p.id}
+                      title="Resend invite email"
+                      className="btn-ghost p-1.5 disabled:opacity-50"
+                    >
+                      {resendingId === p.id ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : resendResult?.id === p.id && !resendResult.error ? (
+                        <Check size={14} className="text-positive" />
+                      ) : (
+                        <Send size={14} />
+                      )}
+                    </button>
+                  )}
+                  <button onClick={() => setEditUser(p)} className="btn-ghost">Edit</button>
+                  {p.role !== 'managing_director' && (
+                    <button onClick={() => deactivate(p.id)} className="btn-ghost text-red-500 p-1.5">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-0.5 shrink-0">
-                <button onClick={() => setEditUser(p)} className="btn-ghost">Edit</button>
-                {p.role !== 'managing_director' && (
-                  <button onClick={() => deactivate(p.id)} className="btn-ghost text-red-500 p-1.5">
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
+              {resendResult?.id === p.id && resendResult.error && (
+                <p className="text-[11px] text-red-500 mt-2">{resendResult.error}</p>
+              )}
+              {resendResult?.id === p.id && !resendResult.error && (
+                <p className="text-[11px] text-positive mt-2">Invite resent to {p.email}</p>
+              )}
             </div>
           ))}
         </div>
