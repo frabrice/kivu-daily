@@ -87,6 +87,7 @@ export default function EmployeeApp() {
     social: 'Content Calendar',
     it_hub: 'Product Hub',
     help: 'How to Use',
+    activity_log: 'Activity Log',
   };
   const title = TITLES[active];
 

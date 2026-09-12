@@ -33,7 +33,8 @@ export type NavKey =
   | 'marketing'
   | 'social'
   | 'it_hub'
-  | 'help';
+  | 'help'
+  | 'activity_log';
 
 export interface NavItem {
   key: NavKey;

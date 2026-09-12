@@ -47,6 +47,7 @@ import AdminPanel from './AdminPanel';
 import SettingsPage from './SettingsPage';
 import MDTasksPage from './MDTasksPage';
 import MDCommentsPage from './MDCommentsPage';
+import ActivityLogPage from './ActivityLogPage';
 import DocumentsPage from './DocumentsPage';
 import AnnouncementsPage from './AnnouncementsPage';
 import MeetingsPage from './MeetingsPage';
@@ -137,6 +138,7 @@ export default function ManagingDirectorApp() {
     { key: 'documents', label: 'Documents', icon: FileText },
     { key: 'announcements', label: 'Announcements', icon: Megaphone },
     { key: 'comments', label: 'Comments', icon: MessageSquare, badge: unreadComments },
+    { key: 'activity_log', label: 'Activity Log', icon: Radio },
     { key: 'departments', label: 'Departments', icon: Users2 },
     { key: 'leaderboard', label: 'Leaderboard', icon: Trophy },
     { key: 'search', label: 'Search', icon: Search },
@@ -433,9 +435,14 @@ export default function ManagingDirectorApp() {
             </div>
 
             <div className="card p-4">
-              <div className="flex items-center gap-1.5 mb-3">
-                <Radio size={14} className="text-brand-500" />
-                <h3 className="section-title">Live Activity</h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-1.5">
+                  <Radio size={14} className="text-brand-500" />
+                  <h3 className="section-title">Live Activity</h3>
+                </div>
+                <button onClick={() => setActive('activity_log')} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline">
+                  View full log
+                </button>
               </div>
               <ActivityFeed entries={activity} loading={activityLoading} />
             </div>
@@ -484,6 +491,7 @@ export default function ManagingDirectorApp() {
       {active === 'documents' && <DocumentsPage />}
       {active === 'announcements' && <AnnouncementsPage />}
       {active === 'comments' && <MDCommentsPage />}
+      {active === 'activity_log' && <ActivityLogPage profiles={profiles} />}
       {active === 'leaderboard' && <Leaderboard employees={employees} allTasks={allTasks} onSelect={setSelectedEmployee} />}
       {active === 'search' && <SearchPage employees={employees} allTasks={allTasks} onSelect={setSelectedEmployee} />}
       {active === 'admin' && <AdminPanel />}
