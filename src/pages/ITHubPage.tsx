@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Plus, ArrowLeft, Package, Milestone as MilestoneIcon, Layers, Trash2, CheckSquare, Square, X, User } from 'lucide-react';
+import { Plus, ArrowLeft, Package, Milestone as MilestoneIcon, Layers, Trash2, CheckSquare, Square, X, User, AlertTriangle, Pencil } from 'lucide-react';
 import {
   supabase,
   Product,
@@ -14,6 +14,9 @@ import {
 } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import Modal from '../components/Modal';
+import ViewToggle, { ViewMode } from '../components/ViewToggle';
+import DataTable from '../components/DataTable';
+import EntryActions from '../components/EntryActions';
 
 const MILESTONE_STATUSES: { key: MilestoneStatus; label: string; color: string }[] = [
   { key: 'planned', label: 'Planned', color: '#9ca3af' },
@@ -52,7 +55,9 @@ export default function ITHubPage() {
   const [newProductOpen, setNewProductOpen] = useState(false);
   const [editMilestone, setEditMilestone] = useState<Milestone | 'new' | null>(null);
   const [editFeature, setEditFeature] = useState<Feature | 'new' | null>(null);
-  const [editStory, setEditStory] = useState<UserStory | 'new' | null>(null);
+  const [storyDrawer, setStoryDrawer] = useState<{ story: UserStory | null; startEditing: boolean } | null>(null);
+  const [hubTab, setHubTab] = useState<'products' | 'issues'>('products');
+  const [issuesView, setIssuesView] = useState<ViewMode>('cards');
 
   const load = useCallback(async () => {
     const [p, m, f, s, pr] = await Promise.all([
@@ -97,6 +102,32 @@ export default function ITHubPage() {
     }
   }, [products, milestones, features]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const flagInboxFeature = useMemo(() => features.find((f) => f.is_flag_inbox) ?? null, [features]);
+  const issuesFeatureId = flagInboxFeature?.id ?? null;
+
+  // The flag inbox feature still needs to live under a milestone/product to
+  // satisfy the schema's FK chain, but issues are meant to read as a flat
+  // list, not something you drill into via Products - so that seed product
+  // never shows up in the normal Products grid.
+  const hiddenProductId = useMemo(() => {
+    if (!flagInboxFeature) return null;
+    const milestone = milestones.find((m) => m.id === flagInboxFeature.milestone_id);
+    return milestone?.product_id ?? null;
+  }, [flagInboxFeature, milestones]);
+
+  const visibleProducts = useMemo(() => products.filter((p) => p.id !== hiddenProductId), [products, hiddenProductId]);
+
+  const issues = useMemo(() => {
+    return stories
+      .filter((s) => s.source === 'flagged')
+      .sort((a, b) => {
+        if ((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
+        return b.created_at.localeCompare(a.created_at);
+      });
+  }, [stories]);
+
+  const openIssueCount = issues.filter((s) => s.status !== 'done').length;
+
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
 
   if (selectedFeature) {
@@ -108,16 +139,17 @@ export default function ITHubPage() {
           stories={featureStories}
           canEdit={canEdit}
           onBack={() => setSelectedFeature(null)}
-          onAddStory={() => setEditStory('new')}
-          onEditStory={(s) => setEditStory(s)}
+          onAddStory={() => setStoryDrawer({ story: null, startEditing: true })}
+          onOpenStory={(s, startEditing) => setStoryDrawer({ story: s, startEditing })}
         />
-        {editStory && (
+        {storyDrawer && (
           <StoryDrawer
-            story={editStory === 'new' ? null : editStory}
+            story={storyDrawer.story}
+            startEditing={storyDrawer.startEditing}
             featureId={selectedFeature.id}
             itProfiles={itProfiles}
             canEdit={canEdit}
-            onClose={() => setEditStory(null)}
+            onClose={() => setStoryDrawer(null)}
             onSaved={load}
           />
         )}
@@ -182,53 +214,86 @@ export default function ITHubPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
-        <div>
-          <h2 className="text-base font-semibold">Product Hub</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{products.length} product{products.length === 1 ? '' : 's'}</p>
+        <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+          <HubTabButton active={hubTab === 'products'} onClick={() => setHubTab('products')} icon={Package} label="Products" />
+          <HubTabButton active={hubTab === 'issues'} onClick={() => setHubTab('issues')} icon={AlertTriangle} label="Issues" badge={openIssueCount} />
         </div>
-        {canEdit && (
-          <button onClick={() => setNewProductOpen(true)} className="btn-primary flex items-center gap-1.5">
-            <Plus size={14} /> New Product
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {hubTab === 'issues' && <ViewToggle value={issuesView} onChange={setIssuesView} />}
+          {canEdit && hubTab === 'products' && (
+            <button onClick={() => setNewProductOpen(true)} className="btn-primary flex items-center gap-1.5">
+              <Plus size={14} /> New Product
+            </button>
+          )}
+          {canEdit && hubTab === 'issues' && issuesFeatureId && (
+            <button onClick={() => setStoryDrawer({ story: null, startEditing: true })} className="btn-primary flex items-center gap-1.5">
+              <Plus size={14} /> New Issue
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-        {products.map((prod) => {
-          const prodMilestones = milestones.filter((m) => m.product_id === prod.id);
-          const shipped = prodMilestones.filter((m) => m.status === 'shipped').length;
-          return (
-            <button key={prod.id} onClick={() => setSelectedProduct(prod)} className="card p-4 text-left hover:shadow-md hover:border-brand/30 transition-all">
-              <div className="flex items-center gap-2 mb-1.5">
-                <Package size={14} className="text-brand-600 dark:text-brand-300 shrink-0" />
-                <p className="text-[13px] font-semibold truncate">{prod.name}</p>
-              </div>
-              {prod.description && <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{prod.description}</p>}
-              <div className="flex items-center justify-between text-[11px] text-gray-400">
-                <span>{prodMilestones.length} milestone{prodMilestones.length === 1 ? '' : 's'}</span>
-                <span className="text-positive font-medium">{shipped} shipped</span>
-              </div>
-              {prodMilestones.length > 0 && (
-                <div className="h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden mt-2 flex">
-                  {MILESTONE_STATUSES.map((s) => {
-                    const n = prodMilestones.filter((m) => m.status === s.key).length;
-                    const pct = (n / prodMilestones.length) * 100;
-                    return pct > 0 ? <div key={s.key} style={{ width: `${pct}%`, backgroundColor: s.color }} /> : null;
-                  })}
+      {hubTab === 'products' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          {visibleProducts.map((prod) => {
+            const prodMilestones = milestones.filter((m) => m.product_id === prod.id);
+            const shipped = prodMilestones.filter((m) => m.status === 'shipped').length;
+            return (
+              <button key={prod.id} onClick={() => setSelectedProduct(prod)} className="card p-4 text-left hover:shadow-md hover:border-brand/30 transition-all">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Package size={14} className="text-brand-600 dark:text-brand-300 shrink-0" />
+                  <p className="text-[13px] font-semibold truncate">{prod.name}</p>
                 </div>
-              )}
-            </button>
-          );
-        })}
-        {products.length === 0 && (
-          <div className="card p-10 text-center col-span-full">
-            <Package size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-            <p className="text-[13px] text-gray-400">No products yet. iOS App, Android App, Web Dashboard — start with what you're building.</p>
-          </div>
-        )}
-      </div>
+                {prod.description && <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{prod.description}</p>}
+                <div className="flex items-center justify-between text-[11px] text-gray-400">
+                  <span>{prodMilestones.length} milestone{prodMilestones.length === 1 ? '' : 's'}</span>
+                  <span className="text-positive font-medium">{shipped} shipped</span>
+                </div>
+                {prodMilestones.length > 0 && (
+                  <div className="h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden mt-2 flex">
+                    {MILESTONE_STATUSES.map((s) => {
+                      const n = prodMilestones.filter((m) => m.status === s.key).length;
+                      const pct = (n / prodMilestones.length) * 100;
+                      return pct > 0 ? <div key={s.key} style={{ width: `${pct}%`, backgroundColor: s.color }} /> : null;
+                    })}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+          {visibleProducts.length === 0 && (
+            <div className="card p-10 text-center col-span-full">
+              <Package size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
+              <p className="text-[13px] text-gray-400">No products yet. Android App, Web Dashboard — start with what you're building.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {hubTab === 'issues' && (
+        <IssuesList
+          issues={issues}
+          itProfiles={itProfiles}
+          canEdit={canEdit}
+          view={issuesView}
+          onOpen={(s, startEditing) => setStoryDrawer({ story: s, startEditing })}
+        />
+      )}
 
       {newProductOpen && <ProductDrawer onClose={() => setNewProductOpen(false)} onSaved={load} />}
+
+      {hubTab === 'issues' && storyDrawer && issuesFeatureId && (
+        <StoryDrawer
+          story={storyDrawer.story}
+          startEditing={storyDrawer.startEditing}
+          featureId={issuesFeatureId}
+          isIssue
+          itProfiles={itProfiles}
+          canEdit={canEdit}
+          onClose={() => setStoryDrawer(null)}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }
@@ -384,20 +449,118 @@ function FeaturesList({
   );
 }
 
+function HubTabButton({ active, onClick, icon: Icon, label, badge }: { active: boolean; onClick: () => void; icon: typeof Package; label: string; badge?: number }) {
+  return (
+    <button onClick={onClick} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all flex items-center gap-1.5 ${active ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
+      <Icon size={14} /> {label}
+      {!!badge && <span className="text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{badge}</span>}
+    </button>
+  );
+}
+
+function IssuesList({
+  issues,
+  itProfiles: _itProfiles,
+  canEdit,
+  view,
+  onOpen,
+}: {
+  issues: UserStory[];
+  itProfiles: Profile[];
+  canEdit: boolean;
+  view: ViewMode;
+  onOpen: (s: UserStory, startEditing: boolean) => void;
+}) {
+  if (issues.length === 0) {
+    return (
+      <div className="card p-12 text-center">
+        <AlertTriangle size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
+        <p className="text-[13px] text-gray-400">No issues yet. Flagged friction from other departments lands here.</p>
+      </div>
+    );
+  }
+
+  if (view === 'table') {
+    return (
+      <DataTable
+        rows={issues}
+        keyFn={(s) => s.id}
+        onRowClick={(s) => onOpen(s, false)}
+        columns={[
+          { header: 'Need', className: 'max-w-sm whitespace-normal', render: (s) => <span className="font-medium">As a {s.persona}, {s.need}</span> },
+          {
+            header: 'Status',
+            render: (s) => {
+              const status = STORY_STATUSES.find((st) => st.key === s.status)!;
+              return (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
+                  {status.label}
+                </span>
+              );
+            },
+          },
+          { header: 'Priority', render: (s) => <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span> },
+          { header: 'Assignee', render: (s) => s.assignee?.full_name ?? 'Unassigned' },
+          {
+            header: '',
+            className: 'text-right',
+            render: (s) => <EntryActions onView={() => onOpen(s, false)} onEdit={() => onOpen(s, true)} canEdit={canEdit} />,
+          },
+        ]}
+      />
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      {issues.map((s) => {
+        const status = STORY_STATUSES.find((st) => st.key === s.status)!;
+        const doneCriteria = s.acceptance_criteria.filter((c) => c.done).length;
+        return (
+          <div
+            key={s.id}
+            onClick={() => onOpen(s, false)}
+            className="card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
+          >
+            <div className="flex items-start justify-between gap-1.5 mb-1.5">
+              <p className="text-[12px] font-medium line-clamp-2">As a {s.persona}, {s.need}</p>
+              <EntryActions onView={() => onOpen(s, false)} onEdit={() => onOpen(s, true)} canEdit={canEdit} />
+            </div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
+                {status.label}
+              </span>
+              <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-gray-400">
+              <span className="flex items-center gap-1">
+                <User size={10} /> {s.assignee?.full_name?.split(' ')[0] ?? 'Unassigned'}
+              </span>
+              {s.acceptance_criteria.length > 0 && (
+                <span>{doneCriteria}/{s.acceptance_criteria.length} AC</span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function StoriesBoard({
   feature,
   stories,
   canEdit,
   onBack,
   onAddStory,
-  onEditStory,
+  onOpenStory,
 }: {
   feature: Feature;
   stories: UserStory[];
   canEdit: boolean;
   onBack: () => void;
   onAddStory: () => void;
-  onEditStory: (s: UserStory) => void;
+  onOpenStory: (s: UserStory, startEditing: boolean) => void;
 }) {
   const byStatus = useMemo(() => {
     const map: Record<UserStoryStatus, UserStory[]> = { backlog: [], in_progress: [], review: [], done: [] };
@@ -435,10 +598,17 @@ function StoriesBoard({
               {byStatus[status.key].map((s) => {
                 const doneCriteria = s.acceptance_criteria.filter((c) => c.done).length;
                 return (
-                  <button key={s.id} onClick={() => onEditStory(s)} className="w-full card p-2.5 text-left hover:shadow-md hover:border-brand/30 transition-all">
+                  <div
+                    key={s.id}
+                    onClick={() => onOpenStory(s, false)}
+                    className="w-full card p-2.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
+                  >
                     <div className="flex items-start justify-between gap-1.5 mb-1">
                       <p className="text-[12px] font-medium line-clamp-2">As a {s.persona}, {s.need}</p>
-                      <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
+                        <EntryActions onView={() => onOpenStory(s, false)} onEdit={() => onOpenStory(s, true)} canEdit={canEdit} />
+                      </div>
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-gray-400">
                       <span className="flex items-center gap-1">
@@ -448,7 +618,7 @@ function StoriesBoard({
                         <span>{doneCriteria}/{s.acceptance_criteria.length} AC</span>
                       )}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
               {byStatus[status.key].length === 0 && (
@@ -672,23 +842,28 @@ function FeatureDrawer({
 
 function StoryDrawer({
   story,
+  startEditing,
   featureId,
+  isIssue = false,
   itProfiles,
   canEdit,
   onClose,
   onSaved,
 }: {
   story: UserStory | null;
+  startEditing: boolean;
   featureId: string;
+  isIssue?: boolean;
   itProfiles: Profile[];
   canEdit: boolean;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const { profile } = useAuth();
-  const [persona, setPersona] = useState(story?.persona ?? '');
+  const [editing, setEditing] = useState(startEditing && canEdit);
+  const [persona, setPersona] = useState(story?.persona ?? (isIssue ? 'driver' : ''));
   const [need, setNeed] = useState(story?.need ?? '');
-  const [benefit, setBenefit] = useState(story?.benefit ?? '');
+  const [benefit, setBenefit] = useState(story?.benefit ?? (story ? '' : 'the underlying issue gets fixed for everyone'));
   const [details, setDetails] = useState(story?.details ?? '');
   const [criteria, setCriteria] = useState<AcceptanceCriterion[]>(story?.acceptance_criteria ?? []);
   const [status, setStatus] = useState<UserStoryStatus>(story?.status ?? 'backlog');
@@ -719,7 +894,7 @@ function StoryDrawer({
     };
     const { error: err } = story
       ? await supabase.from('user_stories').update(payload).eq('id', story.id)
-      : await supabase.from('user_stories').insert({ ...payload, feature_id: featureId, created_by: profile!.id });
+      : await supabase.from('user_stories').insert({ ...payload, feature_id: featureId, source: isIssue ? 'flagged' : 'manual', created_by: profile!.id });
     setSaving(false);
     if (err) { setError(err.message); return; }
     onSaved();
@@ -736,7 +911,7 @@ function StoryDrawer({
   };
 
   return (
-    <Modal open onClose={onClose} title={story ? 'User Story' : 'New User Story'} maxWidth="max-w-lg">
+    <Modal open onClose={onClose} title={story ? (story.source === 'flagged' ? 'Issue' : 'User Story') : (isIssue ? 'New Issue' : 'New User Story')} maxWidth="max-w-lg">
       <div className="space-y-4">
         <div className="card p-3 bg-gray-50 dark:bg-white/5 text-[13px] leading-relaxed">
           <span className="text-gray-400">As a</span> <span className="font-medium">{persona || '…'}</span>,{' '}
@@ -746,19 +921,19 @@ function StoryDrawer({
 
         <div>
           <label className="block text-[12px] font-medium mb-1.5 text-gray-500">As a… (persona)</label>
-          <input value={persona} onChange={(e) => setPersona(e.target.value)} disabled={!canEdit} className="input" placeholder="driver, rider, call center agent…" autoFocus />
+          <input value={persona} onChange={(e) => setPersona(e.target.value)} disabled={!editing} className="input" placeholder="driver, rider, call center agent…" autoFocus />
         </div>
         <div>
           <label className="block text-[12px] font-medium mb-1.5 text-gray-500">I need…</label>
-          <input value={need} onChange={(e) => setNeed(e.target.value)} disabled={!canEdit} className="input" placeholder="to see my earnings for the week" />
+          <input value={need} onChange={(e) => setNeed(e.target.value)} disabled={!editing} className="input" placeholder="to see my earnings for the week" />
         </div>
         <div>
           <label className="block text-[12px] font-medium mb-1.5 text-gray-500">So that…</label>
-          <input value={benefit} onChange={(e) => setBenefit(e.target.value)} disabled={!canEdit} className="input" placeholder="I can plan my schedule" />
+          <input value={benefit} onChange={(e) => setBenefit(e.target.value)} disabled={!editing} className="input" placeholder="I can plan my schedule" />
         </div>
         <div>
           <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Details</label>
-          <textarea value={details} onChange={(e) => setDetails(e.target.value)} disabled={!canEdit} rows={3} className="input resize-none" placeholder="Extra context, constraints, links…" />
+          <textarea value={details} onChange={(e) => setDetails(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="Extra context, constraints, links…" />
         </div>
 
         <div>
@@ -766,24 +941,24 @@ function StoryDrawer({
           <div className="space-y-1.5">
             {criteria.map((c, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <button type="button" onClick={() => canEdit && updateCriterion(i, { done: !c.done })} className="shrink-0 text-gray-400">
+                <button type="button" onClick={() => editing && updateCriterion(i, { done: !c.done })} className="shrink-0 text-gray-400">
                   {c.done ? <CheckSquare size={16} className="text-positive" /> : <Square size={16} />}
                 </button>
                 <input
                   value={c.text}
                   onChange={(e) => updateCriterion(i, { text: e.target.value })}
-                  disabled={!canEdit}
+                  disabled={!editing}
                   className="input flex-1 py-1.5"
                   placeholder="Given… when… then…"
                 />
-                {canEdit && (
+                {editing && (
                   <button type="button" onClick={() => removeCriterion(i)} className="shrink-0 text-gray-300 hover:text-red-500">
                     <X size={14} />
                   </button>
                 )}
               </div>
             ))}
-            {canEdit && (
+            {editing && (
               <button type="button" onClick={addCriterion} className="text-[12px] text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 pt-0.5">
                 <Plus size={12} /> Add criterion
               </button>
@@ -794,13 +969,13 @@ function StoryDrawer({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Status</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value as UserStoryStatus)} disabled={!canEdit} className="input">
+            <select value={status} onChange={(e) => setStatus(e.target.value as UserStoryStatus)} disabled={!editing} className="input">
               {STORY_STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Priority</label>
-            <select value={priority} onChange={(e) => setPriority(e.target.value as UserStoryPriority)} disabled={!canEdit} className="input">
+            <select value={priority} onChange={(e) => setPriority(e.target.value as UserStoryPriority)} disabled={!editing} className="input">
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -809,7 +984,7 @@ function StoryDrawer({
         </div>
         <div>
           <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Assignee</label>
-          <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} disabled={!canEdit} className="input">
+          <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} disabled={!editing} className="input">
             <option value="">Unassigned</option>
             {itProfiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
           </select>
@@ -817,7 +992,7 @@ function StoryDrawer({
 
         {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
-        {canEdit && (
+        {editing ? (
           <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
             {story ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
@@ -825,11 +1000,20 @@ function StoryDrawer({
               </button>
             ) : <span />}
             <div className="flex gap-2">
-              <button onClick={onClose} className="btn-ghost">Cancel</button>
+              <button onClick={() => (story ? setEditing(false) : onClose())} className="btn-ghost">Cancel</button>
               <button onClick={save} disabled={saving || !persona.trim() || !need.trim() || !benefit.trim()} className="btn-primary disabled:opacity-50">
-                {saving ? 'Saving…' : story ? 'Save Changes' : 'Create Story'}
+                {saving ? 'Saving…' : story ? 'Save Changes' : 'Create'}
               </button>
             </div>
+          </div>
+        ) : (
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+            <button onClick={onClose} className="btn-ghost">Close</button>
+            {canEdit && (
+              <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">
+                <Pencil size={13} /> Edit
+              </button>
+            )}
           </div>
         )}
       </div>

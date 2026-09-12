@@ -93,6 +93,20 @@ export interface DriverDeposit {
   created_at: string;
 }
 
+export interface DriverFine {
+  id: string;
+  driver_id: string;
+  vehicle_id: string | null;
+  amount: number;
+  fine_date: string;
+  reason: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  driver?: Driver | null;
+  vehicle?: Vehicle | null;
+}
+
 export type ReviewStatus = 'completed' | 'in_progress' | 'not_done';
 
 export interface Task {
@@ -292,6 +306,7 @@ export interface Feature {
   milestone_id: string;
   name: string;
   description: string | null;
+  is_flag_inbox: boolean;
   created_at: string;
 }
 
