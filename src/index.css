@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --navy: #17263a;
+    --brand: #2f8c86;
+    --positive: #4f7b3e;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    @apply bg-gray-50 text-gray-900;
+  }
+
+  .dark body {
+    @apply bg-navy-950 text-gray-100;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white dark:bg-navy-800 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-brand hover:bg-brand-600 text-white text-[13px] font-medium rounded-lg px-3.5 py-2 transition-all duration-150 active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 text-[13px] rounded-lg px-2.5 py-1.5 transition-colors;
+  }
+
+  .input {
+    @apply w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-[13px] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer;
+  }
+
+  .nav-item-active {
+    @apply bg-brand/10 text-brand-700 dark:bg-brand/15 dark:text-brand-300 font-medium hover:bg-brand/10 dark:hover:bg-brand/15 hover:text-brand-700 dark:hover:text-brand-300;
+  }
+
+  .stat-label {
+    @apply text-[11px] font-medium text-gray-400 uppercase tracking-wide;
+  }
+
+  .section-title {
+    @apply text-[13px] font-semibold text-gray-700 dark:text-gray-200;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-white/10 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-white/20;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes checkPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.animate-check {
+  animation: checkPop 0.3s ease-out;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.dark .skeleton {
+  background: linear-gradient(90deg, #1d2f43 25%, #243b52 50%, #1d2f43 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
