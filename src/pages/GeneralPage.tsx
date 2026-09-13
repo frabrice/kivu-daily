@@ -5,7 +5,7 @@ import TaskReviewModal from '../components/TaskReviewModal';
 import TaskCard from '../components/TaskCard';
 import ProgressRing from '../components/ProgressRing';
 import { useAuth } from '../lib/auth';
-import { useTasks, tasksForDate, completionPct, computeStreak } from '../lib/hooks';
+import { tasksForDate, completionPct, computeStreak } from '../lib/hooks';
 import { supabase, Task } from '../lib/supabase';
 import { todayStr, greeting, formatDateFull, formatTime, formatDateLabel } from '../lib/utils';
 import MeetingsPage from './MeetingsPage';
@@ -13,16 +13,28 @@ import CommentsPage from './CommentsPage';
 import AnnouncementsPage from './AnnouncementsPage';
 import DocumentsPage from './DocumentsPage';
 
+interface GeneralPageProps {
+  tasks: Task[];
+  reload: () => void;
+}
+
 // Everything common to every department, regardless of which specific
 // module a person's sidebar shows: today's tasks, meetings, comments,
 // announcements, and documents. Department-specific work lives in its
 // own separate sidebar pages instead of being bundled in here.
-export default function GeneralPage() {
+//
+// tasks/reload come from EmployeeApp's own useTasks() call rather than
+// calling useTasks() again in here - two instances for the same userId
+// each try to open a realtime channel with the identical name
+// (tasks-<userId>), and Supabase's client throws ("cannot add
+// postgres_changes callbacks ... after subscribe()") the moment the
+// second one subscribes, which crashes the whole page white since
+// nothing in the tree catches it.
+export default function GeneralPage({ tasks, reload }: GeneralPageProps) {
   const { profile } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [reviewTask, setReviewTask] = useState<Task | null>(null);
   const [now, setNow] = useState(new Date());
-  const { tasks, reload } = useTasks(profile?.id);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);

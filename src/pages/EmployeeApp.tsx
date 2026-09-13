@@ -43,7 +43,7 @@ import HowToUsePage from './HowToUsePage';
 export default function EmployeeApp() {
   const { profile } = useAuth();
   const [active, setActive] = useState<NavKey>(profile?.department?.slug === 'finance' ? 'finance_dashboard' : 'home');
-  const { tasks } = useTasks(profile?.id);
+  const { tasks, reload } = useTasks(profile?.id);
 
   const TITLES: Record<NavKey, string> = {
     home: 'General',
@@ -134,7 +134,7 @@ export default function EmployeeApp() {
 
   return (
     <AppShell active={active} onNavigate={setActive} navItems={NAV} title={title} notifications={<NotificationBell />}>
-      {active === 'home' && <GeneralPage />}
+      {active === 'home' && <GeneralPage tasks={tasks} reload={reload} />}
       {active === 'calendar' && <CalendarView tasks={tasks} />}
 
       {active === 'fleet_pipeline' && <FleetPipelinePage />}
