@@ -349,3 +349,107 @@ export interface ActivityLogEntry {
   created_at: string;
   actor?: Profile | null;
 }
+
+// ============================================================
+// FINANCE
+// ============================================================
+
+export type FinanceAccountKey = 'equity' | 'bank_of_kigali' | 'im_bank' | 'momo';
+
+export interface FinanceAccount {
+  id: string;
+  key: FinanceAccountKey;
+  name: string;
+  bank_name: string | null;
+  purpose: string;
+  opening_balance: number;
+  opening_date: string;
+  created_at: string;
+}
+
+export type FinanceTransactionType =
+  | 'revenue'
+  | 'fleet_collection'
+  | 'vehicle_owner_payment'
+  | 'payroll'
+  | 'supplier_payment'
+  | 'transfer'
+  | 'expense_claim'
+  | 'other';
+
+export type FinanceDirection = 'in' | 'out';
+export type FinanceTransactionStatus = 'pending' | 'checked' | 'approved' | 'posted' | 'rejected';
+
+export interface FinanceTransaction {
+  id: string;
+  reference: string;
+  type: FinanceTransactionType;
+  account_id: string;
+  direction: FinanceDirection;
+  amount: number;
+  transaction_date: string;
+  description: string | null;
+  counterparty: string | null;
+  linked_vehicle_id: string | null;
+  linked_driver_id: string | null;
+  transfer_group_id: string | null;
+  status: FinanceTransactionStatus;
+  prepared_by: string | null;
+  checked_by: string | null;
+  approved_by: string | null;
+  checked_at: string | null;
+  approved_at: string | null;
+  supporting_document_id: string | null;
+  system_generated: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  account?: FinanceAccount | null;
+  linked_vehicle?: Vehicle | null;
+  linked_driver?: Driver | null;
+  preparer?: Profile | null;
+  checker?: Profile | null;
+  approver?: Profile | null;
+  supporting_document?: Document | null;
+}
+
+export interface FinanceReconciliation {
+  id: string;
+  account_id: string;
+  period: string;
+  statement_balance: number;
+  system_balance: number;
+  variance: number;
+  notes: string | null;
+  reconciled_by: string | null;
+  reconciled_at: string;
+  account?: FinanceAccount | null;
+  reconciler?: Profile | null;
+}
+
+export type PayrollRunStatus = 'draft' | 'checked' | 'approved' | 'paid';
+
+export interface PayrollRun {
+  id: string;
+  period: string;
+  status: PayrollRunStatus;
+  total_amount: number;
+  prepared_by: string | null;
+  checked_by: string | null;
+  approved_by: string | null;
+  finance_transaction_id: string | null;
+  created_at: string;
+  updated_at: string;
+  lines?: PayrollLine[];
+}
+
+export interface PayrollLine {
+  id: string;
+  payroll_run_id: string;
+  employee_id: string;
+  gross_amount: number;
+  deductions: number;
+  net_amount: number;
+  created_at: string;
+  employee?: Profile | null;
+}

@@ -34,7 +34,8 @@ export type NavKey =
   | 'social'
   | 'it_hub'
   | 'help'
-  | 'activity_log';
+  | 'activity_log'
+  | 'finance';
 
 export interface NavItem {
   key: NavKey;

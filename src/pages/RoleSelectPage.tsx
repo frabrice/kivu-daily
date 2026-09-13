@@ -15,7 +15,7 @@ const ROLES: RoleOption[] = [
   { key: 'marketing_sales_bd', label: 'Marketing & Sales', hint: 'Campaigns & contacts', icon: Target },
   { key: 'social_media', label: 'Social Media', hint: 'Content calendar', icon: ImageIcon },
   { key: 'it', label: 'IT / Product', hint: 'Product Hub', icon: Package },
-  { key: 'finance', label: 'Finance', hint: 'Coming soon', icon: Wallet, comingSoon: true },
+  { key: 'finance', label: 'Finance', hint: 'Accounts, ledger & payroll', icon: Wallet },
 ];
 
 interface RoleSelectPageProps {
