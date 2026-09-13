@@ -35,7 +35,16 @@ export type NavKey =
   | 'it_hub'
   | 'help'
   | 'activity_log'
-  | 'finance';
+  | 'finance_dashboard'
+  | 'finance_revenue'
+  | 'finance_fleet_collections'
+  | 'finance_vehicle_owners'
+  | 'finance_payroll'
+  | 'finance_suppliers'
+  | 'finance_transfers'
+  | 'finance_expense_claims'
+  | 'finance_accounts'
+  | 'finance_reconciliation';
 
 export interface NavItem {
   key: NavKey;

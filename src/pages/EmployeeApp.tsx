@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Plus, Flame, CheckCircle2, ListTodo, TrendingUp, MessageSquare, FileText, Megaphone, Calendar as CalendarIcon, Truck, PhoneCall, Target, Image as ImageIcon, Package, HelpCircle, Wallet } from 'lucide-react';
+import { Plus, Flame, CheckCircle2, ListTodo, TrendingUp, MessageSquare, FileText, Megaphone, Calendar as CalendarIcon, Truck, PhoneCall, Target, Image as ImageIcon, Package, HelpCircle, Wallet, LayoutDashboard, Car, Landmark, ArrowLeftRight, Receipt, Users2, ClipboardCheck } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import AddTaskModal from '../components/AddTaskModal';
 import TaskReviewModal from '../components/TaskReviewModal';
@@ -18,7 +18,16 @@ import DocumentsPage from './DocumentsPage';
 import AnnouncementsPage from './AnnouncementsPage';
 import MeetingsPage from './MeetingsPage';
 import FleetPage from './FleetPage';
-import FinancePage from './FinancePage';
+import FinanceDashboardPage from './finance/FinanceDashboardPage';
+import FinanceRevenuePage from './finance/FinanceRevenuePage';
+import FinanceFleetCollectionsPage from './finance/FinanceFleetCollectionsPage';
+import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
+import FinancePayrollPage from './finance/FinancePayrollPage';
+import FinanceSuppliersPage from './finance/FinanceSuppliersPage';
+import FinanceTransfersPage from './finance/FinanceTransfersPage';
+import FinanceExpenseClaimsPage from './finance/FinanceExpenseClaimsPage';
+import FinanceAccountsPage from './finance/FinanceAccountsPage';
+import FinanceReconciliationPage from './finance/FinanceReconciliationPage';
 import CallCenterPage from './CallCenterPage';
 import MarketingPage from './MarketingPage';
 import SocialMediaPage from './SocialMediaPage';
@@ -89,7 +98,16 @@ export default function EmployeeApp() {
     it_hub: 'Product Hub',
     help: 'How to Use',
     activity_log: 'Activity Log',
-    finance: 'Finance',
+    finance_dashboard: 'Finance Dashboard',
+    finance_revenue: 'Revenue',
+    finance_fleet_collections: 'Fleet Collections',
+    finance_vehicle_owners: 'Vehicle-Owner Payments',
+    finance_payroll: 'Payroll',
+    finance_suppliers: 'Supplier Payments',
+    finance_transfers: 'Inter-Bank Transfers',
+    finance_expense_claims: 'Expense Claims',
+    finance_accounts: 'Bank Accounts',
+    finance_reconciliation: 'Reconciliation',
   };
   const title = TITLES[active];
 
@@ -97,7 +115,18 @@ export default function EmployeeApp() {
     { key: 'home', label: 'Today', icon: ListTodo },
     { key: 'calendar', label: 'Calendar', icon: CheckCircle2 },
     ...(profile?.department?.slug === 'fleet' ? [{ key: 'fleet' as const, label: 'Fleet', icon: Truck }] : []),
-    ...(profile?.department?.slug === 'finance' ? [{ key: 'finance' as const, label: 'Finance', icon: Wallet }] : []),
+    ...(profile?.department?.slug === 'finance' ? [
+      { key: 'finance_dashboard' as const, label: 'Finance Dashboard', icon: LayoutDashboard },
+      { key: 'finance_revenue' as const, label: 'Revenue', icon: TrendingUp },
+      { key: 'finance_fleet_collections' as const, label: 'Fleet Collections', icon: Wallet },
+      { key: 'finance_vehicle_owners' as const, label: 'Vehicle-Owner Payments', icon: Car },
+      { key: 'finance_payroll' as const, label: 'Payroll', icon: Users2 },
+      { key: 'finance_suppliers' as const, label: 'Supplier Payments', icon: Truck },
+      { key: 'finance_transfers' as const, label: 'Inter-Bank Transfers', icon: ArrowLeftRight },
+      { key: 'finance_expense_claims' as const, label: 'Expense Claims', icon: Receipt },
+      { key: 'finance_accounts' as const, label: 'Bank Accounts', icon: Landmark },
+      { key: 'finance_reconciliation' as const, label: 'Reconciliation', icon: ClipboardCheck },
+    ] : []),
     ...(profile?.department?.slug === 'call_center' ? [{ key: 'call_center' as const, label: 'Call Center', icon: PhoneCall }] : []),
     ...(profile?.department?.slug === 'marketing_sales_bd' ? [{ key: 'marketing' as const, label: 'Campaigns', icon: Target }] : []),
     ...(profile?.department?.slug === 'social_media' ? [{ key: 'social' as const, label: 'Content Calendar', icon: ImageIcon }] : []),
@@ -215,7 +244,16 @@ export default function EmployeeApp() {
 
       {active === 'calendar' && <CalendarView tasks={tasks} />}
       {active === 'fleet' && <FleetPage />}
-      {active === 'finance' && <FinancePage />}
+      {active === 'finance_dashboard' && <FinanceDashboardPage />}
+      {active === 'finance_revenue' && <FinanceRevenuePage />}
+      {active === 'finance_fleet_collections' && <FinanceFleetCollectionsPage />}
+      {active === 'finance_vehicle_owners' && <FinanceVehicleOwnersPage />}
+      {active === 'finance_payroll' && <FinancePayrollPage />}
+      {active === 'finance_suppliers' && <FinanceSuppliersPage />}
+      {active === 'finance_transfers' && <FinanceTransfersPage />}
+      {active === 'finance_expense_claims' && <FinanceExpenseClaimsPage />}
+      {active === 'finance_accounts' && <FinanceAccountsPage />}
+      {active === 'finance_reconciliation' && <FinanceReconciliationPage />}
       {active === 'call_center' && <CallCenterPage />}
       {active === 'marketing' && <MarketingPage />}
       {active === 'social' && <SocialMediaPage />}

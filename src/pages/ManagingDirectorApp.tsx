@@ -26,6 +26,11 @@ import {
   Package,
   HelpCircle,
   TrendingUp as TrendingUpIcon,
+  LayoutDashboard as FinanceDashboardIcon,
+  Car,
+  Landmark,
+  ArrowLeftRight,
+  Receipt,
 } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, BarChart, Bar, Cell } from 'recharts';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
@@ -53,7 +58,16 @@ import DocumentsPage from './DocumentsPage';
 import AnnouncementsPage from './AnnouncementsPage';
 import MeetingsPage from './MeetingsPage';
 import FleetPage from './FleetPage';
-import FinancePage from './FinancePage';
+import FinanceDashboardPage from './finance/FinanceDashboardPage';
+import FinanceRevenuePage from './finance/FinanceRevenuePage';
+import FinanceFleetCollectionsPage from './finance/FinanceFleetCollectionsPage';
+import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
+import FinancePayrollPage from './finance/FinancePayrollPage';
+import FinanceSuppliersPage from './finance/FinanceSuppliersPage';
+import FinanceTransfersPage from './finance/FinanceTransfersPage';
+import FinanceExpenseClaimsPage from './finance/FinanceExpenseClaimsPage';
+import FinanceAccountsPage from './finance/FinanceAccountsPage';
+import FinanceReconciliationPage from './finance/FinanceReconciliationPage';
 import CallCenterPage from './CallCenterPage';
 import MarketingPage from './MarketingPage';
 import SocialMediaPage from './SocialMediaPage';
@@ -132,7 +146,16 @@ export default function ManagingDirectorApp() {
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { key: 'tasks', label: 'My Tasks', icon: ListTodo },
     { key: 'fleet', label: 'Fleet', icon: Truck },
-    { key: 'finance', label: 'Finance', icon: Wallet },
+    { key: 'finance_dashboard', label: 'Finance Dashboard', icon: FinanceDashboardIcon },
+    { key: 'finance_revenue', label: 'Revenue', icon: TrendingUpIcon },
+    { key: 'finance_fleet_collections', label: 'Fleet Collections', icon: Wallet },
+    { key: 'finance_vehicle_owners', label: 'Vehicle-Owner Payments', icon: Car },
+    { key: 'finance_payroll', label: 'Payroll', icon: Users2 },
+    { key: 'finance_suppliers', label: 'Supplier Payments', icon: Truck },
+    { key: 'finance_transfers', label: 'Inter-Bank Transfers', icon: ArrowLeftRight },
+    { key: 'finance_expense_claims', label: 'Expense Claims', icon: Receipt },
+    { key: 'finance_accounts', label: 'Bank Accounts', icon: Landmark },
+    { key: 'finance_reconciliation', label: 'Reconciliation', icon: ClipboardCheck },
     { key: 'call_center', label: 'Call Center', icon: PhoneCall },
     { key: 'marketing', label: 'Campaigns', icon: Target },
     { key: 'social', label: 'Content Calendar', icon: ImageIcon },
@@ -485,7 +508,16 @@ export default function ManagingDirectorApp() {
       )}
       {active === 'tasks' && <MDTasksPage />}
       {active === 'fleet' && <FleetPage />}
-      {active === 'finance' && <FinancePage />}
+      {active === 'finance_dashboard' && <FinanceDashboardPage />}
+      {active === 'finance_revenue' && <FinanceRevenuePage />}
+      {active === 'finance_fleet_collections' && <FinanceFleetCollectionsPage />}
+      {active === 'finance_vehicle_owners' && <FinanceVehicleOwnersPage />}
+      {active === 'finance_payroll' && <FinancePayrollPage />}
+      {active === 'finance_suppliers' && <FinanceSuppliersPage />}
+      {active === 'finance_transfers' && <FinanceTransfersPage />}
+      {active === 'finance_expense_claims' && <FinanceExpenseClaimsPage />}
+      {active === 'finance_accounts' && <FinanceAccountsPage />}
+      {active === 'finance_reconciliation' && <FinanceReconciliationPage />}
       {active === 'call_center' && <CallCenterPage />}
       {active === 'marketing' && <MarketingPage />}
       {active === 'social' && <SocialMediaPage />}
