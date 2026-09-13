@@ -1,0 +1,66 @@
+import { useState } from 'react';
+import {
+  LayoutDashboard, TrendingUp, Wallet, Car, Users2, Truck, ArrowLeftRight, Receipt, Landmark, ClipboardCheck,
+} from 'lucide-react';
+import FinanceDashboardPage from './finance/FinanceDashboardPage';
+import FinanceRevenuePage from './finance/FinanceRevenuePage';
+import FinanceFleetCollectionsPage from './finance/FinanceFleetCollectionsPage';
+import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
+import FinancePayrollPage from './finance/FinancePayrollPage';
+import FinanceSuppliersPage from './finance/FinanceSuppliersPage';
+import FinanceTransfersPage from './finance/FinanceTransfersPage';
+import FinanceExpenseClaimsPage from './finance/FinanceExpenseClaimsPage';
+import FinanceAccountsPage from './finance/FinanceAccountsPage';
+import FinanceReconciliationPage from './finance/FinanceReconciliationPage';
+
+// MD-only: Finance employees see all ten of these as separate sidebar
+// pages (src/pages/finance/*); the MD sees them bundled as tabs here,
+// since a fully expanded sidebar for every department at once would be
+// unmanageable for the one role that already sees everything.
+type Tab =
+  | 'dashboard' | 'revenue' | 'fleet_collections' | 'vehicle_owners' | 'payroll'
+  | 'suppliers' | 'transfers' | 'expense_claims' | 'accounts' | 'reconciliation';
+
+const TABS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'revenue', label: 'Revenue', icon: TrendingUp },
+  { key: 'fleet_collections', label: 'Fleet Collections', icon: Wallet },
+  { key: 'vehicle_owners', label: 'Vehicle-Owner Payments', icon: Car },
+  { key: 'payroll', label: 'Payroll', icon: Users2 },
+  { key: 'suppliers', label: 'Supplier Payments', icon: Truck },
+  { key: 'transfers', label: 'Inter-Bank Transfers', icon: ArrowLeftRight },
+  { key: 'expense_claims', label: 'Expense Claims', icon: Receipt },
+  { key: 'accounts', label: 'Bank Accounts', icon: Landmark },
+  { key: 'reconciliation', label: 'Reconciliation', icon: ClipboardCheck },
+];
+
+export default function FinanceDeptPage() {
+  const [tab, setTab] = useState<Tab>('dashboard');
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${tab === t.key ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+          >
+            <t.icon size={14} /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'dashboard' && <FinanceDashboardPage />}
+      {tab === 'revenue' && <FinanceRevenuePage />}
+      {tab === 'fleet_collections' && <FinanceFleetCollectionsPage />}
+      {tab === 'vehicle_owners' && <FinanceVehicleOwnersPage />}
+      {tab === 'payroll' && <FinancePayrollPage />}
+      {tab === 'suppliers' && <FinanceSuppliersPage />}
+      {tab === 'transfers' && <FinanceTransfersPage />}
+      {tab === 'expense_claims' && <FinanceExpenseClaimsPage />}
+      {tab === 'accounts' && <FinanceAccountsPage />}
+      {tab === 'reconciliation' && <FinanceReconciliationPage />}
+    </div>
+  );
+}

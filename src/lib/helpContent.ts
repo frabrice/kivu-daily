@@ -13,7 +13,7 @@ export interface HelpEntry {
 
 export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
   home: {
-    blurb: "Your daily task list — the thing you fill in every morning and get reviewed on every evening.",
+    blurb: "General — your daily task list, plus Meetings, Comments, Announcements and Documents, all on one page since they're common to every department.",
     sections: [
       {
         heading: 'Adding tasks',
