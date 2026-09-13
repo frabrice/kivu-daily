@@ -36,7 +36,7 @@ import HowToUsePage from './HowToUsePage';
 
 export default function EmployeeApp() {
   const { profile } = useAuth();
-  const [active, setActive] = useState<NavKey>('home');
+  const [active, setActive] = useState<NavKey>(profile?.department?.slug === 'finance' ? 'finance_dashboard' : 'home');
   const [addOpen, setAddOpen] = useState(false);
   const [reviewTask, setReviewTask] = useState<Task | null>(null);
   const [now, setNow] = useState(new Date());
