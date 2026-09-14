@@ -14,7 +14,7 @@ export function useITHubData() {
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('milestones').select('*').order('created_at', { ascending: true }),
       supabase.from('features').select('*').order('created_at', { ascending: true }),
-      supabase.from('user_stories').select('*, assignee:profiles!user_stories_assignee_id_fkey(*)').order('created_at', { ascending: false }),
+      supabase.from('user_stories').select('*, assignee:profiles!user_stories_assignee_id_fkey(*), product:products(*)').order('created_at', { ascending: false }),
       supabase.from('profiles').select('*, department:departments(*)').eq('is_active', true),
     ]);
     setProducts((p.data as Product[]) ?? []);

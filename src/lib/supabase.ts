@@ -353,7 +353,10 @@ export interface AcceptanceCriterion {
 
 export interface UserStory {
   id: string;
-  feature_id: string;
+  feature_id: string | null;
+  product_id: string | null;
+  linked_task_id: string | null;
+  title: string | null;
   persona: string;
   need: string;
   benefit: string;
@@ -367,6 +370,7 @@ export interface UserStory {
   created_at: string;
   updated_at: string;
   assignee?: Profile | null;
+  product?: Product | null;
 }
 
 export interface ActivityLogEntry {

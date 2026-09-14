@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, AlertTriangle, User } from 'lucide-react';
+import { Plus, AlertTriangle, User, Package } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useITHubData, STORY_STATUSES, PRIORITY_STYLE } from '../../lib/itHub';
 import { UserStory } from '../../lib/supabase';
@@ -21,7 +21,7 @@ function IssuesPageWithData() {
 function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
   const { profile } = useAuth();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'it';
-  const { issues, itProfiles, issuesFeatureId, openIssueCount, loading, reload } = data;
+  const { issues, itProfiles, visibleProducts, issuesFeatureId, openIssueCount, loading, reload } = data;
   const [view, setView] = useState<ViewMode>('cards');
   const [storyDrawer, setStoryDrawer] = useState<{ story: UserStory | null; startEditing: boolean } | null>(null);
 
@@ -39,7 +39,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
-          {canEdit && issuesFeatureId && (
+          {canEdit && (
             <button onClick={() => setStoryDrawer({ story: null, startEditing: true })} className="btn-primary flex items-center gap-1.5">
               <Plus size={14} /> New Issue
             </button>
@@ -60,7 +60,8 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
           keyFn={(s) => s.id}
           onRowClick={(s) => setStoryDrawer({ story: s, startEditing: false })}
           columns={[
-            { header: 'Need', className: 'max-w-sm whitespace-normal', render: (s) => <span className="font-medium">As a {s.persona}, {s.need}</span> },
+            { header: 'Title', className: 'max-w-sm whitespace-normal', render: (s) => <span className="font-medium">{s.title || `As a ${s.persona}, ${s.need}`}</span> },
+            { header: 'Product', render: (s) => s.product?.name ?? '—' },
             {
               header: 'Status',
               render: (s) => {
@@ -95,14 +96,19 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
                 className="card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
               >
                 <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                  <p className="text-[11px] font-medium line-clamp-2">As a {s.persona}, {s.need}</p>
+                  <p className="text-[11px] font-medium line-clamp-2">{s.title || `As a ${s.persona}, ${s.need}`}</p>
                   <EntryActions onView={() => setStoryDrawer({ story: s, startEditing: false })} onEdit={() => setStoryDrawer({ story: s, startEditing: true })} canEdit={canEdit} />
                 </div>
-                <div className="flex items-center gap-1.5 mb-2">
+                <div className="flex items-center gap-1.5 mb-2 flex-wrap">
                   <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
                     {status.label}
                   </span>
                   <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
+                  {s.product && (
+                    <span className="inline-flex items-center gap-1 text-[8px] font-medium text-cyan-600 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-500/10 px-1.5 py-0.5 rounded-full">
+                      <Package size={9} /> {s.product.name}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between text-[9px] text-gray-400">
                   <span className="flex items-center gap-1">
@@ -118,13 +124,14 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
         </div>
       )}
 
-      {storyDrawer && issuesFeatureId && (
+      {storyDrawer && (
         <StoryDrawer
           story={storyDrawer.story}
           startEditing={storyDrawer.startEditing}
           featureId={issuesFeatureId}
           isIssue
           itProfiles={itProfiles}
+          products={visibleProducts}
           canEdit={canEdit}
           onClose={() => setStoryDrawer(null)}
           onSaved={reload}
