@@ -6,22 +6,22 @@ import IssuesPage from './itHub/IssuesPage';
 
 // MD-only: IT employees see Products/Issues as separate sidebar pages
 // (src/pages/itHub/*); the MD sees them as tabs here.
-type Tab = 'products' | 'issues';
+type Tab = 'issues' | 'products';
 
 export default function ITHubPage() {
-  const [tab, setTab] = useState<Tab>('products');
+  const [tab, setTab] = useState<Tab>('issues');
   const data = useITHubData();
   const { openIssueCount } = data;
 
   return (
     <div className="space-y-4">
       <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
-        <TabButton active={tab === 'products'} onClick={() => setTab('products')} icon={Package} label="Products" />
         <TabButton active={tab === 'issues'} onClick={() => setTab('issues')} icon={AlertTriangle} label="Issues" badge={openIssueCount} />
+        <TabButton active={tab === 'products'} onClick={() => setTab('products')} icon={Package} label="Products" />
       </div>
 
-      {tab === 'products' && <ProductsPage data={data} />}
       {tab === 'issues' && <IssuesPage data={data} />}
+      {tab === 'products' && <ProductsPage data={data} />}
     </div>
   );
 }

@@ -131,8 +131,8 @@ export default function EmployeeApp() {
     ] : []),
     ...(profile?.department?.slug === 'social_media' ? [{ key: 'social' as const, label: 'Content Calendar', icon: ImageIcon }] : []),
     ...(profile?.department?.slug === 'it' ? [
-      { key: 'it_hub_products' as const, label: 'Products', icon: Package },
       { key: 'it_hub_issues' as const, label: 'Issues', icon: AlertTriangle },
+      { key: 'it_hub_products' as const, label: 'Products', icon: Package },
       { key: 'fleet' as const, label: 'Fleet', icon: Truck },
     ] : []),
     { key: 'analytics', label: 'Analytics', icon: TrendingUp },
