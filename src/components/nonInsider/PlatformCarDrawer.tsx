@@ -29,6 +29,7 @@ export default function PlatformCarDrawer({
   const [color, setColor] = useState(car?.color ?? '');
   const [isBranded, setIsBranded] = useState<boolean | null>(car?.is_branded ?? null);
   const [allowsBranding, setAllowsBranding] = useState<boolean | null>(car?.allows_branding ?? null);
+  const [willingToBuyDevice, setWillingToBuyDevice] = useState<boolean | null>(car?.willing_to_buy_device ?? null);
   const [notes, setNotes] = useState(car?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -44,6 +45,7 @@ export default function PlatformCarDrawer({
       color: color.trim() || null,
       is_branded: isBranded,
       allows_branding: allowsBranding,
+      willing_to_buy_device: willingToBuyDevice,
       notes: notes.trim() || null,
       updated_at: new Date().toISOString(),
     };
@@ -93,9 +95,10 @@ export default function PlatformCarDrawer({
         </div>
 
         <div className="p-3 rounded-lg border border-gray-100 dark:border-white/5 space-y-3">
-          <p className="text-[10px] text-gray-400">Filled in during the branding survey — leave as Unknown until then.</p>
+          <p className="text-[10px] text-gray-400">Filled in during the survey — leave as Unknown until then.</p>
           <TriStateToggle label="Currently branded" value={isBranded} onChange={setIsBranded} disabled={!editing} />
           <TriStateToggle label="Allows branding" value={allowsBranding} onChange={setAllowsBranding} disabled={!editing} />
+          <TriStateToggle label="Willing to buy the app's device" value={willingToBuyDevice} onChange={setWillingToBuyDevice} disabled={!editing} />
         </div>
 
         <div>

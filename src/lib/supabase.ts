@@ -117,6 +117,7 @@ export interface PlatformCar {
   color: string | null;
   is_branded: boolean | null;
   allows_branding: boolean | null;
+  willing_to_buy_device: boolean | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;

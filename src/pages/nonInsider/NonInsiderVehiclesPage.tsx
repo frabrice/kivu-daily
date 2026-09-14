@@ -84,6 +84,9 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
                   <span className="inline-flex items-center text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
                     Allows branding: {yesNoUnknown(c.allows_branding)}
                   </span>
+                  <span className="inline-flex items-center text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
+                    Device: {yesNoUnknown(c.willing_to_buy_device)}
+                  </span>
                 </div>
               </div>
             );
@@ -109,6 +112,7 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
             { header: 'Driver', render: (c) => driverFor(c.id)?.full_name ?? 'Unassigned' },
             { header: 'Branded', render: (c) => yesNoUnknown(c.is_branded) },
             { header: 'Allows branding', render: (c) => yesNoUnknown(c.allows_branding) },
+            { header: 'Device', render: (c) => yesNoUnknown(c.willing_to_buy_device) },
             {
               header: '',
               className: 'text-right',

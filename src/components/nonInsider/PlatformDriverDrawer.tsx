@@ -46,6 +46,7 @@ export default function PlatformDriverDrawer({
   const [carColor, setCarColor] = useState(driver?.car?.color ?? '');
   const [carIsBranded, setCarIsBranded] = useState<boolean | null>(driver?.car?.is_branded ?? null);
   const [carAllowsBranding, setCarAllowsBranding] = useState<boolean | null>(driver?.car?.allows_branding ?? null);
+  const [carWillingDevice, setCarWillingDevice] = useState<boolean | null>(driver?.car?.willing_to_buy_device ?? null);
   const [carNotes, setCarNotes] = useState(driver?.car?.notes ?? '');
 
   const selectedCar = cars.find((c) => c.id === carId);
@@ -57,6 +58,7 @@ export default function PlatformDriverDrawer({
     setCarColor(c.color ?? '');
     setCarIsBranded(c.is_branded);
     setCarAllowsBranding(c.allows_branding);
+    setCarWillingDevice(c.willing_to_buy_device);
     setCarNotes(c.notes ?? '');
   };
 
@@ -67,6 +69,7 @@ export default function PlatformDriverDrawer({
     setCarColor('');
     setCarIsBranded(null);
     setCarAllowsBranding(null);
+    setCarWillingDevice(null);
     setCarNotes('');
   };
 
@@ -113,6 +116,7 @@ export default function PlatformDriverDrawer({
           color: carColor.trim() || null,
           is_branded: carIsBranded,
           allows_branding: carAllowsBranding,
+          willing_to_buy_device: carWillingDevice,
           notes: carNotes.trim() || null,
           updated_at: new Date().toISOString(),
         })
@@ -218,6 +222,7 @@ export default function PlatformDriverDrawer({
 
                   <TriStateToggle label="Currently branded" value={carIsBranded} onChange={setCarIsBranded} disabled={!editing} />
                   <TriStateToggle label="Allows branding" value={carAllowsBranding} onChange={setCarAllowsBranding} disabled={!editing} />
+                  <TriStateToggle label="Willing to buy the app's device" value={carWillingDevice} onChange={setCarWillingDevice} disabled={!editing} />
 
                   <div>
                     <label className="block text-[10px] font-medium mb-1 text-gray-500">Vehicle Notes</label>
