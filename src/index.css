@@ -22,6 +22,17 @@
   .dark body {
     @apply bg-navy-950 text-gray-100;
   }
+
+  /* Without this, a <select>'s open dropdown list renders using the
+     browser's light-mode form-control colors even while the closed box
+     is styled dark via Tailwind - white text on a white popup. This is
+     the one dark-mode-select styling browsers actually honor. */
+  select {
+    color-scheme: light;
+  }
+  .dark select {
+    color-scheme: dark;
+  }
 }
 
 @layer components {
