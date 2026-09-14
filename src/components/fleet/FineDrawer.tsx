@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { Trash2, Pencil } from 'lucide-react';
-import { supabase, DriverFine, Driver, Vehicle } from '../../lib/supabase';
+import { Trash2, Pencil, Banknote } from 'lucide-react';
+import { supabase, DriverFine, Driver, Vehicle, DriverFinePayment } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
+import { fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, formatDateLabelSafe } from '../../lib/fleet';
 import Modal from '../Modal';
+import LogFinePaymentDrawer from './LogFinePaymentDrawer';
 
 export default function FineDrawer({
   fine,
   startEditing,
   drivers,
   vehicles,
+  payments,
   canEdit,
   onClose,
   onSaved,
@@ -18,6 +21,7 @@ export default function FineDrawer({
   startEditing: boolean;
   drivers: Driver[];
   vehicles: Vehicle[];
+  payments: DriverFinePayment[];
   canEdit: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -31,6 +35,13 @@ export default function FineDrawer({
   const [reason, setReason] = useState(fine?.reason ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [logPaymentOpen, setLogPaymentOpen] = useState(false);
+
+  const fineHistory = fine ? payments.filter((p) => p.fine_id === fine.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date)) : [];
+  const amountPaid = fine ? fineAmountPaid(fine.id, payments) : 0;
+  const status = fine ? fineStatus(fine.amount, amountPaid) : 'unpaid';
+  const statusStyle = FINE_STATUS_STYLE[status];
+  const remaining = fine ? Math.max(fine.amount - amountPaid, 0) : 0;
 
   const save = async () => {
     const numAmount = Number(amount);
@@ -99,6 +110,39 @@ export default function FineDrawer({
           <textarea value={reason} onChange={(e) => setReason(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="e.g. speeding, illegal parking…" />
         </div>
 
+        {fine && (
+          <div className={`card p-3 border ${statusStyle.border}`}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><Banknote size={12} /> Payment Status</p>
+              <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${statusStyle.badge}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} /> {fineStatusLabel(status, fine.amount, amountPaid)}
+              </span>
+            </div>
+            {status !== 'paid' && (
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">
+                <span className="font-medium text-gray-700 dark:text-gray-200">{remaining.toLocaleString()} RWF</span> still owed
+              </p>
+            )}
+            {fineHistory.length === 0 ? (
+              <p className="text-[11px] text-gray-400 mb-2">No payments logged yet.</p>
+            ) : (
+              <div className="space-y-1 mb-2">
+                {fineHistory.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between text-[11px] py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
+                    <span className="text-gray-500 dark:text-gray-400">{formatDateLabelSafe(p.paid_date)}</span>
+                    <span className="font-medium">{p.amount.toLocaleString()} RWF</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {canEdit && status !== 'paid' && (
+              <button type="button" onClick={() => setLogPaymentOpen(true)} className="btn-primary w-full text-center">
+                Log Payment
+              </button>
+            )}
+          </div>
+        )}
+
         {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
@@ -126,6 +170,15 @@ export default function FineDrawer({
           </div>
         )}
       </div>
+
+      {logPaymentOpen && fine && (
+        <LogFinePaymentDrawer
+          fine={fine}
+          remaining={remaining}
+          onClose={() => setLogPaymentOpen(false)}
+          onSaved={onSaved}
+        />
+      )}
     </Modal>
   );
 }

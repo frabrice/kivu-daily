@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, Phone, Mail, Car, Wallet, Receipt, Clock, BedDouble } from 'lucide-react';
-import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay, DriverDeposit, DriverFine } from '../../lib/supabase';
+import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay, DriverDeposit, DriverFine, DriverFinePayment } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { STAGES, REST_DAYS, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, nextDepositDueDate, formatDateLabelSafe } from '../../lib/fleet';
+import { STAGES, REST_DAYS, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, nextDepositDueDate, formatDateLabelSafe, fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel } from '../../lib/fleet';
 import Modal from '../Modal';
 import FlagToITDrawer from '../FlagToITDrawer';
 import VehicleDrawer from './VehicleDrawer';
@@ -15,6 +15,7 @@ export default function DriverDrawer({
   drivers,
   deposits,
   fines,
+  finePayments,
   canEdit,
   onClose,
   onSaved,
@@ -25,6 +26,7 @@ export default function DriverDrawer({
   drivers: Driver[];
   deposits: DriverDeposit[];
   fines: DriverFine[];
+  finePayments: DriverFinePayment[];
   canEdit: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -204,16 +206,26 @@ export default function DriverDrawer({
             {driverFines.length === 0 ? (
               <p className="text-[11px] text-gray-400">No fine.</p>
             ) : (
-              <div className="space-y-1.5">
-                {driverFines.map((f) => (
-                  <div key={f.id} className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
-                    <div className="min-w-0">
-                      <p className="text-gray-500 dark:text-gray-400">{formatDateLabelSafe(f.fine_date)}</p>
-                      {f.reason && <p className="text-gray-400 truncate">{f.reason}</p>}
+              <div className="space-y-2">
+                {driverFines.map((f) => {
+                  const amountPaid = fineAmountPaid(f.id, finePayments);
+                  const status = fineStatus(f.amount, amountPaid);
+                  const statusStyle = FINE_STATUS_STYLE[status];
+                  return (
+                    <div key={f.id} className="py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
+                      <div className="flex items-center justify-between gap-2 text-[11px]">
+                        <div className="min-w-0">
+                          <p className="text-gray-500 dark:text-gray-400">{formatDateLabelSafe(f.fine_date)}</p>
+                          {f.reason && <p className="text-gray-400 truncate">{f.reason}</p>}
+                        </div>
+                        <span className="font-medium shrink-0">{f.amount.toLocaleString()} RWF</span>
+                      </div>
+                      <span className={`inline-flex items-center gap-1.5 text-[9px] font-medium px-2 py-0.5 rounded-full mt-1 ${statusStyle.badge}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} /> {fineStatusLabel(status, f.amount, amountPaid)}
+                      </span>
                     </div>
-                    <span className="font-medium text-red-500 shrink-0">{f.amount.toLocaleString()} RWF</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

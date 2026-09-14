@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, Receipt, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, formatDateLabelSafe, canEditFleet } from '../../lib/fleet';
+import { useFleetData, formatDateLabelSafe, canEditFleet, fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel } from '../../lib/fleet';
 import { DriverFine } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import FineDrawer from '../../components/fleet/FineDrawer';
+import LogFinePaymentDrawer from '../../components/fleet/LogFinePaymentDrawer';
 
 interface FineDrawerState { fine: DriverFine | null; startEditing: boolean }
 
@@ -22,11 +23,12 @@ function FleetFinesPageWithData() {
 
 function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
-  const { drivers, vehicles, fines, loading, reload } = data;
+  const { drivers, vehicles, fines, finePayments, loading, reload } = data;
   const canEdit = canEditFleet(profile);
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');
   const [fineDrawer, setFineDrawer] = useState<FineDrawerState | null>(null);
+  const [loggingPaymentFor, setLoggingPaymentFor] = useState<DriverFine | null>(null);
 
   const filteredFines = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -61,28 +63,46 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
 
       {view === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {filteredFines.map((f) => (
-            <div
-              key={f.id}
-              onClick={() => setFineDrawer({ fine: f, startEditing: false })}
-              className="card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
-            >
-              <div className="flex items-start justify-between gap-2 mb-1.5">
-                <p className="text-[12px] font-semibold">{f.amount.toLocaleString()} RWF</p>
-                <EntryActions
-                  onView={() => setFineDrawer({ fine: f, startEditing: false })}
-                  onEdit={() => setFineDrawer({ fine: f, startEditing: true })}
-                  canEdit={canEdit}
-                />
+          {filteredFines.map((f) => {
+            const amountPaid = fineAmountPaid(f.id, finePayments);
+            const status = fineStatus(f.amount, amountPaid);
+            const statusStyle = FINE_STATUS_STYLE[status];
+            return (
+              <div
+                key={f.id}
+                onClick={() => setFineDrawer({ fine: f, startEditing: false })}
+                className={`card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all border ${statusStyle.border}`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <p className="text-[12px] font-semibold">{f.amount.toLocaleString()} RWF</p>
+                  <EntryActions
+                    onView={() => setFineDrawer({ fine: f, startEditing: false })}
+                    onEdit={() => setFineDrawer({ fine: f, startEditing: true })}
+                    canEdit={canEdit}
+                  />
+                </div>
+                <p className="text-[11px] text-gray-600 dark:text-gray-300">{f.driver?.full_name ?? 'Unknown driver'}</p>
+                <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                  <Car size={10} /> {f.vehicle?.plate_number ?? 'No vehicle on file'}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1.5">{formatDateLabelSafe(f.fine_date)}</p>
+                {f.reason && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2">{f.reason}</p>}
+                <div className="flex items-center justify-between gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-white/5">
+                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${statusStyle.badge}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} /> {fineStatusLabel(status, f.amount, amountPaid)}
+                  </span>
+                  {canEdit && status !== 'paid' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setLoggingPaymentFor(f); }}
+                      className="btn-ghost text-brand-600 dark:text-brand-300 text-[10px] px-2 py-1"
+                    >
+                      Log Payment
+                    </button>
+                  )}
+                </div>
               </div>
-              <p className="text-[11px] text-gray-600 dark:text-gray-300">{f.driver?.full_name ?? 'Unknown driver'}</p>
-              <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
-                <Car size={10} /> {f.vehicle?.plate_number ?? 'No vehicle on file'}
-              </p>
-              <p className="text-[10px] text-gray-400 mt-1.5">{formatDateLabelSafe(f.fine_date)}</p>
-              {f.reason && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2">{f.reason}</p>}
-            </div>
-          ))}
+            );
+          })}
           {filteredFines.length === 0 && (
             <div className="card p-10 text-center col-span-full">
               <Receipt size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
@@ -103,6 +123,19 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
             { header: 'Vehicle', render: (f) => f.vehicle?.plate_number ?? '—' },
             { header: 'Amount', render: (f) => `${f.amount.toLocaleString()} RWF` },
             { header: 'Date', render: (f) => f.fine_date },
+            {
+              header: 'Payment',
+              render: (f) => {
+                const amountPaid = fineAmountPaid(f.id, finePayments);
+                const status = fineStatus(f.amount, amountPaid);
+                const statusStyle = FINE_STATUS_STYLE[status];
+                return (
+                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${statusStyle.badge}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} /> {fineStatusLabel(status, f.amount, amountPaid)}
+                  </span>
+                );
+              },
+            },
             { header: 'Reason', className: 'max-w-xs truncate whitespace-normal', render: (f) => f.reason ?? '—' },
             {
               header: '',
@@ -125,8 +158,18 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
           startEditing={fineDrawer.startEditing}
           drivers={drivers}
           vehicles={vehicles}
+          payments={finePayments}
           canEdit={canEdit}
           onClose={() => setFineDrawer(null)}
+          onSaved={reload}
+        />
+      )}
+
+      {loggingPaymentFor && (
+        <LogFinePaymentDrawer
+          fine={loggingPaymentFor}
+          remaining={Math.max(loggingPaymentFor.amount - fineAmountPaid(loggingPaymentFor.id, finePayments), 0)}
+          onClose={() => setLoggingPaymentFor(null)}
           onSaved={reload}
         />
       )}

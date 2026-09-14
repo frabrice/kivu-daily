@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverStage, DriverRestDay, Profile } from './supabase';
+import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverStage, DriverRestDay, Profile } from './supabase';
 import { todayStr, dateStr, addDays } from './utils';
 
 // Fleet's own dashboard, plus the identical bundled view given to Call
@@ -21,19 +21,22 @@ export function useFleetData() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [deposits, setDeposits] = useState<DriverDeposit[]>([]);
   const [fines, setFines] = useState<DriverFine[]>([]);
+  const [finePayments, setFinePayments] = useState<DriverFinePayment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [d, v, dep, fin] = await Promise.all([
+    const [d, v, dep, fin, finePay] = await Promise.all([
       supabase.from('drivers').select('*, vehicle:vehicles(*)').order('created_at', { ascending: false }),
       supabase.from('vehicles').select('*').order('created_at', { ascending: false }),
       supabase.from('driver_deposits').select('*').order('paid_date', { ascending: false }),
       supabase.from('driver_fines').select('*, driver:drivers(*), vehicle:vehicles(*)').order('fine_date', { ascending: false }),
+      supabase.from('driver_fine_payments').select('*').order('paid_date', { ascending: false }),
     ]);
     setDrivers((d.data as Driver[]) ?? []);
     setVehicles((v.data as Vehicle[]) ?? []);
     setDeposits((dep.data as DriverDeposit[]) ?? []);
     setFines((fin.data as DriverFine[]) ?? []);
+    setFinePayments((finePay.data as DriverFinePayment[]) ?? []);
     setLoading(false);
   }, []);
 
@@ -45,11 +48,12 @@ export function useFleetData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_deposits' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_fines' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_fine_payments' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
-  return { drivers, vehicles, deposits, fines, loading, reload: load };
+  return { drivers, vehicles, deposits, fines, finePayments, loading, reload: load };
 }
 
 export const STAGES: { key: DriverStage; label: string; color: string }[] = [
@@ -141,6 +145,30 @@ export function nextDepositDueDate(
 ): string | null {
   const effective = effectiveLastDepositDate(lastLoggedDate, initialDepositPaid, initialDepositDate);
   return effective ? dateStr(addDays(new Date(`${effective}T00:00:00`), 7)) : null;
+}
+
+export type FineStatus = 'unpaid' | 'partial' | 'paid';
+
+export function fineAmountPaid(fineId: string, finePayments: DriverFinePayment[]): number {
+  return finePayments.filter((p) => p.fine_id === fineId).reduce((sum, p) => sum + p.amount, 0);
+}
+
+export function fineStatus(fineAmount: number, amountPaid: number): FineStatus {
+  if (amountPaid <= 0) return 'unpaid';
+  if (amountPaid >= fineAmount) return 'paid';
+  return 'partial';
+}
+
+export const FINE_STATUS_STYLE: Record<FineStatus, { dot: string; text: string; badge: string; border: string }> = {
+  unpaid: { dot: 'bg-red-500', text: 'text-red-500', badge: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10', border: 'border-red-200 dark:border-red-500/20' },
+  partial: { dot: 'bg-amber-400', text: 'text-amber-600 dark:text-amber-400', badge: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10', border: 'border-amber-200 dark:border-amber-500/20' },
+  paid: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', badge: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10', border: 'border-emerald-200 dark:border-emerald-500/20' },
+};
+
+export function fineStatusLabel(status: FineStatus, fineAmount: number, amountPaid: number): string {
+  if (status === 'paid') return 'Paid in full';
+  if (status === 'partial') return `${amountPaid.toLocaleString()} of ${fineAmount.toLocaleString()} RWF paid`;
+  return 'Unpaid';
 }
 
 export function formatDateLabelSafe(d: string): string {

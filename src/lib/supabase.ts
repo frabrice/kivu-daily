@@ -110,6 +110,15 @@ export interface DriverFine {
   vehicle?: Vehicle | null;
 }
 
+export interface DriverFinePayment {
+  id: string;
+  fine_id: string;
+  amount: number;
+  paid_date: string;
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface PlatformCar {
   id: string;
   external_id: number | null;
