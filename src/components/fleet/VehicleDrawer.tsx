@@ -95,38 +95,38 @@ export default function VehicleDrawer({
     <Modal open onClose={onClose} title={vehicle ? vehicle.plate_number : 'Add Vehicle'} subtitle={vehicle ? timeAgo(vehicle.updated_at) + ' updated' : 'Plate, device and documents handed over with it'} maxWidth="max-w-lg">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Plate Number</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Plate Number</label>
           <input value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} disabled={!editing} className="input" placeholder="RAD 123 A" autoFocus />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Make</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Make</label>
             <input value={make} onChange={(e) => setMake(e.target.value)} disabled={!editing} className="input" placeholder="Toyota" />
           </div>
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Model</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Model</label>
             <input value={model} onChange={(e) => setModel(e.target.value)} disabled={!editing} className="input" placeholder="Corolla" />
           </div>
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Color</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Color</label>
           <input value={color} onChange={(e) => setColor(e.target.value)} disabled={!editing} className="input" placeholder="White" />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Given To Us</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Given To Us</label>
             <input type="date" value={givenDate} onChange={(e) => setGivenDate(e.target.value)} disabled={!editing} className="input" />
           </div>
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Operation Start</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Operation Start</label>
             <input type="date" value={operationStartDate} onChange={(e) => setOperationStartDate(e.target.value)} disabled={!editing} className="input" />
           </div>
         </div>
 
         <div className="p-3 rounded-lg border border-gray-100 dark:border-white/5 space-y-2.5">
           <div className="flex items-center justify-between">
-            <p className="text-[12px] font-medium text-gray-500">RURA License</p>
+            <p className="text-[11px] font-medium text-gray-500">RURA License</p>
             <div className="flex gap-1 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg">
               {(['pending', 'provided'] as RuraLicenseStatus[]).map((s) => (
                 <button
@@ -134,7 +134,7 @@ export default function VehicleDrawer({
                   type="button"
                   disabled={!editing}
                   onClick={() => setRuraStatus(s)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${ruraStatus === s ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${ruraStatus === s ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
                 >
                   {s === 'pending' ? 'Pending' : 'Provided'}
                 </button>
@@ -144,11 +144,11 @@ export default function VehicleDrawer({
           {ruraStatus === 'provided' && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium mb-1 text-gray-500">Issued</label>
+                <label className="block text-[10px] font-medium mb-1 text-gray-500">Issued</label>
                 <input type="date" value={ruraIssuedDate} onChange={(e) => handleIssuedDateChange(e.target.value)} disabled={!editing} className="input" />
               </div>
               <div>
-                <label className="block text-[11px] font-medium mb-1 text-gray-500">Expires</label>
+                <label className="block text-[10px] font-medium mb-1 text-gray-500">Expires</label>
                 <input type="date" value={ruraExpiryDate} onChange={(e) => setRuraExpiryDate(e.target.value)} disabled={!editing} className="input" />
               </div>
             </div>
@@ -156,12 +156,12 @@ export default function VehicleDrawer({
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Device Given</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Device Given</label>
           <input value={deviceLabel} onChange={(e) => setDeviceLabel(e.target.value)} disabled={!editing} className="input" placeholder="e.g. Tracker unit #114 / Android tablet" />
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Documents Given</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Documents Given</label>
           <div className="space-y-1.5">
             {documents.map((doc, i) => (
               <div key={i} className="flex items-center gap-1.5">
@@ -180,7 +180,7 @@ export default function VehicleDrawer({
               </div>
             ))}
             {editing && (
-              <button type="button" onClick={addDoc} className="text-[12px] text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 pt-0.5">
+              <button type="button" onClick={addDoc} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 pt-0.5">
                 <Plus size={12} /> Add document
               </button>
             )}
@@ -188,11 +188,11 @@ export default function VehicleDrawer({
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Notes</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="Condition, mileage, anything worth remembering…" />
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
           <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">

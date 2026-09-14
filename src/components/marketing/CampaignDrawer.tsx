@@ -61,15 +61,15 @@ export default function CampaignDrawer({
     <Modal open onClose={onClose} title={campaign ? campaign.name : 'New Campaign'} subtitle="A push with a goal, timeframe, and a list of targets" maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Name</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} disabled={!editing} className="input" placeholder="e.g. Hotel Concierge Partnerships Q3" autoFocus />
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Goal (optional)</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Goal (optional)</label>
           <textarea value={goal} onChange={(e) => setGoal(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="What does success look like?" />
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Status</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Status</label>
           <select value={status} onChange={(e) => setStatus(e.target.value as CampaignStatus)} disabled={!editing} className="input">
             <option value="active">Active</option>
             <option value="paused">Paused</option>
@@ -78,16 +78,16 @@ export default function CampaignDrawer({
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Start date</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Start date</label>
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={!editing} className="input" />
           </div>
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">End date</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">End date</label>
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={!editing} className="input" />
           </div>
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
           <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">

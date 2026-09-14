@@ -58,7 +58,7 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
                 className="card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
               >
                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <p className="text-[13px] font-semibold truncate">{c.plate_number}</p>
+                  <p className="text-[12px] font-semibold truncate">{c.plate_number}</p>
                   <EntryActions
                     onView={() => setDrawer({ car: c, startEditing: false })}
                     onEdit={() => setDrawer({ car: c, startEditing: true })}
@@ -66,22 +66,22 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
                   />
                 </div>
                 {(c.make || c.model || c.color) && (
-                  <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-1.5">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">
                     {[c.make, c.model, c.color].filter(Boolean).join(' · ')}
                   </p>
                 )}
                 {driver ? (
-                  <p className="text-[11px] text-brand-600 dark:text-brand-300 flex items-center gap-1">
+                  <p className="text-[10px] text-brand-600 dark:text-brand-300 flex items-center gap-1">
                     <User size={10} /> {driver.full_name}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-gray-400">Unassigned</p>
+                  <p className="text-[10px] text-gray-400">Unassigned</p>
                 )}
                 <div className="flex flex-wrap gap-1.5 mt-2.5">
-                  <span className="inline-flex items-center text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
+                  <span className="inline-flex items-center text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
                     Branded: {yesNoUnknown(c.is_branded)}
                   </span>
-                  <span className="inline-flex items-center text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
+                  <span className="inline-flex items-center text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
                     Allows branding: {yesNoUnknown(c.allows_branding)}
                   </span>
                 </div>
@@ -91,7 +91,7 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
           {filtered.length === 0 && (
             <div className="card p-10 text-center col-span-full">
               <CarFront size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-              <p className="text-[13px] text-gray-400">No non-insider vehicles yet.</p>
+              <p className="text-[12px] text-gray-400">No non-insider vehicles yet.</p>
             </div>
           )}
         </div>

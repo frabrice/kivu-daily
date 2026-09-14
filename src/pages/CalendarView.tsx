@@ -58,13 +58,13 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-semibold leading-tight">{monthLabel}</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">Task completion by day</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Task completion by day</p>
         </div>
         <div className="flex items-center gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg">
           <button onClick={() => setCursor(new Date(year, month - 1, 1))} className="p-1.5 rounded-md text-gray-500 hover:bg-white dark:hover:bg-navy-800 hover:shadow-sm transition-all">
             <ChevronLeft size={15} />
           </button>
-          <button onClick={() => setCursor(new Date())} className="px-3 py-1.5 rounded-md text-[12px] font-medium text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-navy-800 hover:shadow-sm transition-all">
+          <button onClick={() => setCursor(new Date())} className="px-3 py-1.5 rounded-md text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-navy-800 hover:shadow-sm transition-all">
             Today
           </button>
           <button onClick={() => setCursor(new Date(year, month + 1, 1))} className="p-1.5 rounded-md text-gray-500 hover:bg-white dark:hover:bg-navy-800 hover:shadow-sm transition-all">
@@ -111,7 +111,7 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
       <div className="card p-4 sm:p-5">
         <div className="grid grid-cols-7 gap-1.5 sm:gap-2 mb-2">
           {WEEKDAYS.map((d) => (
-            <div key={d} className="text-center text-[10px] font-semibold uppercase tracking-wide text-gray-400 py-1">
+            <div key={d} className="text-center text-[9px] font-semibold uppercase tracking-wide text-gray-400 py-1">
               {d}
             </div>
           ))}
@@ -134,12 +134,12 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
                 } ${info ? '' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
                 style={info ? { backgroundColor: `${color}14` } : undefined}
               >
-                <span className={`text-[11px] sm:text-[12px] font-semibold ${info ? '' : 'text-gray-400'}`}>
+                <span className={`text-[10px] sm:text-[11px] font-semibold ${info ? '' : 'text-gray-400'}`}>
                   {dayNum}
                 </span>
                 {info && (
                   <>
-                    <span className="hidden sm:block text-[9px] font-medium text-gray-400">
+                    <span className="hidden sm:block text-[8px] font-medium text-gray-400">
                       {info.completed}/{info.total}
                     </span>
                     <span className="block h-1 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
@@ -156,7 +156,7 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
           {LEGEND.map((l) => (
             <div key={l.label} className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: l.color }} />
-              <span className="text-[11px] text-gray-500 dark:text-gray-400">{l.label}</span>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400">{l.label}</span>
             </div>
           ))}
         </div>

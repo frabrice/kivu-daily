@@ -74,36 +74,36 @@ export default function PlatformCarDrawer({
     <Modal open onClose={onClose} title={car ? car.plate_number : 'Add Car'} subtitle={car ? timeAgo(car.updated_at) + ' updated' : 'Not part of the managed fleet'} maxWidth="max-w-lg">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Plate Number</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Plate Number</label>
           <input value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} disabled={!editing} className="input" placeholder="RAD 123 A" autoFocus />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Make</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Make</label>
             <input value={make} onChange={(e) => setMake(e.target.value)} disabled={!editing} className="input" placeholder="Toyota" />
           </div>
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Model</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Model</label>
             <input value={model} onChange={(e) => setModel(e.target.value)} disabled={!editing} className="input" placeholder="Corolla" />
           </div>
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Color</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Color</label>
           <input value={color} onChange={(e) => setColor(e.target.value)} disabled={!editing} className="input" placeholder="White" />
         </div>
 
         <div className="p-3 rounded-lg border border-gray-100 dark:border-white/5 space-y-3">
-          <p className="text-[11px] text-gray-400">Filled in during the branding survey — leave as Unknown until then.</p>
+          <p className="text-[10px] text-gray-400">Filled in during the branding survey — leave as Unknown until then.</p>
           <TriStateToggle label="Currently branded" value={isBranded} onChange={setIsBranded} disabled={!editing} />
           <TriStateToggle label="Allows branding" value={allowsBranding} onChange={setAllowsBranding} disabled={!editing} />
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Notes</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="Condition, anything worth remembering…" />
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
           <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">

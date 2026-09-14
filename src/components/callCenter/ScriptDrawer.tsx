@@ -55,22 +55,22 @@ export default function ScriptDrawer({
     <Modal open onClose={onClose} title={script ? script.title : 'Add a Call Script'} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Title</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Title</label>
           <input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!editing} className="input" placeholder="e.g. App confusion walkthrough" />
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Applies to reason (optional)</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Applies to reason (optional)</label>
           <select value={reasonId} onChange={(e) => setReasonId(e.target.value)} disabled={!editing} className="input">
             <option value="">General / any reason</option>
             {reasons.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">What to say</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">What to say</label>
           <textarea value={body} onChange={(e) => setBody(e.target.value)} disabled={!editing} rows={6} className="input resize-none" placeholder="Mwaramutse! I'm calling from Kivu Ride…" />
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
           <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">

@@ -59,13 +59,13 @@ export default function LogCallDrawer({
     <Modal open onClose={onClose} title="Log a Call" subtitle="Pick from the list — no typing needed" maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Driver</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Driver</label>
           <select value={driverId} onChange={(e) => setDriverId(e.target.value)} className="input">
             {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name} · {d.phone}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Reason for call</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Reason for call</label>
           <select value={reasonId} onChange={(e) => setReasonId(e.target.value)} className="input">
             <option value="">Select a reason</option>
             {reasons.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
@@ -74,24 +74,24 @@ export default function LogCallDrawer({
 
         {matchingScript && (
           <div className="p-3 rounded-lg bg-brand/5 border border-brand/20">
-            <p className="text-[11px] font-semibold text-brand-700 dark:text-brand-300 mb-1">{matchingScript.title}</p>
-            <p className="text-[12px] text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{matchingScript.body}</p>
+            <p className="text-[10px] font-semibold text-brand-700 dark:text-brand-300 mb-1">{matchingScript.title}</p>
+            <p className="text-[11px] text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{matchingScript.body}</p>
           </div>
         )}
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Outcome</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Outcome</label>
           <select value={outcomeId} onChange={(e) => setOutcomeId(e.target.value)} className="input">
             <option value="">Select an outcome</option>
             {outcomes.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Note (optional)</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Note (optional)</label>
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="input resize-none" placeholder="Anything worth remembering…" />
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
           <button onClick={() => setFlagOpen(true)} className="btn-ghost text-gray-500 flex items-center gap-1.5">

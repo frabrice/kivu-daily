@@ -49,6 +49,18 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      // Shrunk ~1-2px off every step of the default scale - this app
+      // reads dense/data-table-heavy, not prose, so a slightly smaller
+      // default type scale suits it better than Tailwind's stock sizes.
+      fontSize: {
+        xs: ['0.6875rem', { lineHeight: '0.9375rem' }],
+        sm: ['0.8125rem', { lineHeight: '1.125rem' }],
+        base: ['0.9375rem', { lineHeight: '1.375rem' }],
+        lg: ['1.0625rem', { lineHeight: '1.5rem' }],
+        xl: ['1.125rem', { lineHeight: '1.625rem' }],
+        '2xl': ['1.3125rem', { lineHeight: '1.75rem' }],
+        '3xl': ['1.625rem', { lineHeight: '2rem' }],
+      },
     },
   },
   plugins: [],

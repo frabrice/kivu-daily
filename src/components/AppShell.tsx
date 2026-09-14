@@ -102,12 +102,12 @@ export default function AppShell({ active, onNavigate, children, notifications, 
             <div className="relative shrink-0">
               <Icon size={17} />
               {(item.badge ?? 0) > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-1 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                   {item.badge! > 99 ? '99+' : item.badge}
                 </span>
               )}
             </div>
-            {!compact && <span className="text-[13px]">{item.label}</span>}
+            {!compact && <span className="text-[12px]">{item.label}</span>}
           </button>
         );
       })}
@@ -129,8 +129,8 @@ export default function AppShell({ active, onNavigate, children, notifications, 
             </div>
             {!collapsed && (
               <div className="min-w-0">
-                <p className="font-bold text-[13px] leading-tight truncate">Kivu Daily</p>
-                <p className="text-[10px] text-gray-400 leading-tight truncate">Kivu Ride Ltd</p>
+                <p className="font-bold text-[12px] leading-tight truncate">Kivu Daily</p>
+                <p className="text-[9px] text-gray-400 leading-tight truncate">Kivu Ride Ltd</p>
               </div>
             )}
           </div>
@@ -152,7 +152,7 @@ export default function AppShell({ active, onNavigate, children, notifications, 
             className={`nav-item w-full text-left ${collapsed ? 'justify-center px-0' : ''}`}
           >
             {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
-            {!collapsed && <span className="text-[13px]">{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>}
+            {!collapsed && <span className="text-[12px]">{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>}
           </button>
           <button
             onClick={signOut}
@@ -160,7 +160,7 @@ export default function AppShell({ active, onNavigate, children, notifications, 
             className={`nav-item w-full text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 ${collapsed ? 'justify-center px-0' : ''}`}
           >
             <LogOut size={17} />
-            {!collapsed && <span className="text-[13px]">Sign Out</span>}
+            {!collapsed && <span className="text-[12px]">Sign Out</span>}
           </button>
         </div>
       </aside>
@@ -198,11 +198,11 @@ export default function AppShell({ active, onNavigate, children, notifications, 
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-white/5 space-y-0.5">
               <button onClick={toggle} className="nav-item w-full text-left">
                 {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
-                <span className="text-[13px]">{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+                <span className="text-[12px]">{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
               </button>
               <button onClick={signOut} className="nav-item w-full text-left text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10">
                 <LogOut size={17} />
-                <span className="text-[13px]">Sign Out</span>
+                <span className="text-[12px]">Sign Out</span>
               </button>
             </div>
           </div>
@@ -212,14 +212,14 @@ export default function AppShell({ active, onNavigate, children, notifications, 
       {/* Main content */}
       <main className={`flex-1 pt-14 md:pt-0 min-h-screen transition-all duration-200 ${collapsed ? 'md:ml-[68px]' : 'md:ml-60'}`}>
         <div className="hidden md:flex items-center justify-between px-6 h-14 border-b border-gray-100 dark:border-white/5 bg-white dark:bg-navy-900 sticky top-0 z-20">
-          <h1 className="text-[15px] font-semibold">{title}</h1>
+          <h1 className="text-[14px] font-semibold">{title}</h1>
           <div className="flex items-center gap-3">
             {notifications}
             <div className="flex items-center gap-2.5 pl-3 border-l border-gray-100 dark:border-white/10">
               <Avatar name={profile?.full_name ?? ''} url={profile?.avatar_url} size="sm" />
               <div className="text-right">
-                <p className="text-[13px] font-medium leading-tight">{profile?.full_name}</p>
-                <p className="text-[11px] text-gray-400 leading-tight">
+                <p className="text-[12px] font-medium leading-tight">{profile?.full_name}</p>
+                <p className="text-[10px] text-gray-400 leading-tight">
                   {profile?.role === 'managing_director' ? 'Managing Director' : profile?.department?.name ?? 'Employee'}
                 </p>
               </div>

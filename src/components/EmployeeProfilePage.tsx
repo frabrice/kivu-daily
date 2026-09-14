@@ -158,7 +158,7 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
                 {userTasks.filter((t) => t.completed).length} total tasks completed
               </span>
               {!employee.is_active && (
-                <span className="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded">
+                <span className="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded">
                   Inactive
                 </span>
               )}

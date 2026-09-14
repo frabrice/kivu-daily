@@ -64,10 +64,10 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2">
-            <Wallet size={16} className="text-brand-600 dark:text-brand-300" /> Deposits
-            {overdueCount > 0 && <span className="text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{overdueCount}</span>}
+            <Wallet size={16} className="text-blue-600 dark:text-blue-300" /> Deposits
+            {overdueCount > 0 && <span className="text-[8px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{overdueCount}</span>}
           </h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">Weekly RWF 180,000 driver deposit, tracked on a rolling 7-day cycle.</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Weekly RWF 180,000 driver deposit, tracked on a rolling 7-day cycle.</p>
         </div>
         <div className="relative">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -84,13 +84,13 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                 row.priority === 0 ? 'bg-red-500' : row.priority === 1 ? 'bg-red-500' : row.priority === 2 ? 'bg-orange-500' : 'bg-gray-200 dark:bg-white/10'
               }`} />
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium truncate">{row.driver.full_name}</p>
-                <p className="text-[11px] text-gray-400 flex items-center gap-1">
+                <p className="text-[12px] font-medium truncate">{row.driver.full_name}</p>
+                <p className="text-[10px] text-gray-400 flex items-center gap-1">
                   <Car size={10} /> {row.driver.vehicle?.plate_number}
                   {row.driver.shift && <span>· {row.driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
                 </p>
               </div>
-              <span className={`text-[11px] font-medium shrink-0 ${urgent ? 'text-red-500' : row.priority === 2 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400'}`}>
+              <span className={`text-[10px] font-medium shrink-0 ${urgent ? 'text-red-500' : row.priority === 2 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400'}`}>
                 {row.label}
               </span>
               {canEdit && (
@@ -104,7 +104,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
         {depositQueue.length === 0 && (
           <div className="card p-10 text-center">
             <Wallet size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-            <p className="text-[13px] text-gray-400">No drivers with a vehicle assigned yet.</p>
+            <p className="text-[12px] text-gray-400">No drivers with a vehicle assigned yet.</p>
           </div>
         )}
       </div>

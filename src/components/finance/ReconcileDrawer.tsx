@@ -48,24 +48,24 @@ export default function ReconcileDrawer({
     <Modal open onClose={onClose} title={`Reconcile ${account.name}`} subtitle={`System balance right now: ${fmt(systemBalance)}`} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Period</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Period</label>
           <input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} className="input" />
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Actual Bank Statement Balance (RWF)</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Actual Bank Statement Balance (RWF)</label>
           <input type="number" value={statementBalance} onChange={(e) => setStatementBalance(e.target.value)} className="input" autoFocus />
         </div>
         {variance !== null && (
-          <div className={`p-2.5 rounded-lg text-[12px] font-medium ${variance === 0 ? 'bg-positive/10 text-positive' : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400'}`}>
+          <div className={`p-2.5 rounded-lg text-[11px] font-medium ${variance === 0 ? 'bg-positive/10 text-positive' : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400'}`}>
             Variance: {fmt(variance)} {variance === 0 ? '— matches the books' : '— investigate before closing'}
           </div>
         )}
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Notes (optional)</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes (optional)</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input resize-none" placeholder="Explain any variance…" />
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
           <button onClick={onClose} className="btn-ghost">Cancel</button>

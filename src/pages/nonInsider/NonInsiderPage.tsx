@@ -47,8 +47,8 @@ export default function NonInsiderPage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between flex-wrap gap-2.5">
         <div>
-          <h2 className="text-base font-semibold">Non-Insider Fleet</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">
+          <h2 className="text-base font-semibold flex items-center gap-2"><CarFront size={16} className="text-indigo-600 dark:text-indigo-300" /> Non-Insider Fleet</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">
             Drivers live on the platform whose car isn't part of our managed fleet - onboarded early to build up visible fleet size. Driver and car are tracked separately so a swap or repossession never needs touching the driver's login.
           </p>
         </div>
@@ -60,13 +60,23 @@ export default function NonInsiderPage() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="card p-3.5">
-          <p className="stat-label mb-0.5">Drivers</p>
-          <p className="text-xl font-bold leading-none">{data.drivers.length}</p>
+        <div className="card p-3.5 flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
+            <Users2 size={16} className="text-indigo-600 dark:text-indigo-300" />
+          </div>
+          <div>
+            <p className="stat-label mb-0.5">Drivers</p>
+            <p className="text-xl font-bold leading-none">{data.drivers.length}</p>
+          </div>
         </div>
-        <div className="card p-3.5">
-          <p className="stat-label mb-0.5">Vehicles</p>
-          <p className="text-xl font-bold leading-none">{data.cars.length}</p>
+        <div className="card p-3.5 flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-500/10 flex items-center justify-center shrink-0">
+            <CarFront size={16} className="text-cyan-600 dark:text-cyan-300" />
+          </div>
+          <div>
+            <p className="stat-label mb-0.5">Vehicles</p>
+            <p className="text-xl font-bold leading-none">{data.cars.length}</p>
+          </div>
         </div>
         <div className="card p-3.5">
           <p className="stat-label mb-0.5">No Car Assigned</p>
@@ -75,12 +85,12 @@ export default function NonInsiderPage() {
       </div>
 
       {syncResult && (
-        <div className="text-[12px] text-positive bg-positive/10 rounded-lg px-3 py-2">
+        <div className="text-[11px] text-positive bg-positive/10 rounded-lg px-3 py-2">
           Synced {syncResult.fetched} platform drivers - {syncResult.drivers.created} new / {syncResult.drivers.updated} updated,{' '}
           {syncResult.cars.created} new / {syncResult.cars.updated} updated {syncResult.cars.created + syncResult.cars.updated === 1 ? 'vehicle' : 'vehicles'}.
         </div>
       )}
-      {syncError && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{syncError}</div>}
+      {syncError && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{syncError}</div>}
 
       <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
         <TabButton active={tab === 'drivers'} onClick={() => setTab('drivers')} icon={Users2} label="Drivers" badge={noCarCount} />
@@ -95,9 +105,9 @@ export default function NonInsiderPage() {
 
 function TabButton({ active, onClick, icon: Icon, label, badge }: { active: boolean; onClick: () => void; icon: typeof Users2; label: string; badge?: number }) {
   return (
-    <button onClick={onClick} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all flex items-center gap-1.5 ${active ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
+    <button onClick={onClick} className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${active ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
       <Icon size={14} /> {label}
-      {!!badge && <span className="text-[9px] font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded-full">{badge}</span>}
+      {!!badge && <span className="text-[8px] font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded-full">{badge}</span>}
     </button>
   );
 }

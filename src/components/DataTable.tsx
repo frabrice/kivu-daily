@@ -18,7 +18,7 @@ export default function DataTable<T>({ columns, rows, keyFn, emptyLabel = 'Nothi
   if (rows.length === 0) {
     return (
       <div className="card p-10 text-center">
-        <p className="text-[13px] text-gray-400">{emptyLabel}</p>
+        <p className="text-[12px] text-gray-400">{emptyLabel}</p>
       </div>
     );
   }
@@ -29,7 +29,7 @@ export default function DataTable<T>({ columns, rows, keyFn, emptyLabel = 'Nothi
         <thead>
           <tr className="border-b border-gray-100 dark:border-white/5">
             {columns.map((col, i) => (
-              <th key={i} className={`text-[10px] font-semibold uppercase tracking-wide text-gray-400 px-3.5 py-2.5 whitespace-nowrap ${col.className ?? ''}`}>
+              <th key={i} className={`text-[9px] font-semibold uppercase tracking-wide text-gray-400 px-3.5 py-2.5 whitespace-nowrap ${col.className ?? ''}`}>
                 {col.header}
               </th>
             ))}
@@ -43,7 +43,7 @@ export default function DataTable<T>({ columns, rows, keyFn, emptyLabel = 'Nothi
               className={`border-b border-gray-50 dark:border-white/5 last:border-0 ${onRowClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5' : ''} transition-colors`}
             >
               {columns.map((col, i) => (
-                <td key={i} className={`px-3.5 py-2.5 text-[12px] align-middle whitespace-nowrap ${col.className ?? ''}`}>
+                <td key={i} className={`px-3.5 py-2.5 text-[11px] align-middle whitespace-nowrap ${col.className ?? ''}`}>
                   {col.render(row)}
                 </td>
               ))}

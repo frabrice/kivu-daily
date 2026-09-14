@@ -33,16 +33,16 @@ export default function LogDepositDrawer({ driver, onClose, onSaved }: { driver:
     <Modal open onClose={onClose} title="Log Deposit" subtitle={driver.full_name} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
           <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="input" />
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Date Paid</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date Paid</label>
           <input type="date" value={paidDate} onChange={(e) => setPaidDate(e.target.value)} className="input" />
-          <p className="text-[11px] text-gray-400 mt-1">Their next deposit will be due 7 days after this date.</p>
+          <p className="text-[10px] text-gray-400 mt-1">Their next deposit will be due 7 days after this date.</p>
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
           <button onClick={onClose} className="btn-ghost">Cancel</button>

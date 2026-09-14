@@ -62,8 +62,8 @@ function CampaignsPageView({ data }: { data: ReturnType<typeof useMarketingData>
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
-          <h2 className="text-base font-semibold flex items-center gap-2"><Target size={16} className="text-brand-600 dark:text-brand-300" /> Campaigns</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">Outreach pushes, each with its own funnel of targets.</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><Target size={16} className="text-rose-600 dark:text-rose-300" /> Campaigns</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">Outreach pushes, each with its own funnel of targets.</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
@@ -86,7 +86,7 @@ function CampaignsPageView({ data }: { data: ReturnType<typeof useMarketingData>
                 className="card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
               >
                 <div className="flex items-start justify-between mb-1.5 gap-2">
-                  <p className="text-[13px] font-semibold truncate">{camp.name}</p>
+                  <p className="text-[12px] font-semibold truncate">{camp.name}</p>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <StatusBadge status={camp.status} />
                     <EntryActions
@@ -96,8 +96,8 @@ function CampaignsPageView({ data }: { data: ReturnType<typeof useMarketingData>
                     />
                   </div>
                 </div>
-                {camp.goal && <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{camp.goal}</p>}
-                <div className="flex items-center justify-between text-[11px] text-gray-400">
+                {camp.goal && <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{camp.goal}</p>}
+                <div className="flex items-center justify-between text-[10px] text-gray-400">
                   <span>{campContacts.length} contact{campContacts.length === 1 ? '' : 's'}</span>
                   <span>{contactedOrFurther} reached · <span className="text-positive font-medium">{won} won</span></span>
                 </div>
@@ -116,7 +116,7 @@ function CampaignsPageView({ data }: { data: ReturnType<typeof useMarketingData>
           {campaigns.length === 0 && (
             <div className="card p-10 text-center col-span-full">
               <Target size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-              <p className="text-[13px] text-gray-400">No campaigns yet. Start one to track outreach.</p>
+              <p className="text-[12px] text-gray-400">No campaigns yet. Start one to track outreach.</p>
             </div>
           )}
         </div>
@@ -196,8 +196,8 @@ function CampaignDetail({
             <h2 className="text-base font-semibold">{campaign.name}</h2>
             <StatusBadge status={campaign.status} />
           </div>
-          {campaign.goal && <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{campaign.goal}</p>}
-          <p className="text-[11px] text-gray-400 mt-1">Owned by {campaign.owner?.full_name ?? 'Unknown'}</p>
+          {campaign.goal && <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-1">{campaign.goal}</p>}
+          <p className="text-[10px] text-gray-400 mt-1">Owned by {campaign.owner?.full_name ?? 'Unknown'}</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
@@ -213,8 +213,8 @@ function CampaignDetail({
             <div key={s.key} className="space-y-2">
               <div className="flex items-center gap-1.5 px-0.5">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{s.label}</p>
-                <span className="text-[10px] text-gray-400">{byStage[s.key].length}</span>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{s.label}</p>
+                <span className="text-[9px] text-gray-400">{byStage[s.key].length}</span>
               </div>
               <div className="space-y-1.5 min-h-[40px]">
                 {byStage[s.key].map((c) => {
@@ -226,13 +226,13 @@ function CampaignDetail({
                       className="w-full card p-2.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
                     >
                       <div className="flex items-start justify-between gap-1">
-                        <p className="text-[12px] font-medium truncate">{c.org_name}</p>
+                        <p className="text-[11px] font-medium truncate">{c.org_name}</p>
                         <EntryActions onView={() => onOpenContact(c, false)} onEdit={() => onOpenContact(c, true)} canEdit />
                       </div>
-                      {c.type_tag && <p className="text-[10px] text-brand-600 dark:text-brand-300">{c.type_tag}</p>}
-                      {c.contact_person && <p className="text-[11px] text-gray-400 truncate">{c.contact_person}</p>}
+                      {c.type_tag && <p className="text-[9px] text-brand-600 dark:text-brand-300">{c.type_tag}</p>}
+                      {c.contact_person && <p className="text-[10px] text-gray-400 truncate">{c.contact_person}</p>}
                       {c.next_follow_up && (
-                        <p className={`text-[10px] mt-1 flex items-center gap-1 ${overdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                        <p className={`text-[9px] mt-1 flex items-center gap-1 ${overdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
                           <CalendarClock size={10} /> {c.next_follow_up}
                         </p>
                       )}
@@ -241,7 +241,7 @@ function CampaignDetail({
                 })}
                 {byStage[s.key].length === 0 && (
                   <div className="h-12 rounded-lg border border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center">
-                    <p className="text-[10px] text-gray-300 dark:text-white/20">Empty</p>
+                    <p className="text-[9px] text-gray-300 dark:text-white/20">Empty</p>
                   </div>
                 )}
               </div>
@@ -264,7 +264,7 @@ function CampaignDetail({
               render: (c) => {
                 const s = STAGES.find((st) => st.key === c.stage)!;
                 return (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${s.color}20`, color: s.color }}>
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${s.color}20`, color: s.color }}>
                     {s.label}
                   </span>
                 );

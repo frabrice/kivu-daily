@@ -136,8 +136,8 @@ function ProductsPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
-          <h2 className="text-base font-semibold flex items-center gap-2"><Package size={16} className="text-brand-600 dark:text-brand-300" /> Products</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">{visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'}</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><Package size={16} className="text-cyan-600 dark:text-cyan-300" /> Products</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">{visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'}</p>
         </div>
         {canEdit && (
           <button onClick={() => setNewProductOpen(true)} className="btn-primary flex items-center gap-1.5">
@@ -154,10 +154,10 @@ function ProductsPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
             <button key={prod.id} onClick={() => setSelectedProduct(prod)} className="card p-4 text-left hover:shadow-md hover:border-brand/30 transition-all">
               <div className="flex items-center gap-2 mb-1.5">
                 <Package size={14} className="text-brand-600 dark:text-brand-300 shrink-0" />
-                <p className="text-[13px] font-semibold truncate">{prod.name}</p>
+                <p className="text-[12px] font-semibold truncate">{prod.name}</p>
               </div>
-              {prod.description && <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{prod.description}</p>}
-              <div className="flex items-center justify-between text-[11px] text-gray-400">
+              {prod.description && <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{prod.description}</p>}
+              <div className="flex items-center justify-between text-[10px] text-gray-400">
                 <span>{prodMilestones.length} milestone{prodMilestones.length === 1 ? '' : 's'}</span>
                 <span className="text-positive font-medium">{shipped} shipped</span>
               </div>
@@ -176,7 +176,7 @@ function ProductsPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
         {visibleProducts.length === 0 && (
           <div className="card p-10 text-center col-span-full">
             <Package size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-            <p className="text-[13px] text-gray-400">No products yet. Android App, Web Dashboard — start with what you're building.</p>
+            <p className="text-[12px] text-gray-400">No products yet. Android App, Web Dashboard — start with what you're building.</p>
           </div>
         )}
       </div>
@@ -214,7 +214,7 @@ function MilestonesList({
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-base font-semibold">{product.name}</h2>
-          {product.description && <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{product.description}</p>}
+          {product.description && <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-1">{product.description}</p>}
         </div>
         {canEdit && (
           <button onClick={onAddMilestone} className="btn-primary flex items-center gap-1.5">
@@ -233,20 +233,20 @@ function MilestonesList({
                 <div className="flex items-start justify-between mb-1.5">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <MilestoneIcon size={13} className="text-gray-400 shrink-0" />
-                    <p className="text-[13px] font-medium truncate">{m.name}</p>
+                    <p className="text-[12px] font-medium truncate">{m.name}</p>
                   </div>
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
                     {status.label}
                   </span>
                 </div>
-                {m.description && <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">{m.description}</p>}
-                <div className="flex items-center justify-between text-[11px] text-gray-400">
+                {m.description && <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">{m.description}</p>}
+                <div className="flex items-center justify-between text-[10px] text-gray-400">
                   <span>{featureCount} feature{featureCount === 1 ? '' : 's'}</span>
                   {m.target_date && <span>Target {m.target_date}</span>}
                 </div>
               </button>
               {canEdit && (
-                <button onClick={() => onEditMilestone(m)} className="text-[10px] text-brand-600 dark:text-brand-300 mt-2 hover:underline">
+                <button onClick={() => onEditMilestone(m)} className="text-[9px] text-brand-600 dark:text-brand-300 mt-2 hover:underline">
                   Edit
                 </button>
               )}
@@ -256,7 +256,7 @@ function MilestonesList({
         {productMilestones.length === 0 && (
           <div className="card p-10 text-center col-span-full">
             <MilestoneIcon size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-            <p className="text-[13px] text-gray-400">No milestones yet.</p>
+            <p className="text-[12px] text-gray-400">No milestones yet.</p>
           </div>
         )}
       </div>
@@ -292,7 +292,7 @@ function FeaturesList({
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-base font-semibold">{milestone.name}</h2>
-          {milestone.description && <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{milestone.description}</p>}
+          {milestone.description && <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-1">{milestone.description}</p>}
         </div>
         {canEdit && (
           <button onClick={onAddFeature} className="btn-primary flex items-center gap-1.5">
@@ -310,16 +310,16 @@ function FeaturesList({
               <button onClick={() => onSelectFeature(f)} className="w-full text-left">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Layers size={13} className="text-gray-400 shrink-0" />
-                  <p className="text-[13px] font-medium truncate">{f.name}</p>
+                  <p className="text-[12px] font-medium truncate">{f.name}</p>
                 </div>
-                {f.description && <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">{f.description}</p>}
-                <div className="flex items-center justify-between text-[11px] text-gray-400">
+                {f.description && <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">{f.description}</p>}
+                <div className="flex items-center justify-between text-[10px] text-gray-400">
                   <span>{featureStories.length} stor{featureStories.length === 1 ? 'y' : 'ies'}</span>
                   {featureStories.length > 0 && <span className="text-positive font-medium">{done} done</span>}
                 </div>
               </button>
               {canEdit && (
-                <button onClick={() => onEditFeature(f)} className="text-[10px] text-brand-600 dark:text-brand-300 mt-2 hover:underline">
+                <button onClick={() => onEditFeature(f)} className="text-[9px] text-brand-600 dark:text-brand-300 mt-2 hover:underline">
                   Edit
                 </button>
               )}
@@ -329,7 +329,7 @@ function FeaturesList({
         {milestoneFeatures.length === 0 && (
           <div className="card p-10 text-center col-span-full">
             <Layers size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-            <p className="text-[13px] text-gray-400">No features yet.</p>
+            <p className="text-[12px] text-gray-400">No features yet.</p>
           </div>
         )}
       </div>
@@ -367,7 +367,7 @@ function StoriesBoard({
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-base font-semibold">{feature.name}</h2>
-          {feature.description && <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{feature.description}</p>}
+          {feature.description && <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-1">{feature.description}</p>}
         </div>
         {canEdit && (
           <button onClick={onAddStory} className="btn-primary flex items-center gap-1.5">
@@ -381,8 +381,8 @@ function StoriesBoard({
           <div key={status.key} className="space-y-2">
             <div className="flex items-center gap-1.5 px-0.5">
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: status.color }} />
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{status.label}</p>
-              <span className="text-[10px] text-gray-400">{byStatus[status.key].length}</span>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{status.label}</p>
+              <span className="text-[9px] text-gray-400">{byStatus[status.key].length}</span>
             </div>
             <div className="space-y-1.5 min-h-[40px]">
               {byStatus[status.key].map((s) => {
@@ -394,13 +394,13 @@ function StoriesBoard({
                     className="w-full card p-2.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
                   >
                     <div className="flex items-start justify-between gap-1.5 mb-1">
-                      <p className="text-[12px] font-medium line-clamp-2">As a {s.persona}, {s.need}</p>
+                      <p className="text-[11px] font-medium line-clamp-2">As a {s.persona}, {s.need}</p>
                       <div className="flex items-center gap-1 shrink-0">
-                        <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
+                        <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
                         <EntryActions onView={() => onOpenStory(s, false)} onEdit={() => onOpenStory(s, true)} canEdit={canEdit} />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-gray-400">
+                    <div className="flex items-center justify-between text-[9px] text-gray-400">
                       <span className="flex items-center gap-1">
                         <User size={10} /> {s.assignee?.full_name?.split(' ')[0] ?? 'Unassigned'}
                       </span>
@@ -413,7 +413,7 @@ function StoriesBoard({
               })}
               {byStatus[status.key].length === 0 && (
                 <div className="h-12 rounded-lg border border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center">
-                  <p className="text-[10px] text-gray-300 dark:text-white/20">Empty</p>
+                  <p className="text-[9px] text-gray-300 dark:text-white/20">Empty</p>
                 </div>
               )}
             </div>

@@ -32,10 +32,10 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2">
-            <AlertTriangle size={16} className="text-brand-600 dark:text-brand-300" /> Issues
-            {openIssueCount > 0 && <span className="text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{openIssueCount}</span>}
+            <AlertTriangle size={16} className="text-cyan-600 dark:text-cyan-300" /> Issues
+            {openIssueCount > 0 && <span className="text-[8px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{openIssueCount}</span>}
           </h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">Friction flagged in from other departments, plus anything IT adds directly.</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Friction flagged in from other departments, plus anything IT adds directly.</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
@@ -50,7 +50,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
       {issues.length === 0 && (
         <div className="card p-12 text-center">
           <AlertTriangle size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[13px] text-gray-400">No issues yet. Flagged friction from other departments lands here.</p>
+          <p className="text-[12px] text-gray-400">No issues yet. Flagged friction from other departments lands here.</p>
         </div>
       )}
 
@@ -66,13 +66,13 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
               render: (s) => {
                 const status = STORY_STATUSES.find((st) => st.key === s.status)!;
                 return (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
                     {status.label}
                   </span>
                 );
               },
             },
-            { header: 'Priority', render: (s) => <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span> },
+            { header: 'Priority', render: (s) => <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span> },
             { header: 'Assignee', render: (s) => s.assignee?.full_name ?? 'Unassigned' },
             {
               header: '',
@@ -95,16 +95,16 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
                 className="card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
               >
                 <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                  <p className="text-[12px] font-medium line-clamp-2">As a {s.persona}, {s.need}</p>
+                  <p className="text-[11px] font-medium line-clamp-2">As a {s.persona}, {s.need}</p>
                   <EntryActions onView={() => setStoryDrawer({ story: s, startEditing: false })} onEdit={() => setStoryDrawer({ story: s, startEditing: true })} canEdit={canEdit} />
                 </div>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
+                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
                     {status.label}
                   </span>
-                  <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
+                  <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-gray-400">
+                <div className="flex items-center justify-between text-[9px] text-gray-400">
                   <span className="flex items-center gap-1">
                     <User size={10} /> {s.assignee?.full_name?.split(' ')[0] ?? 'Unassigned'}
                   </span>

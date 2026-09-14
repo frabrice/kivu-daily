@@ -67,6 +67,20 @@ import { useTheme } from '../lib/theme';
 
 type SortMode = 'completion' | 'name' | 'tasks';
 
+// A small named palette (on top of brand/positive) so the dashboard's
+// recurring "icon in a tinted circle" tiles can read as distinct areas
+// at a glance instead of everything sharing the one brand teal.
+const ACCENT_COLORS = {
+  brand: { bg: 'bg-brand/10', text: 'text-brand-600 dark:text-brand-300' },
+  positive: { bg: 'bg-positive/10', text: 'text-positive' },
+  blue: { bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-300' },
+  amber: { bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-600 dark:text-amber-300' },
+  violet: { bg: 'bg-violet-50 dark:bg-violet-500/10', text: 'text-violet-600 dark:text-violet-300' },
+  rose: { bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-600 dark:text-rose-300' },
+  cyan: { bg: 'bg-cyan-50 dark:bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-300' },
+} as const;
+type AccentColor = keyof typeof ACCENT_COLORS;
+
 export default function ManagingDirectorApp() {
   const { profile } = useAuth();
   const { theme } = useTheme();
@@ -233,9 +247,9 @@ export default function ManagingDirectorApp() {
             <div className="absolute -top-24 -right-16 w-64 h-64 bg-brand/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -left-16 w-64 h-64 bg-positive/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative">
-              <p className="text-[11px] font-semibold text-brand-200 uppercase tracking-[0.15em] mb-1.5">{formatDateFull(new Date())}</p>
+              <p className="text-[10px] font-semibold text-brand-200 uppercase tracking-[0.15em] mb-1.5">{formatDateFull(new Date())}</p>
               <h2 className="text-xl font-bold mb-1.5">{greeting()}, {profile?.full_name?.split(' ')[0]}</h2>
-              <p className="text-[13px] text-white/60">
+              <p className="text-[12px] text-white/60">
                 {activeToday} of {employees.filter((e) => e.role === 'employee').length} employees active today
                 {totalTasks > 0 && <> · <span style={{ color: completionColor(overallPct) }}>{Math.round(overallPct)}%</span> company completion</>}
                 {silentEmployees.length > 0 && <> · {silentEmployees.length} silent</>}
@@ -250,6 +264,7 @@ export default function ManagingDirectorApp() {
               <DeptSnapshotCard
                 icon={Truck}
                 label="Fleet"
+                color="blue"
                 onClick={() => setActive('fleet')}
                 stats={[
                   { label: 'Active drivers', value: `${snapshot.fleet.activeDrivers}/${snapshot.fleet.totalDrivers}` },
@@ -260,6 +275,7 @@ export default function ManagingDirectorApp() {
               <DeptSnapshotCard
                 icon={Wallet}
                 label="Finance"
+                color="amber"
                 onClick={() => setActive('finance')}
                 stats={[
                   { label: 'Revenue MTD', value: fmt(snapshot.finance.monthRevenue) },
@@ -270,6 +286,7 @@ export default function ManagingDirectorApp() {
               <DeptSnapshotCard
                 icon={PhoneCall}
                 label="Call Center"
+                color="violet"
                 onClick={() => setActive('call_center')}
                 stats={[
                   { label: 'Follow-ups flagged', value: snapshot.callCenter.followUpsNeeded },
@@ -279,6 +296,7 @@ export default function ManagingDirectorApp() {
               <DeptSnapshotCard
                 icon={Target}
                 label="Marketing"
+                color="rose"
                 onClick={() => setActive('marketing')}
                 stats={[
                   { label: 'Active campaigns', value: snapshot.marketing.activeCampaigns },
@@ -288,6 +306,7 @@ export default function ManagingDirectorApp() {
               <DeptSnapshotCard
                 icon={Package}
                 label="Product Hub"
+                color="cyan"
                 onClick={() => setActive('it_hub')}
                 stats={[
                   { label: 'Products', value: snapshot.itHub.totalProducts },
@@ -313,8 +332,8 @@ export default function ManagingDirectorApp() {
             </div>
             <div className="card p-4">
               <div className="flex items-center gap-1.5 mb-2">
-                <div className="w-6 h-6 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
-                  <Users2 size={12} className="text-brand-600 dark:text-brand-300" />
+                <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
+                  <Users2 size={12} className="text-blue-600 dark:text-blue-300" />
                 </div>
                 <p className="stat-label">Active Today</p>
               </div>
@@ -322,8 +341,8 @@ export default function ManagingDirectorApp() {
             </div>
             <div className="card p-4">
               <div className="flex items-center gap-1.5 mb-2">
-                <div className="w-6 h-6 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
-                  <ListTodo size={12} className="text-brand-600 dark:text-brand-300" />
+                <div className="w-6 h-6 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center shrink-0">
+                  <ListTodo size={12} className="text-violet-600 dark:text-violet-300" />
                 </div>
                 <p className="stat-label">Tasks Set</p>
               </div>
@@ -364,7 +383,7 @@ export default function ManagingDirectorApp() {
             <div className="card p-4 lg:col-span-2">
               <h3 className="section-title mb-3">Department Performance</h3>
               {departmentPerf.length === 0 ? (
-                <p className="text-[12px] text-gray-400 py-8 text-center">No departments with active staff yet.</p>
+                <p className="text-[11px] text-gray-400 py-8 text-center">No departments with active staff yet.</p>
               ) : (
                 <ResponsiveContainer width="100%" height={Math.max(160, departmentPerf.length * 30)}>
                   <BarChart data={departmentPerf} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
@@ -392,30 +411,30 @@ export default function ManagingDirectorApp() {
           {/* Quick actions */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <button onClick={() => setAssignOpen(true)} className="card p-3.5 flex items-center gap-3 text-left hover:shadow-md transition-all hover:border-brand/30">
-              <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
-                <UserPlus size={15} className="text-brand-600 dark:text-brand-300" />
+              <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
+                <UserPlus size={15} className="text-blue-600 dark:text-blue-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium">Assign a Task</p>
-                <p className="text-[11px] text-gray-400">Push work to anyone</p>
+                <p className="text-[12px] font-medium">Assign a Task</p>
+                <p className="text-[10px] text-gray-400">Push work to anyone</p>
               </div>
             </button>
             <button onClick={() => setAnnounceOpen(true)} className="card p-3.5 flex items-center gap-3 text-left hover:shadow-md transition-all hover:border-brand/30">
-              <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
-                <Megaphone size={15} className="text-brand-600 dark:text-brand-300" />
+              <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center shrink-0">
+                <Megaphone size={15} className="text-amber-600 dark:text-amber-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium">Broadcast</p>
-                <p className="text-[11px] text-gray-400">Company-wide announcement</p>
+                <p className="text-[12px] font-medium">Broadcast</p>
+                <p className="text-[10px] text-gray-400">Company-wide announcement</p>
               </div>
             </button>
             <button onClick={() => setMeetingOpen(true)} className="card p-3.5 flex items-center gap-3 text-left hover:shadow-md transition-all hover:border-brand/30">
-              <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
-                <CalendarPlus size={15} className="text-brand-600 dark:text-brand-300" />
+              <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center shrink-0">
+                <CalendarPlus size={15} className="text-violet-600 dark:text-violet-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium">New Meeting Note</p>
-                <p className="text-[11px] text-gray-400">Log minutes, share, or link tasks</p>
+                <p className="text-[12px] font-medium">New Meeting Note</p>
+                <p className="text-[10px] text-gray-400">Log minutes, share, or link tasks</p>
               </div>
             </button>
           </div>
@@ -427,18 +446,18 @@ export default function ManagingDirectorApp() {
                 <AlertCircle size={14} className="text-orange-500" />
                 <h3 className="section-title">Needs Your Attention</h3>
                 {attentionCount > 0 && (
-                  <span className="text-[9px] font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded-full">{attentionCount}</span>
+                  <span className="text-[8px] font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded-full">{attentionCount}</span>
                 )}
               </div>
 
               {attentionCount === 0 && (
-                <p className="text-[13px] text-gray-400 py-4 text-center">All clear — nothing waiting on you.</p>
+                <p className="text-[12px] text-gray-400 py-4 text-center">All clear — nothing waiting on you.</p>
               )}
 
               <div className="space-y-3">
                 {pendingReviews.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+                    <p className="text-[10px] font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
                       <ClipboardCheck size={11} /> Awaiting review
                     </p>
                     <div className="space-y-1">
@@ -450,11 +469,11 @@ export default function ManagingDirectorApp() {
                             onClick={() => setReviewTask(t)}
                             className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-white/5 hover:border-brand/30 transition-colors text-left"
                           >
-                            <span className="text-[12px] truncate">
+                            <span className="text-[11px] truncate">
                               <span className="font-medium">{owner?.full_name ?? 'Unknown'}</span>
                               <span className="text-gray-400"> · {t.title}</span>
                             </span>
-                            <span className="text-[11px] text-brand-600 dark:text-brand-300 shrink-0 ml-2">Review</span>
+                            <span className="text-[10px] text-brand-600 dark:text-brand-300 shrink-0 ml-2">Review</span>
                           </button>
                         );
                       })}
@@ -467,16 +486,16 @@ export default function ManagingDirectorApp() {
                     onClick={() => setActive('comments')}
                     className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-white/5 hover:border-brand/30 transition-colors text-left"
                   >
-                    <span className="text-[12px] flex items-center gap-1.5">
+                    <span className="text-[11px] flex items-center gap-1.5">
                       <MessageSquare size={12} className="text-gray-400" /> {unreadComments} unread {unreadComments === 1 ? 'reply' : 'replies'}
                     </span>
-                    <span className="text-[11px] text-brand-600 dark:text-brand-300">Open</span>
+                    <span className="text-[10px] text-brand-600 dark:text-brand-300">Open</span>
                   </button>
                 )}
 
                 {silentEmployees.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+                    <p className="text-[10px] font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
                       <MoonStar size={11} /> Silent today ({silentEmployees.length})
                     </p>
                     <div className="flex flex-wrap gap-1.5">
@@ -484,7 +503,7 @@ export default function ManagingDirectorApp() {
                         <button
                           key={e.id}
                           onClick={() => setSelectedEmployee(e)}
-                          className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
                         >
                           {e.full_name.split(' ')[0]}
                         </button>
@@ -501,7 +520,7 @@ export default function ManagingDirectorApp() {
                   <Radio size={14} className="text-brand-500" />
                   <h3 className="section-title">Live Activity</h3>
                 </div>
-                <button onClick={() => setActive('activity_log')} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline">
+                <button onClick={() => setActive('activity_log')} className="text-[10px] text-brand-600 dark:text-brand-300 hover:underline">
                   View full log
                 </button>
               </div>
@@ -519,7 +538,7 @@ export default function ManagingDirectorApp() {
                   <button
                     key={m}
                     onClick={() => setSortMode(m)}
-                    className={`text-[11px] px-2 py-1 rounded-md transition-colors ${
+                    className={`text-[10px] px-2 py-1 rounded-md transition-colors ${
                       sortMode === m ? 'bg-brand/10 text-brand-600 dark:text-brand-300 font-medium' : 'text-gray-400 hover:text-gray-600'
                     }`}
                   >
@@ -532,7 +551,7 @@ export default function ManagingDirectorApp() {
               {sortedEmployees.map((e) => (
                 <EmployeeCard key={e.id} employee={e} onClick={() => setSelectedEmployee(e)} />
               ))}
-              {sortedEmployees.length === 0 && <p className="text-[13px] text-gray-400 col-span-full">No employees found.</p>}
+              {sortedEmployees.length === 0 && <p className="text-[12px] text-gray-400 col-span-full">No employees found.</p>}
             </div>
           </div>
         </div>
@@ -585,37 +604,40 @@ export default function ManagingDirectorApp() {
 function DeptSnapshotCard({
   icon: Icon,
   label,
+  color,
   stats,
   alert,
   onClick,
 }: {
   icon: typeof Truck;
   label: string;
+  color: AccentColor;
   stats: { label: string; value: string | number }[];
   alert?: string;
   onClick: () => void;
 }) {
+  const c = ACCENT_COLORS[color];
   return (
     <button onClick={onClick} className="card p-3.5 text-left hover:shadow-md hover:border-brand/30 transition-all flex flex-col gap-2.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <div className="w-6 h-6 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
-            <Icon size={12} className="text-brand-600 dark:text-brand-300" />
+          <div className={`w-6 h-6 rounded-lg ${c.bg} flex items-center justify-center shrink-0`}>
+            <Icon size={12} className={c.text} />
           </div>
-          <p className="text-[12px] font-semibold">{label}</p>
+          <p className="text-[11px] font-semibold">{label}</p>
         </div>
         <ChevronRight size={13} className="text-gray-300 dark:text-white/20" />
       </div>
       <div className="space-y-1">
         {stats.map((s) => (
           <div key={s.label} className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">{s.label}</span>
-            <span className="text-[12px] font-semibold tabular-nums">{s.value}</span>
+            <span className="text-[10px] text-gray-400">{s.label}</span>
+            <span className="text-[11px] font-semibold tabular-nums">{s.value}</span>
           </div>
         ))}
       </div>
       {alert && (
-        <span className="text-[10px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-1.5 py-0.5 rounded-full w-fit">
+        <span className="text-[9px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-1.5 py-0.5 rounded-full w-fit">
           {alert}
         </span>
       )}
@@ -637,8 +659,8 @@ function EmployeeCard({ employee: e, onClick }: { employee: EmployeeWithStats; o
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-medium truncate">{e.full_name}</p>
-          <p className="text-[11px] text-gray-400 truncate">{e.department?.name ?? 'No department'}</p>
+          <p className="text-[12px] font-medium truncate">{e.full_name}</p>
+          <p className="text-[10px] text-gray-400 truncate">{e.department?.name ?? 'No department'}</p>
         </div>
         <span className="text-base font-bold shrink-0" style={{ color: completionColor(e.todayPct) }}>
           {Math.round(e.todayPct)}%
@@ -649,7 +671,7 @@ function EmployeeCard({ employee: e, onClick }: { employee: EmployeeWithStats; o
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${e.todayPct}%`, backgroundColor: completionColor(e.todayPct) }} />
       </div>
 
-      <div className="flex items-center justify-between text-[11px]">
+      <div className="flex items-center justify-between text-[10px]">
         <span className="text-gray-400">{e.todayTotal} tasks today</span>
         <span className="text-positive font-medium">{e.todayCompleted} completed</span>
       </div>
@@ -682,13 +704,13 @@ function DepartmentsView({
               className="w-full flex items-center justify-between p-3.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
             >
               <div>
-                <p className="text-[13px] font-medium">{d.name}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">{stats.deptEmployees.length} employees · {stats.activeToday} active today</p>
+                <p className="text-[12px] font-medium">{d.name}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{stats.deptEmployees.length} employees · {stats.activeToday} active today</p>
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <p className="text-lg font-bold leading-tight" style={{ color: completionColor(stats.pct) }}>{stats.pct}%</p>
-                  <p className="text-[11px] text-gray-400">{stats.completedTasks}/{stats.totalTasks} tasks</p>
+                  <p className="text-[10px] text-gray-400">{stats.completedTasks}/{stats.totalTasks} tasks</p>
                 </div>
               </div>
             </button>
@@ -702,13 +724,13 @@ function DepartmentsView({
                   >
                     <Avatar name={e.full_name} url={e.avatar_url} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-medium truncate">{e.full_name}</p>
-                      <p className="text-[11px] text-gray-400">{e.todayCompleted}/{e.todayTotal} · {e.streak} day streak</p>
+                      <p className="text-[11px] font-medium truncate">{e.full_name}</p>
+                      <p className="text-[10px] text-gray-400">{e.todayCompleted}/{e.todayTotal} · {e.streak} day streak</p>
                     </div>
-                    <span className="text-[12px] font-bold" style={{ color: completionColor(e.todayPct) }}>{Math.round(e.todayPct)}%</span>
+                    <span className="text-[11px] font-bold" style={{ color: completionColor(e.todayPct) }}>{Math.round(e.todayPct)}%</span>
                   </button>
                 ))}
-                {stats.deptEmployees.length === 0 && <p className="text-[12px] text-gray-400 col-span-full">No employees in this department.</p>}
+                {stats.deptEmployees.length === 0 && <p className="text-[11px] text-gray-400 col-span-full">No employees in this department.</p>}
               </div>
             )}
           </div>

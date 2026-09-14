@@ -54,15 +54,15 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold flex items-center gap-2"><PhoneCall size={16} className="text-brand-600 dark:text-brand-300" /> Call Queue</h2>
-        <p className="text-[12px] text-gray-400 mt-0.5">Who to call next, ranked by urgency.</p>
+        <h2 className="text-base font-semibold flex items-center gap-2"><PhoneCall size={16} className="text-violet-600 dark:text-violet-300" /> Call Queue</h2>
+        <p className="text-[11px] text-gray-400 mt-0.5">Who to call next, ranked by urgency.</p>
       </div>
 
       <div className="space-y-1.5">
         {queue.length === 0 && (
           <div className="card p-10 text-center">
             <Phone size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-            <p className="text-[13px] text-gray-400">No drivers yet — add some from the Fleet module.</p>
+            <p className="text-[12px] text-gray-400">No drivers yet — add some from the Fleet module.</p>
           </div>
         )}
         {queue.map((q) => (
@@ -73,10 +73,10 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
           >
             <div className={`w-1.5 h-8 rounded-full shrink-0 ${q.priority === 0 ? 'bg-red-500' : q.priority === 1 ? 'bg-orange-500' : q.priority === 2 ? 'bg-amber-400' : 'bg-gray-200 dark:bg-white/10'}`} />
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium truncate">{q.driver.full_name}</p>
-              <p className="text-[11px] text-gray-400">{q.driver.phone} · {STAGE_LABEL[q.driver.stage]}</p>
+              <p className="text-[12px] font-medium truncate">{q.driver.full_name}</p>
+              <p className="text-[10px] text-gray-400">{q.driver.phone} · {STAGE_LABEL[q.driver.stage]}</p>
             </div>
-            <span className={`text-[11px] font-medium shrink-0 ${q.priority <= 2 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400'}`}>
+            <span className={`text-[10px] font-medium shrink-0 ${q.priority <= 2 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400'}`}>
               {q.reasonLabel}
             </span>
             <Phone size={14} className="text-brand-500 shrink-0" />

@@ -119,7 +119,7 @@ export default function FinanceTransactionDrawer({
       <div className="space-y-3">
         {!typeLocked && (
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Type</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Type</label>
             <select
               value={type}
               onChange={(e) => { const t = e.target.value as FinanceTransactionType; setType(t); setDirection(TYPE_META[t].defaultDirection); }}
@@ -134,14 +134,14 @@ export default function FinanceTransactionDrawer({
         {isTransfer ? (
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[12px] font-medium mb-1.5 text-gray-500">From Account</label>
+              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">From Account</label>
               <select value={accountId} onChange={(e) => setAccountId(e.target.value)} disabled={!editing || !!tx} className="input">
                 <option value="">Select</option>
                 {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[12px] font-medium mb-1.5 text-gray-500">To Account</label>
+              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">To Account</label>
               <select value={toAccountId} onChange={(e) => setToAccountId(e.target.value)} disabled={!editing || !!tx} className="input">
                 <option value="">Select</option>
                 {accounts.filter((a) => a.id !== accountId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -151,14 +151,14 @@ export default function FinanceTransactionDrawer({
         ) : (
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Account</label>
+              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Account</label>
               <select value={accountId} onChange={(e) => setAccountId(e.target.value)} disabled={!editing} className="input">
                 <option value="">Select</option>
                 {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Direction</label>
+              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Direction</label>
               <div className="flex gap-1 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg">
                 {(['in', 'out'] as FinanceDirection[]).map((d) => (
                   <button
@@ -166,7 +166,7 @@ export default function FinanceTransactionDrawer({
                     type="button"
                     disabled={!editing}
                     onClick={() => setDirection(d)}
-                    className={`flex-1 px-2 py-1.5 rounded-md text-[12px] font-medium transition-all ${direction === d ? 'bg-white dark:bg-navy-800 shadow-sm' : 'text-gray-500'} ${d === 'in' ? 'text-positive' : 'text-red-500'}`}
+                    className={`flex-1 px-2 py-1.5 rounded-md text-[11px] font-medium transition-all ${direction === d ? 'bg-white dark:bg-navy-800 shadow-sm' : 'text-gray-500'} ${d === 'in' ? 'text-positive' : 'text-red-500'}`}
                   >
                     {d === 'in' ? 'Cash In' : 'Cash Out'}
                   </button>
@@ -178,31 +178,31 @@ export default function FinanceTransactionDrawer({
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
             <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={!editing} className="input" />
           </div>
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Date</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} disabled={!editing} className="input" />
           </div>
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Counterparty</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Counterparty</label>
           <input value={counterparty} onChange={(e) => setCounterparty(e.target.value)} disabled={!editing} className="input" placeholder="Vehicle owner, supplier, employee…" />
         </div>
 
         {(type === 'vehicle_owner_payment' || type === 'fleet_collection') && (
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Vehicle</label>
+              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Vehicle</label>
               <select value={linkedVehicleId} onChange={(e) => setLinkedVehicleId(e.target.value)} disabled={!editing} className="input">
                 <option value="">None</option>
                 {vehicles.map((v) => <option key={v.id} value={v.id}>{v.plate_number}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Driver</label>
+              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Driver</label>
               <select value={linkedDriverId} onChange={(e) => setLinkedDriverId(e.target.value)} disabled={!editing} className="input">
                 <option value="">None</option>
                 {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
@@ -212,12 +212,12 @@ export default function FinanceTransactionDrawer({
         )}
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Description</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Description</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="Purpose of this transaction…" />
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Supporting Document</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Supporting Document</label>
           <select value={supportingDocId} onChange={(e) => setSupportingDocId(e.target.value)} disabled={!editing} className="input">
             <option value="">None linked</option>
             {documents.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
@@ -225,14 +225,14 @@ export default function FinanceTransactionDrawer({
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Status</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Status</label>
           <select value={status} onChange={(e) => setStatus(e.target.value as FinanceTransactionStatus)} disabled={!editing} className="input">
             {(Object.keys(STATUS_META) as FinanceTransactionStatus[]).map((s) => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
           </select>
         </div>
 
         {tx && (
-          <div className="text-[11px] text-gray-400 space-y-0.5 pt-1">
+          <div className="text-[10px] text-gray-400 space-y-0.5 pt-1">
             {tx.preparer && <p>Prepared by {tx.preparer.full_name}</p>}
             {tx.checker && <p>Checked by {tx.checker.full_name}</p>}
             {tx.approver && <p>Approved by {tx.approver.full_name}</p>}
@@ -240,7 +240,7 @@ export default function FinanceTransactionDrawer({
           </div>
         )}
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
           <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">

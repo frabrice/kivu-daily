@@ -30,8 +30,8 @@ function CallScriptsPageView({ data }: { data: ReturnType<typeof useCallCenterDa
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
-          <h2 className="text-base font-semibold flex items-center gap-2"><BookOpen size={16} className="text-brand-600 dark:text-brand-300" /> Scripts</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">What to say, per reason for the call.</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><BookOpen size={16} className="text-violet-600 dark:text-violet-300" /> Scripts</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">What to say, per reason for the call.</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
@@ -44,7 +44,7 @@ function CallScriptsPageView({ data }: { data: ReturnType<typeof useCallCenterDa
       {scripts.length === 0 && (
         <div className="card p-12 text-center">
           <BookOpen size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[13px] text-gray-400">No scripts yet. Add one to help the team handle calls consistently.</p>
+          <p className="text-[12px] text-gray-400">No scripts yet. Add one to help the team handle calls consistently.</p>
         </div>
       )}
 
@@ -59,9 +59,9 @@ function CallScriptsPageView({ data }: { data: ReturnType<typeof useCallCenterDa
                 className="card p-3.5 cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
               >
                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <p className="text-[13px] font-medium">{s.title}</p>
+                  <p className="text-[12px] font-medium">{s.title}</p>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {reason && <span className="text-[10px] font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-1.5 py-0.5 rounded-full">{reason.label}</span>}
+                    {reason && <span className="text-[9px] font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-1.5 py-0.5 rounded-full">{reason.label}</span>}
                     <EntryActions
                       onView={() => setDrawer({ script: s, startEditing: false })}
                       onEdit={() => setDrawer({ script: s, startEditing: true })}
@@ -69,7 +69,7 @@ function CallScriptsPageView({ data }: { data: ReturnType<typeof useCallCenterDa
                     />
                   </div>
                 </div>
-                <p className="text-[12px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap line-clamp-3">{s.body}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap line-clamp-3">{s.body}</p>
               </div>
             );
           })}

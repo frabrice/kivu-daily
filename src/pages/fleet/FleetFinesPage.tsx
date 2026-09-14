@@ -42,8 +42,8 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
-          <h2 className="text-base font-semibold flex items-center gap-2"><Receipt size={16} className="text-brand-600 dark:text-brand-300" /> Fines</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">Traffic and disciplinary fines logged against a driver and the car involved.</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><Receipt size={16} className="text-blue-600 dark:text-blue-300" /> Fines</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">Traffic and disciplinary fines logged against a driver and the car involved.</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
@@ -68,25 +68,25 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
               className="card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
             >
               <div className="flex items-start justify-between gap-2 mb-1.5">
-                <p className="text-[13px] font-semibold">{f.amount.toLocaleString()} RWF</p>
+                <p className="text-[12px] font-semibold">{f.amount.toLocaleString()} RWF</p>
                 <EntryActions
                   onView={() => setFineDrawer({ fine: f, startEditing: false })}
                   onEdit={() => setFineDrawer({ fine: f, startEditing: true })}
                   canEdit={canEdit}
                 />
               </div>
-              <p className="text-[12px] text-gray-600 dark:text-gray-300">{f.driver?.full_name ?? 'Unknown driver'}</p>
-              <p className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
+              <p className="text-[11px] text-gray-600 dark:text-gray-300">{f.driver?.full_name ?? 'Unknown driver'}</p>
+              <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
                 <Car size={10} /> {f.vehicle?.plate_number ?? 'No vehicle on file'}
               </p>
-              <p className="text-[11px] text-gray-400 mt-1.5">{formatDateLabelSafe(f.fine_date)}</p>
-              {f.reason && <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2">{f.reason}</p>}
+              <p className="text-[10px] text-gray-400 mt-1.5">{formatDateLabelSafe(f.fine_date)}</p>
+              {f.reason && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2">{f.reason}</p>}
             </div>
           ))}
           {filteredFines.length === 0 && (
             <div className="card p-10 text-center col-span-full">
               <Receipt size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-              <p className="text-[13px] text-gray-400">No fines logged yet.</p>
+              <p className="text-[12px] text-gray-400">No fines logged yet.</p>
             </div>
           )}
         </div>

@@ -6,5 +6,5 @@ export default function StatusBadge({ status }: { status: CampaignStatus }) {
     paused: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400',
     completed: 'bg-gray-100 dark:bg-white/10 text-gray-500',
   };
-  return <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${map[status]}`}>{status}</span>;
+  return <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${map[status]}`}>{status}</span>;
 }

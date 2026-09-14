@@ -41,8 +41,8 @@ export default function TransactionTypePage({ type, title, icon: Icon, descripti
     <div className="space-y-4">
       <div className="flex items-start justify-between flex-wrap gap-2.5">
         <div>
-          <h2 className="text-base font-semibold flex items-center gap-2"><Icon size={16} className="text-brand-600 dark:text-brand-300" /> {title}</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">{description}</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><Icon size={16} className="text-amber-600 dark:text-amber-300" /> {title}</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">{description}</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
@@ -55,15 +55,15 @@ export default function TransactionTypePage({ type, title, icon: Icon, descripti
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <KpiTile icon={Icon} label={`This Month (${direction === 'in' ? 'Received' : 'Paid'})`} value={fmt(monthTotal)} tone={direction === 'in' ? 'positive' : 'negative'} />
-        <KpiTile icon={ListChecks} label="Total Logged" value={String(rows.length)} />
-        <KpiTile icon={Clock3} label="Awaiting Approval" value={String(pendingCount)} tone={pendingCount > 0 ? 'negative' : undefined} />
+        <KpiTile icon={Icon} label={`This Month (${direction === 'in' ? 'Received' : 'Paid'})`} value={fmt(monthTotal)} tone={direction === 'in' ? 'positive' : 'negative'} color="amber" />
+        <KpiTile icon={ListChecks} label="Total Logged" value={String(rows.length)} color="amber" />
+        <KpiTile icon={Clock3} label="Awaiting Approval" value={String(pendingCount)} tone={pendingCount > 0 ? 'negative' : undefined} color="amber" />
       </div>
 
       {rows.length === 0 && (
         <div className="card p-12 text-center">
           <Icon size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[13px] text-gray-400">{emptyText}</p>
+          <p className="text-[12px] text-gray-400">{emptyText}</p>
         </div>
       )}
 
@@ -73,7 +73,7 @@ export default function TransactionTypePage({ type, title, icon: Icon, descripti
           keyFn={(t) => t.id}
           onRowClick={(t) => setDrawer({ tx: t, startEditing: false })}
           columns={[
-            { header: 'Reference', render: (t) => <span className="font-mono text-[11px]">{t.reference}</span> },
+            { header: 'Reference', render: (t) => <span className="font-mono text-[10px]">{t.reference}</span> },
             { header: 'Account', render: (t) => t.account?.name ?? '—' },
             { header: 'Counterparty', render: (t) => t.counterparty ?? '—' },
             {
@@ -88,7 +88,7 @@ export default function TransactionTypePage({ type, title, icon: Icon, descripti
             {
               header: 'Status',
               render: (t) => (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
                   {STATUS_META[t.status].label}
                 </span>
               ),
@@ -107,17 +107,17 @@ export default function TransactionTypePage({ type, title, icon: Icon, descripti
           {rows.map((t) => (
             <div key={t.id} onClick={() => setDrawer({ tx: t, startEditing: false })} className="card p-4 cursor-pointer hover:shadow-md hover:border-brand/30 transition-all">
               <div className="flex items-start justify-between gap-2 mb-1.5">
-                <span className="font-mono text-[10px] text-gray-400">{t.reference}</span>
+                <span className="font-mono text-[9px] text-gray-400">{t.reference}</span>
                 <EntryActions onView={() => setDrawer({ tx: t, startEditing: false })} onEdit={() => setDrawer({ tx: t, startEditing: true })} canEdit={canEdit} />
               </div>
               <p className={`text-lg font-bold ${t.direction === 'in' ? 'text-positive' : 'text-red-500'}`}>
                 {t.direction === 'in' ? '+' : '−'}{fmt(t.amount)}
               </p>
-              <p className="text-[12px] text-gray-600 dark:text-gray-300 mt-0.5">{t.account?.name}</p>
-              {t.counterparty && <p className="text-[11px] text-gray-400 mt-0.5">{t.counterparty}</p>}
+              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5">{t.account?.name}</p>
+              {t.counterparty && <p className="text-[10px] text-gray-400 mt-0.5">{t.counterparty}</p>}
               <div className="flex items-center justify-between mt-2">
-                <span className="text-[11px] text-gray-400">{t.transaction_date}</span>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
+                <span className="text-[10px] text-gray-400">{t.transaction_date}</span>
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
                   {STATUS_META[t.status].label}
                 </span>
               </div>

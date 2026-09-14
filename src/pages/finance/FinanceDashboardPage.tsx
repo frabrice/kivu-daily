@@ -48,44 +48,44 @@ export default function FinanceDashboardPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold flex items-center gap-2"><LayoutDashboard size={16} className="text-brand-600 dark:text-brand-300" /> Finance Dashboard</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">Showing {thisMonth} · figures update live as transactions are logged across every Finance page</p>
+        <h2 className="text-base font-semibold flex items-center gap-2"><LayoutDashboard size={16} className="text-amber-600 dark:text-amber-300" /> Finance Dashboard</h2>
+        <p className="text-[10px] text-gray-400 mt-0.5">Showing {thisMonth} · figures update live as transactions are logged across every Finance page</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiTile icon={Car} label="Active Cars" value={String(dashboard.activeCars)} />
-        <KpiTile icon={Car} label="Operational Cars" value={String(dashboard.operationalCars)} />
-        <KpiTile icon={Users2} label="Drivers" value={String(dashboard.activeDrivers)} />
-        <KpiTile icon={dashboard.netCashFlow >= 0 ? TrendingUp : TrendingDown} label="Net Operating Cash Flow" value={fmt(dashboard.netCashFlow)} tone={dashboard.netCashFlow >= 0 ? 'positive' : 'negative'} />
+        <KpiTile icon={Car} label="Active Cars" value={String(dashboard.activeCars)} color="amber" />
+        <KpiTile icon={Car} label="Operational Cars" value={String(dashboard.operationalCars)} color="amber" />
+        <KpiTile icon={Users2} label="Drivers" value={String(dashboard.activeDrivers)} color="amber" />
+        <KpiTile icon={dashboard.netCashFlow >= 0 ? TrendingUp : TrendingDown} label="Net Operating Cash Flow" value={fmt(dashboard.netCashFlow)} tone={dashboard.netCashFlow >= 0 ? 'positive' : 'negative'} color="amber" />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiTile icon={ArrowDownCircle} label="Monthly Kivu Revenue" value={fmt(dashboard.revenueIn)} tone="positive" />
-        <KpiTile icon={ArrowDownCircle} label="Fleet Collections" value={fmt(dashboard.fleetIn)} tone="positive" />
-        <KpiTile icon={ArrowUpCircle} label="Vehicle-Owner Payments" value={fmt(dashboard.ownerOut)} tone="negative" />
-        <KpiTile icon={ArrowUpCircle} label="Operating Expenses" value={fmt(dashboard.opexOut)} tone="negative" />
+        <KpiTile icon={ArrowDownCircle} label="Monthly Kivu Revenue" value={fmt(dashboard.revenueIn)} tone="positive" color="amber" />
+        <KpiTile icon={ArrowDownCircle} label="Fleet Collections" value={fmt(dashboard.fleetIn)} tone="positive" color="amber" />
+        <KpiTile icon={ArrowUpCircle} label="Vehicle-Owner Payments" value={fmt(dashboard.ownerOut)} tone="negative" color="amber" />
+        <KpiTile icon={ArrowUpCircle} label="Operating Expenses" value={fmt(dashboard.opexOut)} tone="negative" color="amber" />
       </div>
 
       <div>
         <h3 className="section-title mb-2.5">Cash Position</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiTile icon={Landmark} label="Equity Balance" value={fmt(balances.equity ?? 0)} />
-          <KpiTile icon={Landmark} label="Bank of Kigali Balance" value={fmt(balances.bank_of_kigali ?? 0)} />
-          <KpiTile icon={Landmark} label="I&M Balance" value={fmt(balances.im_bank ?? 0)} />
-          <KpiTile icon={Wallet} label="MoMo Balance" value={fmt(balances.momo ?? 0)} />
+          <KpiTile icon={Landmark} label="Equity Balance" value={fmt(balances.equity ?? 0)} color="amber" />
+          <KpiTile icon={Landmark} label="Bank of Kigali Balance" value={fmt(balances.bank_of_kigali ?? 0)} color="amber" />
+          <KpiTile icon={Landmark} label="I&M Balance" value={fmt(balances.im_bank ?? 0)} color="amber" />
+          <KpiTile icon={Wallet} label="MoMo Balance" value={fmt(balances.momo ?? 0)} color="amber" />
         </div>
       </div>
 
       <div>
         <h3 className="section-title mb-2.5">Needs Attention</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <KpiTile icon={ArrowUpCircle} label="Outstanding Driver Payments" value={fmt(dashboard.outstandingDriverAmount)} tone={dashboard.outstandingDriverAmount > 0 ? 'negative' : undefined} />
-          <KpiTile icon={ArrowUpCircle} label="Outstanding Owner Payments" value={fmt(dashboard.outstandingOwnerAmount)} tone={dashboard.outstandingOwnerAmount > 0 ? 'negative' : undefined} />
+          <KpiTile icon={ArrowUpCircle} label="Outstanding Driver Payments" value={fmt(dashboard.outstandingDriverAmount)} tone={dashboard.outstandingDriverAmount > 0 ? 'negative' : undefined} color="amber" />
+          <KpiTile icon={ArrowUpCircle} label="Outstanding Owner Payments" value={fmt(dashboard.outstandingOwnerAmount)} tone={dashboard.outstandingOwnerAmount > 0 ? 'negative' : undefined} color="amber" />
         </div>
       </div>
 
       {accounts.length === 0 && (
-        <p className="text-[12px] text-gray-400 text-center pt-2">No bank accounts set up yet — add them from the Accounts page.</p>
+        <p className="text-[11px] text-gray-400 text-center pt-2">No bank accounts set up yet — add them from the Accounts page.</p>
       )}
     </div>
   );

@@ -48,15 +48,15 @@ export default function FeatureDrawer({
     <Modal open onClose={onClose} title={feature ? feature.name : 'New Feature'} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Name</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} disabled={!canEdit} className="input" placeholder="Offline mode" autoFocus />
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Description (optional)</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Description (optional)</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} disabled={!canEdit} rows={3} className="input resize-none" />
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {canEdit && (
           <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">

@@ -17,8 +17,8 @@ export default function FinanceReconciliationPage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between flex-wrap gap-2.5">
         <div>
-          <h2 className="text-base font-semibold flex items-center gap-2"><ClipboardCheck size={16} className="text-brand-600 dark:text-brand-300" /> Bank Reconciliation</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">Every account reconciled against its actual bank statement, at least monthly.</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><ClipboardCheck size={16} className="text-amber-600 dark:text-amber-300" /> Bank Reconciliation</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">Every account reconciled against its actual bank statement, at least monthly.</p>
         </div>
         <button onClick={() => setPickerOpen(true)} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
           <Plus size={14} /> New Reconciliation
@@ -28,7 +28,7 @@ export default function FinanceReconciliationPage() {
       {reconciliations.length === 0 ? (
         <div className="card p-12 text-center">
           <ClipboardCheck size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[13px] text-gray-400">No reconciliations logged yet.</p>
+          <p className="text-[12px] text-gray-400">No reconciliations logged yet.</p>
         </div>
       ) : (
         <DataTable
@@ -57,8 +57,8 @@ export default function FinanceReconciliationPage() {
                 onClick={() => { setReconcileAccount(a); setPickerOpen(false); }}
                 className="w-full card p-3 text-left hover:shadow-md hover:border-brand/30 transition-all flex items-center justify-between"
               >
-                <span className="text-[13px] font-medium">{a.name}</span>
-                <span className="text-[12px] text-gray-400">{fmt(accountBalance(a.id))}</span>
+                <span className="text-[12px] font-medium">{a.name}</span>
+                <span className="text-[11px] text-gray-400">{fmt(accountBalance(a.id))}</span>
               </button>
             ))}
           </div>

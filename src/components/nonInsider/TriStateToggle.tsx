@@ -20,7 +20,7 @@ export default function TriStateToggle({
 
   return (
     <div>
-      <label className="block text-[12px] font-medium mb-1.5 text-gray-500">{label}</label>
+      <label className="block text-[11px] font-medium mb-1.5 text-gray-500">{label}</label>
       <div className="flex gap-1 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
         {options.map((o) => (
           <button
@@ -28,7 +28,7 @@ export default function TriStateToggle({
             type="button"
             disabled={disabled}
             onClick={() => onChange(o.key)}
-            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all disabled:opacity-60 ${
+            className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all disabled:opacity-60 ${
               value === o.key ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'
             }`}
           >

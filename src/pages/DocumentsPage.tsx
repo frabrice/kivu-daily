@@ -213,22 +213,22 @@ function DocumentDrawer({
     <Modal open onClose={onClose} title={editing ? 'Edit Document' : doc.title} subtitle={`Uploaded by ${doc.uploader?.full_name ?? 'Unknown'} · ${timeAgo(doc.created_at)}`} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Title</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Title</label>
           <input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!editing} className="input" autoFocus />
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Category</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Category</label>
           <input value={category} onChange={(e) => setCategory(e.target.value)} disabled={!editing} className="input" placeholder="e.g. Contract, Script, Guide" />
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Visible to</label>
-          <p className="text-[13px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Visible to</label>
+          <p className="text-[12px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
             {doc.department_id ? <Building2 size={13} /> : <Globe2 size={13} />}
             {doc.department?.name ?? 'Company-wide'}
           </p>
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
           <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">

@@ -19,8 +19,8 @@ export default function FinancePayrollPage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between flex-wrap gap-2.5">
         <div>
-          <h2 className="text-base font-semibold flex items-center gap-2"><Users2 size={16} className="text-brand-600 dark:text-brand-300" /> Payroll</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">Funded Equity → I&M, paid from I&M. Each run reconciled against the bank statement.</p>
+          <h2 className="text-base font-semibold flex items-center gap-2"><Users2 size={16} className="text-amber-600 dark:text-amber-300" /> Payroll</h2>
+          <p className="text-[11px] text-gray-400 mt-0.5">Funded Equity → I&M, paid from I&M. Each run reconciled against the bank statement.</p>
         </div>
         {canEdit && (
           <button onClick={() => setDrawer('new')} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
@@ -32,18 +32,18 @@ export default function FinancePayrollPage() {
       {payrollRuns.length === 0 ? (
         <div className="card p-12 text-center">
           <Users2 size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[13px] text-gray-400">No payroll runs yet.</p>
+          <p className="text-[12px] text-gray-400">No payroll runs yet.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {payrollRuns.map((r) => (
             <div key={r.id} onClick={() => setDrawer(r)} className="card p-3.5 flex items-center gap-3 cursor-pointer hover:shadow-md hover:border-brand/30 transition-all">
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium">{r.period}</p>
-                <p className="text-[11px] text-gray-400">{r.lines?.length ?? 0} employee{(r.lines?.length ?? 0) === 1 ? '' : 's'}</p>
+                <p className="text-[12px] font-medium">{r.period}</p>
+                <p className="text-[10px] text-gray-400">{r.lines?.length ?? 0} employee{(r.lines?.length ?? 0) === 1 ? '' : 's'}</p>
               </div>
-              <p className="text-[13px] font-semibold">{fmt(r.total_amount)}</p>
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 capitalize">{r.status}</span>
+              <p className="text-[12px] font-semibold">{fmt(r.total_amount)}</p>
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 capitalize">{r.status}</span>
               <EntryActions onView={() => setDrawer(r)} onEdit={() => setDrawer(r)} canEdit={canEdit} />
             </div>
           ))}
@@ -157,12 +157,12 @@ function PayrollDrawer({
     <Modal open onClose={onClose} title={run ? `Payroll — ${run.period}` : 'New Payroll Run'} subtitle="Funded Equity → I&M, paid from I&M" maxWidth="max-w-lg">
       <div className="space-y-3">
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Period</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Period</label>
           <input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} disabled={!editing || !!run} className="input" />
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Employees</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Employees</label>
           <div className="space-y-1.5">
             {lines.map((l, i) => (
               <div key={i} className="flex items-center gap-1.5">
@@ -180,7 +180,7 @@ function PayrollDrawer({
               </div>
             ))}
             {editing && (
-              <button type="button" onClick={addLine} className="text-[12px] text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 pt-0.5">
+              <button type="button" onClick={addLine} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 pt-0.5">
                 <Plus size={12} /> Add employee
               </button>
             )}
@@ -188,15 +188,15 @@ function PayrollDrawer({
         </div>
 
         <div className="p-2.5 rounded-lg bg-gray-50 dark:bg-white/5 flex items-center justify-between">
-          <span className="text-[12px] text-gray-500">Total net payroll</span>
-          <span className="text-[14px] font-semibold">{fmt(total)}</span>
+          <span className="text-[11px] text-gray-500">Total net payroll</span>
+          <span className="text-[13px] font-semibold">{fmt(total)}</span>
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
           {run?.status === 'paid' ? (
-            <p className="text-[12px] text-positive font-medium flex items-center gap-1.5"><ShieldCheck size={14} /> Paid</p>
+            <p className="text-[11px] text-positive font-medium flex items-center gap-1.5"><ShieldCheck size={14} /> Paid</p>
           ) : editing ? (
             <div className="flex gap-2 ml-auto">
               <button onClick={onClose} className="btn-ghost">Cancel</button>

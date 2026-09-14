@@ -35,7 +35,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
           </div>
           <div>
             <p className="font-bold text-sm leading-tight">Kivu Daily</p>
-            <p className="text-[11px] text-gray-400 leading-tight">Kivu Ride Ltd</p>
+            <p className="text-[10px] text-gray-400 leading-tight">Kivu Ride Ltd</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
             Kivu Ride doesn't have a physical office — this is it. One place where every department plans its day,
             the MD sees it all live, and nothing important gets lost in a phone chat.
           </p>
-          <button onClick={onLogin} className="btn-primary px-6 py-3 text-[14px] inline-flex items-center gap-2">
+          <button onClick={onLogin} className="btn-primary px-6 py-3 text-[13px] inline-flex items-center gap-2">
             Log In to Your Workspace <ArrowRight size={16} />
           </button>
         </div>
@@ -79,8 +79,8 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                 <h.icon size={18} className="text-brand-600 dark:text-brand-300" />
               </div>
               <div>
-                <p className="text-[14px] font-semibold mb-1">{h.title}</p>
-                <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">{h.desc}</p>
+                <p className="text-[13px] font-semibold mb-1">{h.title}</p>
+                <p className="text-[12px] text-gray-500 dark:text-gray-400 leading-relaxed">{h.desc}</p>
               </div>
             </div>
           ))}
@@ -90,7 +90,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       {/* Departments strip */}
       <section className="border-t border-gray-100 dark:border-white/5">
         <div className="max-w-6xl mx-auto px-6 py-14">
-          <p className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-[0.2em] mb-8">
+          <p className="text-center text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] mb-8">
             Built for every part of the company
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -99,7 +99,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                 <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center">
                   <d.icon size={17} className="text-brand-600 dark:text-brand-300" />
                 </div>
-                <p className="text-[12px] font-medium text-center text-gray-600 dark:text-gray-300">{d.label}</p>
+                <p className="text-[11px] font-medium text-center text-gray-600 dark:text-gray-300">{d.label}</p>
               </div>
             ))}
           </div>
@@ -112,18 +112,18 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
           <h2 className="text-2xl sm:text-3xl font-bold leading-snug mb-4">
             Every department, one live view, zero guesswork.
           </h2>
-          <p className="text-white/60 text-[14px] max-w-xl mx-auto mb-8">
+          <p className="text-white/60 text-[13px] max-w-xl mx-auto mb-8">
             Kivu Daily exists so the team can move fast without the Managing Director having to sit with every
             employee to know what's happening. Plan it, track it, see it — together.
           </p>
-          <button onClick={onLogin} className="btn-primary px-6 py-3 text-[14px] inline-flex items-center gap-2">
+          <button onClick={onLogin} className="btn-primary px-6 py-3 text-[13px] inline-flex items-center gap-2">
             Log In to Your Workspace <ArrowRight size={16} />
           </button>
         </div>
       </section>
 
       <footer className="max-w-6xl mx-auto px-6 py-8 text-center">
-        <p className="text-[11px] text-gray-400">© {new Date().getFullYear()} Kivu Ride Ltd. All rights reserved.</p>
+        <p className="text-[10px] text-gray-400">© {new Date().getFullYear()} Kivu Ride Ltd. All rights reserved.</p>
       </footer>
     </div>
   );

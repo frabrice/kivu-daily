@@ -37,17 +37,17 @@ function FollowUpsPageView({ data }: { data: ReturnType<typeof useMarketingData>
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2">
-          <CalendarClock size={16} className="text-brand-600 dark:text-brand-300" /> Follow-ups
-          {overdueCount > 0 && <span className="text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{overdueCount}</span>}
+          <CalendarClock size={16} className="text-rose-600 dark:text-rose-300" /> Follow-ups
+          {overdueCount > 0 && <span className="text-[8px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{overdueCount}</span>}
         </h2>
-        <p className="text-[12px] text-gray-400 mt-0.5">Contacts due for a touchpoint in the next 3 days, across every campaign.</p>
+        <p className="text-[11px] text-gray-400 mt-0.5">Contacts due for a touchpoint in the next 3 days, across every campaign.</p>
       </div>
 
       <div className="space-y-1.5">
         {followUpsDue.length === 0 && (
           <div className="card p-10 text-center">
             <CalendarClock size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-            <p className="text-[13px] text-gray-400">Nothing due in the next 3 days.</p>
+            <p className="text-[12px] text-gray-400">Nothing due in the next 3 days.</p>
           </div>
         )}
         {followUpsDue.map((c) => {
@@ -61,10 +61,10 @@ function FollowUpsPageView({ data }: { data: ReturnType<typeof useMarketingData>
             >
               {overdue && <AlertTriangle size={14} className="text-red-500 shrink-0" />}
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium truncate">{c.org_name}</p>
-                <p className="text-[11px] text-gray-400">{camp?.name} {c.contact_person ? `· ${c.contact_person}` : ''}</p>
+                <p className="text-[12px] font-medium truncate">{c.org_name}</p>
+                <p className="text-[10px] text-gray-400">{camp?.name} {c.contact_person ? `· ${c.contact_person}` : ''}</p>
               </div>
-              <span className={`text-[11px] font-medium shrink-0 ${overdue ? 'text-red-500' : 'text-gray-400'}`}>
+              <span className={`text-[10px] font-medium shrink-0 ${overdue ? 'text-red-500' : 'text-gray-400'}`}>
                 {overdue ? 'Overdue' : c.next_follow_up === todayStr() ? 'Today' : c.next_follow_up}
               </span>
             </button>

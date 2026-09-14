@@ -30,7 +30,7 @@ export default function ActivityLogPage({ profiles }: { profiles: Profile[] }) {
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
           <h3 className="section-title">Activity Log</h3>
-          <p className="text-[11px] text-gray-400 mt-0.5">Every tracked action, always attributed by name.</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Every tracked action, always attributed by name.</p>
         </div>
         <select
           value={actorId ?? ''}
@@ -53,7 +53,7 @@ export default function ActivityLogPage({ profiles }: { profiles: Profile[] }) {
       {!loading && entries.length === 0 && (
         <div className="card p-12 text-center">
           <Radio size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[13px] text-gray-400">
+          <p className="text-[12px] text-gray-400">
             {actorId ? 'No activity from this person yet.' : 'No activity yet.'}
           </p>
         </div>
@@ -61,7 +61,7 @@ export default function ActivityLogPage({ profiles }: { profiles: Profile[] }) {
 
       {!loading && groups.map(([label, dayEntries]) => (
         <div key={label} className="card p-4">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">{label}</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">{label}</p>
           <div className="space-y-1">
             {dayEntries.map((entry) => (
               <div key={entry.id} className="flex items-start gap-3 py-2 px-1">

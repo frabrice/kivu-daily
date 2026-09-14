@@ -55,32 +55,32 @@ export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeo
               className="card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
             >
               <div className="flex items-start justify-between gap-2 mb-1.5">
-                <p className="text-[13px] font-semibold truncate">{d.full_name}</p>
+                <p className="text-[12px] font-semibold truncate">{d.full_name}</p>
                 <EntryActions
                   onView={() => setDrawer({ driver: d, startEditing: false })}
                   onEdit={() => setDrawer({ driver: d, startEditing: true })}
                   canEdit={canEdit}
                 />
               </div>
-              <p className="text-[11px] text-gray-400 flex items-center gap-1">
+              <p className="text-[10px] text-gray-400 flex items-center gap-1">
                 <Phone size={10} /> {d.phone}
               </p>
               {d.car ? (
-                <p className="text-[11px] text-brand-600 dark:text-brand-300 flex items-center gap-1 mt-1.5">
+                <p className="text-[10px] text-brand-600 dark:text-brand-300 flex items-center gap-1 mt-1.5">
                   <CarFront size={10} /> {d.car.plate_number}
                   {(d.car.make || d.car.model) && <span className="text-gray-400"> · {[d.car.make, d.car.model].filter(Boolean).join(' ')}</span>}
                 </p>
               ) : (
-                <p className="text-[11px] text-orange-600 dark:text-orange-400 flex items-center gap-1 mt-1.5">
+                <p className="text-[10px] text-orange-600 dark:text-orange-400 flex items-center gap-1 mt-1.5">
                   <CircleSlash size={10} /> No car assigned
                 </p>
               )}
               <div className="flex flex-wrap gap-1.5 mt-2.5">
-                <span className="inline-flex items-center text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
+                <span className="inline-flex items-center text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
                   Owner: {yesNoUnknown(d.is_owner)}
                 </span>
                 {d.car && (
-                  <span className="inline-flex items-center text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
+                  <span className="inline-flex items-center text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
                     Branded: {yesNoUnknown(d.car.is_branded)}
                   </span>
                 )}
@@ -90,7 +90,7 @@ export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeo
           {filtered.length === 0 && (
             <div className="card p-10 text-center col-span-full">
               <Users2 size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-              <p className="text-[13px] text-gray-400">No non-insider drivers yet.</p>
+              <p className="text-[12px] text-gray-400">No non-insider drivers yet.</p>
             </div>
           )}
         </div>

@@ -68,23 +68,23 @@ export default function FineDrawer({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
             <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={!editing} className="input" placeholder="20000" autoFocus />
           </div>
           <div>
-            <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Date</label>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date</label>
             <input type="date" value={fineDate} onChange={(e) => setFineDate(e.target.value)} disabled={!editing} className="input" />
           </div>
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Driver</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Driver</label>
           <select value={driverId} onChange={(e) => setDriverId(e.target.value)} disabled={!editing} className="input">
             <option value="">Select a driver</option>
             {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Car Fined</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Car Fined</label>
           <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} disabled={!editing} className="input">
             <option value="">Select a car</option>
             {vehicles.map((v) => (
@@ -95,11 +95,11 @@ export default function FineDrawer({
           </select>
         </div>
         <div>
-          <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Reason (optional)</label>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Reason (optional)</label>
           <textarea value={reason} onChange={(e) => setReason(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="e.g. speeding, illegal parking…" />
         </div>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
           <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">

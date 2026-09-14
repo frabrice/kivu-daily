@@ -25,7 +25,7 @@ export default function TaskCard({ task, onToggle, onDelete, showTime = true, on
   const displayTime = completedTime ?? createdTime;
 
   const reviewBadge = task.review_status ? (
-    <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${statusConfig[task.review_status].bgColor} ${statusConfig[task.review_status].color}`}>
+    <span className={`text-[9px] font-medium px-2 py-0.5 rounded ${statusConfig[task.review_status].bgColor} ${statusConfig[task.review_status].color}`}>
       {statusConfig[task.review_status].label}
     </span>
   ) : null;
@@ -75,7 +75,7 @@ export default function TaskCard({ task, onToggle, onDelete, showTime = true, on
 
       <div className="flex-1 min-w-0">
         <p
-          className={`text-[13px] transition-all duration-300 ${
+          className={`text-[12px] transition-all duration-300 ${
             task.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'
           }`}
         >
@@ -94,18 +94,18 @@ export default function TaskCard({ task, onToggle, onDelete, showTime = true, on
         {showTime && (
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {task.is_carried_over && (
-              <span className="text-[10px] font-medium text-orange-500 bg-orange-50 dark:bg-orange-500/10 px-1.5 py-0.5 rounded">
+              <span className="text-[9px] font-medium text-orange-500 bg-orange-50 dark:bg-orange-500/10 px-1.5 py-0.5 rounded">
                 Carried Over
               </span>
             )}
             {reviewBadge}
             {task.completed ? (
-              <span className="flex items-center gap-1 text-[11px] text-green-500">
+              <span className="flex items-center gap-1 text-[10px] text-green-500">
                 <CheckCircle2 size={11} />
                 Done at {formatTime(new Date(task.completed_at!)).slice(0, 5)}
               </span>
             ) : !reviewMode && (
-              <span className="flex items-center gap-1 text-[11px] text-gray-400">
+              <span className="flex items-center gap-1 text-[10px] text-gray-400">
                 <Clock size={11} />
                 {displayTime}
               </span>

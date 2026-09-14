@@ -42,7 +42,7 @@ export default function Modal({ open, onClose, children, title, subtitle, maxWid
         {title && (
           <div className="flex items-start justify-between px-6 py-5 border-b border-gray-100 dark:border-white/5 shrink-0">
             <div className="min-w-0">
-              <h2 className="text-[15px] font-semibold truncate">{title}</h2>
+              <h2 className="text-[14px] font-semibold truncate">{title}</h2>
               {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
             </div>
             <button onClick={onClose} className="btn-ghost p-1.5 -mr-1.5 shrink-0">

@@ -39,7 +39,7 @@ export default function RoleSelectPage({ onBack, onManual }: RoleSelectPageProps
               <img src="/kivu-ride-logo.png" alt="Kivu Ride" className="w-9 h-9 object-contain" />
             </div>
             <h1 className="text-2xl font-bold mb-2">Log in as</h1>
-            <p className="text-[13px] text-gray-400">Choose your workspace to continue.</p>
+            <p className="text-[12px] text-gray-400">Choose your workspace to continue.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -55,10 +55,10 @@ export default function RoleSelectPage({ onBack, onManual }: RoleSelectPageProps
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${role.comingSoon ? 'bg-gray-100 dark:bg-white/5' : 'bg-brand/10'}`}>
                   <role.icon size={18} className={role.comingSoon ? 'text-gray-400' : 'text-brand-600 dark:text-brand-300'} />
                 </div>
-                <p className="text-[13px] font-semibold mb-0.5">{role.label}</p>
-                <p className="text-[11px] text-gray-400">{role.hint}</p>
+                <p className="text-[12px] font-semibold mb-0.5">{role.label}</p>
+                <p className="text-[10px] text-gray-400">{role.hint}</p>
                 {role.comingSoon && (
-                  <span className="inline-block text-[9px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full mt-2.5">
+                  <span className="inline-block text-[8px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full mt-2.5">
                     Coming Soon
                   </span>
                 )}
@@ -68,7 +68,7 @@ export default function RoleSelectPage({ onBack, onManual }: RoleSelectPageProps
 
           <button
             onClick={() => onManual('')}
-            className="w-full flex items-center justify-center gap-1.5 text-[12px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 mt-8"
+            className="w-full flex items-center justify-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 mt-8"
           >
             <KeyRound size={12} /> Sign in with your email and password
           </button>
