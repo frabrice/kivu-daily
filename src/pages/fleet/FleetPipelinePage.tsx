@@ -10,9 +10,25 @@ import DriverDrawer from '../../components/fleet/DriverDrawer';
 
 interface DriverDrawerState { driver: Driver | null; startEditing: boolean }
 
-export default function FleetPipelinePage() {
+interface FleetPipelinePageProps { data?: ReturnType<typeof useFleetData> }
+
+// Accepts pre-fetched data from the MD's FleetPage tab wrapper (which
+// already calls useFleetData() once for its badge counts) so this page
+// doesn't open a second realtime subscription under the same channel
+// name - Supabase throws if two instances subscribe to it at once.
+// Rendered directly by employees with no data prop, so it fetches its
+// own in that case.
+export default function FleetPipelinePage({ data }: FleetPipelinePageProps = {}) {
+  return data ? <FleetPipelinePageView data={data} /> : <FleetPipelinePageWithData />;
+}
+
+function FleetPipelinePageWithData() {
+  return <FleetPipelinePageView data={useFleetData()} />;
+}
+
+function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
-  const { drivers, vehicles, loading, reload } = useFleetData();
+  const { drivers, vehicles, loading, reload } = data;
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'fleet';
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');

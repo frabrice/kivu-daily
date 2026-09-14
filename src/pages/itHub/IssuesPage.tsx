@@ -8,10 +8,20 @@ import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import StoryDrawer from '../../components/itHub/StoryDrawer';
 
-export default function IssuesPage() {
+interface IssuesPageProps { data?: ReturnType<typeof useITHubData> }
+
+export default function IssuesPage({ data }: IssuesPageProps = {}) {
+  return data ? <IssuesPageView data={data} /> : <IssuesPageWithData />;
+}
+
+function IssuesPageWithData() {
+  return <IssuesPageView data={useITHubData()} />;
+}
+
+function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
   const { profile } = useAuth();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'it';
-  const { issues, itProfiles, issuesFeatureId, openIssueCount, loading, reload } = useITHubData();
+  const { issues, itProfiles, issuesFeatureId, openIssueCount, loading, reload } = data;
   const [view, setView] = useState<ViewMode>('cards');
   const [storyDrawer, setStoryDrawer] = useState<{ story: UserStory | null; startEditing: boolean } | null>(null);
 

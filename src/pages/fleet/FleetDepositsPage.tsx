@@ -6,9 +6,19 @@ import { todayStr } from '../../lib/utils';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 
-export default function FleetDepositsPage() {
+interface FleetDepositsPageProps { data?: ReturnType<typeof useFleetData> }
+
+export default function FleetDepositsPage({ data }: FleetDepositsPageProps = {}) {
+  return data ? <FleetDepositsPageView data={data} /> : <FleetDepositsPageWithData />;
+}
+
+function FleetDepositsPageWithData() {
+  return <FleetDepositsPageView data={useFleetData()} />;
+}
+
+function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
-  const { drivers, deposits, loading, reload } = useFleetData();
+  const { drivers, deposits, loading, reload } = data;
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'fleet';
   const [search, setSearch] = useState('');
   const [loggingDepositFor, setLoggingDepositFor] = useState<Driver | null>(null);

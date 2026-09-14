@@ -15,7 +15,8 @@ type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'fines';
 
 export default function FleetPage() {
   const [tab, setTab] = useState<Tab>('pipeline');
-  const { drivers, deposits } = useFleetData();
+  const data = useFleetData();
+  const { drivers, deposits } = data;
 
   const overdueCount = drivers.filter((d) => d.vehicle_id).filter((d) => {
     const history = deposits.filter((dep) => dep.driver_id === d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
@@ -34,10 +35,10 @@ export default function FleetPage() {
         <TabButton active={tab === 'fines'} onClick={() => setTab('fines')} icon={Receipt} label="Fines" />
       </div>
 
-      {tab === 'pipeline' && <FleetPipelinePage />}
-      {tab === 'vehicles' && <FleetVehiclesPage />}
-      {tab === 'deposits' && <FleetDepositsPage />}
-      {tab === 'fines' && <FleetFinesPage />}
+      {tab === 'pipeline' && <FleetPipelinePage data={data} />}
+      {tab === 'vehicles' && <FleetVehiclesPage data={data} />}
+      {tab === 'deposits' && <FleetDepositsPage data={data} />}
+      {tab === 'fines' && <FleetFinesPage data={data} />}
     </div>
   );
 }

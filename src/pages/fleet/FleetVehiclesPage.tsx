@@ -10,9 +10,19 @@ import VehicleDrawer from '../../components/fleet/VehicleDrawer';
 
 interface VehicleDrawerState { vehicle: Vehicle | null; startEditing: boolean }
 
-export default function FleetVehiclesPage() {
+interface FleetVehiclesPageProps { data?: ReturnType<typeof useFleetData> }
+
+export default function FleetVehiclesPage({ data }: FleetVehiclesPageProps = {}) {
+  return data ? <FleetVehiclesPageView data={data} /> : <FleetVehiclesPageWithData />;
+}
+
+function FleetVehiclesPageWithData() {
+  return <FleetVehiclesPageView data={useFleetData()} />;
+}
+
+function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
-  const { drivers, vehicles, loading, reload } = useFleetData();
+  const { drivers, vehicles, loading, reload } = data;
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'fleet';
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');

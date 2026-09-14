@@ -10,7 +10,8 @@ type Tab = 'campaigns' | 'followups';
 
 export default function MarketingPage() {
   const [tab, setTab] = useState<Tab>('campaigns');
-  const { contacts } = useMarketingData();
+  const data = useMarketingData();
+  const { contacts } = data;
 
   const overdueCount = contacts.filter((c) => {
     if (!c.next_follow_up || c.stage === 'won' || c.stage === 'lost') return false;
@@ -24,8 +25,8 @@ export default function MarketingPage() {
         <TabButton active={tab === 'followups'} onClick={() => setTab('followups')} label="Follow-ups" badge={overdueCount} />
       </div>
 
-      {tab === 'campaigns' && <CampaignsPage />}
-      {tab === 'followups' && <FollowUpsPage />}
+      {tab === 'campaigns' && <CampaignsPage data={data} />}
+      {tab === 'followups' && <FollowUpsPage data={data} />}
     </div>
   );
 }

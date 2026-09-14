@@ -10,9 +10,19 @@ import FineDrawer from '../../components/fleet/FineDrawer';
 
 interface FineDrawerState { fine: DriverFine | null; startEditing: boolean }
 
-export default function FleetFinesPage() {
+interface FleetFinesPageProps { data?: ReturnType<typeof useFleetData> }
+
+export default function FleetFinesPage({ data }: FleetFinesPageProps = {}) {
+  return data ? <FleetFinesPageView data={data} /> : <FleetFinesPageWithData />;
+}
+
+function FleetFinesPageWithData() {
+  return <FleetFinesPageView data={useFleetData()} />;
+}
+
+function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
-  const { drivers, vehicles, fines, loading, reload } = useFleetData();
+  const { drivers, vehicles, fines, loading, reload } = data;
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'fleet';
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');

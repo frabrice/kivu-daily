@@ -10,7 +10,8 @@ type Tab = 'products' | 'issues';
 
 export default function ITHubPage() {
   const [tab, setTab] = useState<Tab>('products');
-  const { openIssueCount } = useITHubData();
+  const data = useITHubData();
+  const { openIssueCount } = data;
 
   return (
     <div className="space-y-4">
@@ -19,8 +20,8 @@ export default function ITHubPage() {
         <TabButton active={tab === 'issues'} onClick={() => setTab('issues')} icon={AlertTriangle} label="Issues" badge={openIssueCount} />
       </div>
 
-      {tab === 'products' && <ProductsPage />}
-      {tab === 'issues' && <IssuesPage />}
+      {tab === 'products' && <ProductsPage data={data} />}
+      {tab === 'issues' && <IssuesPage data={data} />}
     </div>
   );
 }

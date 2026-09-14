@@ -13,8 +13,20 @@ import { todayStr } from '../../lib/utils';
 interface CampaignDrawerState { campaign: Campaign | null; startEditing: boolean }
 interface ContactDrawerState { contact: Contact | null; startEditing: boolean }
 
-export default function CampaignsPage() {
-  const { campaigns, contacts, loading, reload } = useMarketingData();
+interface CampaignsPageProps { data?: ReturnType<typeof useMarketingData> }
+
+// See FleetPipelinePage.tsx for why this takes an optional pre-fetched
+// data prop rather than always calling useMarketingData() itself.
+export default function CampaignsPage({ data }: CampaignsPageProps = {}) {
+  return data ? <CampaignsPageView data={data} /> : <CampaignsPageWithData />;
+}
+
+function CampaignsPageWithData() {
+  return <CampaignsPageView data={useMarketingData()} />;
+}
+
+function CampaignsPageView({ data }: { data: ReturnType<typeof useMarketingData> }) {
+  const { campaigns, contacts, loading, reload } = data;
   const [view, setView] = useState<ViewMode>('cards');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [campaignDrawer, setCampaignDrawer] = useState<CampaignDrawerState | null>(null);

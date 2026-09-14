@@ -4,8 +4,20 @@ import { useCallCenterData, STAGE_LABEL } from '../../lib/callCenter';
 import LogCallDrawer from '../../components/callCenter/LogCallDrawer';
 import { Driver } from '../../lib/supabase';
 
-export default function CallQueuePage() {
-  const { drivers, logs, reasons, outcomes, scripts, loading, reload } = useCallCenterData();
+interface CallQueuePageProps { data?: ReturnType<typeof useCallCenterData> }
+
+// See FleetPipelinePage.tsx for why this takes an optional pre-fetched
+// data prop rather than always calling useCallCenterData() itself.
+export default function CallQueuePage({ data }: CallQueuePageProps = {}) {
+  return data ? <CallQueuePageView data={data} /> : <CallQueuePageWithData />;
+}
+
+function CallQueuePageWithData() {
+  return <CallQueuePageView data={useCallCenterData()} />;
+}
+
+function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData> }) {
+  const { drivers, logs, reasons, outcomes, scripts, loading, reload } = data;
   const [callDriver, setCallDriver] = useState<Driver | null>(null);
 
   const queue = useMemo(() => {

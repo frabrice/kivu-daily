@@ -26,11 +26,14 @@ import {
   Package,
   HelpCircle,
   TrendingUp as TrendingUpIcon,
+  ChevronRight,
 } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, BarChart, Bar, Cell } from 'recharts';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import { useCompanyData, buildEmployeeStats, departmentStats, EmployeeWithStats } from '../lib/company';
 import { useActivityFeed } from '../lib/activity';
+import { useCompanySnapshot } from '../lib/dashboardSnapshot';
+import { fmt } from '../lib/finance';
 import { completionColor, dateStr, addDays, greeting, formatDateFull } from '../lib/utils';
 import { completionPct } from '../lib/hooks';
 import { supabase, Task } from '../lib/supabase';
@@ -81,6 +84,7 @@ export default function ManagingDirectorApp() {
   const [active, setActive] = useState<NavKey>('dashboard');
   const { profiles, departments, allTasks, loading, reload } = useCompanyData();
   const { entries: activity, loading: activityLoading } = useActivityFeed(15);
+  const snapshot = useCompanySnapshot();
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithStats | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('completion');
   const [unreadComments, setUnreadComments] = useState(0);
@@ -236,6 +240,60 @@ export default function ManagingDirectorApp() {
                 {totalTasks > 0 && <> · <span style={{ color: completionColor(overallPct) }}>{Math.round(overallPct)}%</span> company completion</>}
                 {silentEmployees.length > 0 && <> · {silentEmployees.length} silent</>}
               </p>
+            </div>
+          </div>
+
+          {/* Departments at a glance */}
+          <div>
+            <h3 className="section-title mb-2.5">Departments at a Glance</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+              <DeptSnapshotCard
+                icon={Truck}
+                label="Fleet"
+                onClick={() => setActive('fleet')}
+                stats={[
+                  { label: 'Active drivers', value: `${snapshot.fleet.activeDrivers}/${snapshot.fleet.totalDrivers}` },
+                  { label: 'Vehicles', value: snapshot.fleet.totalVehicles },
+                ]}
+                alert={snapshot.fleet.overdueDeposits > 0 ? `${snapshot.fleet.overdueDeposits} deposit${snapshot.fleet.overdueDeposits === 1 ? '' : 's'} overdue` : undefined}
+              />
+              <DeptSnapshotCard
+                icon={Wallet}
+                label="Finance"
+                onClick={() => setActive('finance')}
+                stats={[
+                  { label: 'Revenue MTD', value: fmt(snapshot.finance.monthRevenue) },
+                  { label: 'Expenses MTD', value: fmt(snapshot.finance.monthExpenses) },
+                ]}
+                alert={snapshot.finance.pendingTransactions > 0 ? `${snapshot.finance.pendingTransactions} pending` : undefined}
+              />
+              <DeptSnapshotCard
+                icon={PhoneCall}
+                label="Call Center"
+                onClick={() => setActive('call_center')}
+                stats={[
+                  { label: 'Follow-ups flagged', value: snapshot.callCenter.followUpsNeeded },
+                ]}
+                alert={snapshot.callCenter.followUpsNeeded > 0 ? `${snapshot.callCenter.followUpsNeeded} need a call` : undefined}
+              />
+              <DeptSnapshotCard
+                icon={Target}
+                label="Marketing"
+                onClick={() => setActive('marketing')}
+                stats={[
+                  { label: 'Active campaigns', value: snapshot.marketing.activeCampaigns },
+                ]}
+                alert={snapshot.marketing.overdueFollowUps > 0 ? `${snapshot.marketing.overdueFollowUps} follow-up${snapshot.marketing.overdueFollowUps === 1 ? '' : 's'} overdue` : undefined}
+              />
+              <DeptSnapshotCard
+                icon={Package}
+                label="Product Hub"
+                onClick={() => setActive('it_hub')}
+                stats={[
+                  { label: 'Products', value: snapshot.itHub.totalProducts },
+                ]}
+                alert={snapshot.itHub.openIssues > 0 ? `${snapshot.itHub.openIssues} open issue${snapshot.itHub.openIssues === 1 ? '' : 's'}` : undefined}
+              />
             </div>
           </div>
 
@@ -521,6 +579,47 @@ export default function ManagingDirectorApp() {
         />
       )}
     </AppShell>
+  );
+}
+
+function DeptSnapshotCard({
+  icon: Icon,
+  label,
+  stats,
+  alert,
+  onClick,
+}: {
+  icon: typeof Truck;
+  label: string;
+  stats: { label: string; value: string | number }[];
+  alert?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick} className="card p-3.5 text-left hover:shadow-md hover:border-brand/30 transition-all flex flex-col gap-2.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <div className="w-6 h-6 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
+            <Icon size={12} className="text-brand-600 dark:text-brand-300" />
+          </div>
+          <p className="text-[12px] font-semibold">{label}</p>
+        </div>
+        <ChevronRight size={13} className="text-gray-300 dark:text-white/20" />
+      </div>
+      <div className="space-y-1">
+        {stats.map((s) => (
+          <div key={s.label} className="flex items-center justify-between">
+            <span className="text-[11px] text-gray-400">{s.label}</span>
+            <span className="text-[12px] font-semibold tabular-nums">{s.value}</span>
+          </div>
+        ))}
+      </div>
+      {alert && (
+        <span className="text-[10px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-1.5 py-0.5 rounded-full w-fit">
+          {alert}
+        </span>
+      )}
+    </button>
   );
 }
 

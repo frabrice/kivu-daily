@@ -7,8 +7,18 @@ import ContactDrawer from '../../components/marketing/ContactDrawer';
 
 interface ContactDrawerState { contact: Contact; startEditing: boolean }
 
-export default function FollowUpsPage() {
-  const { campaigns, contacts, loading, reload } = useMarketingData();
+interface FollowUpsPageProps { data?: ReturnType<typeof useMarketingData> }
+
+export default function FollowUpsPage({ data }: FollowUpsPageProps = {}) {
+  return data ? <FollowUpsPageView data={data} /> : <FollowUpsPageWithData />;
+}
+
+function FollowUpsPageWithData() {
+  return <FollowUpsPageView data={useMarketingData()} />;
+}
+
+function FollowUpsPageView({ data }: { data: ReturnType<typeof useMarketingData> }) {
+  const { campaigns, contacts, loading, reload } = data;
   const [contactDrawer, setContactDrawer] = useState<ContactDrawerState | null>(null);
 
   const followUpsDue = useMemo(() => {

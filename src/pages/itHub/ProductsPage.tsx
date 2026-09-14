@@ -9,10 +9,22 @@ import MilestoneDrawer from '../../components/itHub/MilestoneDrawer';
 import FeatureDrawer from '../../components/itHub/FeatureDrawer';
 import StoryDrawer from '../../components/itHub/StoryDrawer';
 
-export default function ProductsPage() {
+interface ProductsPageProps { data?: ReturnType<typeof useITHubData> }
+
+// See FleetPipelinePage.tsx for why this takes an optional pre-fetched
+// data prop rather than always calling useITHubData() itself.
+export default function ProductsPage({ data }: ProductsPageProps = {}) {
+  return data ? <ProductsPageView data={data} /> : <ProductsPageWithData />;
+}
+
+function ProductsPageWithData() {
+  return <ProductsPageView data={useITHubData()} />;
+}
+
+function ProductsPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
   const { profile } = useAuth();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'it';
-  const { visibleProducts, products, milestones, features, stories, itProfiles, loading, reload } = useITHubData();
+  const { visibleProducts, products, milestones, features, stories, itProfiles, loading, reload } = data;
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);

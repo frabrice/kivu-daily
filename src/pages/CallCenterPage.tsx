@@ -11,7 +11,8 @@ type Tab = 'queue' | 'directory' | 'scripts';
 
 export default function CallCenterPage() {
   const [tab, setTab] = useState<Tab>('queue');
-  const { drivers, logs } = useCallCenterData();
+  const data = useCallCenterData();
+  const { drivers, logs } = data;
 
   const urgentCount = drivers.filter((d) => d.stage !== 'inactive').filter((d) => {
     const driverLogs = logs.filter((l) => l.driver_id === d.id);
@@ -30,9 +31,9 @@ export default function CallCenterPage() {
         <TabButton active={tab === 'scripts'} onClick={() => setTab('scripts')} icon={BookOpen} label="Scripts" />
       </div>
 
-      {tab === 'queue' && <CallQueuePage />}
-      {tab === 'directory' && <CallDirectoryPage />}
-      {tab === 'scripts' && <CallScriptsPage />}
+      {tab === 'queue' && <CallQueuePage data={data} />}
+      {tab === 'directory' && <CallDirectoryPage data={data} />}
+      {tab === 'scripts' && <CallScriptsPage data={data} />}
     </div>
   );
 }

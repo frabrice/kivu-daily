@@ -9,8 +9,18 @@ import ScriptDrawer from '../../components/callCenter/ScriptDrawer';
 
 interface ScriptDrawerState { script: CallScript | null; startEditing: boolean }
 
-export default function CallScriptsPage() {
-  const { reasons, scripts, loading, reload } = useCallCenterData();
+interface CallScriptsPageProps { data?: ReturnType<typeof useCallCenterData> }
+
+export default function CallScriptsPage({ data }: CallScriptsPageProps = {}) {
+  return data ? <CallScriptsPageView data={data} /> : <CallScriptsPageWithData />;
+}
+
+function CallScriptsPageWithData() {
+  return <CallScriptsPageView data={useCallCenterData()} />;
+}
+
+function CallScriptsPageView({ data }: { data: ReturnType<typeof useCallCenterData> }) {
+  const { reasons, scripts, loading, reload } = data;
   const [view, setView] = useState<ViewMode>('cards');
   const [drawer, setDrawer] = useState<ScriptDrawerState | null>(null);
 

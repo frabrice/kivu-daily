@@ -8,8 +8,18 @@ import DataTable from '../../components/DataTable';
 import LogCallDrawer from '../../components/callCenter/LogCallDrawer';
 import CallHistoryDrawer from '../../components/callCenter/CallHistoryDrawer';
 
-export default function CallDirectoryPage() {
-  const { drivers, logs, reasons, outcomes, scripts, loading, reload } = useCallCenterData();
+interface CallDirectoryPageProps { data?: ReturnType<typeof useCallCenterData> }
+
+export default function CallDirectoryPage({ data }: CallDirectoryPageProps = {}) {
+  return data ? <CallDirectoryPageView data={data} /> : <CallDirectoryPageWithData />;
+}
+
+function CallDirectoryPageWithData() {
+  return <CallDirectoryPageView data={useCallCenterData()} />;
+}
+
+function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenterData> }) {
+  const { drivers, logs, reasons, outcomes, scripts, loading, reload } = data;
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');
   const [callDriver, setCallDriver] = useState<Driver | null>(null);
