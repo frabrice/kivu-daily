@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, Phone, Mail, Car, Wallet, Receipt, Clock } from 'lucide-react';
-import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverDeposit, DriverFine } from '../../lib/supabase';
+import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, Phone, Mail, Car, Wallet, Receipt, Clock, BedDouble } from 'lucide-react';
+import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay, DriverDeposit, DriverFine } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { STAGES, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, nextDepositDueDate, formatDateLabelSafe } from '../../lib/fleet';
+import { STAGES, REST_DAYS, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, nextDepositDueDate, formatDateLabelSafe } from '../../lib/fleet';
 import Modal from '../Modal';
 import FlagToITDrawer from '../FlagToITDrawer';
 import VehicleDrawer from './VehicleDrawer';
@@ -41,6 +41,7 @@ export default function DriverDrawer({
   const [notes, setNotes] = useState(driver?.notes ?? '');
   const [vehicleId, setVehicleId] = useState(driver?.vehicle_id ?? '');
   const [shift, setShift] = useState<DriverShift | ''>(driver?.shift ?? '');
+  const [restDay, setRestDay] = useState<DriverRestDay | ''>(driver?.rest_day ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [flagOpen, setFlagOpen] = useState(false);
@@ -59,6 +60,7 @@ export default function DriverDrawer({
   const nextDue = driver ? nextDepositDueDate(lastLoggedDeposit, driver.initial_deposit_paid, driver.initial_deposit_date) : null;
 
   const driverFines = driver ? fines.filter((f) => f.driver_id === driver.id).sort((a, b) => b.fine_date.localeCompare(a.fine_date)) : [];
+  const restDayLabel = driver?.rest_day ? REST_DAYS.find((d) => d.key === driver.rest_day)?.label : null;
 
   const save = async () => {
     if (!fullName.trim() || !phone.trim()) return;
@@ -68,6 +70,10 @@ export default function DriverDrawer({
     }
     if (initialDepositPaid && !initialDepositDate) {
       setError('Enter the date the initial deposit was paid.');
+      return;
+    }
+    if (!restDay) {
+      setError('Every driver must be assigned a weekly rest day.');
       return;
     }
     setSaving(true);
@@ -83,6 +89,7 @@ export default function DriverDrawer({
       notes: notes.trim() || null,
       vehicle_id: vehicleId || null,
       shift: vehicleId ? shift || null : null,
+      rest_day: restDay || null,
       updated_at: new Date().toISOString(),
     };
     const { error: err } = driver
@@ -130,6 +137,15 @@ export default function DriverDrawer({
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full">
                 <Car size={10} /> No vehicle assigned
+              </span>
+            )}
+            {restDayLabel ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-full">
+                <BedDouble size={10} /> Rests on {restDayLabel}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full">
+                <BedDouble size={10} /> No rest day set
               </span>
             )}
           </div>
@@ -254,6 +270,15 @@ export default function DriverDrawer({
           </select>
         </div>
 
+        <div className={`p-2.5 rounded-lg border space-y-2 ${restDay ? 'border-indigo-300 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-500/5' : 'border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/5'}`}>
+          <label className="block text-[11px] font-medium mb-1.5 flex items-center gap-1"><BedDouble size={11} /> Weekly Rest Day <span className="text-red-500">*</span></label>
+          <select value={restDay} onChange={(e) => setRestDay(e.target.value as DriverRestDay)} disabled={!editing} className="input">
+            <option value="">Select a day…</option>
+            {REST_DAYS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+          </select>
+          <p className="text-[9px] text-gray-400">Every driver must have one fixed day off each week.</p>
+        </div>
+
         <div className={`p-2.5 rounded-lg border space-y-2 ${initialDepositPaid ? 'border-brand/30 bg-brand/5' : 'border-gray-200 dark:border-white/10'}`}>
           <label className="flex items-center gap-2.5">
             <input
@@ -354,7 +379,7 @@ export default function DriverDrawer({
             ) : <span />}
             <div className="flex gap-2">
               <button onClick={() => (driver ? setEditing(false) : onClose())} className="btn-ghost">Cancel</button>
-              <button onClick={save} disabled={saving || !fullName.trim() || !phone.trim() || vehicleFull || (initialDepositPaid && !initialDepositDate)} className="btn-primary disabled:opacity-50">
+              <button onClick={save} disabled={saving || !fullName.trim() || !phone.trim() || vehicleFull || (initialDepositPaid && !initialDepositDate) || !restDay} className="btn-primary disabled:opacity-50">
                 {saving ? 'Saving…' : driver ? 'Save Changes' : 'Add Driver'}
               </button>
             </div>

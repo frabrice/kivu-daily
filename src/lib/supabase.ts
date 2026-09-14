@@ -47,6 +47,7 @@ export interface Department {
 export type DriverStage = 'applying' | 'training' | 'active' | 'waiting' | 'flagged' | 'inactive';
 export type RuraLicenseStatus = 'pending' | 'provided';
 export type DriverShift = 'day' | 'night';
+export type DriverRestDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
 export interface Vehicle {
   id: string;
@@ -79,6 +80,7 @@ export interface Driver {
   notes: string | null;
   vehicle_id: string | null;
   shift: DriverShift | null;
+  rest_day: DriverRestDay | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

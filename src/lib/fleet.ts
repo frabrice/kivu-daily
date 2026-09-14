@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverStage, Profile } from './supabase';
+import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverStage, DriverRestDay, Profile } from './supabase';
 import { todayStr, dateStr, addDays } from './utils';
 
 // Fleet's own dashboard, plus the identical bundled view given to Call
@@ -62,6 +62,16 @@ export const STAGES: { key: DriverStage; label: string; color: string }[] = [
 ];
 
 export const WEEKLY_DEPOSIT_AMOUNT = 180000;
+
+export const REST_DAYS: { key: DriverRestDay; label: string; short: string }[] = [
+  { key: 'monday', label: 'Monday', short: 'Mon' },
+  { key: 'tuesday', label: 'Tuesday', short: 'Tue' },
+  { key: 'wednesday', label: 'Wednesday', short: 'Wed' },
+  { key: 'thursday', label: 'Thursday', short: 'Thu' },
+  { key: 'friday', label: 'Friday', short: 'Fri' },
+  { key: 'saturday', label: 'Saturday', short: 'Sat' },
+  { key: 'sunday', label: 'Sunday', short: 'Sun' },
+];
 
 // The 7-day deposit cycle counts from whichever is more recent: the last
 // driver_deposits row actually logged in this app, or - for a driver
