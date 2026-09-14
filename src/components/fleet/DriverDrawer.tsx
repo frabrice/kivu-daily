@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon } from 'lucide-react';
-import { supabase, Driver, DriverStage, Vehicle, DriverShift } from '../../lib/supabase';
+import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, Phone, Mail, Car, Wallet, Receipt, Clock } from 'lucide-react';
+import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverDeposit, DriverFine } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { STAGES } from '../../lib/fleet';
+import { STAGES, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, nextDepositDueDate, formatDateLabelSafe } from '../../lib/fleet';
 import Modal from '../Modal';
 import FlagToITDrawer from '../FlagToITDrawer';
 import VehicleDrawer from './VehicleDrawer';
@@ -13,6 +13,8 @@ export default function DriverDrawer({
   startEditing,
   vehicles,
   drivers,
+  deposits,
+  fines,
   canEdit,
   onClose,
   onSaved,
@@ -21,6 +23,8 @@ export default function DriverDrawer({
   startEditing: boolean;
   vehicles: Vehicle[];
   drivers: Driver[];
+  deposits: DriverDeposit[];
+  fines: DriverFine[];
   canEdit: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -45,6 +49,16 @@ export default function DriverDrawer({
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
   const shiftTakenBy = (s: DriverShift) => drivers.find((d) => d.vehicle_id === vehicleId && d.id !== driver?.id && d.shift === s);
   const vehicleFull = !!selectedVehicle && drivers.filter((d) => d.vehicle_id === vehicleId && d.id !== driver?.id).length >= 2;
+  const stageMeta = driver ? STAGES.find((s) => s.key === driver.stage) : null;
+
+  const driverDeposits = driver ? deposits.filter((dep) => dep.driver_id === driver.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date)) : [];
+  const lastLoggedDeposit = driverDeposits[0]?.paid_date ?? null;
+  const daysSinceDeposit = driver ? depositDaysSince(lastLoggedDeposit, driver.initial_deposit_paid, driver.initial_deposit_date) : null;
+  const tier = depositTier(daysSinceDeposit);
+  const tierStyle = DEPOSIT_TIER_STYLE[tier];
+  const nextDue = driver ? nextDepositDueDate(lastLoggedDeposit, driver.initial_deposit_paid, driver.initial_deposit_date) : null;
+
+  const driverFines = driver ? fines.filter((f) => f.driver_id === driver.id).sort((a, b) => b.fine_date.localeCompare(a.fine_date)) : [];
 
   const save = async () => {
     if (!fullName.trim() || !phone.trim()) return;
@@ -93,7 +107,125 @@ export default function DriverDrawer({
   };
 
   return (
-    <Modal open onClose={onClose} title={driver ? driver.full_name : 'Add Driver'} subtitle={driver ? timeAgo(driver.updated_at) + ' updated' : undefined} maxWidth="max-w-lg">
+    <Modal
+      open
+      onClose={onClose}
+      title={driver ? driver.full_name : 'Add Driver'}
+      subtitle={driver ? timeAgo(driver.updated_at) + ' updated' : undefined}
+      maxWidth={!editing && driver ? 'max-w-2xl' : 'max-w-lg'}
+    >
+      {!editing && driver ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {stageMeta && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: `${stageMeta.color}20`, color: stageMeta.color }}>
+                {stageMeta.label}
+              </span>
+            )}
+            {driver.vehicle ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
+                <Car size={10} /> {driver.vehicle.plate_number}
+                {driver.shift && <span>· {driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full">
+                <Car size={10} /> No vehicle assigned
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Phone size={10} /> Phone</p>
+              <p className="text-[12px] font-medium">{driver.phone}</p>
+            </div>
+            <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Mail size={10} /> Email</p>
+              <p className="text-[12px] font-medium truncate">{driver.email || <span className="text-gray-400 font-normal">Not provided</span>}</p>
+            </div>
+            <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><CalendarDays size={10} /> Join Date</p>
+              <p className="text-[12px] font-medium">{driver.join_date ? formatDateLabelSafe(driver.join_date) : <span className="text-gray-400 font-normal">Not set</span>}</p>
+            </div>
+            <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Clock size={10} /> Initial Deposit</p>
+              <p className="text-[12px] font-medium">
+                {driver.initial_deposit_paid
+                  ? `Paid${driver.initial_deposit_date ? ' · ' + formatDateLabelSafe(driver.initial_deposit_date) : ''}`
+                  : <span className="text-gray-400 font-normal">Not paid</span>}
+              </p>
+            </div>
+          </div>
+
+          <div className="card p-3.5 border border-gray-100 dark:border-white/5">
+            <div className="flex items-center justify-between mb-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><Wallet size={12} /> Deposits</p>
+              <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${tierStyle.badge}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${tierStyle.dot}`} /> {depositStatusLabel(daysSinceDeposit)}
+              </span>
+            </div>
+            {nextDue && (
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2.5">
+                Next deposit due <span className="font-medium text-gray-700 dark:text-gray-200">{formatDateLabelSafe(nextDue)}</span>
+              </p>
+            )}
+            {driverDeposits.length === 0 ? (
+              <p className="text-[11px] text-gray-400">No deposits logged yet.</p>
+            ) : (
+              <div className="space-y-1">
+                {driverDeposits.map((dep) => (
+                  <div key={dep.id} className="flex items-center justify-between text-[11px] py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
+                    <span className="text-gray-500 dark:text-gray-400">{formatDateLabelSafe(dep.paid_date)}</span>
+                    <span className="font-medium">{dep.amount.toLocaleString()} RWF</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="card p-3.5 border border-gray-100 dark:border-white/5">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><Receipt size={12} /> Fines</p>
+            {driverFines.length === 0 ? (
+              <p className="text-[11px] text-gray-400">No fine.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {driverFines.map((f) => (
+                  <div key={f.id} className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
+                    <div className="min-w-0">
+                      <p className="text-gray-500 dark:text-gray-400">{formatDateLabelSafe(f.fine_date)}</p>
+                      {f.reason && <p className="text-gray-400 truncate">{f.reason}</p>}
+                    </div>
+                    <span className="font-medium text-red-500 shrink-0">{f.amount.toLocaleString()} RWF</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {driver.notes && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Notes</p>
+              <p className="text-[12px] leading-relaxed whitespace-pre-wrap">{driver.notes}</p>
+            </div>
+          )}
+
+          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+            {canEdit ? (
+              <button onClick={() => setFlagOpen(true)} className="btn-ghost text-gray-500 flex items-center gap-1.5">
+                <Flag size={13} /> Flag to IT
+              </button>
+            ) : <span />}
+            <div className="flex gap-2">
+              <button onClick={onClose} className="btn-ghost">Close</button>
+              {canEdit && (
+                <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">
+                  <Pencil size={13} /> Edit
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -238,6 +370,7 @@ export default function DriverDrawer({
           </div>
         )}
       </div>
+      )}
 
       {flagOpen && driver && (
         <FlagToITDrawer

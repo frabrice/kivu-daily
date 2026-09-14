@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverStage, Profile } from './supabase';
-import { todayStr } from './utils';
+import { todayStr, dateStr, addDays } from './utils';
 
 // Fleet's own dashboard, plus the identical bundled view given to Call
 // Center and IT (both need the full Fleet picture - not a read-only
@@ -89,6 +89,48 @@ export function depositDaysSince(
 ): number | null {
   const date = effectiveLastDepositDate(lastLoggedDate, initialDepositPaid, initialDepositDate);
   return date ? Math.floor((new Date(todayStr()).getTime() - new Date(date).getTime()) / 86400000) : null;
+}
+
+export type DepositTier = 'red' | 'yellow' | 'green' | 'neutral';
+
+// Traffic-light heads-up on top of the 7-day cycle: green once 3 days
+// remain, yellow for the last two days (including "due tomorrow"), red
+// once the deposit day itself arrives unpaid. Neutral covers the first
+// few days of the cycle, where there's nothing to flag yet.
+export function depositTier(daysSince: number | null): DepositTier {
+  if (daysSince === null || daysSince >= 7) return 'red';
+  if (daysSince >= 5) return 'yellow';
+  if (daysSince === 4) return 'green';
+  return 'neutral';
+}
+
+export const DEPOSIT_TIER_STYLE: Record<DepositTier, { dot: string; text: string; badge: string }> = {
+  red: { dot: 'bg-red-500', text: 'text-red-500', badge: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10' },
+  yellow: { dot: 'bg-amber-400', text: 'text-amber-600 dark:text-amber-400', badge: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10' },
+  green: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', badge: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10' },
+  neutral: { dot: 'bg-gray-200 dark:bg-white/10', text: 'text-gray-400', badge: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5' },
+};
+
+export function depositStatusLabel(daysSince: number | null): string {
+  if (daysSince === null) return 'Never paid';
+  if (daysSince >= 7) return `Overdue by ${daysSince - 6}d`;
+  if (daysSince === 6) return 'Due tomorrow';
+  if (daysSince === 5) return 'Due in 2 days';
+  if (daysSince === 4) return 'Due in 3 days';
+  return `Paid ${daysSince}d ago`;
+}
+
+// The 7-day cycle's next due date, for showing an actual date rather
+// than just a day-count - same effective-start-date rule as
+// depositDaysSince (last logged deposit, or the initial deposit date
+// when nothing's been logged yet).
+export function nextDepositDueDate(
+  lastLoggedDate: string | null,
+  initialDepositPaid: boolean,
+  initialDepositDate: string | null
+): string | null {
+  const effective = effectiveLastDepositDate(lastLoggedDate, initialDepositPaid, initialDepositDate);
+  return effective ? dateStr(addDays(new Date(`${effective}T00:00:00`), 7)) : null;
 }
 
 export function formatDateLabelSafe(d: string): string {
