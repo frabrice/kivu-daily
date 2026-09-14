@@ -33,6 +33,17 @@
   .dark select {
     color-scheme: dark;
   }
+
+  /* color-scheme alone isn't enough on every browser/OS combo - some
+     still paint the open option list with a light background while the
+     select's own dark:text-* class makes the text light too, so every
+     unhovered row reads as near-invisible white-on-white (only the
+     browser's own hover highlight is legible). Setting the option list's
+     colors directly is the fallback that actually holds regardless. */
+  .dark select option {
+    background-color: #1d2f43;
+    color: #f3f4f6;
+  }
 }
 
 @layer components {
