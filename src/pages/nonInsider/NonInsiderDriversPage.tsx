@@ -10,9 +10,9 @@ import PlatformDriverDrawer from '../../components/nonInsider/PlatformDriverDraw
 
 interface DriverDrawerState { driver: PlatformDriver | null; startEditing: boolean }
 
-export default function NonInsiderDriversPage() {
+export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeof useNonInsiderData> }) {
   const { profile } = useAuth();
-  const { drivers, cars, loading, reload } = useNonInsiderData();
+  const { drivers, cars, reload } = data;
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'fleet' || profile?.department?.slug === 'call_center';
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');
@@ -28,28 +28,15 @@ export default function NonInsiderDriversPage() {
     );
   }, [drivers, search]);
 
-  const noCarCount = drivers.filter((d) => !d.car_id).length;
-
-  if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
-        <div>
-          <h2 className="text-base font-semibold flex items-center gap-2">
-            <Users2 size={16} className="text-brand-600 dark:text-brand-300" /> Non-Insider Drivers
-            {noCarCount > 0 && <span className="text-[9px] font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded-full">{noCarCount} no car</span>}
-          </h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">
-            Drivers live on the platform whose car isn't part of our managed fleet - onboarded early to build up visible fleet size. Driver and car are tracked separately so a swap or repossession never needs touching the driver's login.
-          </p>
+        <div className="relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or plate" className="input pl-8 w-56" />
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or plate" className="input pl-8 w-56" />
-          </div>
           {canEdit && (
             <button onClick={() => setDrawer({ driver: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
               <Plus size={14} /> Add Driver

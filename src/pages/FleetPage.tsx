@@ -6,7 +6,7 @@ import FleetPipelinePage from './fleet/FleetPipelinePage';
 import FleetVehiclesPage from './fleet/FleetVehiclesPage';
 import FleetDepositsPage from './fleet/FleetDepositsPage';
 import FleetFinesPage from './fleet/FleetFinesPage';
-import NonInsiderDriversPage from './nonInsider/NonInsiderDriversPage';
+import NonInsiderPage from './nonInsider/NonInsiderPage';
 
 // MD-only view: Fleet employees see these four areas as separate sidebar
 // pages (src/pages/fleet/*); the MD sees them bundled as tabs on one
@@ -34,14 +34,14 @@ export default function FleetPage() {
         <TabButton active={tab === 'vehicles'} onClick={() => setTab('vehicles')} icon={Car} label="Vehicles" />
         <TabButton active={tab === 'deposits'} onClick={() => setTab('deposits')} icon={Wallet} label="Deposits" badge={overdueCount} />
         <TabButton active={tab === 'fines'} onClick={() => setTab('fines')} icon={Receipt} label="Fines" />
-        <TabButton active={tab === 'non_insider'} onClick={() => setTab('non_insider')} icon={Users2} label="Non-Insider Drivers" />
+        <TabButton active={tab === 'non_insider'} onClick={() => setTab('non_insider')} icon={Users2} label="Non-Insider" />
       </div>
 
       {tab === 'pipeline' && <FleetPipelinePage data={data} />}
       {tab === 'vehicles' && <FleetVehiclesPage data={data} />}
       {tab === 'deposits' && <FleetDepositsPage data={data} />}
       {tab === 'fines' && <FleetFinesPage data={data} />}
-      {tab === 'non_insider' && <NonInsiderDriversPage />}
+      {tab === 'non_insider' && <NonInsiderPage />}
     </div>
   );
 }
