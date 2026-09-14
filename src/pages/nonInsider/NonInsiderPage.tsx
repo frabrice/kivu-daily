@@ -59,6 +59,21 @@ export default function NonInsiderPage() {
         )}
       </div>
 
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="card p-3.5">
+          <p className="stat-label mb-0.5">Drivers</p>
+          <p className="text-xl font-bold leading-none">{data.drivers.length}</p>
+        </div>
+        <div className="card p-3.5">
+          <p className="stat-label mb-0.5">Vehicles</p>
+          <p className="text-xl font-bold leading-none">{data.cars.length}</p>
+        </div>
+        <div className="card p-3.5">
+          <p className="stat-label mb-0.5">No Car Assigned</p>
+          <p className={`text-xl font-bold leading-none ${noCarCount > 0 ? 'text-orange-500' : ''}`}>{noCarCount}</p>
+        </div>
+      </div>
+
       {syncResult && (
         <div className="text-[12px] text-positive bg-positive/10 rounded-lg px-3 py-2">
           Synced {syncResult.fetched} platform drivers - {syncResult.drivers.created} new / {syncResult.drivers.updated} updated,{' '}
