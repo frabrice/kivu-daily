@@ -109,6 +109,7 @@ export interface DriverFine {
 
 export interface PlatformCar {
   id: string;
+  external_id: number | null;
   plate_number: string;
   make: string | null;
   model: string | null;
@@ -123,6 +124,7 @@ export interface PlatformCar {
 
 export interface PlatformDriver {
   id: string;
+  external_id: number | null;
   full_name: string;
   phone: string;
   email: string | null;
