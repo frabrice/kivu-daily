@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet } from '../../lib/fleet';
-import { todayStr } from '../../lib/utils';
+import { useFleetData, canEditFleet, depositDaysSince } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 
@@ -29,24 +28,24 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
     const assigned = drivers.filter((d) => d.vehicle_id);
     const rows = assigned.map((d) => {
       const history = depositsForDriver(d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
-      const last = history[0] ?? null;
-      const daysSince = last ? Math.floor((new Date(todayStr()).getTime() - new Date(last.paid_date).getTime()) / 86400000) : null;
+      const lastLogged = history[0]?.paid_date ?? null;
+      const daysSince = depositDaysSince(lastLogged, d.initial_deposit_paid, d.initial_deposit_date);
       let priority: number;
       let label: string;
-      if (!last) {
+      if (daysSince === null) {
         priority = 0;
         label = 'Never paid';
-      } else if (daysSince! >= 7) {
+      } else if (daysSince >= 7) {
         priority = 1;
-        label = `Overdue by ${daysSince! - 6}d`;
-      } else if (daysSince! === 6) {
+        label = `Overdue by ${daysSince - 6}d`;
+      } else if (daysSince === 6) {
         priority = 2;
         label = 'Due tomorrow';
       } else {
         priority = 3;
         label = `Paid ${daysSince} d ago`;
       }
-      return { driver: d, last, daysSince, priority, label };
+      return { driver: d, daysSince, priority, label };
     });
     return rows
       .filter((r) => {

@@ -32,6 +32,7 @@ export default function DriverDrawer({
   const [email, setEmail] = useState(driver?.email ?? '');
   const [joinDate, setJoinDate] = useState(driver?.join_date ?? todayStr());
   const [initialDepositPaid, setInitialDepositPaid] = useState(driver?.initial_deposit_paid ?? false);
+  const [initialDepositDate, setInitialDepositDate] = useState(driver?.initial_deposit_date ?? '');
   const [stage, setStage] = useState<DriverStage>(driver?.stage ?? 'applying');
   const [notes, setNotes] = useState(driver?.notes ?? '');
   const [vehicleId, setVehicleId] = useState(driver?.vehicle_id ?? '');
@@ -51,6 +52,10 @@ export default function DriverDrawer({
       setError('Pick a shift for this driver on the assigned vehicle.');
       return;
     }
+    if (initialDepositPaid && !initialDepositDate) {
+      setError('Enter the date the initial deposit was paid.');
+      return;
+    }
     setSaving(true);
     setError('');
     const payload = {
@@ -59,6 +64,7 @@ export default function DriverDrawer({
       email: email.trim() || null,
       join_date: joinDate || null,
       initial_deposit_paid: initialDepositPaid,
+      initial_deposit_date: initialDepositPaid ? initialDepositDate : null,
       stage,
       notes: notes.trim() || null,
       vehicle_id: vehicleId || null,
@@ -116,10 +122,28 @@ export default function DriverDrawer({
           </select>
         </div>
 
-        <label className={`flex items-center gap-2.5 p-2.5 rounded-lg border ${initialDepositPaid ? 'border-brand/30 bg-brand/5' : 'border-gray-200 dark:border-white/10'}`}>
-          <input type="checkbox" checked={initialDepositPaid} onChange={(e) => setInitialDepositPaid(e.target.checked)} disabled={!editing} className="w-4 h-4 accent-brand" />
-          <span className="text-[12px] font-medium">Initial deposit paid</span>
-        </label>
+        <div className={`p-2.5 rounded-lg border space-y-2 ${initialDepositPaid ? 'border-brand/30 bg-brand/5' : 'border-gray-200 dark:border-white/10'}`}>
+          <label className="flex items-center gap-2.5">
+            <input
+              type="checkbox"
+              checked={initialDepositPaid}
+              onChange={(e) => {
+                setInitialDepositPaid(e.target.checked);
+                if (e.target.checked && !initialDepositDate) setInitialDepositDate(todayStr());
+              }}
+              disabled={!editing}
+              className="w-4 h-4 accent-brand"
+            />
+            <span className="text-[12px] font-medium">Initial deposit paid</span>
+          </label>
+          {initialDepositPaid && (
+            <div>
+              <label className="block text-[11px] font-medium mb-1 text-gray-500 flex items-center gap-1"><CalendarDays size={10} /> Date Paid</label>
+              <input type="date" value={initialDepositDate} onChange={(e) => setInitialDepositDate(e.target.value)} disabled={!editing} className="input" />
+              <p className="text-[10px] text-gray-400 mt-1">The weekly deposit cycle in Deposits counts from here until a real deposit is logged.</p>
+            </div>
+          )}
+        </div>
 
         <div>
           <label className="block text-[12px] font-medium mb-1.5 text-gray-500">Assigned Vehicle</label>
@@ -198,7 +222,7 @@ export default function DriverDrawer({
             ) : <span />}
             <div className="flex gap-2">
               <button onClick={() => (driver ? setEditing(false) : onClose())} className="btn-ghost">Cancel</button>
-              <button onClick={save} disabled={saving || !fullName.trim() || !phone.trim() || vehicleFull} className="btn-primary disabled:opacity-50">
+              <button onClick={save} disabled={saving || !fullName.trim() || !phone.trim() || vehicleFull || (initialDepositPaid && !initialDepositDate)} className="btn-primary disabled:opacity-50">
                 {saving ? 'Saving…' : driver ? 'Save Changes' : 'Add Driver'}
               </button>
             </div>

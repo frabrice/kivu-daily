@@ -74,6 +74,7 @@ export interface Driver {
   email: string | null;
   join_date: string | null;
   initial_deposit_paid: boolean;
+  initial_deposit_date: string | null;
   stage: DriverStage;
   notes: string | null;
   vehicle_id: string | null;

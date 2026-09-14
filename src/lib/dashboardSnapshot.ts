@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from './supabase';
+import { depositDaysSince } from './fleet';
 import { todayStr } from './utils';
 
 export interface CompanySnapshot {
@@ -41,7 +42,7 @@ export function useCompanySnapshot() {
       campaignsRes, contactsRes,
       productsRes, storiesRes,
     ] = await Promise.all([
-      supabase.from('drivers').select('id, stage, vehicle_id'),
+      supabase.from('drivers').select('id, stage, vehicle_id, initial_deposit_paid, initial_deposit_date'),
       supabase.from('vehicles').select('id', { count: 'exact', head: true }),
       supabase.from('driver_deposits').select('driver_id, paid_date'),
       supabase.from('finance_transactions').select('amount, direction').gte('transaction_date', monthStart),
@@ -53,16 +54,14 @@ export function useCompanySnapshot() {
       supabase.from('user_stories').select('source, status'),
     ]);
 
-    const drivers = (driversRes.data as { id: string; stage: string; vehicle_id: string | null }[]) ?? [];
+    const drivers = (driversRes.data as { id: string; stage: string; vehicle_id: string | null; initial_deposit_paid: boolean; initial_deposit_date: string | null }[]) ?? [];
     const deposits = (depositsRes.data as { driver_id: string; paid_date: string }[]) ?? [];
     const overdueDeposits = drivers
       .filter((d) => d.vehicle_id)
       .filter((d) => {
-        const history = deposits.filter((dep) => dep.driver_id === d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
-        const last = history[0];
-        if (!last) return true;
-        const daysSince = Math.floor((new Date(todayStr()).getTime() - new Date(last.paid_date).getTime()) / 86400000);
-        return daysSince >= 7;
+        const lastLogged = deposits.filter((dep) => dep.driver_id === d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date))[0]?.paid_date ?? null;
+        const daysSince = depositDaysSince(lastLogged, d.initial_deposit_paid, d.initial_deposit_date);
+        return daysSince === null || daysSince >= 7;
       }).length;
 
     const monthTx = (monthTxRes.data as { amount: number; direction: 'in' | 'out' }[]) ?? [];

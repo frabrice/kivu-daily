@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Truck, Car, Wallet, Receipt, Users2 } from 'lucide-react';
-import { useFleetData } from '../lib/fleet';
-import { todayStr } from '../lib/utils';
+import { useFleetData, depositDaysSince } from '../lib/fleet';
 import FleetPipelinePage from './fleet/FleetPipelinePage';
 import FleetVehiclesPage from './fleet/FleetVehiclesPage';
 import FleetDepositsPage from './fleet/FleetDepositsPage';
@@ -23,11 +22,9 @@ export default function FleetPage() {
   const { drivers, deposits } = data;
 
   const overdueCount = drivers.filter((d) => d.vehicle_id).filter((d) => {
-    const history = deposits.filter((dep) => dep.driver_id === d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
-    const last = history[0];
-    if (!last) return true;
-    const daysSince = Math.floor((new Date(todayStr()).getTime() - new Date(last.paid_date).getTime()) / 86400000);
-    return daysSince >= 7;
+    const lastLogged = deposits.filter((dep) => dep.driver_id === d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date))[0]?.paid_date ?? null;
+    const daysSince = depositDaysSince(lastLogged, d.initial_deposit_paid, d.initial_deposit_date);
+    return daysSince === null || daysSince >= 7;
   }).length;
 
   return (

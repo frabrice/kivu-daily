@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverStage, Profile } from './supabase';
+import { todayStr } from './utils';
 
 // Fleet's own dashboard, plus the identical bundled view given to Call
 // Center and IT (both need the full Fleet picture - not a read-only
@@ -61,6 +62,34 @@ export const STAGES: { key: DriverStage; label: string; color: string }[] = [
 ];
 
 export const WEEKLY_DEPOSIT_AMOUNT = 180000;
+
+// The 7-day deposit cycle counts from whichever is more recent: the last
+// driver_deposits row actually logged in this app, or - for a driver
+// onboarded before this app tracked deposits - the date their initial
+// deposit was paid. Without the latter, every driver entered with
+// initial_deposit_paid already true but zero logged rows read as "Never
+// paid" and was immediately flagged overdue, regardless of when they
+// really paid. Takes plain fields rather than a Driver so it works both
+// against full driver rows and the lighter partial rows the MD
+// dashboard's snapshot fetches.
+export function effectiveLastDepositDate(
+  lastLoggedDate: string | null,
+  initialDepositPaid: boolean,
+  initialDepositDate: string | null
+): string | null {
+  const initial = initialDepositPaid ? initialDepositDate : null;
+  if (lastLoggedDate && initial) return lastLoggedDate > initial ? lastLoggedDate : initial;
+  return lastLoggedDate ?? initial ?? null;
+}
+
+export function depositDaysSince(
+  lastLoggedDate: string | null,
+  initialDepositPaid: boolean,
+  initialDepositDate: string | null
+): number | null {
+  const date = effectiveLastDepositDate(lastLoggedDate, initialDepositPaid, initialDepositDate);
+  return date ? Math.floor((new Date(todayStr()).getTime() - new Date(date).getTime()) / 86400000) : null;
+}
 
 export function formatDateLabelSafe(d: string): string {
   try {
