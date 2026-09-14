@@ -7,6 +7,7 @@ import {
   Package, AlertTriangle,
   Image as ImageIcon,
   LayoutDashboard, ArrowLeftRight, Landmark, ClipboardCheck,
+  CarFront,
 } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import NotificationBell from '../components/NotificationBell';
@@ -20,6 +21,7 @@ import FleetPipelinePage from './fleet/FleetPipelinePage';
 import FleetVehiclesPage from './fleet/FleetVehiclesPage';
 import FleetDepositsPage from './fleet/FleetDepositsPage';
 import FleetFinesPage from './fleet/FleetFinesPage';
+import NonInsiderDriversPage from './nonInsider/NonInsiderDriversPage';
 import FinanceDashboardPage from './finance/FinanceDashboardPage';
 import FinanceRevenuePage from './finance/FinanceRevenuePage';
 import FinanceFleetCollectionsPage from './finance/FinanceFleetCollectionsPage';
@@ -89,6 +91,7 @@ export default function EmployeeApp() {
     marketing_followups: 'Follow-ups',
     it_hub_products: 'Products',
     it_hub_issues: 'Issues',
+    non_insider_drivers: 'Non-Insider Drivers',
   };
   const title = TITLES[active];
 
@@ -100,6 +103,7 @@ export default function EmployeeApp() {
       { key: 'fleet_vehicles' as const, label: 'Vehicles', icon: Car },
       { key: 'fleet_deposits' as const, label: 'Deposits', icon: Wallet },
       { key: 'fleet_fines' as const, label: 'Fines', icon: Receipt },
+      { key: 'non_insider_drivers' as const, label: 'Non-Insider Drivers', icon: CarFront },
     ] : []),
     ...(profile?.department?.slug === 'finance' ? [
       { key: 'finance_dashboard' as const, label: 'Finance Dashboard', icon: LayoutDashboard },
@@ -117,6 +121,7 @@ export default function EmployeeApp() {
       { key: 'call_center_queue' as const, label: 'Call Queue', icon: PhoneCall },
       { key: 'call_center_directory' as const, label: 'Directory', icon: Users2 },
       { key: 'call_center_scripts' as const, label: 'Scripts', icon: BookOpen },
+      { key: 'non_insider_drivers' as const, label: 'Non-Insider Drivers', icon: CarFront },
     ] : []),
     ...(profile?.department?.slug === 'marketing_sales_bd' ? [
       { key: 'marketing_campaigns' as const, label: 'Campaigns', icon: Target },
@@ -141,6 +146,7 @@ export default function EmployeeApp() {
       {active === 'fleet_vehicles' && <FleetVehiclesPage />}
       {active === 'fleet_deposits' && <FleetDepositsPage />}
       {active === 'fleet_fines' && <FleetFinesPage />}
+      {active === 'non_insider_drivers' && <NonInsiderDriversPage />}
 
       {active === 'finance_dashboard' && <FinanceDashboardPage />}
       {active === 'finance_revenue' && <FinanceRevenuePage />}

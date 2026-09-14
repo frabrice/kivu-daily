@@ -56,7 +56,8 @@ export type NavKey =
   | 'marketing_campaigns'
   | 'marketing_followups'
   | 'it_hub_products'
-  | 'it_hub_issues';
+  | 'it_hub_issues'
+  | 'non_insider_drivers';
 
 export interface NavItem {
   key: NavKey;

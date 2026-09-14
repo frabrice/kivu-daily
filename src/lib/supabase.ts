@@ -107,6 +107,34 @@ export interface DriverFine {
   vehicle?: Vehicle | null;
 }
 
+export interface PlatformCar {
+  id: string;
+  plate_number: string;
+  make: string | null;
+  model: string | null;
+  color: string | null;
+  is_branded: boolean | null;
+  allows_branding: boolean | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlatformDriver {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  is_owner: boolean | null;
+  car_id: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  car?: PlatformCar | null;
+}
+
 export type ReviewStatus = 'completed' | 'in_progress' | 'not_done';
 
 export interface Task {

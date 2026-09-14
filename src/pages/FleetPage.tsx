@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { Truck, Car, Wallet, Receipt } from 'lucide-react';
+import { Truck, Car, Wallet, Receipt, Users2 } from 'lucide-react';
 import { useFleetData } from '../lib/fleet';
 import { todayStr } from '../lib/utils';
 import FleetPipelinePage from './fleet/FleetPipelinePage';
 import FleetVehiclesPage from './fleet/FleetVehiclesPage';
 import FleetDepositsPage from './fleet/FleetDepositsPage';
 import FleetFinesPage from './fleet/FleetFinesPage';
+import NonInsiderDriversPage from './nonInsider/NonInsiderDriversPage';
 
 // MD-only view: Fleet employees see these four areas as separate sidebar
 // pages (src/pages/fleet/*); the MD sees them bundled as tabs on one
 // screen instead, since a fully expanded sidebar for every department
 // would be unmanageable for the one role that already sees everything.
-type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'fines';
+type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'fines' | 'non_insider';
 
 export default function FleetPage() {
   const [tab, setTab] = useState<Tab>('pipeline');
@@ -33,12 +34,14 @@ export default function FleetPage() {
         <TabButton active={tab === 'vehicles'} onClick={() => setTab('vehicles')} icon={Car} label="Vehicles" />
         <TabButton active={tab === 'deposits'} onClick={() => setTab('deposits')} icon={Wallet} label="Deposits" badge={overdueCount} />
         <TabButton active={tab === 'fines'} onClick={() => setTab('fines')} icon={Receipt} label="Fines" />
+        <TabButton active={tab === 'non_insider'} onClick={() => setTab('non_insider')} icon={Users2} label="Non-Insider Drivers" />
       </div>
 
       {tab === 'pipeline' && <FleetPipelinePage data={data} />}
       {tab === 'vehicles' && <FleetVehiclesPage data={data} />}
       {tab === 'deposits' && <FleetDepositsPage data={data} />}
       {tab === 'fines' && <FleetFinesPage data={data} />}
+      {tab === 'non_insider' && <NonInsiderDriversPage />}
     </div>
   );
 }

@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { PhoneCall, Users2, BookOpen } from 'lucide-react';
+import { PhoneCall, Users2, BookOpen, CarFront } from 'lucide-react';
 import { useCallCenterData } from '../lib/callCenter';
 import CallQueuePage from './callCenter/CallQueuePage';
 import CallDirectoryPage from './callCenter/CallDirectoryPage';
 import CallScriptsPage from './callCenter/CallScriptsPage';
+import NonInsiderDriversPage from './nonInsider/NonInsiderDriversPage';
 
 // MD-only: Call Center employees see Queue/Directory/Scripts as separate
 // sidebar pages (src/pages/callCenter/*); the MD sees them as tabs here.
-type Tab = 'queue' | 'directory' | 'scripts';
+type Tab = 'queue' | 'directory' | 'scripts' | 'non_insider';
 
 export default function CallCenterPage() {
   const [tab, setTab] = useState<Tab>('queue');
@@ -29,11 +30,13 @@ export default function CallCenterPage() {
         <TabButton active={tab === 'queue'} onClick={() => setTab('queue')} icon={PhoneCall} label="Call Queue" badge={urgentCount} />
         <TabButton active={tab === 'directory'} onClick={() => setTab('directory')} icon={Users2} label="Directory" />
         <TabButton active={tab === 'scripts'} onClick={() => setTab('scripts')} icon={BookOpen} label="Scripts" />
+        <TabButton active={tab === 'non_insider'} onClick={() => setTab('non_insider')} icon={CarFront} label="Non-Insider Drivers" />
       </div>
 
       {tab === 'queue' && <CallQueuePage data={data} />}
       {tab === 'directory' && <CallDirectoryPage data={data} />}
       {tab === 'scripts' && <CallScriptsPage data={data} />}
+      {tab === 'non_insider' && <NonInsiderDriversPage />}
     </div>
   );
 }
