@@ -1,5 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverStage } from './supabase';
+import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverStage, Profile } from './supabase';
+
+// Fleet's own dashboard, plus the identical bundled view given to Call
+// Center and IT (both need the full Fleet picture - not a read-only
+// mirror of it, and not fragmented into separate sidebar pages the way
+// Fleet's own staff see it) - kept as one helper so the departments
+// allowed to edit stay in sync with the RLS policies on the other end.
+const FLEET_EDIT_DEPARTMENTS = ['fleet', 'call_center', 'it'];
+
+export function canEditFleet(profile: Profile | null | undefined): boolean {
+  return profile?.role === 'managing_director' || FLEET_EDIT_DEPARTMENTS.includes(profile?.department?.slug ?? '');
+}
 
 // Shared by every Fleet page (Driver Pipeline, Vehicles, Deposits, Fines) so
 // each can be its own nav destination without re-fetching/duplicating the

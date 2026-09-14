@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, CarFront, User } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
+import { canEditFleet } from '../../lib/fleet';
 import { useNonInsiderData, yesNoUnknown } from '../../lib/nonInsider';
 import { PlatformCar } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
@@ -13,7 +14,7 @@ interface CarDrawerState { car: PlatformCar | null; startEditing: boolean }
 export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<typeof useNonInsiderData> }) {
   const { profile } = useAuth();
   const { drivers, cars, reload } = data;
-  const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'fleet' || profile?.department?.slug === 'call_center';
+  const canEdit = canEditFleet(profile);
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');
   const [drawer, setDrawer] = useState<CarDrawerState | null>(null);

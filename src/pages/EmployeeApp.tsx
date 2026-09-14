@@ -133,6 +133,7 @@ export default function EmployeeApp() {
     ...(profile?.department?.slug === 'it' ? [
       { key: 'it_hub_products' as const, label: 'Products', icon: Package },
       { key: 'it_hub_issues' as const, label: 'Issues', icon: AlertTriangle },
+      { key: 'fleet' as const, label: 'Fleet', icon: Truck },
     ] : []),
     { key: 'analytics', label: 'Analytics', icon: TrendingUp },
     { key: 'help', label: 'How to Use', icon: HelpCircle },

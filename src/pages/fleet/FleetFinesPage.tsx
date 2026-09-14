@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, Receipt, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, formatDateLabelSafe } from '../../lib/fleet';
+import { useFleetData, formatDateLabelSafe, canEditFleet } from '../../lib/fleet';
 import { DriverFine } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
@@ -23,7 +23,7 @@ function FleetFinesPageWithData() {
 function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
   const { drivers, vehicles, fines, loading, reload } = data;
-  const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'fleet';
+  const canEdit = canEditFleet(profile);
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');
   const [fineDrawer, setFineDrawer] = useState<FineDrawerState | null>(null);

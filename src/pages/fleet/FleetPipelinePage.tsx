@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, Phone, Car, Truck } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, STAGES } from '../../lib/fleet';
+import { useFleetData, STAGES, canEditFleet } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
@@ -29,7 +29,7 @@ function FleetPipelinePageWithData() {
 function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
   const { drivers, vehicles, loading, reload } = data;
-  const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'fleet';
+  const canEdit = canEditFleet(profile);
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');
   const [driverDrawer, setDriverDrawer] = useState<DriverDrawerState | null>(null);

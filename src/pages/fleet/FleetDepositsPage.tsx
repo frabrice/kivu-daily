@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData } from '../../lib/fleet';
+import { useFleetData, canEditFleet } from '../../lib/fleet';
 import { todayStr } from '../../lib/utils';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
@@ -19,7 +19,7 @@ function FleetDepositsPageWithData() {
 function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
   const { drivers, deposits, loading, reload } = data;
-  const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'fleet';
+  const canEdit = canEditFleet(profile);
   const [search, setSearch] = useState('');
   const [loggingDepositFor, setLoggingDepositFor] = useState<Driver | null>(null);
 

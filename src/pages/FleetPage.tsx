@@ -11,10 +11,10 @@ import NonInsiderPage from './nonInsider/NonInsiderPage';
 // Fleet's own employees see these four areas as separate sidebar pages
 // (src/pages/fleet/*) instead, since a fully expanded sidebar for every
 // department would be unmanageable for a role that already sees
-// everything. This bundled version is for the MD and, view-only (each
-// leaf page's canEdit checks stay fleet + MD), for Call Center too -
-// they need the same full picture without yet another fragmented
-// sidebar stacked on top of their own.
+// everything. This bundled version is for the MD, and identically -
+// full edit rights included, see canEditFleet() in lib/fleet.ts - for
+// Call Center and IT, who both need the same full picture without yet
+// another fragmented sidebar stacked on top of their own.
 type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'fines' | 'non_insider';
 
 export default function FleetPage() {
