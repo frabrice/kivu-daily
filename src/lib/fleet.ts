@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverStage, DriverRestDay, Profile } from './supabase';
+import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverStage, DriverRestDay, DepositPaymentMethod, Profile } from './supabase';
 import { todayStr, dateStr, addDays } from './utils';
 
 // Fleet's own dashboard, plus the identical bundled view given to Call
@@ -66,6 +66,18 @@ export const STAGES: { key: DriverStage; label: string; color: string }[] = [
 ];
 
 export const WEEKLY_DEPOSIT_AMOUNT = 180000;
+
+export const DEPOSIT_PAYMENT_METHODS: { key: DepositPaymentMethod; label: string }[] = [
+  { key: 'momo', label: 'MoMo' },
+  { key: 'bank', label: 'Bank Transfer' },
+];
+
+// A deposit under the full weekly amount still counts as this week's
+// payment (it resets the cycle) but leaves a balance the driver still
+// owes for the week - shown in red rather than silently rounded away.
+export function depositShortfall(amountPaid: number): number {
+  return Math.max(WEEKLY_DEPOSIT_AMOUNT - amountPaid, 0);
+}
 
 export const REST_DAYS: { key: DriverRestDay; label: string; short: string }[] = [
   { key: 'monday', label: 'Monday', short: 'Mon' },
@@ -144,6 +156,44 @@ export function nextDepositDueDate(
 ): string | null {
   const effective = effectiveLastDepositDate(lastLoggedDate, initialDepositPaid, initialDepositDate);
   return effective ? dateStr(addDays(new Date(`${effective}T00:00:00`), 7)) : null;
+}
+
+export interface DepositReliability {
+  onTime: number;
+  late: number;
+  totalCycles: number;
+  totalPaid: number;
+  onTimeRate: number | null;
+}
+
+// Walks a driver's logged deposits in date order, treating each gap from
+// the previous payment (or the initial deposit date, for the first one)
+// as one week's cycle - on time if it landed within 7 days, late
+// otherwise. This is the closest thing to "how good they are" that can
+// be derived from the data actually on file, without inventing a fixed
+// due-date ledger the app doesn't otherwise keep.
+export function computeDepositReliability(driver: Driver, deposits: DriverDeposit[]): DepositReliability {
+  const history = deposits
+    .filter((d) => d.driver_id === driver.id)
+    .slice()
+    .sort((a, b) => a.paid_date.localeCompare(b.paid_date));
+
+  let anchor = driver.initial_deposit_paid ? driver.initial_deposit_date : null;
+  let onTime = 0;
+  let late = 0;
+  let totalPaid = 0;
+
+  for (const dep of history) {
+    totalPaid += dep.amount;
+    if (anchor) {
+      const gapDays = Math.floor((new Date(`${dep.paid_date}T00:00:00`).getTime() - new Date(`${anchor}T00:00:00`).getTime()) / 86400000);
+      if (gapDays <= 7) onTime++; else late++;
+    }
+    anchor = dep.paid_date;
+  }
+
+  const totalCycles = onTime + late;
+  return { onTime, late, totalCycles, totalPaid, onTimeRate: totalCycles > 0 ? Math.round((onTime / totalCycles) * 100) : null };
 }
 
 export type FineStatus = 'unpaid' | 'partial' | 'paid';

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, depositDaysSince, depositTier, depositStatusLabel, DEPOSIT_TIER_STYLE } from '../../lib/fleet';
+import { useFleetData, canEditFleet, depositDaysSince, depositTier, depositStatusLabel, DEPOSIT_TIER_STYLE, depositShortfall } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 
@@ -30,11 +30,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
     const assigned = drivers.filter((d) => d.vehicle_id);
     const rows = assigned.map((d) => {
       const history = depositsForDriver(d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
-      const lastLogged = history[0]?.paid_date ?? null;
-      const daysSince = depositDaysSince(lastLogged, d.initial_deposit_paid, d.initial_deposit_date);
+      const lastDeposit = history[0] ?? null;
+      const daysSince = depositDaysSince(lastDeposit?.paid_date ?? null, d.initial_deposit_paid, d.initial_deposit_date);
       const tier = depositTier(daysSince);
       const label = depositStatusLabel(daysSince);
-      return { driver: d, daysSince, tier, priority: TIER_PRIORITY[tier], label };
+      const shortfall = lastDeposit ? depositShortfall(lastDeposit.amount) : 0;
+      return { driver: d, daysSince, tier, priority: TIER_PRIORITY[tier], label, lastDeposit, shortfall };
     });
     return rows
       .filter((r) => {
@@ -76,7 +77,15 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                   <Car size={10} /> {row.driver.vehicle?.plate_number}
                   {row.driver.shift && <span>· {row.driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
                 </p>
+                {row.shortfall > 0 && (
+                  <p className="text-[10px] text-red-500 font-medium mt-0.5">{row.shortfall.toLocaleString()} RWF remaining this week</p>
+                )}
               </div>
+              {row.lastDeposit?.status === 'pending' && (
+                <span className="text-[9px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                  Pending
+                </span>
+              )}
               <span className={`text-[10px] font-medium shrink-0 px-2 py-0.5 rounded-full ${style.badge}`}>
                 {row.label}
               </span>

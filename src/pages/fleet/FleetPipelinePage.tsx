@@ -7,6 +7,7 @@ import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import DriverDrawer from '../../components/fleet/DriverDrawer';
+import DriverProfilePage from './DriverProfilePage';
 
 interface DriverDrawerState { driver: Driver | null; startEditing: boolean }
 
@@ -33,6 +34,11 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
   const [view, setView] = useState<ViewMode>('table');
   const [search, setSearch] = useState('');
   const [driverDrawer, setDriverDrawer] = useState<DriverDrawerState | null>(null);
+  // Keyed by id (not the object itself) so the profile page stays live -
+  // e.g. reflects an edit made from it, or a new deposit - instead of
+  // freezing on the snapshot that was current when it was opened.
+  const [viewingDriverId, setViewingDriverId] = useState<string | null>(null);
+  const viewingDriver = viewingDriverId ? drivers.find((d) => d.id === viewingDriverId) ?? null : null;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -47,6 +53,34 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
   }, [filtered]);
 
   if (loading) return <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-6 gap-3">{STAGES.map((s) => <div key={s.key} className="h-40 skeleton rounded-xl" />)}</div>;
+
+  if (viewingDriver) {
+    return (
+      <>
+        <DriverProfilePage
+          driver={viewingDriver}
+          deposits={deposits}
+          fines={fines}
+          finePayments={finePayments}
+          canEdit={canEdit}
+          onBack={() => setViewingDriverId(null)}
+          onEdit={() => setDriverDrawer({ driver: viewingDriver, startEditing: true })}
+          reload={reload}
+        />
+        {driverDrawer && (
+          <DriverDrawer
+            driver={driverDrawer.driver}
+            startEditing={driverDrawer.startEditing}
+            vehicles={vehicles}
+            drivers={drivers}
+            canEdit={canEdit}
+            onClose={() => setDriverDrawer(null)}
+            onSaved={reload}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -82,13 +116,13 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                 {byStage[stage.key].map((d) => (
                   <div
                     key={d.id}
-                    onClick={() => setDriverDrawer({ driver: d, startEditing: false })}
+                    onClick={() => setViewingDriverId(d.id)}
                     className="w-full card p-2.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
                   >
                     <div className="flex items-start justify-between gap-1.5">
                       <p className="text-[11px] font-medium truncate">{d.full_name}</p>
                       <EntryActions
-                        onView={() => setDriverDrawer({ driver: d, startEditing: false })}
+                        onView={() => setViewingDriverId(d.id)}
                         onEdit={() => setDriverDrawer({ driver: d, startEditing: true })}
                         canEdit={canEdit}
                       />
@@ -124,7 +158,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
           rows={filtered}
           keyFn={(d) => d.id}
           emptyLabel="No drivers yet."
-          onRowClick={(d) => setDriverDrawer({ driver: d, startEditing: false })}
+          onRowClick={(d) => setViewingDriverId(d.id)}
           columns={[
             { header: 'Name', render: (d) => <span className="font-medium">{d.full_name}</span> },
             { header: 'Phone', render: (d) => d.phone },
@@ -146,7 +180,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
               className: 'text-right',
               render: (d) => (
                 <EntryActions
-                  onView={() => setDriverDrawer({ driver: d, startEditing: false })}
+                  onView={() => setViewingDriverId(d.id)}
                   onEdit={() => setDriverDrawer({ driver: d, startEditing: true })}
                   canEdit={canEdit}
                 />
@@ -169,9 +203,6 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
           startEditing={driverDrawer.startEditing}
           vehicles={vehicles}
           drivers={drivers}
-          deposits={deposits}
-          fines={fines}
-          finePayments={finePayments}
           canEdit={canEdit}
           onClose={() => setDriverDrawer(null)}
           onSaved={reload}

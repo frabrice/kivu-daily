@@ -17,7 +17,17 @@ import NonInsiderPage from './nonInsider/NonInsiderPage';
 type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'fines' | 'non_insider';
 
 export default function FleetPage() {
-  const [tab, setTab] = useState<Tab>('pipeline');
+  const [tab, setTab] = useState<Tab>(() => {
+    try {
+      const saved = localStorage.getItem('kivu-active-nav-fleet-tab');
+      if (saved) return saved as Tab;
+    } catch { /* ignore */ }
+    return 'pipeline';
+  });
+  const selectTab = (t: Tab) => {
+    setTab(t);
+    try { localStorage.setItem('kivu-active-nav-fleet-tab', t); } catch { /* ignore */ }
+  };
   const data = useFleetData();
   const { drivers, deposits } = data;
 
@@ -30,11 +40,11 @@ export default function FleetPage() {
   return (
     <div className="space-y-4">
       <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap">
-        <TabButton active={tab === 'pipeline'} onClick={() => setTab('pipeline')} icon={Truck} label="Driver Pipeline" />
-        <TabButton active={tab === 'vehicles'} onClick={() => setTab('vehicles')} icon={Car} label="Vehicles" />
-        <TabButton active={tab === 'deposits'} onClick={() => setTab('deposits')} icon={Wallet} label="Deposits" badge={overdueCount} />
-        <TabButton active={tab === 'fines'} onClick={() => setTab('fines')} icon={Receipt} label="Fines" />
-        <TabButton active={tab === 'non_insider'} onClick={() => setTab('non_insider')} icon={Users2} label="Non-Insider" />
+        <TabButton active={tab === 'pipeline'} onClick={() => selectTab('pipeline')} icon={Truck} label="Driver Pipeline" />
+        <TabButton active={tab === 'vehicles'} onClick={() => selectTab('vehicles')} icon={Car} label="Vehicles" />
+        <TabButton active={tab === 'deposits'} onClick={() => selectTab('deposits')} icon={Wallet} label="Deposits" badge={overdueCount} />
+        <TabButton active={tab === 'fines'} onClick={() => selectTab('fines')} icon={Receipt} label="Fines" />
+        <TabButton active={tab === 'non_insider'} onClick={() => selectTab('non_insider')} icon={Users2} label="Non-Insider" />
       </div>
 
       {tab === 'pipeline' && <FleetPipelinePage data={data} />}

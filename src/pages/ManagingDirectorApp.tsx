@@ -95,7 +95,17 @@ export default function ManagingDirectorApp() {
   };
   const axisColor = theme === 'dark' ? '#5d7791' : '#9ca3af';
   const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.05)' : '#f1f5f9';
-  const [active, setActive] = useState<NavKey>('dashboard');
+  const [active, setActiveRaw] = useState<NavKey>(() => {
+    try {
+      const saved = localStorage.getItem('kivu-active-nav-md');
+      if (saved) return saved as NavKey;
+    } catch { /* ignore */ }
+    return 'dashboard';
+  });
+  const setActive = (key: NavKey) => {
+    setActiveRaw(key);
+    try { localStorage.setItem('kivu-active-nav-md', key); } catch { /* ignore */ }
+  };
   const { profiles, departments, allTasks, loading, reload } = useCompanyData();
   const { entries: activity, loading: activityLoading } = useActivityFeed(15);
   const snapshot = useCompanySnapshot();

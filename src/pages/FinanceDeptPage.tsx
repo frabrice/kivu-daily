@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  LayoutDashboard, TrendingUp, Wallet, Car, Users2, Truck, ArrowLeftRight, Receipt, Landmark, ClipboardCheck,
+  LayoutDashboard, TrendingUp, Wallet, Car, Users2, Truck, ArrowLeftRight, Receipt, Landmark, ClipboardCheck, ShieldCheck,
 } from 'lucide-react';
 import FinanceDashboardPage from './finance/FinanceDashboardPage';
 import FinanceRevenuePage from './finance/FinanceRevenuePage';
@@ -12,19 +12,21 @@ import FinanceTransfersPage from './finance/FinanceTransfersPage';
 import FinanceExpenseClaimsPage from './finance/FinanceExpenseClaimsPage';
 import FinanceAccountsPage from './finance/FinanceAccountsPage';
 import FinanceReconciliationPage from './finance/FinanceReconciliationPage';
+import FinanceDepositConfirmationsPage from './finance/FinanceDepositConfirmationsPage';
 
-// MD-only: Finance employees see all ten of these as separate sidebar
+// MD-only: Finance employees see all eleven of these as separate sidebar
 // pages (src/pages/finance/*); the MD sees them bundled as tabs here,
 // since a fully expanded sidebar for every department at once would be
 // unmanageable for the one role that already sees everything.
 type Tab =
   | 'dashboard' | 'revenue' | 'fleet_collections' | 'vehicle_owners' | 'payroll'
-  | 'suppliers' | 'transfers' | 'expense_claims' | 'accounts' | 'reconciliation';
+  | 'suppliers' | 'transfers' | 'expense_claims' | 'accounts' | 'reconciliation' | 'deposit_confirmations';
 
 const TABS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'revenue', label: 'Revenue', icon: TrendingUp },
   { key: 'fleet_collections', label: 'Fleet Collections', icon: Wallet },
+  { key: 'deposit_confirmations', label: 'Deposit Confirmations', icon: ShieldCheck },
   { key: 'vehicle_owners', label: 'Vehicle-Owner Payments', icon: Car },
   { key: 'payroll', label: 'Payroll', icon: Users2 },
   { key: 'suppliers', label: 'Supplier Payments', icon: Truck },
@@ -35,7 +37,18 @@ const TABS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
 ];
 
 export default function FinanceDeptPage() {
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [tab, setTab] = useState<Tab>(() => {
+    try {
+      const saved = localStorage.getItem('kivu-active-nav-finance-tab');
+      if (saved) return saved as Tab;
+    } catch { /* ignore */ }
+    return 'dashboard';
+  });
+
+  const selectTab = (t: Tab) => {
+    setTab(t);
+    try { localStorage.setItem('kivu-active-nav-finance-tab', t); } catch { /* ignore */ }
+  };
 
   return (
     <div className="space-y-4">
@@ -43,7 +56,7 @@ export default function FinanceDeptPage() {
         {TABS.map((t) => (
           <button
             key={t.key}
-            onClick={() => setTab(t.key)}
+            onClick={() => selectTab(t.key)}
             className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${tab === t.key ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
           >
             <t.icon size={14} /> {t.label}
@@ -54,6 +67,7 @@ export default function FinanceDeptPage() {
       {tab === 'dashboard' && <FinanceDashboardPage />}
       {tab === 'revenue' && <FinanceRevenuePage />}
       {tab === 'fleet_collections' && <FinanceFleetCollectionsPage />}
+      {tab === 'deposit_confirmations' && <FinanceDepositConfirmationsPage />}
       {tab === 'vehicle_owners' && <FinanceVehicleOwnersPage />}
       {tab === 'payroll' && <FinancePayrollPage />}
       {tab === 'suppliers' && <FinanceSuppliersPage />}

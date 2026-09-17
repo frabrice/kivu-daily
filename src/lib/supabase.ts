@@ -87,11 +87,19 @@ export interface Driver {
   vehicle?: Vehicle | null;
 }
 
+export type DepositPaymentMethod = 'momo' | 'bank';
+export type DepositStatus = 'pending' | 'confirmed';
+
 export interface DriverDeposit {
   id: string;
   driver_id: string;
   amount: number;
   paid_date: string;
+  payment_method: DepositPaymentMethod;
+  bank_name: string | null;
+  status: DepositStatus;
+  confirmed_by: string | null;
+  confirmed_at: string | null;
   created_by: string | null;
   created_at: string;
 }

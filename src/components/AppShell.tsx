@@ -46,6 +46,7 @@ export type NavKey =
   | 'finance_expense_claims'
   | 'finance_accounts'
   | 'finance_reconciliation'
+  | 'finance_deposit_confirmations'
   | 'fleet_pipeline'
   | 'fleet_vehicles'
   | 'fleet_deposits'

@@ -7,7 +7,7 @@ import {
   Package, AlertTriangle,
   Image as ImageIcon,
   LayoutDashboard, ArrowLeftRight, Landmark, ClipboardCheck,
-  CarFront,
+  CarFront, ShieldCheck,
 } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import NotificationBell from '../components/NotificationBell';
@@ -33,6 +33,7 @@ import FinanceTransfersPage from './finance/FinanceTransfersPage';
 import FinanceExpenseClaimsPage from './finance/FinanceExpenseClaimsPage';
 import FinanceAccountsPage from './finance/FinanceAccountsPage';
 import FinanceReconciliationPage from './finance/FinanceReconciliationPage';
+import FinanceDepositConfirmationsPage from './finance/FinanceDepositConfirmationsPage';
 import CallQueuePage from './callCenter/CallQueuePage';
 import CallDirectoryPage from './callCenter/CallDirectoryPage';
 import CallScriptsPage from './callCenter/CallScriptsPage';
@@ -45,7 +46,21 @@ import HowToUsePage from './HowToUsePage';
 
 export default function EmployeeApp() {
   const { profile } = useAuth();
-  const [active, setActive] = useState<NavKey>(profile?.department?.slug === 'finance' ? 'finance_dashboard' : 'home');
+  // Scoped by department slug so a persisted page from one department
+  // never leaks into another employee's nav (or a re-assigned employee's
+  // new one) - a reload lands back on the same page instead of General.
+  const navStorageKey = `kivu-active-nav-${profile?.department?.slug ?? 'none'}`;
+  const [active, setActiveRaw] = useState<NavKey>(() => {
+    try {
+      const saved = localStorage.getItem(navStorageKey);
+      if (saved) return saved as NavKey;
+    } catch { /* ignore */ }
+    return profile?.department?.slug === 'finance' ? 'finance_dashboard' : 'home';
+  });
+  const setActive = (key: NavKey) => {
+    setActiveRaw(key);
+    try { localStorage.setItem(navStorageKey, key); } catch { /* ignore */ }
+  };
   const { tasks, reload } = useTasks(profile?.id);
 
   const TITLES: Record<NavKey, string> = {
@@ -81,6 +96,7 @@ export default function EmployeeApp() {
     finance_expense_claims: 'Expense Claims',
     finance_accounts: 'Bank Accounts',
     finance_reconciliation: 'Reconciliation',
+    finance_deposit_confirmations: 'Deposit Confirmations',
     fleet_pipeline: 'Driver Pipeline',
     fleet_vehicles: 'Vehicles',
     fleet_deposits: 'Deposits',
@@ -117,6 +133,7 @@ export default function EmployeeApp() {
       { key: 'finance_expense_claims' as const, label: 'Expense Claims', icon: Receipt },
       { key: 'finance_accounts' as const, label: 'Bank Accounts', icon: Landmark },
       { key: 'finance_reconciliation' as const, label: 'Reconciliation', icon: ClipboardCheck },
+      { key: 'finance_deposit_confirmations' as const, label: 'Deposit Confirmations', icon: ShieldCheck },
     ] : []),
     ...(profile?.department?.slug === 'call_center' ? [
       { key: 'call_center_queue' as const, label: 'Call Queue', icon: PhoneCall },
@@ -162,6 +179,7 @@ export default function EmployeeApp() {
       {active === 'finance_expense_claims' && <FinanceExpenseClaimsPage />}
       {active === 'finance_accounts' && <FinanceAccountsPage />}
       {active === 'finance_reconciliation' && <FinanceReconciliationPage />}
+      {active === 'finance_deposit_confirmations' && <FinanceDepositConfirmationsPage />}
 
       {active === 'call_center_queue' && <CallQueuePage />}
       {active === 'call_center_directory' && <CallDirectoryPage />}
