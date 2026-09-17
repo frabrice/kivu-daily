@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
+import DateInput from './DateInput';
 import { supabase, Meeting, MeetingVisibility } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { todayStr } from '../lib/utils';
@@ -89,7 +90,7 @@ export default function CreateMeetingModal({ open, meeting, onClose, onCreated }
         />
 
         <label className="block text-sm font-medium mb-1.5">Date</label>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input mb-3" />
+        <DateInput value={date} onChange={setDate} wrapperClassName="mb-3" />
 
         <label className="block text-sm font-medium mb-1.5">Notes</label>
         <textarea

@@ -4,6 +4,7 @@ import { useAuth } from '../../lib/auth';
 import { todayStr } from '../../lib/utils';
 import { WEEKLY_DEPOSIT_AMOUNT } from '../../lib/fleet';
 import Modal from '../Modal';
+import DateInput from '../DateInput';
 
 export default function LogDepositDrawer({ driver, onClose, onSaved }: { driver: Driver; onClose: () => void; onSaved: () => void }) {
   const { profile } = useAuth();
@@ -38,7 +39,7 @@ export default function LogDepositDrawer({ driver, onClose, onSaved }: { driver:
         </div>
         <div>
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date Paid</label>
-          <input type="date" value={paidDate} onChange={(e) => setPaidDate(e.target.value)} className="input" />
+          <DateInput value={paidDate} onChange={setPaidDate} />
           <p className="text-[10px] text-gray-400 mt-1">Their next deposit will be due 7 days after this date.</p>
         </div>
 

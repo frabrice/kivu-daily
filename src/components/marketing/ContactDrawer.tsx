@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
 import { STAGES } from '../../lib/marketing';
 import Modal from '../Modal';
+import DateInput from '../DateInput';
 
 export default function ContactDrawer({
   contact,
@@ -103,7 +104,7 @@ export default function ContactDrawer({
         </div>
         <div>
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><CalendarClock size={11} /> Next follow-up</label>
-          <input type="date" value={nextFollowUp} onChange={(e) => setNextFollowUp(e.target.value)} disabled={!editing} className="input" />
+          <DateInput value={nextFollowUp} onChange={setNextFollowUp} disabled={!editing} />
         </div>
         <div>
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>

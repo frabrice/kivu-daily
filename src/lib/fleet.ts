@@ -107,14 +107,14 @@ export function depositDaysSince(
 
 export type DepositTier = 'red' | 'yellow' | 'green' | 'neutral';
 
-// Traffic-light heads-up on top of the 7-day cycle: green once 3 days
-// remain, yellow for the last two days (including "due tomorrow"), red
-// once the deposit day itself arrives unpaid. Neutral covers the first
-// few days of the cycle, where there's nothing to flag yet.
+// Traffic-light heads-up on top of the 7-day cycle: green 2 days before
+// the deposit is due, yellow 1 day before, red on the due day itself
+// (and every day it stays unpaid past that). Neutral covers the rest of
+// the cycle, where there's nothing to flag yet.
 export function depositTier(daysSince: number | null): DepositTier {
   if (daysSince === null || daysSince >= 7) return 'red';
-  if (daysSince >= 5) return 'yellow';
-  if (daysSince === 4) return 'green';
+  if (daysSince === 6) return 'yellow';
+  if (daysSince === 5) return 'green';
   return 'neutral';
 }
 
@@ -130,7 +130,6 @@ export function depositStatusLabel(daysSince: number | null): string {
   if (daysSince >= 7) return `Overdue by ${daysSince - 6}d`;
   if (daysSince === 6) return 'Due tomorrow';
   if (daysSince === 5) return 'Due in 2 days';
-  if (daysSince === 4) return 'Due in 3 days';
   return `Paid ${daysSince}d ago`;
 }
 

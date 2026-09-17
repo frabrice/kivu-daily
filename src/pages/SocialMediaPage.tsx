@@ -4,6 +4,7 @@ import { supabase, ContentPost, ContentStatus } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { todayStr, dateStr, addDays, startOfWeek } from '../lib/utils';
 import Modal from '../components/Modal';
+import DateInput from '../components/DateInput';
 import ViewToggle, { ViewMode } from '../components/ViewToggle';
 import DataTable from '../components/DataTable';
 import EntryActions from '../components/EntryActions';
@@ -300,7 +301,7 @@ function PostDrawer({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date</label>
-            <input type="date" value={postDate} onChange={(e) => setPostDate(e.target.value)} disabled={!editing} className="input" />
+            <DateInput value={postDate} onChange={setPostDate} disabled={!editing} />
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Status</label>

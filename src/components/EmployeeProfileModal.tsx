@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Modal from './Modal';
 import Avatar from './Avatar';
+import DateInput from './DateInput';
 import { Task, Comment, supabase } from '../lib/supabase';
 import { EmployeeWithStats, computeStreakForTasks } from '../lib/company';
 import { completionPct } from '../lib/hooks';
@@ -164,12 +165,10 @@ export default function EmployeeProfileModal({ employee, allTasks, onClose, canC
               </button>
               {showDatePicker && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 card p-2 animate-fade-in">
-                  <input
-                    type="date"
+                  <DateInput
                     value={selectedDate}
                     max={todayStr()}
-                    onChange={(e) => { if (e.target.value) { setSelectedDate(e.target.value); setShowDatePicker(false); } }}
-                    className="input text-sm py-1.5"
+                    onChange={(v) => { if (v) { setSelectedDate(v); setShowDatePicker(false); } }}
                     autoFocus
                   />
                 </div>
@@ -234,7 +233,7 @@ export default function EmployeeProfileModal({ employee, allTasks, onClose, canC
                 <div className="flex items-center gap-2 mb-1">
                   <Avatar name={c.author?.full_name ?? 'User'} size="sm" />
                   <p className="text-sm font-medium">{c.author?.full_name}</p>
-                  <span className="text-xs text-gray-400">{new Date(c.created_at).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-400">{new Date(c.created_at).toLocaleDateString('en-GB')}</span>
                 </div>
                 <p className="text-sm text-gray-700 dark:text-gray-300">{c.content}</p>
               </div>

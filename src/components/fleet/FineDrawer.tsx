@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
 import { fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, formatDateLabelSafe } from '../../lib/fleet';
 import Modal from '../Modal';
+import DateInput from '../DateInput';
 import LogFinePaymentDrawer from './LogFinePaymentDrawer';
 
 export default function FineDrawer({
@@ -84,7 +85,7 @@ export default function FineDrawer({
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date</label>
-            <input type="date" value={fineDate} onChange={(e) => setFineDate(e.target.value)} disabled={!editing} className="input" />
+            <DateInput value={fineDate} onChange={setFineDate} disabled={!editing} />
           </div>
         </div>
         <div>

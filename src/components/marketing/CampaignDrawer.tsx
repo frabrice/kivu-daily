@@ -3,6 +3,7 @@ import { Trash2, Pencil } from 'lucide-react';
 import { supabase, Campaign, CampaignStatus } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import Modal from '../Modal';
+import DateInput from '../DateInput';
 
 export default function CampaignDrawer({
   campaign,
@@ -79,11 +80,11 @@ export default function CampaignDrawer({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Start date</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={!editing} className="input" />
+            <DateInput value={startDate} onChange={setStartDate} disabled={!editing} />
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">End date</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={!editing} className="input" />
+            <DateInput value={endDate} onChange={setEndDate} disabled={!editing} />
           </div>
         </div>
 

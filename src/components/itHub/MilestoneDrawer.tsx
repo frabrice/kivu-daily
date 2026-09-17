@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { supabase, Milestone, MilestoneStatus } from '../../lib/supabase';
 import { MILESTONE_STATUSES } from '../../lib/itHub';
 import Modal from '../Modal';
+import DateInput from '../DateInput';
 
 export default function MilestoneDrawer({
   milestone,
@@ -67,7 +68,7 @@ export default function MilestoneDrawer({
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Target date</label>
-            <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} disabled={!canEdit} className="input" />
+            <DateInput value={targetDate} onChange={setTargetDate} disabled={!canEdit} />
           </div>
         </div>
 

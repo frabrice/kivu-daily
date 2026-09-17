@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Modal from './Modal';
+import DateInput from './DateInput';
 import { supabase, Profile } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { todayStr } from '../lib/utils';
@@ -91,7 +92,7 @@ export default function AssignTaskModal({ open, onClose, employees, onAssigned }
         />
 
         <label className="block text-sm font-medium mb-1.5">Date</label>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input mb-4" />
+        <DateInput value={date} onChange={setDate} wrapperClassName="mb-4" />
 
         {error && (
           <div className="text-sm text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2 mb-3">{error}</div>

@@ -4,6 +4,7 @@ import { supabase, Vehicle, RuraLicenseStatus } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, dateStr, addDays } from '../../lib/utils';
 import Modal from '../Modal';
+import DateInput from '../DateInput';
 
 export default function VehicleDrawer({
   vehicle,
@@ -116,11 +117,11 @@ export default function VehicleDrawer({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Given To Us</label>
-            <input type="date" value={givenDate} onChange={(e) => setGivenDate(e.target.value)} disabled={!editing} className="input" />
+            <DateInput value={givenDate} onChange={setGivenDate} disabled={!editing} />
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Operation Start</label>
-            <input type="date" value={operationStartDate} onChange={(e) => setOperationStartDate(e.target.value)} disabled={!editing} className="input" />
+            <DateInput value={operationStartDate} onChange={setOperationStartDate} disabled={!editing} />
           </div>
         </div>
 
@@ -145,11 +146,11 @@ export default function VehicleDrawer({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[10px] font-medium mb-1 text-gray-500">Issued</label>
-                <input type="date" value={ruraIssuedDate} onChange={(e) => handleIssuedDateChange(e.target.value)} disabled={!editing} className="input" />
+                <DateInput value={ruraIssuedDate} onChange={handleIssuedDateChange} disabled={!editing} />
               </div>
               <div>
                 <label className="block text-[10px] font-medium mb-1 text-gray-500">Expires</label>
-                <input type="date" value={ruraExpiryDate} onChange={(e) => setRuraExpiryDate(e.target.value)} disabled={!editing} className="input" />
+                <DateInput value={ruraExpiryDate} onChange={setRuraExpiryDate} disabled={!editing} />
               </div>
             </div>
           )}

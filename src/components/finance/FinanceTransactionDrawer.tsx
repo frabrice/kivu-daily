@@ -8,6 +8,7 @@ import { TYPE_META, STATUS_META } from '../../lib/finance';
 import { useAuth } from '../../lib/auth';
 import { todayStr } from '../../lib/utils';
 import Modal from '../Modal';
+import DateInput from '../DateInput';
 
 interface FinanceTransactionDrawerProps {
   tx: FinanceTransaction | null;
@@ -183,7 +184,7 @@ export default function FinanceTransactionDrawer({
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} disabled={!editing} className="input" />
+            <DateInput value={date} onChange={setDate} disabled={!editing} />
           </div>
         </div>
 

@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
 import { STAGES, REST_DAYS, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, nextDepositDueDate, formatDateLabelSafe, fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel } from '../../lib/fleet';
 import Modal from '../Modal';
+import DateInput from '../DateInput';
 import FlagToITDrawer from '../FlagToITDrawer';
 import VehicleDrawer from './VehicleDrawer';
 
@@ -272,7 +273,7 @@ export default function DriverDrawer({
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><CalendarDays size={11} /> Join Date</label>
-            <input type="date" value={joinDate} onChange={(e) => setJoinDate(e.target.value)} disabled={!editing} className="input" />
+            <DateInput value={joinDate} onChange={setJoinDate} disabled={!editing} />
           </div>
         </div>
         <div>
@@ -308,7 +309,7 @@ export default function DriverDrawer({
           {initialDepositPaid && (
             <div>
               <label className="block text-[10px] font-medium mb-1 text-gray-500 flex items-center gap-1"><CalendarDays size={10} /> Date Paid</label>
-              <input type="date" value={initialDepositDate} onChange={(e) => setInitialDepositDate(e.target.value)} disabled={!editing} className="input" />
+              <DateInput value={initialDepositDate} onChange={setInitialDepositDate} disabled={!editing} />
               <p className="text-[9px] text-gray-400 mt-1">The weekly deposit cycle in Deposits counts from here until a real deposit is logged.</p>
             </div>
           )}

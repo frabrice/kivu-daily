@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import Avatar from '../components/Avatar';
+import DateInput from '../components/DateInput';
 import { Task, Comment, ReviewStatus, supabase } from '../lib/supabase';
 import { EmployeeWithStats, computeStreakForTasks } from '../lib/company';
 import { completionPct } from '../lib/hooks';
@@ -219,12 +220,10 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
           </button>
           {showDatePicker && (
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-10 card p-2 animate-fade-in">
-              <input
-                type="date"
+              <DateInput
                 value={selectedDate}
                 max={todayStr()}
-                onChange={(e) => { if (e.target.value) { setSelectedDate(e.target.value); setShowDatePicker(false); } }}
-                className="input text-sm py-1.5"
+                onChange={(v) => { if (v) { setSelectedDate(v); setShowDatePicker(false); } }}
                 autoFocus
               />
             </div>

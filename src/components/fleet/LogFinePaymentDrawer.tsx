@@ -3,6 +3,7 @@ import { supabase, DriverFine } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { todayStr } from '../../lib/utils';
 import Modal from '../Modal';
+import DateInput from '../DateInput';
 
 export default function LogFinePaymentDrawer({
   fine,
@@ -48,7 +49,7 @@ export default function LogFinePaymentDrawer({
         </div>
         <div>
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date Paid</label>
-          <input type="date" value={paidDate} onChange={(e) => setPaidDate(e.target.value)} className="input" />
+          <DateInput value={paidDate} onChange={setPaidDate} />
         </div>
 
         {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
