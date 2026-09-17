@@ -81,9 +81,13 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                 {row.label}
               </span>
               {canEdit && (
-                <button onClick={() => setLoggingDepositFor(row.driver)} className="btn-primary shrink-0 whitespace-nowrap">
-                  Log Deposit
-                </button>
+                row.tier === 'neutral' ? (
+                  <span className="text-[10px] text-gray-300 dark:text-white/20 shrink-0 whitespace-nowrap px-1">Not due yet</span>
+                ) : (
+                  <button onClick={() => setLoggingDepositFor(row.driver)} className="btn-primary shrink-0 whitespace-nowrap">
+                    Log Deposit
+                  </button>
+                )
               )}
             </div>
           );
