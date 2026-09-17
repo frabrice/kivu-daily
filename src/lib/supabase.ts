@@ -229,6 +229,15 @@ export interface Announcement {
   author?: Profile | null;
 }
 
+export interface DocumentCategory {
+  id: string;
+  name: string;
+  department_id: string | null;
+  is_default: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface Document {
   id: string;
   uploader_id: string;
@@ -237,9 +246,11 @@ export interface Document {
   description: string | null;
   file_url: string;
   category: string | null;
+  category_id: string | null;
   created_at: string;
   uploader?: Profile | null;
   department?: Department | null;
+  document_category?: DocumentCategory | null;
 }
 
 export type ContentStatus = 'idea' | 'drafted' | 'scheduled' | 'posted';

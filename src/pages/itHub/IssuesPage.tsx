@@ -22,7 +22,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
   const { profile } = useAuth();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'it';
   const { issues, itProfiles, visibleProducts, issuesFeatureId, openIssueCount, loading, reload } = data;
-  const [view, setView] = useState<ViewMode>('cards');
+  const [view, setView] = useState<ViewMode>('kanban');
   const [storyDrawer, setStoryDrawer] = useState<{ story: UserStory | null; startEditing: boolean } | null>(null);
 
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
@@ -38,7 +38,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
           <p className="text-[11px] text-gray-400 mt-0.5">Friction flagged in from other departments, plus anything IT adds directly.</p>
         </div>
         <div className="flex items-center gap-2">
-          <ViewToggle value={view} onChange={setView} />
+          <ViewToggle value={view} onChange={setView} modes={['kanban', 'cards', 'table']} />
           {canEdit && (
             <button onClick={() => setStoryDrawer({ story: null, startEditing: true })} className="btn-primary flex items-center gap-1.5">
               <Plus size={14} /> New Issue
@@ -51,6 +51,65 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
         <div className="card p-12 text-center">
           <AlertTriangle size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
           <p className="text-[12px] text-gray-400">No issues yet. Flagged friction from other departments lands here.</p>
+        </div>
+      )}
+
+      {issues.length > 0 && view === 'kanban' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          {STORY_STATUSES.map((status) => {
+            const columnIssues = issues.filter((s) => s.status === status.key);
+            return (
+              <div key={status.key} className="space-y-2">
+                <div className="flex items-center gap-1.5 px-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: status.color }} />
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{status.label}</p>
+                  <span className="text-[9px] text-gray-400">{columnIssues.length}</span>
+                </div>
+                <div className="space-y-1.5 min-h-[40px]">
+                  {columnIssues.map((s) => {
+                    const doneCriteria = s.acceptance_criteria.filter((c) => c.done).length;
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => setStoryDrawer({ story: s, startEditing: false })}
+                        className="card p-2.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-1.5">
+                          <p className="text-[11px] font-medium line-clamp-2">{s.title || `As a ${s.persona}, ${s.need}`}</p>
+                          <EntryActions
+                            onView={() => setStoryDrawer({ story: s, startEditing: false })}
+                            onEdit={() => setStoryDrawer({ story: s, startEditing: true })}
+                            canEdit={canEdit}
+                          />
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
+                          {s.product && (
+                            <span className="inline-flex items-center gap-1 text-[8px] font-medium text-cyan-600 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-500/10 px-1.5 py-0.5 rounded-full">
+                              <Package size={9} /> {s.product.name}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-[9px] text-gray-400 mt-1.5">
+                          <span className="flex items-center gap-1">
+                            <User size={10} /> {s.assignee?.full_name?.split(' ')[0] ?? 'Unassigned'}
+                          </span>
+                          {s.acceptance_criteria.length > 0 && (
+                            <span>{doneCriteria}/{s.acceptance_criteria.length} AC</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {columnIssues.length === 0 && (
+                    <div className="h-12 rounded-lg border border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center">
+                      <p className="text-[9px] text-gray-300 dark:text-white/20">Empty</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
