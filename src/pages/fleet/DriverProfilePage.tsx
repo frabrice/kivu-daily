@@ -45,6 +45,7 @@ export default function DriverProfilePage({
   const nextDue = nextDepositDueDate(lastDeposit?.paid_date ?? null, driver.initial_deposit_paid, driver.initial_deposit_date);
   const shortfall = lastDeposit ? depositShortfall(lastDeposit.amount) : 0;
   const reliability = computeDepositReliability(driver, deposits);
+  const totalDepositCount = driverDeposits.length + (driver.initial_deposit_paid ? 1 : 0);
 
   const driverFines = fines.filter((f) => f.driver_id === driver.id).sort((a, b) => b.fine_date.localeCompare(a.fine_date));
   const totalFined = driverFines.reduce((sum, f) => sum + f.amount, 0);
@@ -122,7 +123,7 @@ export default function DriverProfilePage({
             <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Clock size={10} /> Initial Deposit</p>
             <p className="text-[12px] font-medium">
               {driver.initial_deposit_paid
-                ? `Paid${driver.initial_deposit_date ? ' · ' + formatDateLabelSafe(driver.initial_deposit_date) : ''}`
+                ? `${driver.initial_deposit_amount ? driver.initial_deposit_amount.toLocaleString() + ' RWF' : 'Paid'}${driver.initial_deposit_date ? ' · ' + formatDateLabelSafe(driver.initial_deposit_date) : ''}`
                 : <span className="text-gray-400 font-normal">Not paid</span>}
             </p>
           </div>
@@ -156,7 +157,7 @@ export default function DriverProfilePage({
             <p className="stat-label">Total Deposited</p>
           </div>
           <p className="text-2xl font-bold leading-none">{reliability.totalPaid.toLocaleString()}</p>
-          <p className="text-[10px] text-gray-400 mt-1.5">RWF across {driverDeposits.length} logged deposit{driverDeposits.length === 1 ? '' : 's'}</p>
+          <p className="text-[10px] text-gray-400 mt-1.5">RWF across {totalDepositCount} deposit{totalDepositCount === 1 ? '' : 's'}{driver.initial_deposit_paid ? ' (incl. initial)' : ''}</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center gap-1.5 mb-2">
@@ -189,7 +190,7 @@ export default function DriverProfilePage({
         {shortfall > 0 && (
           <p className="text-[11px] text-red-500 font-medium mb-2.5">{shortfall.toLocaleString()} RWF remaining on the last deposit (of {WEEKLY_DEPOSIT_AMOUNT.toLocaleString()} RWF due)</p>
         )}
-        {driverDeposits.length === 0 ? (
+        {totalDepositCount === 0 ? (
           <p className="text-[11px] text-gray-400">No deposits logged yet.</p>
         ) : (
           <div className="space-y-1.5">
@@ -220,6 +221,17 @@ export default function DriverProfilePage({
                 </div>
               );
             })}
+            {driver.initial_deposit_paid && driver.initial_deposit_date && (
+              <div className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-gray-500 dark:text-gray-400 shrink-0">{formatDateLabelSafe(driver.initial_deposit_date)}</span>
+                  <span className="inline-flex items-center gap-1 text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full shrink-0">
+                    Initial deposit
+                  </span>
+                </div>
+                <p className="font-medium shrink-0">{(driver.initial_deposit_amount ?? 0).toLocaleString()} RWF</p>
+              </div>
+            )}
           </div>
         )}
       </div>

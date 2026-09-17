@@ -3,7 +3,7 @@ import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, BedDouble } from 'lucide
 import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { STAGES, REST_DAYS } from '../../lib/fleet';
+import { STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import FlagToITDrawer from '../FlagToITDrawer';
@@ -37,6 +37,7 @@ export default function DriverDrawer({
   const [joinDate, setJoinDate] = useState(driver?.join_date ?? todayStr());
   const [initialDepositPaid, setInitialDepositPaid] = useState(driver?.initial_deposit_paid ?? false);
   const [initialDepositDate, setInitialDepositDate] = useState(driver?.initial_deposit_date ?? '');
+  const [initialDepositAmount, setInitialDepositAmount] = useState(driver?.initial_deposit_amount ? String(driver.initial_deposit_amount) : String(WEEKLY_DEPOSIT_AMOUNT));
   const [stage, setStage] = useState<DriverStage>(driver?.stage ?? 'applying');
   const [notes, setNotes] = useState(driver?.notes ?? '');
   const [vehicleId, setVehicleId] = useState(driver?.vehicle_id ?? '');
@@ -61,6 +62,10 @@ export default function DriverDrawer({
       setError('Enter the date the initial deposit was paid.');
       return;
     }
+    if (initialDepositPaid && !Number(initialDepositAmount)) {
+      setError('Enter how much the initial deposit was.');
+      return;
+    }
     if (!restDay) {
       setError('Every driver must be assigned a weekly rest day.');
       return;
@@ -74,6 +79,7 @@ export default function DriverDrawer({
       join_date: joinDate || null,
       initial_deposit_paid: initialDepositPaid,
       initial_deposit_date: initialDepositPaid ? initialDepositDate : null,
+      initial_deposit_amount: initialDepositPaid ? Number(initialDepositAmount) : null,
       stage,
       notes: notes.trim() || null,
       vehicle_id: vehicleId || null,
@@ -162,10 +168,16 @@ export default function DriverDrawer({
             <span className="text-[11px] font-medium">Initial deposit paid</span>
           </label>
           {initialDepositPaid && (
-            <div>
-              <label className="block text-[10px] font-medium mb-1 text-gray-500 flex items-center gap-1"><CalendarDays size={10} /> Date Paid</label>
-              <DateInput value={initialDepositDate} onChange={setInitialDepositDate} disabled={!editing} />
-              <p className="text-[9px] text-gray-400 mt-1">The weekly deposit cycle in Deposits counts from here until a real deposit is logged.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-medium mb-1 text-gray-500 flex items-center gap-1"><CalendarDays size={10} /> Date Paid</label>
+                <DateInput value={initialDepositDate} onChange={setInitialDepositDate} disabled={!editing} />
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium mb-1 text-gray-500">Amount (RWF)</label>
+                <input type="number" value={initialDepositAmount} onChange={(e) => setInitialDepositAmount(e.target.value)} disabled={!editing} className="input" />
+              </div>
+              <p className="text-[9px] text-gray-400 col-span-2">The weekly deposit cycle in Deposits counts from here until a real deposit is logged.</p>
             </div>
           )}
         </div>
@@ -247,7 +259,7 @@ export default function DriverDrawer({
             ) : <span />}
             <div className="flex gap-2">
               <button onClick={() => (driver ? setEditing(false) : onClose())} className="btn-ghost">Cancel</button>
-              <button onClick={save} disabled={saving || !fullName.trim() || !phone.trim() || vehicleFull || (initialDepositPaid && !initialDepositDate) || !restDay} className="btn-primary disabled:opacity-50">
+              <button onClick={save} disabled={saving || !fullName.trim() || !phone.trim() || vehicleFull || (initialDepositPaid && (!initialDepositDate || !Number(initialDepositAmount))) || !restDay} className="btn-primary disabled:opacity-50">
                 {saving ? 'Saving…' : driver ? 'Save Changes' : 'Add Driver'}
               </button>
             </div>

@@ -181,7 +181,7 @@ export function computeDepositReliability(driver: Driver, deposits: DriverDeposi
   let anchor = driver.initial_deposit_paid ? driver.initial_deposit_date : null;
   let onTime = 0;
   let late = 0;
-  let totalPaid = 0;
+  let totalPaid = driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0;
 
   for (const dep of history) {
     totalPaid += dep.amount;
