@@ -39,3 +39,16 @@ export function yesNoUnknown(v: boolean | null): 'Yes' | 'No' | 'Unknown' {
   if (v === false) return 'No';
   return 'Unknown';
 }
+
+// Shared by the Drivers and Vehicles filter bars - a driver's connected
+// car (or a car's connected driver) means the same handful of tri-state
+// survey fields (branded/allows branding/device) need filtering the
+// same way on both pages.
+export type TriFilter = 'all' | 'yes' | 'no' | 'unknown';
+
+export function matchesTri(value: boolean | null, filter: TriFilter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'yes') return value === true;
+  if (filter === 'no') return value === false;
+  return value === null;
+}

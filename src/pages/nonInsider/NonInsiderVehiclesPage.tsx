@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Search, Plus, CarFront, User, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { canEditFleet } from '../../lib/fleet';
-import { useNonInsiderData, yesNoUnknown } from '../../lib/nonInsider';
+import { useNonInsiderData, yesNoUnknown, matchesTri, TriFilter } from '../../lib/nonInsider';
 import { PlatformCar } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
@@ -11,15 +11,7 @@ import PlatformCarDrawer from '../../components/nonInsider/PlatformCarDrawer';
 
 interface CarDrawerState { car: PlatformCar | null; startEditing: boolean }
 
-type TriFilter = 'all' | 'yes' | 'no' | 'unknown';
 type AssignmentFilter = 'all' | 'assigned' | 'unassigned';
-
-function matchesTri(value: boolean | null, filter: TriFilter): boolean {
-  if (filter === 'all') return true;
-  if (filter === 'yes') return value === true;
-  if (filter === 'no') return value === false;
-  return value === null;
-}
 
 export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<typeof useNonInsiderData> }) {
   const { profile } = useAuth();
