@@ -10,9 +10,14 @@ const corsHeaders = {
 // back to platform_drivers.external_id / platform_cars.external_id, so a
 // repeat sync updates the same rows instead of creating duplicates every
 // time someone clicks "Sync". Survey-only fields (is_branded,
-// allows_branding, and is_owner past its first sync) are never
-// overwritten here - the platform has no concept of them, and stomping
-// them on every sync would erase work IT/Fleet/Call Center already did.
+// allows_branding, willing_to_buy_device, notes, make/model/color past
+// their first sync, and is_owner past its first sync) are never
+// overwritten here - the platform either has no concept of them, or
+// (for make/model/color) staff routinely correct what the platform
+// reports after physically checking the car, and stomping that back on
+// every sync would erase work IT/Fleet/Call Center already did. Only
+// plate_number keeps refreshing from upstream, since it's the one field
+// staff aren't expected to be hand-correcting.
 const DEFAULT_API_BASE = "https://kivuride-developtesting.onrender.com";
 const PAGE_SIZE = 50;
 
@@ -117,9 +122,6 @@ Deno.serve(async (req: Request) => {
             .from("platform_cars")
             .update({
               plate_number: v.plate,
-              make: v.make,
-              model: v.model,
-              color: v.color,
               updated_at: new Date().toISOString(),
             })
             .eq("id", existingCar.id);
