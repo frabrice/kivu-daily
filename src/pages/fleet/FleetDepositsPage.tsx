@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, computeDepositWaterfall, depositDaysSince, depositTier, depositStatusLabel, depositRemainingColor, DEPOSIT_TIER_STYLE } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositWaterfall, depositDaysSince, depositTier, depositStatusLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 
@@ -69,9 +69,10 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       <div className="space-y-1.5">
         {depositQueue.map((row) => {
           const style = DEPOSIT_TIER_STYLE[row.tier];
+          const dotColor = DEPOSIT_TIER_STYLE[foldDepositTier(row.tier)].dot;
           return (
-            <div key={row.driver.id} className="card p-3 flex items-center gap-3">
-              <div className={`w-1.5 h-8 rounded-full shrink-0 ${row.isEnded ? 'bg-gray-300 dark:bg-white/10' : style.dot}`} />
+            <div key={row.driver.id} className={`card p-3 flex items-center gap-3 ${row.isEnded ? 'opacity-50 blur-[1.5px] hover:blur-none hover:opacity-100 transition-[filter,opacity] duration-200' : ''}`}>
+              <div className={`w-1.5 h-8 rounded-full shrink-0 ${row.isEnded ? 'bg-gray-300 dark:bg-white/10' : dotColor}`} />
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-medium truncate">{row.driver.full_name}</p>
                 <p className="text-[10px] text-gray-400 flex items-center gap-1">

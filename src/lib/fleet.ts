@@ -220,14 +220,17 @@ export const DEPOSIT_TIER_STYLE: Record<DepositTier, { dot: string; text: string
   neutral: { dot: 'bg-gray-200 dark:bg-white/10', text: 'text-gray-400', badge: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5' },
 };
 
-// The "X RWF remaining this week" line reads as a simpler 3-color signal
-// than the tier badge above it: green for every day that isn't a
-// countdown yet (folding "neutral" in with "green" rather than leaving
-// it gray), yellow with one day left, red from the due day onward.
+// Some displays (the deposits list's side bar, the remaining-balance
+// line) want a simpler 3-color read than the tier badge: green for every
+// day that isn't a countdown yet, folding "neutral" into "green" rather
+// than leaving it gray, yellow with one day left, red from the due day
+// onward.
+export function foldDepositTier(tier: DepositTier): 'red' | 'yellow' | 'green' {
+  return tier === 'neutral' ? 'green' : tier;
+}
+
 export function depositRemainingColor(tier: DepositTier): string {
-  if (tier === 'red') return 'text-red-500';
-  if (tier === 'yellow') return 'text-amber-500 dark:text-amber-400';
-  return 'text-emerald-600 dark:text-emerald-400';
+  return DEPOSIT_TIER_STYLE[foldDepositTier(tier)].text;
 }
 
 export function depositStatusLabel(daysSince: number | null): string {
