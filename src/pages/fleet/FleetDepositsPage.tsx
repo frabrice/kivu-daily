@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, computeDepositWaterfall, depositDaysSince, depositTier, depositStatusLabel, DEPOSIT_TIER_STYLE } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositWaterfall, depositDaysSince, depositTier, depositStatusLabel, depositRemainingColor, DEPOSIT_TIER_STYLE } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 
@@ -79,7 +79,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                   {row.driver.shift && <span>· {row.driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
                 </p>
                 {!row.isEnded && row.remaining > 0 && (
-                  <p className="text-[10px] text-red-500 font-medium mt-0.5">{row.remaining.toLocaleString()} RWF remaining this week</p>
+                  <p className={`text-[10px] font-medium mt-0.5 ${depositRemainingColor(row.tier)}`}>{row.remaining.toLocaleString()} RWF remaining this week</p>
                 )}
               </div>
               {row.lastDeposit?.status === 'pending' && (

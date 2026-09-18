@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent } from '../../lib/supabase';
 import {
-  STAGES, REST_DAYS, computeDepositWaterfall, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel,
+  STAGES, REST_DAYS, computeDepositWaterfall, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, depositRemainingColor,
   nextDepositDueDate, computeDepositReliability, formatDateLabelSafe,
   fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel,
 } from '../../lib/fleet';
@@ -243,7 +243,7 @@ export default function DriverProfilePage({
           </p>
         )}
         {!isEnded && remaining > 0 && (
-          <p className="text-[11px] text-red-500 font-medium mb-2.5">{remaining.toLocaleString()} RWF remaining this week</p>
+          <p className={`text-[11px] font-medium mb-2.5 ${depositRemainingColor(tier)}`}>{remaining.toLocaleString()} RWF remaining this week</p>
         )}
         {totalDepositCount === 0 ? (
           <p className="text-[11px] text-gray-400">No deposits logged yet.</p>
