@@ -29,7 +29,7 @@ function FleetPipelinePageWithData() {
 
 function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
-  const { drivers, vehicles, deposits, fines, finePayments, loading, reload } = data;
+  const { drivers, vehicles, deposits, fines, finePayments, contractEvents, loading, reload } = data;
   const canEdit = canEditFleet(profile);
   const [view, setView] = useState<ViewMode>('table');
   const [search, setSearch] = useState('');
@@ -62,6 +62,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
           deposits={deposits}
           fines={fines}
           finePayments={finePayments}
+          contractEvents={contractEvents}
           canEdit={canEdit}
           onBack={() => setViewingDriverId(null)}
           onEdit={() => setDriverDrawer({ driver: viewingDriver, startEditing: true })}

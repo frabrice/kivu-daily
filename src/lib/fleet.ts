@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverStage, DriverRestDay, DepositPaymentMethod, Profile } from './supabase';
+import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, DriverStage, DriverRestDay, DepositPaymentMethod, Profile } from './supabase';
 import { todayStr, dateStr, addDays } from './utils';
 
 // Fleet's own dashboard, plus the identical bundled view given to Call
@@ -22,21 +22,24 @@ export function useFleetData() {
   const [deposits, setDeposits] = useState<DriverDeposit[]>([]);
   const [fines, setFines] = useState<DriverFine[]>([]);
   const [finePayments, setFinePayments] = useState<DriverFinePayment[]>([]);
+  const [contractEvents, setContractEvents] = useState<DriverContractEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [d, v, dep, fin, finePay] = await Promise.all([
+    const [d, v, dep, fin, finePay, contractEvts] = await Promise.all([
       supabase.from('drivers').select('*, vehicle:vehicles(*)').order('created_at', { ascending: false }),
       supabase.from('vehicles').select('*').order('created_at', { ascending: false }),
       supabase.from('driver_deposits').select('*').order('paid_date', { ascending: false }),
       supabase.from('driver_fines').select('*, driver:drivers(*), vehicle:vehicles(*)').order('fine_date', { ascending: false }),
       supabase.from('driver_fine_payments').select('*').order('paid_date', { ascending: false }),
+      supabase.from('driver_contract_events').select('*').order('event_date', { ascending: false }),
     ]);
     setDrivers((d.data as Driver[]) ?? []);
     setVehicles((v.data as Vehicle[]) ?? []);
     setDeposits((dep.data as DriverDeposit[]) ?? []);
     setFines((fin.data as DriverFine[]) ?? []);
     setFinePayments((finePay.data as DriverFinePayment[]) ?? []);
+    setContractEvents((contractEvts.data as DriverContractEvent[]) ?? []);
     setLoading(false);
   }, []);
 
@@ -49,11 +52,12 @@ export function useFleetData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_deposits' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_fines' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_fine_payments' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_contract_events' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
-  return { drivers, vehicles, deposits, fines, finePayments, loading, reload: load };
+  return { drivers, vehicles, deposits, fines, finePayments, contractEvents, loading, reload: load };
 }
 
 export const STAGES: { key: DriverStage; label: string; color: string }[] = [
@@ -63,6 +67,14 @@ export const STAGES: { key: DriverStage; label: string; color: string }[] = [
   { key: 'waiting', label: 'Waiting', color: '#2F8C86' },
   { key: 'flagged', label: 'Flagged', color: '#ef4444' },
   { key: 'inactive', label: 'Inactive', color: '#6b7280' },
+];
+
+export const CONTRACT_END_REASONS: { key: string; label: string }[] = [
+  { key: 'missed_deposits', label: 'Failure to make weekly deposits' },
+  { key: 'another_job', label: 'Found another job' },
+  { key: 'personal_reasons', label: 'Personal reasons' },
+  { key: 'medical', label: 'Medical / sickness' },
+  { key: 'other', label: 'Other' },
 ];
 
 export const WEEKLY_DEPOSIT_AMOUNT = 180000;

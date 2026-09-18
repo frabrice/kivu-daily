@@ -2,8 +2,9 @@ import { useState } from 'react';
 import {
   ArrowLeft, Pencil, Flag, Phone, Mail, Car, CalendarDays, Clock, BedDouble,
   Wallet, Receipt, TrendingUp, Smartphone, Landmark, ShieldCheck, ShieldAlert,
+  UserX, UserCheck, History,
 } from 'lucide-react';
-import { Driver, DriverDeposit, DriverFine, DriverFinePayment } from '../../lib/supabase';
+import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent } from '../../lib/supabase';
 import {
   STAGES, REST_DAYS, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel,
   nextDepositDueDate, depositShortfall, computeDepositReliability, formatDateLabelSafe,
@@ -11,12 +12,15 @@ import {
 } from '../../lib/fleet';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
+import EndContractDrawer from '../../components/fleet/EndContractDrawer';
+import ReactivateDriverDrawer from '../../components/fleet/ReactivateDriverDrawer';
 
 export default function DriverProfilePage({
   driver,
   deposits,
   fines,
   finePayments,
+  contractEvents,
   canEdit,
   onBack,
   onEdit,
@@ -26,6 +30,7 @@ export default function DriverProfilePage({
   deposits: DriverDeposit[];
   fines: DriverFine[];
   finePayments: DriverFinePayment[];
+  contractEvents: DriverContractEvent[];
   canEdit: boolean;
   onBack: () => void;
   onEdit: () => void;
@@ -33,6 +38,8 @@ export default function DriverProfilePage({
 }) {
   const [flagOpen, setFlagOpen] = useState(false);
   const [loggingDeposit, setLoggingDeposit] = useState(false);
+  const [endContractOpen, setEndContractOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
 
   const stageMeta = STAGES.find((s) => s.key === driver.stage);
   const restDayLabel = driver.rest_day ? REST_DAYS.find((d) => d.key === driver.rest_day)?.label : null;
@@ -52,6 +59,10 @@ export default function DriverProfilePage({
   const totalFinesPaid = driverFines.reduce((sum, f) => sum + fineAmountPaid(f.id, finePayments), 0);
   const outstandingFines = Math.max(totalFined - totalFinesPaid, 0);
 
+  const driverContractEvents = contractEvents.filter((e) => e.driver_id === driver.id).sort((a, b) => b.event_date.localeCompare(a.event_date));
+  const isEnded = driver.contract_status === 'ended';
+  const lastEndedEvent = driverContractEvents.find((e) => e.event_type === 'ended');
+
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -65,12 +76,39 @@ export default function DriverProfilePage({
             </button>
           )}
           {canEdit && (
+            isEnded ? (
+              <button onClick={() => setReactivateOpen(true)} className="btn-primary flex items-center gap-1.5">
+                <UserCheck size={13} /> Reactivate
+              </button>
+            ) : (
+              <button onClick={() => setEndContractOpen(true)} className="btn-ghost text-red-500 flex items-center gap-1.5">
+                <UserX size={13} /> End Contract
+              </button>
+            )
+          )}
+          {canEdit && (
             <button onClick={onEdit} className="btn-primary flex items-center gap-1.5">
               <Pencil size={13} /> Edit
             </button>
           )}
         </div>
       </div>
+
+      {isEnded && (
+        <div className="card p-4 border border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400 flex items-center gap-1.5 mb-1">
+            <UserX size={12} /> Contract Ended
+          </p>
+          {lastEndedEvent ? (
+            <p className="text-[12px] text-gray-600 dark:text-gray-300">
+              On <span className="font-medium">{formatDateLabelSafe(lastEndedEvent.event_date)}</span> · {lastEndedEvent.reason}
+              {lastEndedEvent.details && <span className="text-gray-400"> — {lastEndedEvent.details}</span>}
+            </p>
+          ) : (
+            <p className="text-[12px] text-gray-600 dark:text-gray-300">No details on file.</p>
+          )}
+        </div>
+      )}
 
       <div className="card p-5">
         <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
@@ -266,6 +304,28 @@ export default function DriverProfilePage({
         )}
       </div>
 
+      {/* Contract History */}
+      {driverContractEvents.length > 0 && (
+        <div className="card p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><History size={13} /> Contract History</p>
+          <div className="space-y-2">
+            {driverContractEvents.map((e) => (
+              <div key={e.id} className="py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
+                <div className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className={`inline-flex items-center gap-1.5 text-[9px] font-medium px-2 py-0.5 rounded-full ${e.event_type === 'ended' ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'}`}>
+                    {e.event_type === 'ended' ? <UserX size={10} /> : <UserCheck size={10} />}
+                    {e.event_type === 'ended' ? 'Ended' : 'Reactivated'}
+                  </span>
+                  <span className="text-gray-400 shrink-0">{formatDateLabelSafe(e.event_date)}</span>
+                </div>
+                <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-1">{e.reason}</p>
+                {e.details && <p className="text-[11px] text-gray-400 mt-0.5">{e.details}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {flagOpen && (
         <FlagToITDrawer
           entityType="driver"
@@ -279,6 +339,22 @@ export default function DriverProfilePage({
         <LogDepositDrawer
           driver={driver}
           onClose={() => setLoggingDeposit(false)}
+          onSaved={reload}
+        />
+      )}
+
+      {endContractOpen && (
+        <EndContractDrawer
+          driver={driver}
+          onClose={() => setEndContractOpen(false)}
+          onSaved={reload}
+        />
+      )}
+
+      {reactivateOpen && (
+        <ReactivateDriverDrawer
+          driver={driver}
+          onClose={() => setReactivateOpen(false)}
           onSaved={reload}
         />
       )}

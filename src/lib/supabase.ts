@@ -48,6 +48,8 @@ export type DriverStage = 'applying' | 'training' | 'active' | 'waiting' | 'flag
 export type RuraLicenseStatus = 'pending' | 'provided';
 export type DriverShift = 'day' | 'night';
 export type DriverRestDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+export type DriverContractStatus = 'active' | 'ended';
+export type ContractEventType = 'ended' | 'reactivated';
 
 export interface Vehicle {
   id: string;
@@ -82,10 +84,22 @@ export interface Driver {
   vehicle_id: string | null;
   shift: DriverShift | null;
   rest_day: DriverRestDay | null;
+  contract_status: DriverContractStatus;
   created_by: string | null;
   created_at: string;
   updated_at: string;
   vehicle?: Vehicle | null;
+}
+
+export interface DriverContractEvent {
+  id: string;
+  driver_id: string;
+  event_type: ContractEventType;
+  reason: string;
+  details: string | null;
+  event_date: string;
+  created_by: string | null;
+  created_at: string;
 }
 
 export type DepositPaymentMethod = 'momo' | 'bank';
