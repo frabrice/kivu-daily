@@ -6,9 +6,9 @@ import {
 } from 'lucide-react';
 import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent } from '../../lib/supabase';
 import {
-  STAGES, REST_DAYS, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel,
-  nextDepositDueDate, depositShortfall, computeDepositReliability, formatDateLabelSafe,
-  fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, WEEKLY_DEPOSIT_AMOUNT,
+  STAGES, REST_DAYS, computeDepositWaterfall, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel,
+  nextDepositDueDate, computeDepositReliability, formatDateLabelSafe,
+  fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel,
 } from '../../lib/fleet';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
@@ -47,14 +47,16 @@ export default function DriverProfilePage({
   const restDayLabel = driver.rest_day ? REST_DAYS.find((d) => d.key === driver.rest_day)?.label : null;
 
   const driverDeposits = deposits.filter((dep) => dep.driver_id === driver.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
-  const lastDeposit = driverDeposits[0] ?? null;
-  const daysSince = depositDaysSince(lastDeposit?.paid_date ?? null, driver.initial_deposit_paid, driver.initial_deposit_date);
+  const isEnded = driver.contract_status === 'ended';
+  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.initial_deposit_date, driverDeposits);
+  const daysSince = depositDaysSince(wf.currentAnchor);
   const tier = depositTier(daysSince);
   const tierStyle = DEPOSIT_TIER_STYLE[tier];
-  const nextDue = nextDepositDueDate(lastDeposit?.paid_date ?? null, driver.initial_deposit_paid, driver.initial_deposit_date);
-  const shortfall = lastDeposit ? depositShortfall(lastDeposit.amount) : 0;
+  const nextDue = nextDepositDueDate(wf.currentAnchor);
+  const remaining = wf.currentRemaining;
   const reliability = computeDepositReliability(driver, deposits);
   const totalDepositCount = driverDeposits.length + (driver.initial_deposit_paid ? 1 : 0);
+  const annotatedDeposits = [...wf.annotated].reverse();
 
   const driverFines = fines.filter((f) => f.driver_id === driver.id).sort((a, b) => b.fine_date.localeCompare(a.fine_date));
   const totalFined = driverFines.reduce((sum, f) => sum + f.amount, 0);
@@ -62,7 +64,6 @@ export default function DriverProfilePage({
   const outstandingFines = Math.max(totalFined - totalFinesPaid, 0);
 
   const driverContractEvents = contractEvents.filter((e) => e.driver_id === driver.id).sort((a, b) => b.event_date.localeCompare(a.event_date));
-  const isEnded = driver.contract_status === 'ended';
   const lastEndedEvent = driverContractEvents.find((e) => e.event_type === 'ended');
   const replacedDriver = driver.replaced_driver_id ? drivers.find((d) => d.id === driver.replaced_driver_id) ?? null : null;
   const replacedByDriver = drivers.find((d) => d.replaced_driver_id === driver.id) ?? null;
@@ -222,28 +223,39 @@ export default function DriverProfilePage({
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><Wallet size={13} /> Deposits</p>
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${tierStyle.badge}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${tierStyle.dot}`} /> {depositStatusLabel(daysSince)}
-            </span>
-            {canEdit && tier !== 'neutral' && (
+            {isEnded ? (
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-500/10">
+                CONTRACT TERMINATED
+              </span>
+            ) : (
+              <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${tierStyle.badge}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${tierStyle.dot}`} /> {depositStatusLabel(daysSince)}
+              </span>
+            )}
+            {canEdit && !isEnded && (
               <button onClick={() => setLoggingDeposit(true)} className="btn-primary text-[11px] px-2.5 py-1.5">Log Deposit</button>
             )}
           </div>
         </div>
-        {nextDue && (
+        {!isEnded && nextDue && (
           <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">
             Next deposit due <span className="font-medium text-gray-700 dark:text-gray-200">{formatDateLabelSafe(nextDue)}</span>
           </p>
         )}
-        {shortfall > 0 && (
-          <p className="text-[11px] text-red-500 font-medium mb-2.5">{shortfall.toLocaleString()} RWF remaining on the last deposit (of {WEEKLY_DEPOSIT_AMOUNT.toLocaleString()} RWF due)</p>
+        {!isEnded && remaining > 0 && (
+          <p className="text-[11px] text-red-500 font-medium mb-2.5">{remaining.toLocaleString()} RWF remaining this week</p>
         )}
         {totalDepositCount === 0 ? (
           <p className="text-[11px] text-gray-400">No deposits logged yet.</p>
         ) : (
           <div className="space-y-1.5">
-            {driverDeposits.map((dep) => {
-              const rowShortfall = depositShortfall(dep.amount);
+            {annotatedDeposits.map(({ deposit: dep, remainingAfter, extra, closesCycle }) => {
+              const statusLabel = extra > 0 ? `${extra.toLocaleString()} extra` : closesCycle ? 'Covered' : `${remainingAfter.toLocaleString()} due`;
+              const statusClass = extra > 0
+                ? 'text-blue-600 dark:text-blue-300'
+                : closesCycle
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-amber-600 dark:text-amber-400';
               return (
                 <div key={dep.id} className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
                   <div className="flex items-center gap-2 min-w-0">
@@ -264,7 +276,7 @@ export default function DriverProfilePage({
                   </div>
                   <div className="text-right shrink-0">
                     <p className="font-medium">{dep.amount.toLocaleString()} RWF</p>
-                    {rowShortfall > 0 && <p className="text-red-500 text-[10px]">{rowShortfall.toLocaleString()} short</p>}
+                    <p className={`text-[10px] ${statusClass}`}>{statusLabel}</p>
                   </div>
                 </div>
               );
@@ -348,6 +360,7 @@ export default function DriverProfilePage({
       {loggingDeposit && (
         <LogDepositDrawer
           driver={driver}
+          currentRemaining={remaining}
           onClose={() => setLoggingDeposit(false)}
           onSaved={reload}
         />

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, depositDaysSince, depositTier, depositStatusLabel, DEPOSIT_TIER_STYLE, depositShortfall } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositWaterfall, depositDaysSince, depositTier, depositStatusLabel, DEPOSIT_TIER_STYLE } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 
@@ -31,11 +31,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
     const rows = assigned.map((d) => {
       const history = depositsForDriver(d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
       const lastDeposit = history[0] ?? null;
-      const daysSince = depositDaysSince(lastDeposit?.paid_date ?? null, d.initial_deposit_paid, d.initial_deposit_date);
+      const isEnded = d.contract_status === 'ended';
+      const wf = computeDepositWaterfall(d.initial_deposit_paid, d.initial_deposit_date, depositsForDriver(d.id));
+      const daysSince = depositDaysSince(wf.currentAnchor);
       const tier = depositTier(daysSince);
       const label = depositStatusLabel(daysSince);
-      const shortfall = lastDeposit ? depositShortfall(lastDeposit.amount) : 0;
-      return { driver: d, daysSince, tier, priority: TIER_PRIORITY[tier], label, lastDeposit, shortfall };
+      return { driver: d, daysSince, tier, priority: isEnded ? 4 : TIER_PRIORITY[tier], label, lastDeposit, remaining: wf.currentRemaining, isEnded };
     });
     return rows
       .filter((r) => {
@@ -45,7 +46,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       .sort((a, b) => a.priority - b.priority || (b.daysSince ?? 999) - (a.daysSince ?? 999));
   }, [drivers, deposits, search]);
 
-  const overdueCount = depositQueue.filter((r) => r.tier === 'red').length;
+  const overdueCount = depositQueue.filter((r) => !r.isEnded && r.tier === 'red').length;
 
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 skeleton rounded-xl" />)}</div>;
 
@@ -70,15 +71,15 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
           const style = DEPOSIT_TIER_STYLE[row.tier];
           return (
             <div key={row.driver.id} className="card p-3 flex items-center gap-3">
-              <div className={`w-1.5 h-8 rounded-full shrink-0 ${style.dot}`} />
+              <div className={`w-1.5 h-8 rounded-full shrink-0 ${row.isEnded ? 'bg-gray-300 dark:bg-white/10' : style.dot}`} />
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-medium truncate">{row.driver.full_name}</p>
                 <p className="text-[10px] text-gray-400 flex items-center gap-1">
                   <Car size={10} /> {row.driver.vehicle?.plate_number}
                   {row.driver.shift && <span>· {row.driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
                 </p>
-                {row.shortfall > 0 && (
-                  <p className="text-[10px] text-red-500 font-medium mt-0.5">{row.shortfall.toLocaleString()} RWF remaining this week</p>
+                {!row.isEnded && row.remaining > 0 && (
+                  <p className="text-[10px] text-red-500 font-medium mt-0.5">{row.remaining.toLocaleString()} RWF remaining this week</p>
                 )}
               </div>
               {row.lastDeposit?.status === 'pending' && (
@@ -86,17 +87,19 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                   Pending
                 </span>
               )}
-              <span className={`text-[10px] font-medium shrink-0 px-2 py-0.5 rounded-full ${style.badge}`}>
-                {row.label}
-              </span>
-              {canEdit && (
-                row.tier === 'neutral' ? (
-                  <span className="text-[10px] text-gray-300 dark:text-white/20 shrink-0 whitespace-nowrap px-1">Not due yet</span>
-                ) : (
-                  <button onClick={() => setLoggingDepositFor(row.driver)} className="btn-primary shrink-0 whitespace-nowrap">
-                    Log Deposit
-                  </button>
-                )
+              {row.isEnded ? (
+                <span className="text-[10px] font-bold shrink-0 px-2 py-0.5 rounded-full text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-500/10">
+                  CONTRACT TERMINATED
+                </span>
+              ) : (
+                <span className={`text-[10px] font-medium shrink-0 px-2 py-0.5 rounded-full ${style.badge}`}>
+                  {row.label}
+                </span>
+              )}
+              {canEdit && !row.isEnded && (
+                <button onClick={() => setLoggingDepositFor(row.driver)} className="btn-primary shrink-0 whitespace-nowrap">
+                  Log Deposit
+                </button>
               )}
             </div>
           );
@@ -112,6 +115,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       {loggingDepositFor && (
         <LogDepositDrawer
           driver={loggingDepositFor}
+          currentRemaining={computeDepositWaterfall(loggingDepositFor.initial_deposit_paid, loggingDepositFor.initial_deposit_date, depositsForDriver(loggingDepositFor.id)).currentRemaining}
           onClose={() => setLoggingDepositFor(null)}
           onSaved={reload}
         />

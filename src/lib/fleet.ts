@@ -92,13 +92,6 @@ export const DEPOSIT_PAYMENT_METHODS: { key: DepositPaymentMethod; label: string
   { key: 'bank', label: 'Bank Transfer' },
 ];
 
-// A deposit under the full weekly amount still counts as this week's
-// payment (it resets the cycle) but leaves a balance the driver still
-// owes for the week - shown in red rather than silently rounded away.
-export function depositShortfall(amountPaid: number): number {
-  return Math.max(WEEKLY_DEPOSIT_AMOUNT - amountPaid, 0);
-}
-
 export const REST_DAYS: { key: DriverRestDay; label: string; short: string }[] = [
   { key: 'monday', label: 'Monday', short: 'Mon' },
   { key: 'tuesday', label: 'Tuesday', short: 'Tue' },
@@ -109,32 +102,102 @@ export const REST_DAYS: { key: DriverRestDay; label: string; short: string }[] =
   { key: 'sunday', label: 'Sunday', short: 'Sun' },
 ];
 
-// The 7-day deposit cycle counts from whichever is more recent: the last
-// driver_deposits row actually logged in this app, or - for a driver
-// onboarded before this app tracked deposits - the date their initial
-// deposit was paid. Without the latter, every driver entered with
-// initial_deposit_paid already true but zero logged rows read as "Never
-// paid" and was immediately flagged overdue, regardless of when they
-// really paid. Takes plain fields rather than a Driver so it works both
-// against full driver rows and the lighter partial rows the MD
-// dashboard's snapshot fetches.
-export function effectiveLastDepositDate(
-  lastLoggedDate: string | null,
-  initialDepositPaid: boolean,
-  initialDepositDate: string | null
-): string | null {
-  const initial = initialDepositPaid ? initialDepositDate : null;
-  if (lastLoggedDate && initial) return lastLoggedDate > initial ? lastLoggedDate : initial;
-  return lastLoggedDate ?? initial ?? null;
+// Only what the waterfall math actually needs - lets the MD dashboard's
+// lighter partial-row snapshot fetch feed this the same as a full
+// DriverDeposit from useFleetData.
+export interface DepositLike {
+  paid_date: string;
+  amount: number;
+  created_at: string;
 }
 
-export function depositDaysSince(
-  lastLoggedDate: string | null,
+export interface AnnotatedDeposit<T extends DepositLike = DriverDeposit> {
+  deposit: T;
+  cumulativeBefore: number;
+  cumulativeAfter: number;
+  remainingAfter: number;
+  extra: number;
+  closesCycle: boolean;
+  cycleAnchor: string;
+}
+
+export interface ClosedDepositCycle {
+  anchor: string;
+  closedDate: string;
+  gapDays: number;
+  onTime: boolean;
+}
+
+export interface DepositWaterfall<T extends DepositLike = DriverDeposit> {
+  annotated: AnnotatedDeposit<T>[];
+  closedCycles: ClosedDepositCycle[];
+  currentAnchor: string | null;
+  currentPaid: number;
+  currentRemaining: number;
+  totalPaid: number;
+}
+
+// Deposits are weekly and paid in advance, but not always in one go - a
+// driver can pay in installments (30k, then 40k, then 60k) before their
+// deadline, and each partial payment must still be logged without
+// resetting the clock the way a single "any payment resets the 7-day
+// countdown" model would. This walks a driver's deposits oldest-first,
+// accumulating them into the CURRENT weekly cycle until the cumulative
+// total reaches the full weekly amount - only then does the cycle
+// actually close and the next one's 7-day clock start, from the date
+// that closing payment landed on. Everything in between (how much is
+// still owed, whether a given payment finished the week or overpaid it)
+// falls out of this same walk instead of a separate flat calculation.
+export function computeDepositWaterfall<T extends DepositLike>(
   initialDepositPaid: boolean,
-  initialDepositDate: string | null
-): number | null {
-  const date = effectiveLastDepositDate(lastLoggedDate, initialDepositPaid, initialDepositDate);
-  return date ? Math.floor((new Date(todayStr()).getTime() - new Date(date).getTime()) / 86400000) : null;
+  initialDepositDate: string | null,
+  deposits: T[]
+): DepositWaterfall<T> {
+  const sorted = [...deposits].sort((a, b) => a.paid_date.localeCompare(b.paid_date) || a.created_at.localeCompare(b.created_at));
+  let anchor = initialDepositPaid ? initialDepositDate : null;
+  let paidInCycle = 0;
+  let totalPaid = 0;
+  const annotated: AnnotatedDeposit<T>[] = [];
+  const closedCycles: ClosedDepositCycle[] = [];
+
+  for (const dep of sorted) {
+    totalPaid += dep.amount;
+    if (!anchor) {
+      // No initial deposit on file - the first-ever logged payment starts the first cycle itself.
+      anchor = dep.paid_date;
+      paidInCycle = 0;
+    }
+    const cumulativeBefore = paidInCycle;
+    const cumulativeAfter = cumulativeBefore + dep.amount;
+    const closesCycle = cumulativeAfter >= WEEKLY_DEPOSIT_AMOUNT;
+    const remainingAfter = Math.max(WEEKLY_DEPOSIT_AMOUNT - cumulativeAfter, 0);
+    const extra = Math.max(cumulativeAfter - WEEKLY_DEPOSIT_AMOUNT, 0);
+    const cycleAnchor = anchor;
+
+    annotated.push({ deposit: dep, cumulativeBefore, cumulativeAfter, remainingAfter, extra, closesCycle, cycleAnchor });
+
+    if (closesCycle) {
+      const gapDays = Math.floor((new Date(`${dep.paid_date}T00:00:00`).getTime() - new Date(`${cycleAnchor}T00:00:00`).getTime()) / 86400000);
+      closedCycles.push({ anchor: cycleAnchor, closedDate: dep.paid_date, gapDays, onTime: gapDays <= 7 });
+      anchor = dep.paid_date;
+      paidInCycle = 0;
+    } else {
+      paidInCycle = cumulativeAfter;
+    }
+  }
+
+  return {
+    annotated,
+    closedCycles,
+    currentAnchor: anchor,
+    currentPaid: paidInCycle,
+    currentRemaining: Math.max(WEEKLY_DEPOSIT_AMOUNT - paidInCycle, 0),
+    totalPaid,
+  };
+}
+
+export function depositDaysSince(anchor: string | null): number | null {
+  return anchor ? Math.floor((new Date(todayStr()).getTime() - new Date(`${anchor}T00:00:00`).getTime()) / 86400000) : null;
 }
 
 export type DepositTier = 'red' | 'yellow' | 'green' | 'neutral';
@@ -165,17 +228,10 @@ export function depositStatusLabel(daysSince: number | null): string {
   return `Paid ${daysSince}d ago`;
 }
 
-// The 7-day cycle's next due date, for showing an actual date rather
-// than just a day-count - same effective-start-date rule as
-// depositDaysSince (last logged deposit, or the initial deposit date
-// when nothing's been logged yet).
-export function nextDepositDueDate(
-  lastLoggedDate: string | null,
-  initialDepositPaid: boolean,
-  initialDepositDate: string | null
-): string | null {
-  const effective = effectiveLastDepositDate(lastLoggedDate, initialDepositPaid, initialDepositDate);
-  return effective ? dateStr(addDays(new Date(`${effective}T00:00:00`), 7)) : null;
+// The current cycle's due date, for showing an actual date rather than
+// just a day-count.
+export function nextDepositDueDate(anchor: string | null): string | null {
+  return anchor ? dateStr(addDays(new Date(`${anchor}T00:00:00`), 7)) : null;
 }
 
 export interface DepositReliability {
@@ -186,33 +242,17 @@ export interface DepositReliability {
   onTimeRate: number | null;
 }
 
-// Walks a driver's logged deposits in date order, treating each gap from
-// the previous payment (or the initial deposit date, for the first one)
-// as one week's cycle - on time if it landed within 7 days, late
-// otherwise. This is the closest thing to "how good they are" that can
-// be derived from the data actually on file, without inventing a fixed
-// due-date ledger the app doesn't otherwise keep.
+// "How good they are" derived from the same waterfall used for the
+// current-cycle status - a cycle only counts as a completed data point
+// once its cumulative payments actually reached the full weekly amount,
+// on time if that happened within 7 days of the cycle's own start.
 export function computeDepositReliability(driver: Driver, deposits: DriverDeposit[]): DepositReliability {
-  const history = deposits
-    .filter((d) => d.driver_id === driver.id)
-    .slice()
-    .sort((a, b) => a.paid_date.localeCompare(b.paid_date));
-
-  let anchor = driver.initial_deposit_paid ? driver.initial_deposit_date : null;
-  let onTime = 0;
-  let late = 0;
-  let totalPaid = driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0;
-
-  for (const dep of history) {
-    totalPaid += dep.amount;
-    if (anchor) {
-      const gapDays = Math.floor((new Date(`${dep.paid_date}T00:00:00`).getTime() - new Date(`${anchor}T00:00:00`).getTime()) / 86400000);
-      if (gapDays <= 7) onTime++; else late++;
-    }
-    anchor = dep.paid_date;
-  }
-
+  const driverDeposits = deposits.filter((d) => d.driver_id === driver.id);
+  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.initial_deposit_date, driverDeposits);
+  const onTime = wf.closedCycles.filter((c) => c.onTime).length;
+  const late = wf.closedCycles.filter((c) => !c.onTime).length;
   const totalCycles = onTime + late;
+  const totalPaid = wf.totalPaid + (driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0);
   return { onTime, late, totalCycles, totalPaid, onTimeRate: totalCycles > 0 ? Math.round((onTime / totalCycles) * 100) : null };
 }
 

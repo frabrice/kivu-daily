@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from './supabase';
-import { depositDaysSince } from './fleet';
+import { computeDepositWaterfall, depositDaysSince } from './fleet';
 import { todayStr } from './utils';
 
 export interface CompanySnapshot {
@@ -42,9 +42,9 @@ export function useCompanySnapshot() {
       campaignsRes, contactsRes,
       productsRes, storiesRes,
     ] = await Promise.all([
-      supabase.from('drivers').select('id, stage, vehicle_id, initial_deposit_paid, initial_deposit_date'),
+      supabase.from('drivers').select('id, stage, vehicle_id, initial_deposit_paid, initial_deposit_date, contract_status'),
       supabase.from('vehicles').select('id', { count: 'exact', head: true }),
-      supabase.from('driver_deposits').select('driver_id, paid_date'),
+      supabase.from('driver_deposits').select('driver_id, paid_date, amount, created_at'),
       supabase.from('finance_transactions').select('amount, direction').gte('transaction_date', monthStart),
       supabase.from('finance_transactions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       supabase.from('call_logs').select('id, outcome:call_outcomes(needs_followup)'),
@@ -54,13 +54,14 @@ export function useCompanySnapshot() {
       supabase.from('user_stories').select('source, status'),
     ]);
 
-    const drivers = (driversRes.data as { id: string; stage: string; vehicle_id: string | null; initial_deposit_paid: boolean; initial_deposit_date: string | null }[]) ?? [];
-    const deposits = (depositsRes.data as { driver_id: string; paid_date: string }[]) ?? [];
+    const drivers = (driversRes.data as { id: string; stage: string; vehicle_id: string | null; initial_deposit_paid: boolean; initial_deposit_date: string | null; contract_status: string }[]) ?? [];
+    const deposits = (depositsRes.data as { driver_id: string; paid_date: string; amount: number; created_at: string }[]) ?? [];
     const overdueDeposits = drivers
-      .filter((d) => d.vehicle_id)
+      .filter((d) => d.vehicle_id && d.contract_status !== 'ended')
       .filter((d) => {
-        const lastLogged = deposits.filter((dep) => dep.driver_id === d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date))[0]?.paid_date ?? null;
-        const daysSince = depositDaysSince(lastLogged, d.initial_deposit_paid, d.initial_deposit_date);
+        const driverDeposits = deposits.filter((dep) => dep.driver_id === d.id);
+        const wf = computeDepositWaterfall(d.initial_deposit_paid, d.initial_deposit_date, driverDeposits);
+        const daysSince = depositDaysSince(wf.currentAnchor);
         return daysSince === null || daysSince >= 7;
       }).length;
 

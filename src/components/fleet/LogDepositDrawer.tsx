@@ -3,13 +3,13 @@ import { ShieldCheck, Smartphone, Landmark } from 'lucide-react';
 import { supabase, Driver, DepositPaymentMethod } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { todayStr } from '../../lib/utils';
-import { WEEKLY_DEPOSIT_AMOUNT, DEPOSIT_PAYMENT_METHODS, depositShortfall, formatDateLabelSafe } from '../../lib/fleet';
+import { WEEKLY_DEPOSIT_AMOUNT, DEPOSIT_PAYMENT_METHODS, formatDateLabelSafe } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 
-export default function LogDepositDrawer({ driver, onClose, onSaved }: { driver: Driver; onClose: () => void; onSaved: () => void }) {
+export default function LogDepositDrawer({ driver, currentRemaining, onClose, onSaved }: { driver: Driver; currentRemaining: number; onClose: () => void; onSaved: () => void }) {
   const { profile } = useAuth();
-  const [amount, setAmount] = useState(String(WEEKLY_DEPOSIT_AMOUNT));
+  const [amount, setAmount] = useState(String(currentRemaining > 0 ? currentRemaining : WEEKLY_DEPOSIT_AMOUNT));
   const [paidDate, setPaidDate] = useState(todayStr());
   const [paymentMethod, setPaymentMethod] = useState<DepositPaymentMethod>('momo');
   const [bankName, setBankName] = useState('');
@@ -18,7 +18,8 @@ export default function LogDepositDrawer({ driver, onClose, onSaved }: { driver:
   const [error, setError] = useState('');
 
   const numAmount = Number(amount);
-  const shortfall = numAmount > 0 ? depositShortfall(numAmount) : 0;
+  const shortfall = numAmount > 0 ? Math.max(currentRemaining - numAmount, 0) : currentRemaining;
+  const extra = numAmount > 0 ? Math.max(numAmount - currentRemaining, 0) : 0;
   const canContinue = !!numAmount && numAmount > 0 && !!paidDate && (paymentMethod === 'momo' || !!bankName.trim());
 
   const save = async () => {
@@ -46,8 +47,12 @@ export default function LogDepositDrawer({ driver, onClose, onSaved }: { driver:
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
             <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="input" />
+            <p className="text-[10px] text-gray-400 mt-1">{currentRemaining.toLocaleString()} RWF remaining on this week's deposit.</p>
             {numAmount > 0 && shortfall > 0 && (
-              <p className="text-[10px] text-red-500 font-medium mt-1">{shortfall.toLocaleString()} RWF short of the full {WEEKLY_DEPOSIT_AMOUNT.toLocaleString()} RWF weekly deposit.</p>
+              <p className="text-[10px] text-amber-500 font-medium mt-1">{shortfall.toLocaleString()} RWF would still be owed this week.</p>
+            )}
+            {numAmount > 0 && extra > 0 && (
+              <p className="text-[10px] text-blue-500 font-medium mt-1">{extra.toLocaleString()} RWF extra, beyond this week's deposit.</p>
             )}
           </div>
           <div>
@@ -99,10 +104,13 @@ export default function LogDepositDrawer({ driver, onClose, onSaved }: { driver:
               Via {paymentMethod === 'momo' ? 'MoMo' : `Bank Transfer · ${bankName.trim()}`}
             </p>
             {shortfall > 0 && (
-              <p className="text-[12px] text-red-500 font-medium">{shortfall.toLocaleString()} RWF still owed for this week</p>
+              <p className="text-[12px] text-amber-500 font-medium">{shortfall.toLocaleString()} RWF still owed for this week</p>
+            )}
+            {extra > 0 && (
+              <p className="text-[12px] text-blue-500 font-medium">{extra.toLocaleString()} RWF extra, beyond this week's deposit</p>
             )}
           </div>
-          <p className="text-[10px] text-gray-400">This logs one week's deposit and can't be logged again until the next one is due. It stays pending until Finance confirms it.</p>
+          <p className="text-[10px] text-gray-400">It stays pending until Finance confirms it. If this doesn't cover the full week, you can log another payment for the rest at any time.</p>
 
           {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
