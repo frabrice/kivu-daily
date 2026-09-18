@@ -3,9 +3,10 @@ import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, BedDouble } from 'lucide
 import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT } from '../../lib/fleet';
+import { STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT, availableForReplacement } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
+import SearchableSelect from '../SearchableSelect';
 import FlagToITDrawer from '../FlagToITDrawer';
 import VehicleDrawer from './VehicleDrawer';
 
@@ -43,11 +44,13 @@ export default function DriverDrawer({
   const [vehicleId, setVehicleId] = useState(driver?.vehicle_id ?? '');
   const [shift, setShift] = useState<DriverShift | ''>(driver?.shift ?? '');
   const [restDay, setRestDay] = useState<DriverRestDay | ''>(driver?.rest_day ?? '');
+  const [replacedDriverId, setReplacedDriverId] = useState(driver?.replaced_driver_id ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [flagOpen, setFlagOpen] = useState(false);
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
 
+  const replacementOptions = availableForReplacement(drivers, driver?.id).map((d) => ({ id: d.id, label: d.full_name, sublabel: d.phone }));
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
   const shiftTakenBy = (s: DriverShift) => drivers.find((d) => d.vehicle_id === vehicleId && d.id !== driver?.id && d.shift === s);
   const vehicleFull = !!selectedVehicle && drivers.filter((d) => d.vehicle_id === vehicleId && d.id !== driver?.id).length >= 2;
@@ -85,6 +88,7 @@ export default function DriverDrawer({
       vehicle_id: vehicleId || null,
       shift: vehicleId ? shift || null : null,
       rest_day: restDay || null,
+      replaced_driver_id: replacedDriverId || null,
       updated_at: new Date().toISOString(),
     };
     const { error: err } = driver
@@ -143,6 +147,21 @@ export default function DriverDrawer({
             {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
         </div>
+
+        {!driver && (
+          <div>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Replacing (optional)</label>
+            <SearchableSelect
+              options={replacementOptions}
+              value={replacedDriverId}
+              onChange={setReplacedDriverId}
+              placeholder={replacementOptions.length === 0 ? 'No ended-contract drivers available' : 'Search ended-contract drivers…'}
+              emptyLabel="No matching drivers"
+              disabled={!editing}
+            />
+            <p className="text-[9px] text-gray-400 mt-1">If this driver is replacing someone whose contract ended, pick them here. They'll no longer show up here once picked.</p>
+          </div>
+        )}
 
         <div className={`p-2.5 rounded-lg border space-y-2 ${restDay ? 'border-indigo-300 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-500/5' : 'border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/5'}`}>
           <label className="block text-[11px] font-medium mb-1.5 flex items-center gap-1"><BedDouble size={11} /> Weekly Rest Day <span className="text-red-500">*</span></label>

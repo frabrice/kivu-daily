@@ -59,6 +59,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
       <>
         <DriverProfilePage
           driver={viewingDriver}
+          drivers={drivers}
           deposits={deposits}
           fines={fines}
           finePayments={finePayments}

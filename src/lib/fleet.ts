@@ -69,6 +69,14 @@ export const STAGES: { key: DriverStage; label: string; color: string }[] = [
   { key: 'inactive', label: 'Inactive', color: '#6b7280' },
 ];
 
+// Ended drivers still available to pick as "who this new hire replaces" -
+// once claimed by some other driver's replaced_driver_id (DB-enforced to
+// at most one claim each), they drop out of this list for good.
+export function availableForReplacement(drivers: Driver[], excludeDriverId?: string): Driver[] {
+  const claimed = new Set(drivers.map((d) => d.replaced_driver_id).filter((id): id is string => !!id));
+  return drivers.filter((d) => d.contract_status === 'ended' && d.id !== excludeDriverId && !claimed.has(d.id));
+}
+
 export const CONTRACT_END_REASONS: { key: string; label: string }[] = [
   { key: 'missed_deposits', label: 'Failure to make weekly deposits' },
   { key: 'another_job', label: 'Found another job' },

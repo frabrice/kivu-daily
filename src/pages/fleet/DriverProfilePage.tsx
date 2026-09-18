@@ -17,6 +17,7 @@ import ReactivateDriverDrawer from '../../components/fleet/ReactivateDriverDrawe
 
 export default function DriverProfilePage({
   driver,
+  drivers,
   deposits,
   fines,
   finePayments,
@@ -27,6 +28,7 @@ export default function DriverProfilePage({
   reload,
 }: {
   driver: Driver;
+  drivers: Driver[];
   deposits: DriverDeposit[];
   fines: DriverFine[];
   finePayments: DriverFinePayment[];
@@ -62,6 +64,8 @@ export default function DriverProfilePage({
   const driverContractEvents = contractEvents.filter((e) => e.driver_id === driver.id).sort((a, b) => b.event_date.localeCompare(a.event_date));
   const isEnded = driver.contract_status === 'ended';
   const lastEndedEvent = driverContractEvents.find((e) => e.event_type === 'ended');
+  const replacedDriver = driver.replaced_driver_id ? drivers.find((d) => d.id === driver.replaced_driver_id) ?? null : null;
+  const replacedByDriver = drivers.find((d) => d.replaced_driver_id === driver.id) ?? null;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -115,6 +119,12 @@ export default function DriverProfilePage({
           <div>
             <h2 className="text-lg font-semibold">{driver.full_name}</h2>
             <p className="text-[11px] text-gray-400 mt-0.5">{driver.phone}</p>
+            {replacedDriver && (
+              <p className="text-[10px] text-indigo-500 dark:text-indigo-300 mt-1">Replacing {replacedDriver.full_name}</p>
+            )}
+            {replacedByDriver && (
+              <p className="text-[10px] text-indigo-500 dark:text-indigo-300 mt-1">Replaced by {replacedByDriver.full_name}</p>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             {stageMeta && (

@@ -85,6 +85,7 @@ export interface Driver {
   shift: DriverShift | null;
   rest_day: DriverRestDay | null;
   contract_status: DriverContractStatus;
+  replaced_driver_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
