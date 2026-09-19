@@ -135,6 +135,11 @@ export interface DepositWaterfall<T extends DepositLike = DriverDeposit> {
   currentPaid: number;
   currentRemaining: number;
   totalPaid: number;
+  // How the initial deposit itself landed relative to one week's amount -
+  // short of it leaves initialRemaining owed, over it leaves initialExtra,
+  // which is the same amount already folded into the running cycle below.
+  initialRemaining: number;
+  initialExtra: number;
 }
 
 // Deposits are weekly and paid in advance, but not always in one go - a
@@ -148,15 +153,30 @@ export interface DepositWaterfall<T extends DepositLike = DriverDeposit> {
 // that closing payment landed on. Everything in between (how much is
 // still owed, whether a given payment finished the week or overpaid it)
 // falls out of this same walk instead of a separate flat calculation.
+//
+// The initial deposit is itself the first payment toward the first
+// cycle, not a freebie the model ignores: short of 180k it leaves a
+// balance due (e.g. paid 100k, still owes 80k before the first weekly
+// deadline even starts counting against them), and over 180k the extra
+// rolls forward as credit against the next cycle (e.g. paid 210k, owes
+// only 150k next week) - exactly like an overpayment on any later
+// logged deposit rolls into the cycle after it.
 export function computeDepositWaterfall<T extends DepositLike>(
   initialDepositPaid: boolean,
   initialDepositDate: string | null,
+  initialDepositAmount: number | null,
   deposits: T[]
 ): DepositWaterfall<T> {
   const sorted = [...deposits].sort((a, b) => a.paid_date.localeCompare(b.paid_date) || a.created_at.localeCompare(b.created_at));
   let anchor = initialDepositPaid ? initialDepositDate : null;
-  let paidInCycle = 0;
-  let totalPaid = 0;
+  const initialAmount = initialDepositPaid ? (initialDepositAmount ?? 0) : 0;
+  const initialRemaining = anchor ? Math.max(WEEKLY_DEPOSIT_AMOUNT - initialAmount, 0) : 0;
+  const initialExtra = anchor ? Math.max(initialAmount - WEEKLY_DEPOSIT_AMOUNT, 0) : 0;
+  // Short of the week, the initial deposit itself is what's still owed;
+  // over it, the excess is what carries forward as the next cycle's head start.
+  let paidInCycle = anchor ? Math.min(initialAmount, WEEKLY_DEPOSIT_AMOUNT) : 0;
+  if (initialExtra > 0) paidInCycle = initialExtra;
+  let totalPaid = initialAmount;
   const annotated: AnnotatedDeposit<T>[] = [];
   const closedCycles: ClosedDepositCycle[] = [];
 
@@ -180,7 +200,7 @@ export function computeDepositWaterfall<T extends DepositLike>(
       const gapDays = Math.floor((new Date(`${dep.paid_date}T00:00:00`).getTime() - new Date(`${cycleAnchor}T00:00:00`).getTime()) / 86400000);
       closedCycles.push({ anchor: cycleAnchor, closedDate: dep.paid_date, gapDays, onTime: gapDays <= 7 });
       anchor = dep.paid_date;
-      paidInCycle = 0;
+      paidInCycle = extra; // overpaying this cycle rolls the excess into the next one too
     } else {
       paidInCycle = cumulativeAfter;
     }
@@ -193,6 +213,8 @@ export function computeDepositWaterfall<T extends DepositLike>(
     currentPaid: paidInCycle,
     currentRemaining: Math.max(WEEKLY_DEPOSIT_AMOUNT - paidInCycle, 0),
     totalPaid,
+    initialRemaining,
+    initialExtra,
   };
 }
 
@@ -261,12 +283,11 @@ export interface DepositReliability {
 // on time if that happened within 7 days of the cycle's own start.
 export function computeDepositReliability(driver: Driver, deposits: DriverDeposit[]): DepositReliability {
   const driverDeposits = deposits.filter((d) => d.driver_id === driver.id);
-  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.initial_deposit_date, driverDeposits);
+  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.initial_deposit_date, driver.initial_deposit_amount, driverDeposits);
   const onTime = wf.closedCycles.filter((c) => c.onTime).length;
   const late = wf.closedCycles.filter((c) => !c.onTime).length;
   const totalCycles = onTime + late;
-  const totalPaid = wf.totalPaid + (driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0);
-  return { onTime, late, totalCycles, totalPaid, onTimeRate: totalCycles > 0 ? Math.round((onTime / totalCycles) * 100) : null };
+  return { onTime, late, totalCycles, totalPaid: wf.totalPaid, onTimeRate: totalCycles > 0 ? Math.round((onTime / totalCycles) * 100) : null };
 }
 
 export type FineStatus = 'unpaid' | 'partial' | 'paid';

@@ -48,7 +48,7 @@ export default function DriverProfilePage({
 
   const driverDeposits = deposits.filter((dep) => dep.driver_id === driver.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
   const isEnded = driver.contract_status === 'ended';
-  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.initial_deposit_date, driverDeposits);
+  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.initial_deposit_date, driver.initial_deposit_amount, driverDeposits);
   const daysSince = depositDaysSince(wf.currentAnchor);
   const tier = depositTier(daysSince);
   const tierStyle = DEPOSIT_TIER_STYLE[tier];
@@ -281,17 +281,28 @@ export default function DriverProfilePage({
                 </div>
               );
             })}
-            {driver.initial_deposit_paid && driver.initial_deposit_date && (
-              <div className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-gray-500 dark:text-gray-400 shrink-0">{formatDateLabelSafe(driver.initial_deposit_date)}</span>
-                  <span className="inline-flex items-center gap-1 text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full shrink-0">
-                    Initial deposit
-                  </span>
+            {driver.initial_deposit_paid && driver.initial_deposit_date && (() => {
+              const initialStatusLabel = wf.initialExtra > 0 ? `${wf.initialExtra.toLocaleString()} extra` : wf.initialRemaining > 0 ? `${wf.initialRemaining.toLocaleString()} due` : 'Covered';
+              const initialStatusClass = wf.initialExtra > 0
+                ? 'text-blue-600 dark:text-blue-300'
+                : wf.initialRemaining > 0
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-emerald-600 dark:text-emerald-400';
+              return (
+                <div className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-gray-500 dark:text-gray-400 shrink-0">{formatDateLabelSafe(driver.initial_deposit_date)}</span>
+                    <span className="inline-flex items-center gap-1 text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full shrink-0">
+                      Initial deposit
+                    </span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-medium">{(driver.initial_deposit_amount ?? 0).toLocaleString()} RWF</p>
+                    <p className={`text-[10px] ${initialStatusClass}`}>{initialStatusLabel}</p>
+                  </div>
                 </div>
-                <p className="font-medium shrink-0">{(driver.initial_deposit_amount ?? 0).toLocaleString()} RWF</p>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
       </div>

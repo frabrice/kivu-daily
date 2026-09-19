@@ -32,7 +32,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       const history = depositsForDriver(d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
       const lastDeposit = history[0] ?? null;
       const isEnded = d.contract_status === 'ended';
-      const wf = computeDepositWaterfall(d.initial_deposit_paid, d.initial_deposit_date, depositsForDriver(d.id));
+      const wf = computeDepositWaterfall(d.initial_deposit_paid, d.initial_deposit_date, d.initial_deposit_amount, depositsForDriver(d.id));
       const daysSince = depositDaysSince(wf.currentAnchor);
       const tier = depositTier(daysSince);
       const label = depositStatusLabel(daysSince);
@@ -116,7 +116,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       {loggingDepositFor && (
         <LogDepositDrawer
           driver={loggingDepositFor}
-          currentRemaining={computeDepositWaterfall(loggingDepositFor.initial_deposit_paid, loggingDepositFor.initial_deposit_date, depositsForDriver(loggingDepositFor.id)).currentRemaining}
+          currentRemaining={computeDepositWaterfall(loggingDepositFor.initial_deposit_paid, loggingDepositFor.initial_deposit_date, loggingDepositFor.initial_deposit_amount, depositsForDriver(loggingDepositFor.id)).currentRemaining}
           onClose={() => setLoggingDepositFor(null)}
           onSaved={reload}
         />
