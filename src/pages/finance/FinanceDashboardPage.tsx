@@ -1,37 +1,47 @@
 import { useMemo } from 'react';
-import { LayoutDashboard, Car, Users2, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Landmark, Wallet } from 'lucide-react';
-import { useFinanceData, sumWhere, fmt, WEEKLY_DEPOSIT_AMOUNT } from '../../lib/finance';
-import { effectiveStage } from '../../lib/fleet';
+import { LayoutDashboard, Car, Users2, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Landmark, Wallet, PiggyBank, Handshake } from 'lucide-react';
+import { useFinanceData, sumWhere, fmt, KIVU_REVENUE_TYPES } from '../../lib/finance';
+import { effectiveStage, computeDepositWaterfall, depositDaysSince } from '../../lib/fleet';
 import { todayStr } from '../../lib/utils';
 import KpiTile from '../../components/KpiTile';
 
 export default function FinanceDashboardPage() {
-  const { accounts, transactions, drivers, vehicles, balances, loading } = useFinanceData();
+  const { accounts, transactions, drivers, deposits, vehicles, balances, loading } = useFinanceData();
 
   const thisMonth = todayStr().slice(0, 7);
   const monthTx = useMemo(() => transactions.filter((t) => t.transaction_date.slice(0, 7) === thisMonth), [transactions, thisMonth]);
 
   const dashboard = useMemo(() => {
-    const revenueIn = sumWhere(monthTx, 'revenue', 'in');
+    const revenueIn = sumWhere(monthTx, KIVU_REVENUE_TYPES, 'in');
     const fleetIn = sumWhere(monthTx, 'fleet_collection', 'in');
     const ownerOut = sumWhere(monthTx, 'vehicle_owner_payment', 'out');
     const opexOut = sumWhere(monthTx, ['supplier_payment', 'payroll', 'expense_claim', 'other'], 'out');
     const netCashFlow = revenueIn + fleetIn - ownerOut - opexOut;
 
+    const managementMarginMonth = sumWhere(monthTx, 'management_margin', 'in');
+    const onboardingRevenueMonth = sumWhere(monthTx, 'onboarding_fee', 'in');
+    const managedCars = vehicles.filter((v) => v.owner_id).length;
+    const pendingOwnerPayments = transactions.filter((t) => t.type === 'vehicle_owner_payment' && t.status === 'pending').reduce((s, t) => s + t.amount, 0);
+
     const activeCars = vehicles.length;
     const operationalCars = vehicles.filter((v) => drivers.some((d) => d.vehicle_id === v.id)).length;
     const activeDrivers = drivers.filter((d) => effectiveStage(d) === 'active').length;
 
-    const assignedDrivers = drivers.filter((d) => d.vehicle_id);
+    // Same waterfall Fleet's own Deposits page uses, so "what's owed"
+    // agrees everywhere instead of this page's own flatter estimate
+    // (driver hasn't paid in 7+ days x a flat weekly amount) drifting
+    // from what installments/rollover credit actually leave outstanding.
     let outstandingDriverCount = 0;
-    for (const d of assignedDrivers) {
-      const lastTx = transactions
-        .filter((t) => t.type === 'fleet_collection' && t.linked_driver_id === d.id)
-        .sort((a, b) => b.transaction_date.localeCompare(a.transaction_date))[0];
-      const daysSince = lastTx ? Math.floor((new Date(todayStr()).getTime() - new Date(lastTx.transaction_date).getTime()) / 86400000) : Infinity;
-      if (daysSince >= 7) outstandingDriverCount++;
+    let outstandingDriverAmount = 0;
+    for (const d of drivers.filter((dr) => dr.vehicle_id && dr.contract_status !== 'ended')) {
+      const driverDeposits = deposits.filter((dep) => dep.driver_id === d.id);
+      const wf = computeDepositWaterfall(d.initial_deposit_paid, d.initial_deposit_date, d.initial_deposit_amount, driverDeposits);
+      const daysSince = depositDaysSince(wf.currentAnchor);
+      if (daysSince === null || daysSince >= 7) {
+        outstandingDriverCount++;
+        outstandingDriverAmount += wf.currentRemaining;
+      }
     }
-    const outstandingDriverAmount = outstandingDriverCount * WEEKLY_DEPOSIT_AMOUNT;
 
     const outstandingOwnerAmount = transactions
       .filter((t) => t.type === 'vehicle_owner_payment' && (t.status === 'pending' || t.status === 'checked'))
@@ -39,10 +49,11 @@ export default function FinanceDashboardPage() {
 
     return {
       revenueIn, fleetIn, ownerOut, opexOut, netCashFlow,
+      managementMarginMonth, onboardingRevenueMonth, managedCars, pendingOwnerPayments,
       activeCars, operationalCars, activeDrivers,
-      outstandingDriverAmount, outstandingOwnerAmount,
+      outstandingDriverCount, outstandingDriverAmount, outstandingOwnerAmount,
     };
-  }, [monthTx, vehicles, drivers, transactions]);
+  }, [monthTx, vehicles, drivers, deposits, transactions]);
 
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
 
@@ -65,6 +76,16 @@ export default function FinanceDashboardPage() {
         <KpiTile icon={ArrowDownCircle} label="Fleet Collections" value={fmt(dashboard.fleetIn)} tone="positive" color="amber" />
         <KpiTile icon={ArrowUpCircle} label="Vehicle-Owner Payments" value={fmt(dashboard.ownerOut)} tone="negative" color="amber" />
         <KpiTile icon={ArrowUpCircle} label="Operating Expenses" value={fmt(dashboard.opexOut)} tone="negative" color="amber" />
+      </div>
+
+      <div>
+        <h3 className="section-title mb-2.5">Car Management</h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiTile icon={Handshake} label="Management Margin (MTD)" value={fmt(dashboard.managementMarginMonth)} tone="positive" color="amber" />
+          <KpiTile icon={PiggyBank} label="Onboarding Revenue (MTD)" value={fmt(dashboard.onboardingRevenueMonth)} tone="positive" color="amber" />
+          <KpiTile icon={Car} label="Managed Cars" value={String(dashboard.managedCars)} color="amber" />
+          <KpiTile icon={Wallet} label="Pending Owner Payments" value={fmt(dashboard.pendingOwnerPayments)} tone={dashboard.pendingOwnerPayments > 0 ? 'negative' : undefined} color="amber" />
+        </div>
       </div>
 
       <div>

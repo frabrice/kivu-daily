@@ -198,10 +198,15 @@ export function computeDepositWaterfall<T extends DepositLike>(
   const initialAmount = initialDepositPaid ? (initialDepositAmount ?? 0) : 0;
   const initialRemaining = anchor ? Math.max(WEEKLY_DEPOSIT_AMOUNT - initialAmount, 0) : 0;
   const initialExtra = anchor ? Math.max(initialAmount - WEEKLY_DEPOSIT_AMOUNT, 0) : 0;
-  // Short of the week, the initial deposit itself is what's still owed;
-  // over it, the excess is what carries forward as the next cycle's head start.
+  const initialCloses = anchor ? initialAmount >= WEEKLY_DEPOSIT_AMOUNT : false;
+  // Short of the week, the initial deposit itself is what's still owed.
+  // At or over the week, the cycle it opened is done - the next one
+  // starts fresh (0, or the rollover credit if there was extra) rather
+  // than leaving the full weekly amount sitting in paidInCycle forever,
+  // which would make every later week look already covered with no
+  // deposit ever logged for it.
   let paidInCycle = anchor ? Math.min(initialAmount, WEEKLY_DEPOSIT_AMOUNT) : 0;
-  if (initialExtra > 0) paidInCycle = initialExtra;
+  if (initialCloses) paidInCycle = initialExtra;
   let totalPaid = initialAmount;
   const annotated: AnnotatedDeposit<T>[] = [];
   const closedCycles: ClosedDepositCycle[] = [];

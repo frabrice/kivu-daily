@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   supabase, FinanceAccount, FinanceTransaction, FinanceTransactionType, FinanceDirection,
-  FinanceReconciliation, PayrollRun, Driver, Vehicle, VehicleOwner, Profile, Document as Doc,
+  FinanceReconciliation, PayrollRun, Driver, DriverDeposit, Vehicle, VehicleOwner, Profile, Document as Doc,
 } from './supabase';
 import { todayStr } from './utils';
 
@@ -16,6 +16,7 @@ export function useFinanceData() {
   const [reconciliations, setReconciliations] = useState<FinanceReconciliation[]>([]);
   const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [deposits, setDeposits] = useState<DriverDeposit[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [owners, setOwners] = useState<VehicleOwner[]>([]);
   const [employees, setEmployees] = useState<Profile[]>([]);
@@ -30,7 +31,7 @@ export function useFinanceData() {
     // generated rows show up in the same load.
     try { await supabase.rpc('sync_vehicle_obligations'); } catch { /* ignore */ }
 
-    const [acc, tx, rec, pr, d, v, own, emp, docs] = await Promise.all([
+    const [acc, tx, rec, pr, d, dep, v, own, emp, docs] = await Promise.all([
       supabase.from('finance_accounts').select('*').order('key'),
       supabase
         .from('finance_transactions')
@@ -40,6 +41,7 @@ export function useFinanceData() {
       supabase.from('finance_reconciliations').select('*, account:finance_accounts(*), reconciler:profiles(*)').order('period', { ascending: false }),
       supabase.from('payroll_runs').select('*, lines:payroll_lines(*, employee:profiles(*))').order('period', { ascending: false }),
       supabase.from('drivers').select('*, vehicle:vehicles(*)'),
+      supabase.from('driver_deposits').select('*'),
       supabase.from('vehicles').select('*, owner:vehicle_owners(*)'),
       supabase.from('vehicle_owners').select('*').order('full_name'),
       supabase.from('profiles').select('*').eq('is_active', true).order('full_name'),
@@ -50,6 +52,7 @@ export function useFinanceData() {
     setReconciliations((rec.data as FinanceReconciliation[]) ?? []);
     setPayrollRuns((pr.data as PayrollRun[]) ?? []);
     setDrivers((d.data as Driver[]) ?? []);
+    setDeposits((dep.data as DriverDeposit[]) ?? []);
     setVehicles((v.data as Vehicle[]) ?? []);
     setOwners((own.data as VehicleOwner[]) ?? []);
     setEmployees((emp.data as Profile[]) ?? []);
@@ -66,6 +69,7 @@ export function useFinanceData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_runs' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_lines' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicle_owners' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_deposits' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
@@ -88,7 +92,7 @@ export function useFinanceData() {
   for (const a of accounts) balances[a.key] = accountBalance(a.id);
 
   return {
-    accounts, transactions, reconciliations, payrollRuns, drivers, vehicles, owners, employees, documents,
+    accounts, transactions, reconciliations, payrollRuns, drivers, deposits, vehicles, owners, employees, documents,
     loading, reload: load, accountBalance, balances,
   };
 }
@@ -105,6 +109,15 @@ export const TYPE_META: Record<FinanceTransactionType, { label: string; defaultD
   onboarding_fee: { label: 'Onboarding Fee', defaultDirection: 'in' },
   management_margin: { label: 'Management Margin', defaultDirection: 'in' },
 };
+
+// What actually counts as Kivu's own income for a "revenue" figure -
+// fleet_collection is deliberately excluded even though it's cash 'in':
+// most of it (240k of the 360k/week collected per managed car) is money
+// that passes straight through to the vehicle owner, not Kivu's to keep.
+// Only the margin on that spread, the flat monthly/onboarding fees, and
+// whatever Finance logs directly as 'revenue' (trip commissions etc.)
+// are genuine income.
+export const KIVU_REVENUE_TYPES: FinanceTransactionType[] = ['revenue', 'management_margin', 'onboarding_fee'];
 
 export const STATUS_META = {
   pending: { label: 'Pending', color: '#9ca3af' },

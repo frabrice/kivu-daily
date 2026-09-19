@@ -116,7 +116,7 @@ export default function FinanceFleetCollectionsPage() {
       <div className="flex items-start justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><Wallet size={16} className="text-amber-600 dark:text-amber-300" /> Fleet Collections</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Driver versement, deposits, and MoMo collections. Held in Bank of Kigali per contract — never automatically Kivu revenue.</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">The two shift drivers' weekly remittance per car, collected into Bank of Kigali — funds each owner's payout and Kivu's management margin, not a refundable deposit.</p>
         </div>
         {canEdit && (
           <button onClick={() => setDrawer({ tx: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
