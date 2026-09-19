@@ -3,7 +3,7 @@ import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, BedDouble } from 'lucide
 import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT, availableForReplacement } from '../../lib/fleet';
+import { MANUAL_STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT, availableForReplacement } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import SearchableSelect from '../SearchableSelect';
@@ -39,7 +39,7 @@ export default function DriverDrawer({
   const [initialDepositPaid, setInitialDepositPaid] = useState(driver?.initial_deposit_paid ?? false);
   const [initialDepositDate, setInitialDepositDate] = useState(driver?.initial_deposit_date ?? '');
   const [initialDepositAmount, setInitialDepositAmount] = useState(driver?.initial_deposit_amount ? String(driver.initial_deposit_amount) : String(WEEKLY_DEPOSIT_AMOUNT));
-  const [stage, setStage] = useState<DriverStage>(driver?.stage ?? 'applying');
+  const [stage, setStage] = useState<DriverStage>(driver?.stage === 'active' ? 'ready' : driver?.stage ?? 'applying');
   const [notes, setNotes] = useState(driver?.notes ?? '');
   const [vehicleId, setVehicleId] = useState(driver?.vehicle_id ?? '');
   const [shift, setShift] = useState<DriverShift | ''>(driver?.shift ?? '');
@@ -144,8 +144,9 @@ export default function DriverDrawer({
         <div>
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Stage</label>
           <select value={stage} onChange={(e) => setStage(e.target.value as DriverStage)} disabled={!editing} className="input">
-            {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            {MANUAL_STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
+          <p className="text-[9px] text-gray-400 mt-1">Active isn't picked here — it happens automatically once this driver has a vehicle and a paid deposit.</p>
         </div>
 
         {!driver && (

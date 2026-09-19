@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { LayoutDashboard, Car, Users2, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Landmark, Wallet } from 'lucide-react';
 import { useFinanceData, sumWhere, fmt, WEEKLY_DEPOSIT_AMOUNT } from '../../lib/finance';
+import { effectiveStage } from '../../lib/fleet';
 import { todayStr } from '../../lib/utils';
 import KpiTile from '../../components/KpiTile';
 
@@ -19,7 +20,7 @@ export default function FinanceDashboardPage() {
 
     const activeCars = vehicles.length;
     const operationalCars = vehicles.filter((v) => drivers.some((d) => d.vehicle_id === v.id)).length;
-    const activeDrivers = drivers.filter((d) => d.stage !== 'inactive').length;
+    const activeDrivers = drivers.filter((d) => effectiveStage(d) === 'active').length;
 
     const assignedDrivers = drivers.filter((d) => d.vehicle_id);
     let outstandingDriverCount = 0;

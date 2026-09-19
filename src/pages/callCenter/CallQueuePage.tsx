@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Phone, PhoneCall } from 'lucide-react';
 import { useCallCenterData, STAGE_LABEL } from '../../lib/callCenter';
+import { effectiveStage } from '../../lib/fleet';
 import LogCallDrawer from '../../components/callCenter/LogCallDrawer';
 import { Driver } from '../../lib/supabase';
 
@@ -74,7 +75,7 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
             <div className={`w-1.5 h-8 rounded-full shrink-0 ${q.priority === 0 ? 'bg-red-500' : q.priority === 1 ? 'bg-orange-500' : q.priority === 2 ? 'bg-amber-400' : 'bg-gray-200 dark:bg-white/10'}`} />
             <div className="flex-1 min-w-0">
               <p className="text-[12px] font-medium truncate">{q.driver.full_name}</p>
-              <p className="text-[10px] text-gray-400">{q.driver.phone} · {STAGE_LABEL[q.driver.stage]}</p>
+              <p className="text-[10px] text-gray-400">{q.driver.phone} · {STAGE_LABEL[effectiveStage(q.driver)]}</p>
             </div>
             <span className={`text-[10px] font-medium shrink-0 ${q.priority <= 2 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400'}`}>
               {q.reasonLabel}

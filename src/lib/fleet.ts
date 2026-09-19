@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, DriverStage, DriverRestDay, DepositPaymentMethod, Profile } from './supabase';
+import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, DriverStage, DriverContractStatus, DriverRestDay, DepositPaymentMethod, Profile } from './supabase';
 import { todayStr, dateStr, addDays } from './utils';
 
 // Fleet's own dashboard, plus the identical bundled view given to Call
@@ -62,12 +62,38 @@ export function useFleetData() {
 
 export const STAGES: { key: DriverStage; label: string; color: string }[] = [
   { key: 'applying', label: 'Applying', color: '#9ca3af' },
-  { key: 'training', label: 'Training', color: '#f97316' },
+  { key: 'raw', label: 'Raw', color: '#f97316' },
+  { key: 'ready', label: 'Ready', color: '#2F8C86' },
   { key: 'active', label: 'Active', color: '#4F7B3E' },
-  { key: 'waiting', label: 'Waiting', color: '#2F8C86' },
   { key: 'flagged', label: 'Flagged', color: '#ef4444' },
   { key: 'inactive', label: 'Inactive', color: '#6b7280' },
 ];
+
+// What Fleet can actually pick by hand - 'active' is excluded because
+// it's computed, never a manual choice. Used by DriverDrawer's stage
+// picker so the dropdown can't offer a value that would just be
+// silently overridden by effectiveStage() anyway.
+export const MANUAL_STAGES = STAGES.filter((s) => s.key !== 'active');
+
+interface StageLike {
+  stage: DriverStage;
+  vehicle_id: string | null;
+  initial_deposit_paid: boolean;
+  contract_status: DriverContractStatus;
+}
+
+// 'Active' is never something Fleet sets directly - it's true exactly
+// when a driver has a car, has paid their initial deposit, and their
+// contract hasn't ended, so the pipeline can't drift out of sync with
+// reality the way a manually-picked stage could. If a driver's stored
+// stage is a leftover 'active' from before this existed but they no
+// longer qualify (car reassigned, contract ended), this falls back to
+// 'ready' rather than trusting the stale stored value.
+export function effectiveStage<T extends StageLike>(driver: T): DriverStage {
+  const isActive = driver.contract_status === 'active' && !!driver.vehicle_id && driver.initial_deposit_paid;
+  if (isActive) return 'active';
+  return driver.stage === 'active' ? 'ready' : driver.stage;
+}
 
 // Ended drivers still available to pick as "who this new hire replaces" -
 // once claimed by some other driver's replaced_driver_id (DB-enforced to

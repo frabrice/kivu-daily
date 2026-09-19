@@ -263,13 +263,14 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
       {
         heading: 'The board',
         body: [
-          'Six columns: Applying, Training, Active, Waiting, Flagged, Inactive. Each driver is a card in exactly one column, showing their name and phone number.',
+          'Six columns: Applying, Raw, Ready, Active, Flagged, Inactive. Each driver is a card in exactly one column, showing their name and phone number.',
+          'Applying: just applied. Raw: vetted and good, but doesn\'t have the money for their first week\'s deposit yet. Ready: vetted, no vehicle assigned yet, ideally already holding a paid deposit — sitting on the bench specifically to slot in the moment another driver\'s contract ends. Active isn\'t picked by hand: it happens automatically the moment a driver has both a vehicle and a paid initial deposit, and drops back out automatically if either stops being true.',
         ],
       },
       {
         heading: 'Adding and editing drivers',
         body: [
-          '"Add Driver" opens a form for name, phone, starting stage, and free-text notes. Clicking any existing driver card opens the same form to edit them — change their stage here to move them to a different column, add notes, or update their phone number.',
+          '"Add Driver" opens a form for name, phone, starting stage, and free-text notes. Clicking any existing driver card opens the same form to edit them — change their stage here to move them between Applying, Raw, Ready, Flagged or Inactive, add notes, or update their phone number.',
           'Fleet can remove a driver entirely from this drawer if needed.',
         ],
       },

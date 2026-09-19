@@ -44,7 +44,12 @@ export interface Department {
   created_at: string;
 }
 
-export type DriverStage = 'applying' | 'training' | 'active' | 'waiting' | 'flagged' | 'inactive';
+// 'active' is never stored - it's computed by effectiveStage() in
+// lib/fleet.ts from vehicle_id + initial_deposit_paid + contract_status.
+// Included here because that's still a value driver.stage can display as
+// once computed, even though the DB CHECK constraint no longer allows
+// writing it directly.
+export type DriverStage = 'applying' | 'raw' | 'ready' | 'active' | 'flagged' | 'inactive';
 export type RuraLicenseStatus = 'pending' | 'provided';
 export type DriverShift = 'day' | 'night';
 export type DriverRestDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';

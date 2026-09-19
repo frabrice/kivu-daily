@@ -30,7 +30,10 @@ export default function ReactivateDriverDrawer({ driver, onClose, onSaved }: { d
     if (eventErr) { setSaving(false); setError(eventErr.message); return; }
     const { error: driverErr } = await supabase.from('drivers').update({
       contract_status: 'active',
-      stage: 'active',
+      // 'active' stage is computed, never stored - 'ready' is the closest
+      // funnel bucket, and effectiveStage() will show them as active
+      // immediately anyway if their vehicle and deposit are still in place.
+      stage: 'ready',
       updated_at: new Date().toISOString(),
     }).eq('id', driver.id);
     setSaving(false);

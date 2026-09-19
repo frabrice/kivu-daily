@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent } from '../../lib/supabase';
 import {
-  STAGES, REST_DAYS, computeDepositWaterfall, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, depositRemainingColor,
+  STAGES, effectiveStage, REST_DAYS, computeDepositWaterfall, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, depositRemainingColor,
   nextDepositDueDate, computeDepositReliability, formatDateLabelSafe,
   fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel,
 } from '../../lib/fleet';
@@ -43,7 +43,7 @@ export default function DriverProfilePage({
   const [endContractOpen, setEndContractOpen] = useState(false);
   const [reactivateOpen, setReactivateOpen] = useState(false);
 
-  const stageMeta = STAGES.find((s) => s.key === driver.stage);
+  const stageMeta = STAGES.find((s) => s.key === effectiveStage(driver));
   const restDayLabel = driver.rest_day ? REST_DAYS.find((d) => d.key === driver.rest_day)?.label : null;
 
   const driverDeposits = deposits.filter((dep) => dep.driver_id === driver.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));

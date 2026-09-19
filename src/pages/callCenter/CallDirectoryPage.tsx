@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search, Users2, Phone, Clock3, History } from 'lucide-react';
 import { useCallCenterData, STAGE_LABEL } from '../../lib/callCenter';
+import { effectiveStage } from '../../lib/fleet';
 import { timeAgo } from '../../lib/utils';
 import { Driver } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
@@ -69,7 +70,7 @@ function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenter
                     <Phone size={13} className="text-brand-500" />
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-400">{d.phone} · {STAGE_LABEL[d.stage]}</p>
+                <p className="text-[10px] text-gray-400">{d.phone} · {STAGE_LABEL[effectiveStage(d)]}</p>
                 <p className="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1">
                   <Clock3 size={10} /> {callCount === 0 ? 'Never called' : `${callCount} call${callCount === 1 ? '' : 's'} · last ${timeAgo(last!.created_at)}`}
                 </p>
@@ -89,7 +90,7 @@ function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenter
           columns={[
             { header: 'Name', render: (d) => <span className="font-medium">{d.full_name}</span> },
             { header: 'Phone', render: (d) => d.phone },
-            { header: 'Stage', render: (d) => STAGE_LABEL[d.stage] },
+            { header: 'Stage', render: (d) => STAGE_LABEL[effectiveStage(d)] },
             {
               header: 'Calls',
               render: (d) => {

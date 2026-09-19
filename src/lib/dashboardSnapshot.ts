@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from './supabase';
-import { computeDepositWaterfall, depositDaysSince } from './fleet';
+import { supabase, DriverStage, DriverContractStatus } from './supabase';
+import { computeDepositWaterfall, depositDaysSince, effectiveStage } from './fleet';
 import { todayStr } from './utils';
 
 export interface CompanySnapshot {
@@ -54,7 +54,7 @@ export function useCompanySnapshot() {
       supabase.from('user_stories').select('source, status'),
     ]);
 
-    const drivers = (driversRes.data as { id: string; stage: string; vehicle_id: string | null; initial_deposit_paid: boolean; initial_deposit_date: string | null; initial_deposit_amount: number | null; contract_status: string }[]) ?? [];
+    const drivers = (driversRes.data as { id: string; stage: DriverStage; vehicle_id: string | null; initial_deposit_paid: boolean; initial_deposit_date: string | null; initial_deposit_amount: number | null; contract_status: DriverContractStatus }[]) ?? [];
     const deposits = (depositsRes.data as { driver_id: string; paid_date: string; amount: number; created_at: string }[]) ?? [];
     const overdueDeposits = drivers
       .filter((d) => d.vehicle_id && d.contract_status !== 'ended')
@@ -76,7 +76,7 @@ export function useCompanySnapshot() {
     setSnapshot({
       fleet: {
         totalDrivers: drivers.length,
-        activeDrivers: drivers.filter((d) => d.stage === 'active').length,
+        activeDrivers: drivers.filter((d) => effectiveStage(d) === 'active').length,
         totalVehicles: vehiclesRes.count ?? 0,
         overdueDeposits,
       },

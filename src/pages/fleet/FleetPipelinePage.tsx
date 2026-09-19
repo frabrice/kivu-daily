@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, Phone, Car, Truck } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, STAGES, canEditFleet } from '../../lib/fleet';
+import { useFleetData, STAGES, effectiveStage, canEditFleet } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
@@ -47,8 +47,8 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
   }, [drivers, search]);
 
   const byStage = useMemo(() => {
-    const map: Record<string, Driver[]> = { applying: [], training: [], active: [], waiting: [], flagged: [], inactive: [] };
-    for (const d of filtered) map[d.stage].push(d);
+    const map: Record<string, Driver[]> = { applying: [], raw: [], ready: [], active: [], flagged: [], inactive: [] };
+    for (const d of filtered) map[effectiveStage(d)].push(d);
     return map;
   }, [filtered]);
 
@@ -167,7 +167,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
             {
               header: 'Stage',
               render: (d) => {
-                const s = STAGES.find((st) => st.key === d.stage)!;
+                const s = STAGES.find((st) => st.key === effectiveStage(d))!;
                 return (
                   <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${s.color}20`, color: s.color }}>
                     {s.label}

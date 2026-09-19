@@ -40,5 +40,5 @@ export function useCallCenterData() {
 }
 
 export const STAGE_LABEL: Record<string, string> = {
-  applying: 'Applying', training: 'Training', active: 'Active', waiting: 'Waiting', flagged: 'Flagged', inactive: 'Inactive',
+  applying: 'Applying', raw: 'Raw', ready: 'Ready', active: 'Active', flagged: 'Flagged', inactive: 'Inactive',
 };
