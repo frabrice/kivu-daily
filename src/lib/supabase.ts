@@ -51,6 +51,19 @@ export type DriverRestDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'f
 export type DriverContractStatus = 'active' | 'ended';
 export type ContractEventType = 'ended' | 'reactivated';
 
+export interface VehicleOwner {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  bank_name: string | null;
+  account_number: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Vehicle {
   id: string;
   plate_number: string;
@@ -65,9 +78,13 @@ export interface Vehicle {
   rura_license_status: RuraLicenseStatus;
   rura_license_issued_date: string | null;
   rura_license_expiry_date: string | null;
+  owner_id: string | null;
+  weekly_owner_payout_amount: number | null;
+  monthly_management_fee_amount: number | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  owner?: VehicleOwner | null;
 }
 
 export interface Driver {
@@ -457,7 +474,9 @@ export type FinanceTransactionType =
   | 'supplier_payment'
   | 'transfer'
   | 'expense_claim'
-  | 'other';
+  | 'other'
+  | 'onboarding_fee'
+  | 'management_margin';
 
 export type FinanceDirection = 'in' | 'out';
 export type FinanceTransactionStatus = 'pending' | 'checked' | 'approved' | 'posted' | 'rejected';

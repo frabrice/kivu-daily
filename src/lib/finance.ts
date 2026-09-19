@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   supabase, FinanceAccount, FinanceTransaction, FinanceTransactionType, FinanceDirection,
-  FinanceReconciliation, PayrollRun, Driver, Vehicle, Profile, Document as Doc,
+  FinanceReconciliation, PayrollRun, Driver, Vehicle, VehicleOwner, Profile, Document as Doc,
 } from './supabase';
+import { todayStr } from './utils';
 
 // Every dedicated Finance page (Revenue, Fleet Collections, Vehicle-Owner
 // Payments, Payroll, Suppliers, Transfers, Expense Claims, Accounts,
@@ -16,12 +17,20 @@ export function useFinanceData() {
   const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [owners, setOwners] = useState<VehicleOwner[]>([]);
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [documents, setDocuments] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [acc, tx, rec, pr, d, v, emp, docs] = await Promise.all([
+    // Weekly margin, owner payouts and monthly management fees are schedule-
+    // driven off each vehicle's operation_start_date, not tied to any single
+    // driver deposit - this brings the ledger current every time Finance
+    // opens the app, without needing a cron job. Awaited first so freshly
+    // generated rows show up in the same load.
+    try { await supabase.rpc('sync_vehicle_obligations'); } catch { /* ignore */ }
+
+    const [acc, tx, rec, pr, d, v, own, emp, docs] = await Promise.all([
       supabase.from('finance_accounts').select('*').order('key'),
       supabase
         .from('finance_transactions')
@@ -31,7 +40,8 @@ export function useFinanceData() {
       supabase.from('finance_reconciliations').select('*, account:finance_accounts(*), reconciler:profiles(*)').order('period', { ascending: false }),
       supabase.from('payroll_runs').select('*, lines:payroll_lines(*, employee:profiles(*))').order('period', { ascending: false }),
       supabase.from('drivers').select('*, vehicle:vehicles(*)'),
-      supabase.from('vehicles').select('*'),
+      supabase.from('vehicles').select('*, owner:vehicle_owners(*)'),
+      supabase.from('vehicle_owners').select('*').order('full_name'),
       supabase.from('profiles').select('*').eq('is_active', true).order('full_name'),
       supabase.from('documents').select('*').order('created_at', { ascending: false }),
     ]);
@@ -41,6 +51,7 @@ export function useFinanceData() {
     setPayrollRuns((pr.data as PayrollRun[]) ?? []);
     setDrivers((d.data as Driver[]) ?? []);
     setVehicles((v.data as Vehicle[]) ?? []);
+    setOwners((own.data as VehicleOwner[]) ?? []);
     setEmployees((emp.data as Profile[]) ?? []);
     setDocuments((docs.data as Doc[]) ?? []);
     setLoading(false);
@@ -54,6 +65,7 @@ export function useFinanceData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'finance_reconciliations' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_runs' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_lines' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicle_owners' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
@@ -76,7 +88,7 @@ export function useFinanceData() {
   for (const a of accounts) balances[a.key] = accountBalance(a.id);
 
   return {
-    accounts, transactions, reconciliations, payrollRuns, drivers, vehicles, employees, documents,
+    accounts, transactions, reconciliations, payrollRuns, drivers, vehicles, owners, employees, documents,
     loading, reload: load, accountBalance, balances,
   };
 }
@@ -90,6 +102,8 @@ export const TYPE_META: Record<FinanceTransactionType, { label: string; defaultD
   transfer: { label: 'Inter-Bank Transfer', defaultDirection: 'out' },
   expense_claim: { label: 'Expense Claim', defaultDirection: 'out' },
   other: { label: 'Other', defaultDirection: 'out' },
+  onboarding_fee: { label: 'Onboarding Fee', defaultDirection: 'in' },
+  management_margin: { label: 'Management Margin', defaultDirection: 'in' },
 };
 
 export const STATUS_META = {
@@ -113,5 +127,65 @@ export function sumWhere(
 ): number {
   const types = Array.isArray(type) ? type : [type];
   return rows.filter((t) => types.includes(t.type) && t.direction === direction).reduce((s, t) => s + t.amount, 0);
+}
+
+// ============================================================
+// CAR MANAGEMENT MODEL (confirmed with the operator 2026-09-19)
+// ============================================================
+// The two shift drivers on a managed car together pay 60,000/day x 6 =
+// 360,000/week into Bank of Kigali - exactly WEEKLY_DEPOSIT_AMOUNT x 2,
+// since it's the same driver_deposits system already tracked per driver.
+// That's the car's operating remittance, not a refundable deposit. The
+// owner is paid a flat 240,000/week regardless of what was actually
+// collected (Kivu absorbs collection risk), and the 120,000/week gap is
+// Kivu's management margin, recognized straight to Equity. Owners also
+// pay a separate flat monthly management fee, also to Equity.
+export const WEEKLY_COLLECTION_TARGET = WEEKLY_DEPOSIT_AMOUNT * 2; // 360,000 - both shifts
+export const WEEKLY_OWNER_PAYOUT_DEFAULT = 240000;
+export const WEEKLY_MANAGEMENT_MARGIN_DEFAULT = WEEKLY_COLLECTION_TARGET - WEEKLY_OWNER_PAYOUT_DEFAULT; // 120,000
+export const MONTHLY_MANAGEMENT_FEE_DEFAULT = 30000;
+
+// Onboarding a new managed car: a one-time 140,000 fee (120k device +
+// 20k branding) against 90k device cost + 15k branding cost + 15k
+// uniforms (7,500 x 2 drivers) - a one-time margin of 20,000 per car.
+export const ONBOARDING_FEE = 140000;
+export const ONBOARDING_DEVICE_CHARGE = 120000;
+export const ONBOARDING_DEVICE_COST = 90000;
+export const ONBOARDING_BRANDING_CHARGE = 20000;
+export const ONBOARDING_BRANDING_COST = 15000;
+export const ONBOARDING_UNIFORM_COST_PER_DRIVER = 7500;
+export const ONBOARDING_UNIFORM_COST = ONBOARDING_UNIFORM_COST_PER_DRIVER * 2;
+
+export interface VehicleObligations {
+  weeksElapsed: number;
+  weeklyPayout: number;
+  weeklyMargin: number;
+  monthlyFee: number;
+  ownerPaid: number;
+  ownerPending: number;
+  marginRecognized: number;
+  managementFeeRecognized: number;
+}
+
+// What a managed car owes/earns, read back from the transactions
+// sync_vehicle_obligations() already generated on the server - this
+// doesn't compute anything new, it just totals what's already there.
+export function computeVehicleObligations(vehicle: Vehicle, transactions: FinanceTransaction[]): VehicleObligations {
+  const weeklyPayout = vehicle.weekly_owner_payout_amount ?? WEEKLY_OWNER_PAYOUT_DEFAULT;
+  const weeklyMargin = WEEKLY_COLLECTION_TARGET - weeklyPayout;
+  const monthlyFee = vehicle.monthly_management_fee_amount ?? MONTHLY_MANAGEMENT_FEE_DEFAULT;
+  const weeksElapsed = vehicle.operation_start_date
+    ? Math.max(Math.floor((new Date(todayStr()).getTime() - new Date(`${vehicle.operation_start_date}T00:00:00`).getTime()) / (7 * 86400000)), 0)
+    : 0;
+
+  const vehicleTx = transactions.filter((t) => t.linked_vehicle_id === vehicle.id);
+  const ownerPaid = vehicleTx.filter((t) => t.type === 'vehicle_owner_payment' && t.status === 'posted').reduce((s, t) => s + t.amount, 0);
+  const ownerPending = vehicleTx.filter((t) => t.type === 'vehicle_owner_payment' && t.status === 'pending').reduce((s, t) => s + t.amount, 0);
+  const marginRecognized = vehicleTx.filter((t) => t.type === 'management_margin').reduce((s, t) => s + t.amount, 0);
+  const managementFeeRecognized = vehicleTx
+    .filter((t) => t.type === 'revenue' && t.description?.startsWith('Monthly management fee'))
+    .reduce((s, t) => s + t.amount, 0);
+
+  return { weeksElapsed, weeklyPayout, weeklyMargin, monthlyFee, ownerPaid, ownerPending, marginRecognized, managementFeeRecognized };
 }
 

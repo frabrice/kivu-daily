@@ -193,7 +193,7 @@ export default function FinanceTransactionDrawer({
           <input value={counterparty} onChange={(e) => setCounterparty(e.target.value)} disabled={!editing} className="input" placeholder="Vehicle owner, supplier, employee…" />
         </div>
 
-        {(type === 'vehicle_owner_payment' || type === 'fleet_collection') && (
+        {(type === 'vehicle_owner_payment' || type === 'fleet_collection' || type === 'onboarding_fee' || type === 'management_margin') && (
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Vehicle</label>
