@@ -11,7 +11,206 @@ export interface HelpEntry {
   tips: string[];
 }
 
+// Shared by both 'finance' (the MD's bundled tab view) and
+// 'finance_dashboard' (Finance's own sidebar landing page) - same full
+// model either way, just reached through a different nav shape.
+const FINANCE_ENTRY: HelpEntry = {
+  blurb: "The full financial picture — three bank accounts, driver deposits, car-management payouts and margin, and every ledger page, in one place.",
+  sections: [
+    {
+      heading: 'The Three Bank Accounts',
+      body: [
+        'Bank of Kigali (BK) — the collection account. Every driver\'s weekly deposit and every new car\'s onboarding fee lands here first. MoMo is a separate collection channel that settles into BK.',
+        'Equity — the revenue and treasury account. Kivu\'s own income goes here: trip commissions and anything else Finance logs directly as Revenue, the weekly management margin on each managed car, the monthly management fee, and the onboarding margin.',
+        'I&M — the payment and operating account. Everything Kivu pays out comes from here: payroll, vehicle-owner payouts, supplier payments, expense claims. When I&M is short for what\'s due, Equity funds it via Inter-Bank Transfers — Equity is where the margin and fees accumulate, I&M is where they actually get spent.',
+      ],
+    },
+    {
+      heading: 'Driver Weekly Deposits — How The Math Works',
+      body: [
+        'Each managed car has two shift drivers (day and night). Each pays 30,000 RWF/day for 6 days = 180,000 RWF/week — the weekly deposit amount. Together the two drivers collect 360,000 RWF/week per car into BK. This is the car\'s operating remittance, not a refundable deposit — it\'s what funds the owner\'s payout and Kivu\'s margin.',
+        'A driver\'s initial deposit (paid when they join) counts as the first payment toward their first week, exactly like any later logged deposit. Pay less than 180,000 and the shortfall is what they owe before their week is even considered started; pay more and the extra rolls forward as credit against the next week.',
+        'Deposits can be logged in installments — 30k, then 40k, then 60k — without resetting anything. The "Log Deposit" button is always available; each logged payment is labeled Due, Covered, or Extra depending on where it lands. Once cumulative payments for a week reach 180,000, that week\'s cycle closes and the 7-day clock for the next week starts from that date.',
+        'Status colors follow the same logic everywhere it shows up: green while there\'s no rush, amber with one day left, red from the due day onward and every day after ("Overdue by Xd"). A driver who\'s never paid shows red immediately.',
+      ],
+    },
+    {
+      heading: "Car Management: Owner Payouts & Kivu's Margin",
+      body: [
+        'Of the 360,000/week collected from a car\'s two drivers, the owner is paid a flat 240,000/week from I&M — regardless of how much was actually collected that week. Kivu absorbs the collection risk, not the owner.',
+        'The gap — 360,000 minus 240,000 = 120,000/week — is Kivu\'s management margin, recognized straight to Equity.',
+        'Owners also pay a separate flat monthly management fee of 30,000/car, also to Equity, tracked as a Revenue-type entry.',
+        'Both the weekly margin and the monthly fee are schedule-driven from each car\'s own operation start date, not tied to any individual driver payment — the system checks every time Finance opens the app and posts whatever periods have elapsed but haven\'t been recognized yet. Nothing needs to be typed in by hand.',
+        'Owner payouts work differently: they\'re a real bank transfer, so they\'re created as "Pending" and stay that way until Finance actually sends the money and clicks "Confirm Paid" on the Vehicle Owners → Payments tab. The margin and monthly fee, by contrast, post as already-recognized income immediately, since they\'re just bookkeeping on money already sitting in the accounts.',
+      ],
+    },
+    {
+      heading: 'Onboarding a New Managed Car',
+      body: [
+        'A one-time 140,000 RWF fee: 120,000 for the device/phone and 20,000 for branding, collected into BK.',
+        'Costs: the device actually costs 90,000, branding costs 15,000, and uniforms for the two assigned drivers cost 15,000 total (7,500 each) — all booked as supplier payments.',
+        'Net onboarding margin: 140,000 − 90,000 − 15,000 − 15,000 = 20,000 per car onboarded.',
+        'On the Vehicle Owners page, use "Log Onboarding" on a car that needs an owner to log the fee and all three costs in one action, then "Assign Owner" to link the owner and set the car\'s operation start date — the date its weekly payout and margin schedule counts from.',
+      ],
+    },
+    {
+      heading: "What Counts As Kivu's Own Revenue",
+      body: [
+        '"Monthly Kivu Revenue" on the Dashboard is deliberately narrower than "everything that came in." It\'s Revenue (trip commissions etc.) plus the weekly management margin plus the onboarding margin — genuine income.',
+        'Fleet Collections (the 360k/week gross from drivers) is shown separately and is NOT counted as revenue, because most of it — the owner\'s 240k share — passes straight back out. Counting it as revenue would double it up with the margin that\'s already counted on its own.',
+      ],
+    },
+    {
+      heading: 'Driver Stages, Briefly',
+      body: [
+        'Applying → Raw (vetted, good, but doesn\'t have the money for their first week yet) → Ready (vetted, no car yet, ideally already holding a paid deposit, on the bench to slot in the moment another driver\'s contract ends) → Active.',
+        'Active is never picked by hand — it\'s computed automatically the moment a driver has both a vehicle and a paid initial deposit, and disappears automatically if either stops being true. The "Drivers" figure on the Finance Dashboard counts only drivers in this computed Active state.',
+      ],
+    },
+    {
+      heading: 'The Eleven Finance Pages',
+      body: [
+        'Dashboard: the summary above, all in one place, plus cash position per account and what\'s overdue or pending.',
+        'Revenue: trip commissions and other income logged directly, plus the auto-generated monthly management fees.',
+        'Fleet Collections: every driver\'s weekly remittance, auto-posted the moment Fleet logs a deposit or a driver\'s initial deposit is recorded. Filterable by week and by a specific driver, with a running total per driver.',
+        'Deposit Confirmations: deposits Fleet logs start "Pending" — Finance (or the MD) confirms each one here before it counts as settled.',
+        'Vehicle Owners: the Owners directory (names, bank details, payment day, which cars) and the Payments tab (the weekly payout queue — Confirm Paid once actually sent).',
+        'Payroll: monthly runs, one line per employee (gross minus deductions). Approving one auto-creates the Equity → I&M funding transfer and the payroll payment from I&M together.',
+        'Supplier Payments: insurance, charging, maintenance, RURA, office/admin — paid from I&M against an invoice or purchase order.',
+        'Inter-Bank Transfers: moving money between Kivu\'s own accounts, most commonly Equity topping up I&M. Never counted as revenue or expense — it\'s Kivu\'s own money moving, not new money.',
+        'Expense Claims: employee reimbursements, needs a supporting receipt before approval.',
+        'Bank Accounts: live balances for all four accounts against their stated purpose, with a shortcut to reconcile each one.',
+        'Reconciliation: match the system\'s running balance against the real bank statement for a period; any variance is flagged until explained.',
+      ],
+    },
+  ],
+  tips: [
+    'A transaction\'s status moves Pending → Checked → Approved → Posted (or Rejected at any point) — use it to show who\'s reviewed what before money actually moves.',
+    'System-generated entries (fleet collections, margin, onboarding fee, monthly management fee) can be viewed but not edited or deleted from here — Fleet or the car\'s own schedule is the source of truth, editing here would just drift from it.',
+    'If Equity or I&M ever looks short for what\'s due, that\'s what Inter-Bank Transfers is for — move money from Equity into I&M before payroll or owner payouts are due.',
+    'The 240,000/week owner payout and 30,000/month management fee are defaults — override either on a specific car via "Assign Owner" if that car\'s actual contract is different.',
+    'Reconcile every account against its real bank statement at least monthly — a variance that isn\'t zero means something in the ledger doesn\'t match reality and needs chasing down before it compounds.',
+  ],
+};
+
 export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
+  finance: FINANCE_ENTRY,
+  finance_dashboard: FINANCE_ENTRY,
+  finance_revenue: {
+    blurb: "Kivu's own income, logged directly — trip commissions, platform fees, and anything else that isn't a car-management payout.",
+    sections: [
+      {
+        heading: 'What shows up here',
+        body: [
+          'Anything Finance logs by hand as income, plus the monthly 30,000/car management fee, which posts here automatically every month per managed car rather than needing to be typed in.',
+          'This does not include Fleet Collections (drivers\' weekly remittance) or the weekly management margin — those have their own pages. See Fleet Collections and Vehicle Owners.',
+        ],
+      },
+    ],
+    tips: ['New entries start Pending — move them through Checked → Approved → Posted as they\'re reviewed and confirmed.'],
+  },
+  finance_fleet_collections: {
+    blurb: "Every driver's weekly remittance into Bank of Kigali — the money that funds owner payouts and Kivu's management margin.",
+    sections: [
+      {
+        heading: 'How it gets here',
+        body: [
+          'Auto-posted the moment Fleet logs a driver\'s deposit, or the moment a new driver\'s initial deposit is recorded — nothing needs to be entered here by hand.',
+          'Use "By Week" to see one week at a time, or pick a specific driver from the dropdown to see their full deposit history and running total in one place.',
+        ],
+      },
+    ],
+    tips: ['This is gross collection, not Kivu\'s revenue — most of it (240,000 of the 360,000/week per car) passes straight through to the vehicle owner.'],
+  },
+  finance_vehicle_owners: {
+    blurb: 'Who owns each managed car, their bank details, and the weekly payout queue.',
+    sections: [
+      {
+        heading: 'Owners tab',
+        body: [
+          'Name, phone, email, bank account, payment day (a reference note — the actual schedule runs off the car\'s operation start date, not this field), and which car(s) they own.',
+        ],
+      },
+      {
+        heading: 'Payments tab',
+        body: [
+          'Every weekly owner payout, generated automatically and left "Pending" until Finance actually sends the money and clicks "Confirm Paid". Filter by owner or by week the same way as Fleet Collections.',
+        ],
+      },
+    ],
+    tips: ['A car with no owner yet shows under "Needs an Owner" — use "Log Onboarding" first if the 140,000 fee hasn\'t been logged, then "Assign Owner" to link them and start the payout/margin schedule.'],
+  },
+  finance_deposit_confirmations: {
+    blurb: "Driver deposits Fleet logs stay 'Pending' here until Finance confirms them.",
+    sections: [
+      {
+        heading: 'Who can confirm',
+        body: ['Only Finance or the MD can confirm a deposit — Fleet can log one but can\'t confirm their own, by design.'],
+      },
+    ],
+    tips: ['Confirming is the last step before a deposit counts as fully settled — check the amount and payment method match what was actually received before confirming.'],
+  },
+  finance_payroll: {
+    blurb: 'Monthly payroll runs — one line per employee, gross minus deductions.',
+    sections: [
+      {
+        heading: 'How approving works',
+        body: [
+          '"Approve & Pay" does three things at once: creates the Equity → I&M funding transfer for the full run total, records the payroll payment out of I&M, and marks the run Paid — so the money trail is always there without extra manual entries.',
+        ],
+      },
+    ],
+    tips: ['Save as a draft first if you\'re still entering employees — nothing is paid until you explicitly Approve & Pay.'],
+  },
+  finance_suppliers: {
+    blurb: 'Payments to suppliers — insurance, charging, maintenance, RURA, office/admin — paid from I&M.',
+    sections: [
+      {
+        heading: 'What belongs here',
+        body: ['Anything paid to an outside vendor against an invoice or purchase order, including the device/branding/uniform costs logged automatically when a car is onboarded.'],
+      },
+    ],
+    tips: [],
+  },
+  finance_transfers: {
+    blurb: "Moving money between Kivu's own accounts — most commonly Equity topping up I&M.",
+    sections: [
+      {
+        heading: 'Why this exists',
+        body: [
+          'Equity accumulates margin, fees and revenue; I&M is where payroll, owner payouts, and supplier payments actually go out. When I&M runs low for what\'s due, move money over here rather than paying from the wrong account.',
+          'Never counted as revenue or expense — it\'s the same money, just relocated.',
+        ],
+      },
+    ],
+    tips: [],
+  },
+  finance_expense_claims: {
+    blurb: 'Employee reimbursement requests, each needing a supporting receipt before approval.',
+    sections: [],
+    tips: [],
+  },
+  finance_accounts: {
+    blurb: 'Live balances for all four accounts — Bank of Kigali, Equity, I&M, MoMo — against their stated purpose.',
+    sections: [
+      {
+        heading: 'Reconcile from here',
+        body: ['Click "Reconcile" on any account to compare its running system balance against the real bank statement for a period.'],
+      },
+    ],
+    tips: [],
+  },
+  finance_reconciliation: {
+    blurb: 'Every account matched against its real bank statement, at least monthly.',
+    sections: [
+      {
+        heading: 'Reading the variance',
+        body: ['A variance of exactly 0 means the books match the bank. Anything else needs explaining — a missed entry, a timing difference, or a real discrepancy — before that period is considered closed.'],
+      },
+    ],
+    tips: [],
+  },
+
   home: {
     blurb: "General — your daily task list, plus Meetings, Comments, Announcements and Documents, all on one page since they're common to every department.",
     sections: [
