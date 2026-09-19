@@ -27,7 +27,7 @@ const TABS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'revenue', label: 'Revenue', icon: TrendingUp },
   { key: 'fleet_collections', label: 'Fleet Collections', icon: Wallet },
   { key: 'deposit_confirmations', label: 'Deposit Confirmations', icon: ShieldCheck },
-  { key: 'vehicle_owners', label: 'Vehicle-Owner Payments', icon: Car },
+  { key: 'vehicle_owners', label: 'Vehicle Owners', icon: Car },
   { key: 'payroll', label: 'Payroll', icon: Users2 },
   { key: 'suppliers', label: 'Supplier Payments', icon: Truck },
   { key: 'transfers', label: 'Inter-Bank Transfers', icon: ArrowLeftRight },

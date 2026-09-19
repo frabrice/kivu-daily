@@ -51,6 +51,8 @@ export type DriverRestDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'f
 export type DriverContractStatus = 'active' | 'ended';
 export type ContractEventType = 'ended' | 'reactivated';
 
+export type PaymentDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
 export interface VehicleOwner {
   id: string;
   full_name: string;
@@ -58,6 +60,7 @@ export interface VehicleOwner {
   email: string | null;
   bank_name: string | null;
   account_number: string | null;
+  payment_day: PaymentDay | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;

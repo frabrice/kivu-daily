@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Trash2, Pencil } from 'lucide-react';
-import { supabase, VehicleOwner } from '../../lib/supabase';
+import { supabase, VehicleOwner, PaymentDay } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo } from '../../lib/utils';
 import Modal from '../Modal';
@@ -27,6 +27,7 @@ export default function VehicleOwnerDrawer({
   const [email, setEmail] = useState(owner?.email ?? '');
   const [bankName, setBankName] = useState(owner?.bank_name ?? '');
   const [accountNumber, setAccountNumber] = useState(owner?.account_number ?? '');
+  const [paymentDay, setPaymentDay] = useState<PaymentDay | ''>(owner?.payment_day ?? '');
   const [notes, setNotes] = useState(owner?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -43,6 +44,7 @@ export default function VehicleOwnerDrawer({
       email: email.trim() || null,
       bank_name: bankName.trim() || null,
       account_number: accountNumber.trim() || null,
+      payment_day: paymentDay || null,
       notes: notes.trim() || null,
       updated_at: new Date().toISOString(),
     };
@@ -95,6 +97,16 @@ export default function VehicleOwnerDrawer({
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Account Number</label>
             <input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} disabled={!editing} className="input" placeholder="Account number" />
           </div>
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Payment Day</label>
+          <select value={paymentDay} onChange={(e) => setPaymentDay(e.target.value as PaymentDay | '')} disabled={!editing} className="input">
+            <option value="">Not set</option>
+            {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as PaymentDay[]).map((d) => (
+              <option key={d} value={d}>{d[0].toUpperCase() + d.slice(1)}</option>
+            ))}
+          </select>
+          <p className="text-[10px] text-gray-400 mt-1">Reference only — the weekly payout schedule itself still follows each car's own operation start date.</p>
         </div>
         <div>
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
