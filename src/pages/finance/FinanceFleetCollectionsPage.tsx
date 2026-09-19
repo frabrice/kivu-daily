@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Wallet, Plus, ListChecks, Clock3, Users2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Wallet, Plus, ListChecks, Clock3, Users2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFinanceData, STATUS_META, fmt, sumWhere } from '../../lib/finance';
-import { todayStr, startOfWeek, addDays, dateStr } from '../../lib/utils';
+import { todayStr, startOfWeek, addDays, dateStr, formatDateLabel } from '../../lib/utils';
 import { FinanceTransaction, FinanceTransactionStatus } from '../../lib/supabase';
 import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import KpiTile from '../../components/KpiTile';
+import SearchableSelect from '../../components/SearchableSelect';
 import FinanceTransactionDrawer from '../../components/finance/FinanceTransactionDrawer';
 
 interface TxDrawerState { tx: FinanceTransaction | null; startEditing: boolean }
@@ -42,11 +43,16 @@ export default function FinanceFleetCollectionsPage() {
   const { accounts, transactions, drivers, vehicles, documents, loading, reload } = useFinanceData();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'finance';
   const [drawer, setDrawer] = useState<TxDrawerState | null>(null);
-  const [search, setSearch] = useState('');
+  const [driverFilter, setDriverFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<FinanceTransactionStatus | 'all'>('all');
   const [weekFilter, setWeekFilter] = useState<string | null>(null); // null = all time, grouped by week
 
   const rows = useMemo(() => transactions.filter((t) => t.type === 'fleet_collection'), [transactions]);
+  const selectedDriver = driverFilter ? drivers.find((d) => d.id === driverFilter) ?? null : null;
+  const driverOptions = useMemo(
+    () => [...drivers].sort((a, b) => a.full_name.localeCompare(b.full_name)).map((d) => ({ id: d.id, label: d.full_name, sublabel: d.vehicle?.plate_number })),
+    [drivers]
+  );
 
   const thisWeekStart = dateStr(startOfWeek(new Date()));
   const thisMonth = todayStr().slice(0, 7);
@@ -56,15 +62,29 @@ export default function FinanceFleetCollectionsPage() {
   const driverCount = new Set(rows.map((t) => t.linked_driver_id).filter(Boolean)).size;
 
   const filteredRows = useMemo(() => {
-    const q = search.trim().toLowerCase();
     return rows.filter((t) => {
       if (statusFilter !== 'all' && t.status !== statusFilter) return false;
       if (weekFilter && weekStartOf(t.transaction_date) !== weekFilter) return false;
-      if (!q) return true;
-      const name = (t.linked_driver?.full_name ?? t.counterparty ?? '').toLowerCase();
-      return name.includes(q);
+      if (driverFilter && t.linked_driver_id !== driverFilter) return false;
+      return true;
     });
-  }, [rows, search, statusFilter, weekFilter]);
+  }, [rows, driverFilter, statusFilter, weekFilter]);
+
+  // A quick at-a-glance summary the moment Finance picks one driver -
+  // total collected, how many payments, and the span of dates - on top
+  // of the itemized week-by-week list below, which already narrows to
+  // just this driver once selected.
+  const driverSummary = useMemo(() => {
+    if (!selectedDriver) return null;
+    const driverRows = rows.filter((t) => t.linked_driver_id === selectedDriver.id).sort((a, b) => a.transaction_date.localeCompare(b.transaction_date));
+    if (driverRows.length === 0) return { count: 0, total: 0, firstDate: null as string | null, lastDate: null as string | null };
+    return {
+      count: driverRows.length,
+      total: driverRows.reduce((s, t) => s + t.amount, 0),
+      firstDate: driverRows[0].transaction_date,
+      lastDate: driverRows[driverRows.length - 1].transaction_date,
+    };
+  }, [rows, selectedDriver]);
 
   // Grouped week-by-week, most recent first - when weekFilter narrows to
   // one week this naturally collapses to a single section.
@@ -139,9 +159,14 @@ export default function FinanceFleetCollectionsPage() {
           </div>
         )}
 
-        <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search driver" className="input pl-8 w-44" />
+        <div className="w-52">
+          <SearchableSelect
+            options={driverOptions}
+            value={driverFilter}
+            onChange={setDriverFilter}
+            placeholder="Choose a driver…"
+            emptyLabel="No drivers found"
+          />
         </div>
 
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as FinanceTransactionStatus | 'all')} className="input w-auto">
@@ -151,10 +176,40 @@ export default function FinanceFleetCollectionsPage() {
         <span className="text-[10px] text-gray-400 ml-auto flex items-center gap-1"><Users2 size={11} /> {driverCount} drivers ever collected from</span>
       </div>
 
+      {selectedDriver && driverSummary && (
+        <div className="card p-3.5 flex items-center gap-3 flex-wrap bg-brand/5 border border-brand/20">
+          <div className="flex-1 min-w-[160px]">
+            <p className="text-[12px] font-medium">{selectedDriver.full_name}</p>
+            <p className="text-[10px] text-gray-400">{selectedDriver.vehicle?.plate_number ?? 'No vehicle assigned'}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[10px] text-gray-400">Total Collected</p>
+            <p className="text-[12px] font-semibold text-positive">{fmt(driverSummary.total)}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[10px] text-gray-400">Payments Logged</p>
+            <p className="text-[12px] font-semibold">{driverSummary.count}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[10px] text-gray-400">First Payment</p>
+            <p className="text-[12px] font-semibold">{driverSummary.firstDate ? formatDateLabel(driverSummary.firstDate) : '—'}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[10px] text-gray-400">Most Recent</p>
+            <p className="text-[12px] font-semibold">{driverSummary.lastDate ? formatDateLabel(driverSummary.lastDate) : '—'}</p>
+          </div>
+          <button onClick={() => setDriverFilter('')} className="btn-ghost p-1.5 shrink-0" title="Clear driver filter">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {filteredRows.length === 0 && (
         <div className="card p-12 text-center">
           <Wallet size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">{rows.length === 0 ? 'No fleet collections logged yet.' : 'No collections match this filter.'}</p>
+          <p className="text-[12px] text-gray-400">
+            {rows.length === 0 ? 'No fleet collections logged yet.' : selectedDriver ? `${selectedDriver.full_name} has no collections matching this filter.` : 'No collections match this filter.'}
+          </p>
         </div>
       )}
 
