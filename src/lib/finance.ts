@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   supabase, FinanceAccount, FinanceTransaction, FinanceTransactionType, FinanceDirection,
-  FinanceReconciliation, PayrollRun, Driver, DriverDeposit, Vehicle, VehicleOwner, Profile, Document as Doc,
+  FinanceReconciliation, PayrollRun, PayrollEmployee, PayrollSettings, Driver, DriverDeposit, Vehicle, VehicleOwner, Profile, Document as Doc,
 } from './supabase';
 import { todayStr } from './utils';
 
@@ -15,6 +15,8 @@ export function useFinanceData() {
   const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
   const [reconciliations, setReconciliations] = useState<FinanceReconciliation[]>([]);
   const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>([]);
+  const [payrollEmployees, setPayrollEmployees] = useState<PayrollEmployee[]>([]);
+  const [payrollSettings, setPayrollSettings] = useState<PayrollSettings | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [deposits, setDeposits] = useState<DriverDeposit[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -30,8 +32,11 @@ export function useFinanceData() {
     // opens the app, without needing a cron job. Awaited first so freshly
     // generated rows show up in the same load.
     try { await supabase.rpc('sync_vehicle_obligations'); } catch { /* ignore */ }
+    // Driver payroll (150,000/month per driver, counted from their own
+    // initial deposit date) is generated the same schedule-driven way.
+    try { await supabase.rpc('sync_driver_payroll'); } catch { /* ignore */ }
 
-    const [acc, tx, rec, pr, d, dep, v, own, emp, docs] = await Promise.all([
+    const [acc, tx, rec, pr, pe, ps, d, dep, v, own, emp, docs] = await Promise.all([
       supabase.from('finance_accounts').select('*').order('key'),
       supabase
         .from('finance_transactions')
@@ -39,7 +44,9 @@ export function useFinanceData() {
         .order('transaction_date', { ascending: false })
         .order('created_at', { ascending: false }),
       supabase.from('finance_reconciliations').select('*, account:finance_accounts(*), reconciler:profiles(*)').order('period', { ascending: false }),
-      supabase.from('payroll_runs').select('*, lines:payroll_lines(*, employee:profiles(*))').order('period', { ascending: false }),
+      supabase.from('payroll_runs').select('*, lines:payroll_lines(*, employee:payroll_employees(*))').order('period', { ascending: false }),
+      supabase.from('payroll_employees').select('*').order('full_name'),
+      supabase.from('payroll_settings').select('*').eq('id', true).maybeSingle(),
       supabase.from('drivers').select('*, vehicle:vehicles(*)'),
       supabase.from('driver_deposits').select('*'),
       supabase.from('vehicles').select('*, owner:vehicle_owners(*)'),
@@ -51,6 +58,8 @@ export function useFinanceData() {
     setTransactions((tx.data as FinanceTransaction[]) ?? []);
     setReconciliations((rec.data as FinanceReconciliation[]) ?? []);
     setPayrollRuns((pr.data as PayrollRun[]) ?? []);
+    setPayrollEmployees((pe.data as PayrollEmployee[]) ?? []);
+    setPayrollSettings((ps.data as PayrollSettings | null) ?? null);
     setDrivers((d.data as Driver[]) ?? []);
     setDeposits((dep.data as DriverDeposit[]) ?? []);
     setVehicles((v.data as Vehicle[]) ?? []);
@@ -68,6 +77,8 @@ export function useFinanceData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'finance_reconciliations' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_runs' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_lines' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_employees' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_settings' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicle_owners' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_deposits' }, () => load())
       .subscribe();
@@ -92,7 +103,8 @@ export function useFinanceData() {
   for (const a of accounts) balances[a.key] = accountBalance(a.id);
 
   return {
-    accounts, transactions, reconciliations, payrollRuns, drivers, deposits, vehicles, owners, employees, documents,
+    accounts, transactions, reconciliations, payrollRuns, payrollEmployees, payrollSettings,
+    drivers, deposits, vehicles, owners, employees, documents,
     loading, reload: load, accountBalance, balances,
   };
 }
@@ -108,6 +120,7 @@ export const TYPE_META: Record<FinanceTransactionType, { label: string; defaultD
   other: { label: 'Other', defaultDirection: 'out' },
   onboarding_fee: { label: 'Onboarding Fee', defaultDirection: 'in' },
   management_margin: { label: 'Management Margin', defaultDirection: 'in' },
+  driver_payroll: { label: 'Driver Payroll', defaultDirection: 'out' },
 };
 
 // What actually counts as Kivu's own income for a "revenue" figure -
@@ -174,6 +187,31 @@ export const ONBOARDING_BRANDING_CHARGE = 20000;
 export const ONBOARDING_BRANDING_COST = 15000;
 export const ONBOARDING_UNIFORM_COST_PER_DRIVER = 7500;
 export const ONBOARDING_UNIFORM_COST = ONBOARDING_UNIFORM_COST_PER_DRIVER * 2;
+
+// Driver Payroll: every driver who's paid their initial deposit earns a
+// flat 150,000/month, counted from their own initial deposit date (the
+// "official start date") - not the shared internal-staff payment date.
+// A driver whose contract ends simply stops generating new months.
+export const DRIVER_MONTHLY_SALARY = 150000;
+
+// Internal Payroll: all payroll_employees are paid on one shared day of
+// the month (default the 28th, capped there to sidestep February).
+export function nextInternalPaymentDate(paymentDay: number, from: Date = new Date()): Date {
+  const year = from.getFullYear();
+  const month = from.getMonth();
+  const thisMonth = new Date(year, month, paymentDay);
+  thisMonth.setHours(0, 0, 0, 0);
+  const today = new Date(year, month, from.getDate());
+  today.setHours(0, 0, 0, 0);
+  if (thisMonth.getTime() >= today.getTime()) return thisMonth;
+  return new Date(year, month + 1, paymentDay);
+}
+
+export function daysUntil(target: Date, from: Date = new Date()): number {
+  const a = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const b = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
 
 export interface VehicleObligations {
   weeksElapsed: number;

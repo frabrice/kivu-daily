@@ -498,7 +498,8 @@ export type FinanceTransactionType =
   | 'expense_claim'
   | 'other'
   | 'onboarding_fee'
-  | 'management_margin';
+  | 'management_margin'
+  | 'driver_payroll';
 
 export type FinanceDirection = 'in' | 'out';
 export type FinanceTransactionStatus = 'pending' | 'checked' | 'approved' | 'posted' | 'rejected';
@@ -550,6 +551,32 @@ export interface FinanceReconciliation {
   reconciler?: Profile | null;
 }
 
+export type PayrollEmployeeStatus = 'active' | 'inactive';
+
+export interface PayrollEmployee {
+  id: string;
+  full_name: string;
+  position: string | null;
+  start_date: string | null;
+  monthly_salary: number;
+  id_document_url: string | null;
+  id_document_name: string | null;
+  status: PayrollEmployeeStatus;
+  end_date: string | null;
+  linked_profile_id: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollSettings {
+  id: true;
+  internal_payment_day: number;
+  updated_by: string | null;
+  updated_at: string;
+}
+
 export type PayrollRunStatus = 'draft' | 'checked' | 'approved' | 'paid';
 
 export interface PayrollRun {
@@ -574,5 +601,5 @@ export interface PayrollLine {
   deductions: number;
   net_amount: number;
   created_at: string;
-  employee?: Profile | null;
+  employee?: PayrollEmployee | null;
 }

@@ -77,7 +77,8 @@ const FINANCE_ENTRY: HelpEntry = {
         'Revenue: trip commissions and other income logged directly, plus the auto-generated monthly management fees.',
         'Fleet Collections: every driver\'s weekly remittance, auto-posted the moment Fleet logs a deposit or a driver\'s initial deposit is recorded. Filterable by week and by a specific driver, with a running total per driver.',
         'Deposit Confirmations: deposits Fleet logs start "Pending" — Finance (or the MD) confirms each one here before it counts as settled.',
-        'Payroll: monthly runs, one line per employee (gross minus deductions). Approving one auto-creates the Equity → I&M funding transfer and the payroll payment from I&M together.',
+        'Internal Payroll: standalone employee records (position, start date, salary, ID) paid on one shared date each month; monthly runs pre-fill from those salaries. Approving one auto-creates the Equity → I&M funding transfer and the payroll payment from I&M together.',
+        'Driver Payroll: a flat 150,000/month per driver, counted from their own initial deposit date, each its own pending payment until confirmed.',
         'Supplier Payments: insurance, charging, maintenance, RURA, office/admin — paid from I&M against an invoice or purchase order.',
         'Inter-Bank Transfers: moving money between Kivu\'s own accounts, most commonly Equity topping up I&M. Never counted as revenue or expense — it\'s Kivu\'s own money moving, not new money.',
         'Expense Claims: employee reimbursements, needs a supporting receipt before approval.',
@@ -159,16 +160,38 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
     tips: ['Confirming is the last step before a deposit counts as fully settled — check the amount and payment method match what was actually received before confirming.'],
   },
   finance_payroll: {
-    blurb: 'Monthly payroll runs — one line per employee, gross minus deductions.',
+    blurb: 'Internal staff — position, start date, salary and ID on file, all paid on one shared date each month.',
     sections: [
       {
-        heading: 'How approving works',
+        heading: 'Employees tab',
         body: [
+          'A payroll employee is a standalone record — it doesn\'t need a Kivu Daily login, since this covers everyone Kivu pays a salary to, not just app users. "Add Employee" captures their position, start date, monthly salary and ID document.',
+          'Every employee is paid on the same shared date each month — the KPI row shows how many days are left until it, and "Change Date" (Finance/MD only) moves that shared date.',
+        ],
+      },
+      {
+        heading: 'Payroll Runs tab',
+        body: [
+          '"New Payroll Run" pre-fills one line per active employee at their current salary — a smart default, not a hard rule. Adjust or remove any line (bonus, deduction, unpaid leave) before saving, same as before.',
           '"Approve & Pay" does three things at once: creates the Equity → I&M funding transfer for the full run total, records the payroll payment out of I&M, and marks the run Paid — so the money trail is always there without extra manual entries.',
         ],
       },
     ],
-    tips: ['Save as a draft first if you\'re still entering employees — nothing is paid until you explicitly Approve & Pay.'],
+    tips: ['Save as a draft first if you\'re still entering amounts — nothing is paid until you explicitly Approve & Pay.'],
+  },
+  finance_driver_payroll: {
+    blurb: "A flat 150,000/month per driver, counted from each driver's own initial deposit date.",
+    sections: [
+      {
+        heading: 'How a driver gets on payroll',
+        body: [
+          'The moment a driver\'s initial deposit is marked paid, their deposit date becomes their "official start date" for payroll purposes — not the shared Internal Payroll date, since every driver joins on a different day.',
+          'Each driver\'s monthly payment is its own individual pending transaction, generated automatically once a full month has elapsed since their start date (or their last payment) — nothing is typed in by hand.',
+          'A driver whose contract ends simply stops generating new months from that point on — no partial or prorated final payment, they just drop off the list.',
+        ],
+      },
+    ],
+    tips: ['"Confirm Paid" is the only manual step — check the amount matches what was actually sent before confirming.'],
   },
   finance_suppliers: {
     blurb: 'Payments to suppliers — insurance, charging, maintenance, RURA, office/admin — paid from I&M.',

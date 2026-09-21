@@ -28,6 +28,7 @@ import FinanceRevenuePage from './finance/FinanceRevenuePage';
 import FinanceFleetCollectionsPage from './finance/FinanceFleetCollectionsPage';
 import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
 import FinancePayrollPage from './finance/FinancePayrollPage';
+import FinanceDriverPayrollPage from './finance/FinanceDriverPayrollPage';
 import FinanceSuppliersPage from './finance/FinanceSuppliersPage';
 import FinanceTransfersPage from './finance/FinanceTransfersPage';
 import FinanceExpenseClaimsPage from './finance/FinanceExpenseClaimsPage';
@@ -90,7 +91,8 @@ export default function EmployeeApp() {
     finance_revenue: 'Revenue',
     finance_fleet_collections: 'Fleet Collections',
     finance_vehicle_owners: 'Vehicle Owners',
-    finance_payroll: 'Payroll',
+    finance_payroll: 'Internal Payroll',
+    finance_driver_payroll: 'Driver Payroll',
     finance_suppliers: 'Supplier Payments',
     finance_transfers: 'Inter-Bank Transfers',
     finance_expense_claims: 'Expense Claims',
@@ -127,7 +129,8 @@ export default function EmployeeApp() {
       { key: 'finance_revenue' as const, label: 'Revenue', icon: TrendingUp },
       { key: 'finance_fleet_collections' as const, label: 'Fleet Collections', icon: Wallet },
       { key: 'finance_vehicle_owners' as const, label: 'Vehicle Owners', icon: Car },
-      { key: 'finance_payroll' as const, label: 'Payroll', icon: Users2 },
+      { key: 'finance_payroll' as const, label: 'Internal Payroll', icon: Users2 },
+      { key: 'finance_driver_payroll' as const, label: 'Driver Payroll', icon: Truck },
       { key: 'finance_suppliers' as const, label: 'Supplier Payments', icon: Truck },
       { key: 'finance_transfers' as const, label: 'Inter-Bank Transfers', icon: ArrowLeftRight },
       { key: 'finance_expense_claims' as const, label: 'Expense Claims', icon: Receipt },
@@ -174,6 +177,7 @@ export default function EmployeeApp() {
       {active === 'finance_fleet_collections' && <FinanceFleetCollectionsPage />}
       {active === 'finance_vehicle_owners' && <FinanceVehicleOwnersPage />}
       {active === 'finance_payroll' && <FinancePayrollPage />}
+      {active === 'finance_driver_payroll' && <FinanceDriverPayrollPage />}
       {active === 'finance_suppliers' && <FinanceSuppliersPage />}
       {active === 'finance_transfers' && <FinanceTransfersPage />}
       {active === 'finance_expense_claims' && <FinanceExpenseClaimsPage />}

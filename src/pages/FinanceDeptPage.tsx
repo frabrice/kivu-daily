@@ -6,6 +6,7 @@ import FinanceDashboardPage from './finance/FinanceDashboardPage';
 import FinanceRevenuePage from './finance/FinanceRevenuePage';
 import FinanceFleetCollectionsPage from './finance/FinanceFleetCollectionsPage';
 import FinancePayrollPage from './finance/FinancePayrollPage';
+import FinanceDriverPayrollPage from './finance/FinanceDriverPayrollPage';
 import FinanceSuppliersPage from './finance/FinanceSuppliersPage';
 import FinanceTransfersPage from './finance/FinanceTransfersPage';
 import FinanceExpenseClaimsPage from './finance/FinanceExpenseClaimsPage';
@@ -21,7 +22,7 @@ import FinanceDepositConfirmationsPage from './finance/FinanceDepositConfirmatio
 // (see ManagingDirectorApp.tsx) rather than a tab buried in here, since
 // it's grown into its own body of work, not just another ledger page.
 type Tab =
-  | 'dashboard' | 'revenue' | 'fleet_collections' | 'payroll'
+  | 'dashboard' | 'revenue' | 'fleet_collections' | 'payroll' | 'driver_payroll'
   | 'suppliers' | 'transfers' | 'expense_claims' | 'accounts' | 'reconciliation' | 'deposit_confirmations';
 
 const TABS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
@@ -29,7 +30,8 @@ const TABS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'revenue', label: 'Revenue', icon: TrendingUp },
   { key: 'fleet_collections', label: 'Fleet Collections', icon: Wallet },
   { key: 'deposit_confirmations', label: 'Deposit Confirmations', icon: ShieldCheck },
-  { key: 'payroll', label: 'Payroll', icon: Users2 },
+  { key: 'payroll', label: 'Internal Payroll', icon: Users2 },
+  { key: 'driver_payroll', label: 'Driver Payroll', icon: Truck },
   { key: 'suppliers', label: 'Supplier Payments', icon: Truck },
   { key: 'transfers', label: 'Inter-Bank Transfers', icon: ArrowLeftRight },
   { key: 'expense_claims', label: 'Expense Claims', icon: Receipt },
@@ -70,6 +72,7 @@ export default function FinanceDeptPage() {
       {tab === 'fleet_collections' && <FinanceFleetCollectionsPage />}
       {tab === 'deposit_confirmations' && <FinanceDepositConfirmationsPage />}
       {tab === 'payroll' && <FinancePayrollPage />}
+      {tab === 'driver_payroll' && <FinanceDriverPayrollPage />}
       {tab === 'suppliers' && <FinanceSuppliersPage />}
       {tab === 'transfers' && <FinanceTransfersPage />}
       {tab === 'expense_claims' && <FinanceExpenseClaimsPage />}
