@@ -12,6 +12,7 @@ import DataTable from '../../components/DataTable';
 import SearchableSelect from '../../components/SearchableSelect';
 import VehicleOwnerDrawer from '../../components/finance/VehicleOwnerDrawer';
 import OnboardVehicleOwnerDrawer from '../../components/finance/OnboardVehicleOwnerDrawer';
+import VehicleOwnerProfilePage from './VehicleOwnerProfilePage';
 
 type Tab = 'owners' | 'payments';
 
@@ -69,11 +70,41 @@ export default function FinanceVehicleOwnersPage() {
   const [tab, setTab] = useState<Tab>('owners');
   const [ownerDrawer, setOwnerDrawer] = useState<{ owner: VehicleOwner | null; startEditing: boolean } | null>(null);
   const [onboardVehicle, setOnboardVehicle] = useState<Vehicle | null>(null);
+  // Keyed by id (not the object itself) so the profile page stays live -
+  // e.g. reflects a schedule just set on it - instead of freezing on the
+  // snapshot that was current when it was opened.
+  const [viewingOwnerId, setViewingOwnerId] = useState<string | null>(null);
+  const viewingOwner = viewingOwnerId ? owners.find((o) => o.id === viewingOwnerId) ?? null : null;
 
   const managedVehicles = useMemo(() => vehicles.filter((v) => v.owner_id), [vehicles]);
   const unassignedVehicles = useMemo(() => vehicles.filter((v) => !v.owner_id), [vehicles]);
 
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
+
+  if (viewingOwner) {
+    return (
+      <>
+        <VehicleOwnerProfilePage
+          owner={viewingOwner}
+          vehicles={vehicles}
+          transactions={transactions}
+          canEdit={canEdit}
+          onBack={() => setViewingOwnerId(null)}
+          onEditOwner={() => setOwnerDrawer({ owner: viewingOwner, startEditing: true })}
+          reload={reload}
+        />
+        {ownerDrawer && (
+          <VehicleOwnerDrawer
+            owner={ownerDrawer.owner}
+            startEditing={ownerDrawer.startEditing}
+            canEdit={canEdit}
+            onClose={() => setOwnerDrawer(null)}
+            onSaved={reload}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -111,7 +142,7 @@ export default function FinanceVehicleOwnersPage() {
           managedVehicles={managedVehicles}
           unassignedVehicles={unassignedVehicles}
           canEdit={canEdit}
-          onEditOwner={(o) => setOwnerDrawer({ owner: o, startEditing: false })}
+          onViewOwner={(o) => setViewingOwnerId(o.id)}
           onOnboardVehicle={setOnboardVehicle}
         />
       )}
@@ -149,14 +180,14 @@ export default function FinanceVehicleOwnersPage() {
 }
 
 function OwnersTab({
-  owners, vehicles, managedVehicles, unassignedVehicles, canEdit, onEditOwner, onOnboardVehicle,
+  owners, vehicles, managedVehicles, unassignedVehicles, canEdit, onViewOwner, onOnboardVehicle,
 }: {
   owners: VehicleOwner[];
   vehicles: Vehicle[];
   managedVehicles: Vehicle[];
   unassignedVehicles: Vehicle[];
   canEdit: boolean;
-  onEditOwner: (o: VehicleOwner) => void;
+  onViewOwner: (o: VehicleOwner) => void;
   onOnboardVehicle: (v: Vehicle) => void;
 }) {
   return (
@@ -194,7 +225,7 @@ function OwnersTab({
           rows={owners}
           keyFn={(o) => o.id}
           emptyLabel="No vehicle owners on file yet."
-          onRowClick={onEditOwner}
+          onRowClick={onViewOwner}
           columns={[
             { header: 'Name', render: (o) => o.full_name },
             { header: 'Phone', render: (o) => o.phone },
