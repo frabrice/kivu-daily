@@ -117,6 +117,20 @@ export interface Driver {
   vehicle?: Vehicle | null;
 }
 
+export type DriverDocumentType =
+  | 'application_letter' | 'cv' | 'id' | 'driving_license'
+  | 'medical_certificate' | 'criminal_record' | 'discipline_certificate';
+
+export interface DriverDocument {
+  id: string;
+  driver_id: string;
+  doc_type: DriverDocumentType;
+  file_url: string;
+  file_name: string;
+  uploaded_by: string | null;
+  uploaded_at: string;
+}
+
 export interface DriverContractEvent {
   id: string;
   driver_id: string;

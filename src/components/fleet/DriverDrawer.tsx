@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, BedDouble } from 'lucide-react';
-import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay } from '../../lib/supabase';
+import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, BedDouble, FileText } from 'lucide-react';
+import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay, DriverDocument } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
 import { MANUAL_STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT, availableForReplacement } from '../../lib/fleet';
@@ -9,6 +9,7 @@ import DateInput from '../DateInput';
 import SearchableSelect from '../SearchableSelect';
 import FlagToITDrawer from '../FlagToITDrawer';
 import VehicleDrawer from './VehicleDrawer';
+import DriverDocumentsSection from './DriverDocumentsSection';
 
 // Editing only - clicking a driver on the Pipeline now opens the full
 // DriverProfilePage instead of a view mode here; this drawer's only job
@@ -18,6 +19,7 @@ export default function DriverDrawer({
   startEditing,
   vehicles,
   drivers,
+  driverDocuments,
   canEdit,
   onClose,
   onSaved,
@@ -26,6 +28,7 @@ export default function DriverDrawer({
   startEditing: boolean;
   vehicles: Vehicle[];
   drivers: Driver[];
+  driverDocuments: DriverDocument[];
   canEdit: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -262,6 +265,18 @@ export default function DriverDrawer({
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="Onboarding progress, issues, follow-ups…" />
         </div>
+
+        {driver && (
+          <div>
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><FileText size={11} /> Onboarding Documents</label>
+            <DriverDocumentsSection
+              driverId={driver.id}
+              documents={driverDocuments.filter((doc) => doc.driver_id === driver.id)}
+              canEdit={canEdit && editing}
+              onSaved={onSaved}
+            />
+          </div>
+        )}
 
         {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 

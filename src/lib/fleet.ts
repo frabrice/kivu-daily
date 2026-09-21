@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, DriverStage, DriverContractStatus, DriverRestDay, DepositPaymentMethod, Profile } from './supabase';
+import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, DriverDocument, DriverDocumentType, DriverStage, DriverContractStatus, DriverRestDay, DepositPaymentMethod, Profile } from './supabase';
 import { todayStr, dateStr, addDays } from './utils';
 
 // Fleet's own dashboard, plus the identical bundled view given to Call
@@ -23,16 +23,18 @@ export function useFleetData() {
   const [fines, setFines] = useState<DriverFine[]>([]);
   const [finePayments, setFinePayments] = useState<DriverFinePayment[]>([]);
   const [contractEvents, setContractEvents] = useState<DriverContractEvent[]>([]);
+  const [driverDocuments, setDriverDocuments] = useState<DriverDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [d, v, dep, fin, finePay, contractEvts] = await Promise.all([
+    const [d, v, dep, fin, finePay, contractEvts, docs] = await Promise.all([
       supabase.from('drivers').select('*, vehicle:vehicles(*)').order('created_at', { ascending: false }),
       supabase.from('vehicles').select('*').order('created_at', { ascending: false }),
       supabase.from('driver_deposits').select('*').order('paid_date', { ascending: false }),
       supabase.from('driver_fines').select('*, driver:drivers(*), vehicle:vehicles(*)').order('fine_date', { ascending: false }),
       supabase.from('driver_fine_payments').select('*').order('paid_date', { ascending: false }),
       supabase.from('driver_contract_events').select('*').order('event_date', { ascending: false }),
+      supabase.from('driver_documents').select('*'),
     ]);
     setDrivers((d.data as Driver[]) ?? []);
     setVehicles((v.data as Vehicle[]) ?? []);
@@ -40,6 +42,7 @@ export function useFleetData() {
     setFines((fin.data as DriverFine[]) ?? []);
     setFinePayments((finePay.data as DriverFinePayment[]) ?? []);
     setContractEvents((contractEvts.data as DriverContractEvent[]) ?? []);
+    setDriverDocuments((docs.data as DriverDocument[]) ?? []);
     setLoading(false);
   }, []);
 
@@ -53,12 +56,23 @@ export function useFleetData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_fines' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_fine_payments' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_contract_events' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_documents' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
-  return { drivers, vehicles, deposits, fines, finePayments, contractEvents, loading, reload: load };
+  return { drivers, vehicles, deposits, fines, finePayments, contractEvents, driverDocuments, loading, reload: load };
 }
+
+export const DRIVER_DOCUMENT_TYPES: { key: DriverDocumentType; label: string }[] = [
+  { key: 'application_letter', label: 'Application Letter' },
+  { key: 'cv', label: 'CV' },
+  { key: 'id', label: 'National ID' },
+  { key: 'driving_license', label: 'Driving License' },
+  { key: 'medical_certificate', label: 'Medical Certificate' },
+  { key: 'criminal_record', label: 'Criminal Record' },
+  { key: 'discipline_certificate', label: 'Discipline Certificate (Village Chief)' },
+];
 
 export const STAGES: { key: DriverStage; label: string; color: string }[] = [
   { key: 'applying', label: 'Applying', color: '#9ca3af' },

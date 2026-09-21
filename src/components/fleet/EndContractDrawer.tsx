@@ -37,6 +37,11 @@ export default function EndContractDrawer({ driver, onClose, onSaved }: { driver
     const { error: driverErr } = await supabase.from('drivers').update({
       contract_status: 'ended',
       stage: 'inactive',
+      // Frees the seat immediately - the car should show one driver (or
+      // none, if both shifts have ended) rather than a terminated driver
+      // still occupying a shift that's actually open.
+      vehicle_id: null,
+      shift: null,
       updated_at: new Date().toISOString(),
     }).eq('id', driver.id);
     setSaving(false);
@@ -86,7 +91,7 @@ export default function EndContractDrawer({ driver, onClose, onSaved }: { driver
             <p className="text-[13px]"><span className="font-semibold">{driver.full_name}</span>'s contract will end on <span className="font-semibold">{formatDateLabelSafe(eventDate)}</span></p>
             <p className="text-[12px] text-gray-600 dark:text-gray-300">Reason: {finalReason}</p>
           </div>
-          <p className="text-[10px] text-gray-400">This moves them to Inactive in the pipeline. They can be reactivated later with a reason of their own.</p>
+          <p className="text-[10px] text-gray-400">This moves them to Inactive in the pipeline and frees their seat on {driver.vehicle?.plate_number ?? 'their vehicle'} for a new driver. They can be reactivated later with a reason of their own.</p>
 
           {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
