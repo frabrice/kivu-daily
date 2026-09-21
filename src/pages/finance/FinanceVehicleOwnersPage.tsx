@@ -56,7 +56,8 @@ function isActionable(t: FinanceTransaction): boolean {
 
 // Car-management money, per car: two shift drivers pay 360,000/week into
 // BK (the existing driver_deposits system), of which the owner gets a
-// flat 240,000/week from I&M and Kivu keeps 120,000/week margin in
+// flat daily rate x 6 days/week from I&M (240,000/week default, but set
+// per car - some pay more) and Kivu keeps whatever's left as margin in
 // Equity, plus a separate 30,000/month management fee. Both the margin
 // and the fee are schedule-driven (sync_vehicle_obligations, called on
 // every Finance load). Two tabs: Owners (who they are, their bank and

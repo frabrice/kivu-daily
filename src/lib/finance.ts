@@ -149,12 +149,18 @@ export function sumWhere(
 // 360,000/week into Bank of Kigali - exactly WEEKLY_DEPOSIT_AMOUNT x 2,
 // since it's the same driver_deposits system already tracked per driver.
 // That's the car's operating remittance, not a refundable deposit. The
-// owner is paid a flat 240,000/week regardless of what was actually
-// collected (Kivu absorbs collection risk), and the 120,000/week gap is
-// Kivu's management margin, recognized straight to Equity. Owners also
-// pay a separate flat monthly management fee, also to Equity.
+// owner is paid a flat daily rate x 6 days/week regardless of what was
+// actually collected (Kivu absorbs collection risk) - 40,000/day is the
+// default (240,000/week), but this varies by car/car type (e.g. Naya
+// Solutions' car pays 45,000/day = 270,000/week), so it's editable per
+// vehicle (see SetVehicleStartDateDrawer / OnboardVehicleOwnerDrawer).
+// The gap between what's collected and what's paid out is Kivu's
+// management margin, recognized straight to Equity. Owners also pay a
+// separate flat monthly management fee, also to Equity.
 export const WEEKLY_COLLECTION_TARGET = WEEKLY_DEPOSIT_AMOUNT * 2; // 360,000 - both shifts
-export const WEEKLY_OWNER_PAYOUT_DEFAULT = 240000;
+export const OWNER_PAYOUT_DAYS_PER_WEEK = 6;
+export const DAILY_OWNER_PAYOUT_DEFAULT = 40000;
+export const WEEKLY_OWNER_PAYOUT_DEFAULT = DAILY_OWNER_PAYOUT_DEFAULT * OWNER_PAYOUT_DAYS_PER_WEEK; // 240,000
 export const WEEKLY_MANAGEMENT_MARGIN_DEFAULT = WEEKLY_COLLECTION_TARGET - WEEKLY_OWNER_PAYOUT_DEFAULT; // 120,000
 export const MONTHLY_MANAGEMENT_FEE_DEFAULT = 30000;
 

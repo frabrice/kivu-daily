@@ -37,11 +37,12 @@ const FINANCE_ENTRY: HelpEntry = {
     {
       heading: "Car Management: Owner Payouts & Kivu's Margin",
       body: [
-        'Of the 360,000/week collected from a car\'s two drivers, the owner is paid a flat 240,000/week from I&M — regardless of how much was actually collected that week. Kivu absorbs the collection risk, not the owner.',
-        'The gap — 360,000 minus 240,000 = 120,000/week — is Kivu\'s management margin, recognized straight to Equity.',
+        'Of the 360,000/week collected from a car\'s two drivers, the owner is paid a flat daily rate x 6 days/week from I&M — regardless of how much was actually collected that week. Kivu absorbs the collection risk, not the owner. The default is 40,000/day (240,000/week), but this is set per car — some pay more (e.g. a car paying 45,000/day = 270,000/week) depending on the car and its contract.',
+        'Whatever\'s left of the 360,000 after the owner\'s cut is Kivu\'s management margin, recognized straight to Equity — 120,000/week at the 240,000 default, less on a car with a higher payout.',
         'Owners also pay a separate flat monthly management fee of 30,000/car, also to Equity, tracked as a Revenue-type entry.',
-        'Both the weekly margin and the monthly fee are schedule-driven from each car\'s own operation start date, not tied to any individual driver payment — the system checks every time Finance opens the app and posts whatever periods have elapsed but haven\'t been recognized yet. Nothing needs to be typed in by hand.',
-        'Owner payouts work differently: they\'re a real bank transfer, so they\'re created as "Pending" and stay that way until Finance actually sends the money and clicks "Confirm Paid" on the Vehicle Owners → Payments tab. The margin and monthly fee, by contrast, post as already-recognized income immediately, since they\'re just bookkeeping on money already sitting in the accounts.',
+        'These are prepayments, not payments in arrears: the payment for a given week is due the moment that week starts, not after it finishes. A car starting Wednesday counts its first payment as due that same Wednesday, its second the following Wednesday, and so on.',
+        'Both the weekly margin and the monthly fee are schedule-driven from each car\'s own operation start date, not tied to any individual driver payment — the system checks every time Finance opens the app and posts whatever periods are due but haven\'t been recognized yet. Nothing needs to be typed in by hand.',
+        'Owner payouts work differently: they\'re a real bank transfer, so they\'re created as "Pending" and stay that way until Finance actually sends the money and clicks "Confirm Paid" on the Vehicle Owners → Payments tab (or from the owner\'s own profile page). The margin and monthly fee, by contrast, post as already-recognized income once confirmed, since they\'re just bookkeeping on money already sitting in the accounts.',
       ],
     },
     {
@@ -50,7 +51,8 @@ const FINANCE_ENTRY: HelpEntry = {
         'A one-time 140,000 RWF fee: 120,000 for the device/phone and 20,000 for branding, collected into BK.',
         'Costs: the device actually costs 90,000, branding costs 15,000, and uniforms for the two assigned drivers cost 15,000 total (7,500 each) — all booked as supplier payments.',
         'Net onboarding margin: 140,000 − 90,000 − 15,000 − 15,000 = 20,000 per car onboarded.',
-        'On the Vehicle Owners page, use "Log Onboarding" on a car that needs an owner to log the fee and all three costs in one action, then "Assign Owner" to link the owner and set the car\'s operation start date — the date its weekly payout and margin schedule counts from.',
+        'On the Vehicle Owners page, use "Onboard Vehicle Owner" on a car that needs an owner — one guided flow that links the owner (new or existing), sets the car\'s operation start date and daily payout rate, and auto-loads the 140,000 onboarding fee and first month\'s management fee as pending. Confirming the onboarding fee then loads the device/branding/uniform costs for approval.',
+        'For a car already on the books before this flow existed, the same thing happens from the owner\'s own profile page — under "Vehicles & Payout Schedule", use "Set Start Date" (or "Edit Schedule" if one\'s already set) on that car.',
       ],
     },
     {
@@ -88,7 +90,7 @@ const FINANCE_ENTRY: HelpEntry = {
     'A transaction\'s status moves Pending → Checked → Approved → Posted (or Rejected at any point) — use it to show who\'s reviewed what before money actually moves.',
     'System-generated entries (fleet collections, margin, onboarding fee, monthly management fee) can be viewed but not edited or deleted from here — Fleet or the car\'s own schedule is the source of truth, editing here would just drift from it.',
     'If Equity or I&M ever looks short for what\'s due, that\'s what Inter-Bank Transfers is for — move money from Equity into I&M before payroll or owner payouts are due.',
-    'The 240,000/week owner payout and 30,000/month management fee are defaults — override either on a specific car via "Assign Owner" if that car\'s actual contract is different.',
+    'The 40,000/day (240,000/week) owner payout and 30,000/month management fee are defaults — override either on a specific car from its owner\'s profile page ("Vehicles & Payout Schedule" → Edit Schedule) if that car\'s actual contract is different.',
     'Reconcile every account against its real bank statement at least monthly — a variance that isn\'t zero means something in the ledger doesn\'t match reality and needs chasing down before it compounds.',
   ],
 };
@@ -128,17 +130,23 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
       {
         heading: 'Owners tab',
         body: [
-          'Name, phone, email, bank account, payment day (a reference note — the actual schedule runs off the car\'s operation start date, not this field), and which car(s) they own.',
+          'A car with no owner yet shows under "Needs an Owner" — click "Onboard Vehicle Owner" to link a new or existing owner, set the car\'s start date and daily payout rate, and auto-load the onboarding fee and first month\'s fee as pending, all in one guided flow.',
+          'Click any owner in the directory to open their full profile page: contact/bank details up top (with its own Edit), then "Vehicles & Payout Schedule" for each car they have, and three history sections — Onboarding & Setup, Monthly Management Fees, and Weekly Payments — each row showing its status and, if pending, a one-click action to confirm or approve it.',
+          'Payment day on an owner\'s basic info is a reference note only — the actual schedule runs off each car\'s own operation start date, since one owner can have more than one car.',
         ],
       },
       {
         heading: 'Payments tab',
         body: [
-          'Every weekly owner payout, generated automatically and left "Pending" until Finance actually sends the money and clicks "Confirm Paid". Filter by owner or by week the same way as Fleet Collections.',
+          '"Needs Your Action" surfaces every pending onboarding fee, setup cost, and monthly fee across all owners in one queue — the same items also visible from each owner\'s own profile page.',
+          'Below that, every weekly owner payout, generated automatically and left "Pending" until Finance actually sends the money and clicks "Confirm Paid". Filter by owner or by week.',
         ],
       },
     ],
-    tips: ['A car with no owner yet shows under "Needs an Owner" — use "Log Onboarding" first if the 140,000 fee hasn\'t been logged, then "Assign Owner" to link them and start the payout/margin schedule.'],
+    tips: [
+      'For a car whose owner was assigned before this automation existed, open that owner\'s profile page and use "Set Start Date" under "Vehicles & Payout Schedule" — it loads the same onboarding fee and backfills every weekly payout and monthly fee elapsed since that date, without disturbing anything already on the books.',
+      'The daily payout rate (240,000/week default = 40,000/day x 6) is set per car, not fixed — some cars pay more depending on the car and its contract.',
+    ],
   },
   finance_deposit_confirmations: {
     blurb: "Driver deposits Fleet logs stay 'Pending' here until Finance confirms them.",

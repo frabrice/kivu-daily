@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase, Vehicle } from '../../lib/supabase';
-import { WEEKLY_OWNER_PAYOUT_DEFAULT, MONTHLY_MANAGEMENT_FEE_DEFAULT } from '../../lib/finance';
+import { OWNER_PAYOUT_DAYS_PER_WEEK, DAILY_OWNER_PAYOUT_DEFAULT, WEEKLY_OWNER_PAYOUT_DEFAULT, MONTHLY_MANAGEMENT_FEE_DEFAULT, fmt } from '../../lib/finance';
 import { todayStr } from '../../lib/utils';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
@@ -23,13 +23,15 @@ export default function SetVehicleStartDateDrawer({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const initialWeekly = vehicle.weekly_owner_payout_amount ?? WEEKLY_OWNER_PAYOUT_DEFAULT;
   const [operationStartDate, setOperationStartDate] = useState(vehicle.operation_start_date ?? todayStr());
-  const [weeklyPayout, setWeeklyPayout] = useState(String(vehicle.weekly_owner_payout_amount ?? WEEKLY_OWNER_PAYOUT_DEFAULT));
+  const [dailyPayout, setDailyPayout] = useState(String(Math.round(initialWeekly / OWNER_PAYOUT_DAYS_PER_WEEK)));
   const [monthlyFee, setMonthlyFee] = useState(String(vehicle.monthly_management_fee_amount ?? MONTHLY_MANAGEMENT_FEE_DEFAULT));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const isFirstTime = !vehicle.operation_start_date;
+  const weeklyPayout = (Number(dailyPayout) || DAILY_OWNER_PAYOUT_DEFAULT) * OWNER_PAYOUT_DAYS_PER_WEEK;
 
   const save = async () => {
     if (!operationStartDate || !vehicle.owner_id) return;
@@ -39,7 +41,7 @@ export default function SetVehicleStartDateDrawer({
       p_vehicle_id: vehicle.id,
       p_owner_id: vehicle.owner_id,
       p_operation_start_date: operationStartDate,
-      p_weekly_owner_payout: Number(weeklyPayout) || WEEKLY_OWNER_PAYOUT_DEFAULT,
+      p_weekly_owner_payout: weeklyPayout,
       p_monthly_management_fee: Number(monthlyFee) || MONTHLY_MANAGEMENT_FEE_DEFAULT,
     });
     setSaving(false);
@@ -57,8 +59,9 @@ export default function SetVehicleStartDateDrawer({
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Weekly Owner Payout</label>
-            <input type="number" value={weeklyPayout} onChange={(e) => setWeeklyPayout(e.target.value)} className="input" />
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Daily Payment ({OWNER_PAYOUT_DAYS_PER_WEEK} days/week)</label>
+            <input type="number" value={dailyPayout} onChange={(e) => setDailyPayout(e.target.value)} className="input" />
+            <p className="text-[10px] text-gray-400 mt-1">= {fmt(weeklyPayout)}/week</p>
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Monthly Management Fee</label>

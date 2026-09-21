@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase, Vehicle, VehicleOwner, PaymentDay } from '../../lib/supabase';
-import { WEEKLY_OWNER_PAYOUT_DEFAULT, MONTHLY_MANAGEMENT_FEE_DEFAULT, ONBOARDING_FEE, fmt } from '../../lib/finance';
+import { OWNER_PAYOUT_DAYS_PER_WEEK, DAILY_OWNER_PAYOUT_DEFAULT, MONTHLY_MANAGEMENT_FEE_DEFAULT, ONBOARDING_FEE, fmt } from '../../lib/finance';
 import { todayStr } from '../../lib/utils';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
@@ -35,11 +35,12 @@ export default function OnboardVehicleOwnerDrawer({
   const [accountNumber, setAccountNumber] = useState('');
   const [paymentDay, setPaymentDay] = useState<PaymentDay | ''>('');
   const [operationStartDate, setOperationStartDate] = useState(todayStr());
-  const [weeklyPayout, setWeeklyPayout] = useState(String(WEEKLY_OWNER_PAYOUT_DEFAULT));
+  const [dailyPayout, setDailyPayout] = useState(String(DAILY_OWNER_PAYOUT_DEFAULT));
   const [monthlyFee, setMonthlyFee] = useState(String(MONTHLY_MANAGEMENT_FEE_DEFAULT));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const weeklyPayout = (Number(dailyPayout) || DAILY_OWNER_PAYOUT_DEFAULT) * OWNER_PAYOUT_DAYS_PER_WEEK;
   const canSave = mode === 'existing'
     ? !!ownerId && !!operationStartDate
     : fullName.trim() && phone.trim() && !!operationStartDate;
@@ -67,7 +68,7 @@ export default function OnboardVehicleOwnerDrawer({
       p_vehicle_id: vehicle.id,
       p_owner_id: finalOwnerId,
       p_operation_start_date: operationStartDate,
-      p_weekly_owner_payout: Number(weeklyPayout) || WEEKLY_OWNER_PAYOUT_DEFAULT,
+      p_weekly_owner_payout: weeklyPayout,
       p_monthly_management_fee: Number(monthlyFee) || MONTHLY_MANAGEMENT_FEE_DEFAULT,
     });
     setSaving(false);
@@ -151,15 +152,16 @@ export default function OnboardVehicleOwnerDrawer({
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Weekly Owner Payout</label>
-            <input type="number" value={weeklyPayout} onChange={(e) => setWeeklyPayout(e.target.value)} className="input" />
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Daily Payment ({OWNER_PAYOUT_DAYS_PER_WEEK} days/week)</label>
+            <input type="number" value={dailyPayout} onChange={(e) => setDailyPayout(e.target.value)} className="input" />
+            <p className="text-[10px] text-gray-400 mt-1">= {fmt(weeklyPayout)}/week</p>
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Monthly Management Fee</label>
             <input type="number" value={monthlyFee} onChange={(e) => setMonthlyFee(e.target.value)} className="input" />
           </div>
         </div>
-        <p className="text-[10px] text-gray-400">Standard contract is 240,000 RWF/week to the owner and 30,000 RWF/month management fee — only change these if this car's contract is different.</p>
+        <p className="text-[10px] text-gray-400">Standard contract is 40,000 RWF/day (240,000/week) to the owner and 30,000 RWF/month management fee — only change these if this car/car type's contract is different (e.g. a car paying 45,000/day = 270,000/week).</p>
 
         <div className="card p-3.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-1 text-[11px] text-gray-500">
           <p>On save, this loads two pending confirmations for Finance:</p>

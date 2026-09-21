@@ -4,7 +4,7 @@ import {
   TrendingUp, CheckCircle2, CalendarClock,
 } from 'lucide-react';
 import { supabase, Vehicle, VehicleOwner, FinanceTransaction } from '../../lib/supabase';
-import { STATUS_META, fmt } from '../../lib/finance';
+import { STATUS_META, fmt, WEEKLY_OWNER_PAYOUT_DEFAULT, OWNER_PAYOUT_DAYS_PER_WEEK, MONTHLY_MANAGEMENT_FEE_DEFAULT } from '../../lib/finance';
 import { formatDateLabelSafe } from '../../lib/fleet';
 import DataTable from '../../components/DataTable';
 import SetVehicleStartDateDrawer from '../../components/finance/SetVehicleStartDateDrawer';
@@ -208,7 +208,7 @@ export default function VehicleOwnerProfilePage({
                   <p className="text-[12px] font-medium flex items-center gap-1.5"><Car size={11} className="text-gray-400 shrink-0" /> {v.plate_number}</p>
                   <p className="text-[10px] text-gray-400 mt-0.5">
                     {v.operation_start_date
-                      ? <>Since {formatDateLabelSafe(v.operation_start_date)} · {fmt(v.weekly_owner_payout_amount ?? 240000)}/week · {fmt(v.monthly_management_fee_amount ?? 30000)}/month</>
+                      ? <>Since {formatDateLabelSafe(v.operation_start_date)} · {fmt(Math.round((v.weekly_owner_payout_amount ?? WEEKLY_OWNER_PAYOUT_DEFAULT) / OWNER_PAYOUT_DAYS_PER_WEEK))}/day ({fmt(v.weekly_owner_payout_amount ?? WEEKLY_OWNER_PAYOUT_DEFAULT)}/week) · {fmt(v.monthly_management_fee_amount ?? MONTHLY_MANAGEMENT_FEE_DEFAULT)}/month</>
                       : <span className="text-red-500 dark:text-red-400">No start date set — payments won't generate until it is</span>}
                   </p>
                 </div>
