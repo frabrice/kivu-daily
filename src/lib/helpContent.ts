@@ -68,13 +68,13 @@ const FINANCE_ENTRY: HelpEntry = {
       ],
     },
     {
-      heading: 'The Eleven Finance Pages',
+      heading: 'The Finance Pages',
       body: [
+        'Vehicle Owners has its own place in the sidebar, separate from the rest — see its own How-To-Use entry. Everything below is bundled under Finance.',
         'Dashboard: the summary above, all in one place, plus cash position per account and what\'s overdue or pending.',
         'Revenue: trip commissions and other income logged directly, plus the auto-generated monthly management fees.',
         'Fleet Collections: every driver\'s weekly remittance, auto-posted the moment Fleet logs a deposit or a driver\'s initial deposit is recorded. Filterable by week and by a specific driver, with a running total per driver.',
         'Deposit Confirmations: deposits Fleet logs start "Pending" — Finance (or the MD) confirms each one here before it counts as settled.',
-        'Vehicle Owners: the Owners directory (names, bank details, payment day, which cars) and the Payments tab (the weekly payout queue — Confirm Paid once actually sent).',
         'Payroll: monthly runs, one line per employee (gross minus deductions). Approving one auto-creates the Equity → I&M funding transfer and the payroll payment from I&M together.',
         'Supplier Payments: insurance, charging, maintenance, RURA, office/admin — paid from I&M against an invoice or purchase order.',
         'Inter-Bank Transfers: moving money between Kivu\'s own accounts, most commonly Equity topping up I&M. Never counted as revenue or expense — it\'s Kivu\'s own money moving, not new money.',

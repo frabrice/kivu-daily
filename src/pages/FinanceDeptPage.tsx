@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import {
-  LayoutDashboard, TrendingUp, Wallet, Car, Users2, Truck, ArrowLeftRight, Receipt, Landmark, ClipboardCheck, ShieldCheck,
+  LayoutDashboard, TrendingUp, Wallet, Users2, Truck, ArrowLeftRight, Receipt, Landmark, ClipboardCheck, ShieldCheck,
 } from 'lucide-react';
 import FinanceDashboardPage from './finance/FinanceDashboardPage';
 import FinanceRevenuePage from './finance/FinanceRevenuePage';
 import FinanceFleetCollectionsPage from './finance/FinanceFleetCollectionsPage';
-import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
 import FinancePayrollPage from './finance/FinancePayrollPage';
 import FinanceSuppliersPage from './finance/FinanceSuppliersPage';
 import FinanceTransfersPage from './finance/FinanceTransfersPage';
@@ -14,12 +13,15 @@ import FinanceAccountsPage from './finance/FinanceAccountsPage';
 import FinanceReconciliationPage from './finance/FinanceReconciliationPage';
 import FinanceDepositConfirmationsPage from './finance/FinanceDepositConfirmationsPage';
 
-// MD-only: Finance employees see all eleven of these as separate sidebar
-// pages (src/pages/finance/*); the MD sees them bundled as tabs here,
-// since a fully expanded sidebar for every department at once would be
-// unmanageable for the one role that already sees everything.
+// MD-only: Finance employees see all these as separate sidebar pages
+// (src/pages/finance/*); the MD sees them bundled as tabs here, since a
+// fully expanded sidebar for every department at once would be
+// unmanageable for the one role that already sees everything. Vehicle
+// Owners is the one exception - promoted to its own top-level nav item
+// (see ManagingDirectorApp.tsx) rather than a tab buried in here, since
+// it's grown into its own body of work, not just another ledger page.
 type Tab =
-  | 'dashboard' | 'revenue' | 'fleet_collections' | 'vehicle_owners' | 'payroll'
+  | 'dashboard' | 'revenue' | 'fleet_collections' | 'payroll'
   | 'suppliers' | 'transfers' | 'expense_claims' | 'accounts' | 'reconciliation' | 'deposit_confirmations';
 
 const TABS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
@@ -27,7 +29,6 @@ const TABS: { key: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'revenue', label: 'Revenue', icon: TrendingUp },
   { key: 'fleet_collections', label: 'Fleet Collections', icon: Wallet },
   { key: 'deposit_confirmations', label: 'Deposit Confirmations', icon: ShieldCheck },
-  { key: 'vehicle_owners', label: 'Vehicle Owners', icon: Car },
   { key: 'payroll', label: 'Payroll', icon: Users2 },
   { key: 'suppliers', label: 'Supplier Payments', icon: Truck },
   { key: 'transfers', label: 'Inter-Bank Transfers', icon: ArrowLeftRight },
@@ -68,7 +69,6 @@ export default function FinanceDeptPage() {
       {tab === 'revenue' && <FinanceRevenuePage />}
       {tab === 'fleet_collections' && <FinanceFleetCollectionsPage />}
       {tab === 'deposit_confirmations' && <FinanceDepositConfirmationsPage />}
-      {tab === 'vehicle_owners' && <FinanceVehicleOwnersPage />}
       {tab === 'payroll' && <FinancePayrollPage />}
       {tab === 'suppliers' && <FinanceSuppliersPage />}
       {tab === 'transfers' && <FinanceTransfersPage />}
