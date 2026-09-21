@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  Car, UserPlus, Wallet, Users2, Landmark, TrendingUp, Clock3, ChevronLeft, ChevronRight, X,
+  Car, UserPlus, Wallet, Users2, Landmark, TrendingUp, Clock3, ChevronLeft, ChevronRight, X, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFinanceData, STATUS_META, fmt, sumWhere } from '../../lib/finance';
@@ -11,8 +11,7 @@ import KpiTile from '../../components/KpiTile';
 import DataTable from '../../components/DataTable';
 import SearchableSelect from '../../components/SearchableSelect';
 import VehicleOwnerDrawer from '../../components/finance/VehicleOwnerDrawer';
-import AssignVehicleOwnerDrawer from '../../components/finance/AssignVehicleOwnerDrawer';
-import OnboardVehicleDrawer from '../../components/finance/OnboardVehicleDrawer';
+import OnboardVehicleOwnerDrawer from '../../components/finance/OnboardVehicleOwnerDrawer';
 
 type Tab = 'owners' | 'payments';
 
@@ -41,26 +40,36 @@ const PAYMENT_DAY_LABEL: Record<string, string> = {
   friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday',
 };
 
+// A row is "onboarding-related" if it was auto-loaded by onboard_vehicle_owner()
+// or confirm_onboarding_fee(): the onboarding fee itself, the recurring
+// monthly management fee, or the three one-time setup costs (device,
+// branding, uniforms). These need a human to confirm/approve before they
+// count as real money - see the SQL migration for how each auto-loads.
+function isActionable(t: FinanceTransaction): boolean {
+  if (t.status !== 'pending' || !t.system_generated || !t.linked_vehicle_id) return false;
+  if (t.type === 'onboarding_fee') return true;
+  if (t.type === 'revenue' && t.description?.startsWith('Monthly management fee')) return true;
+  if (t.type === 'supplier_payment' && /^(Device cost|Branding cost|Uniforms)/.test(t.description ?? '')) return true;
+  return false;
+}
+
 // Car-management money, per car: two shift drivers pay 360,000/week into
 // BK (the existing driver_deposits system), of which the owner gets a
 // flat 240,000/week from I&M and Kivu keeps 120,000/week margin in
 // Equity, plus a separate 30,000/month management fee. Both the margin
 // and the fee are schedule-driven (sync_vehicle_obligations, called on
 // every Finance load). Two tabs: Owners (who they are, their bank and
-// contract details) and Payments (the weekly payout queue - logged
-// automatically, confirmed by hand once Finance has actually sent it).
+// contract details) and Payments (everything that needs Finance's
+// confirmation or approval - the weekly payout, plus onboarding money).
 export default function FinanceVehicleOwnersPage() {
   const { profile } = useAuth();
-  const { accounts, vehicles, owners, transactions, loading, reload } = useFinanceData();
+  const { vehicles, owners, transactions, loading, reload } = useFinanceData();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'finance';
-  const bkAccountId = accounts.find((a) => a.key === 'bank_of_kigali')?.id ?? '';
 
   const [tab, setTab] = useState<Tab>('owners');
   const [ownerDrawer, setOwnerDrawer] = useState<{ owner: VehicleOwner | null; startEditing: boolean } | null>(null);
-  const [assignVehicle, setAssignVehicle] = useState<Vehicle | null>(null);
   const [onboardVehicle, setOnboardVehicle] = useState<Vehicle | null>(null);
 
-  const onboardedVehicleIds = useMemo(() => new Set(transactions.filter((t) => t.type === 'onboarding_fee').map((t) => t.linked_vehicle_id)), [transactions]);
   const managedVehicles = useMemo(() => vehicles.filter((v) => v.owner_id), [vehicles]);
   const unassignedVehicles = useMemo(() => vehicles.filter((v) => !v.owner_id), [vehicles]);
 
@@ -74,7 +83,7 @@ export default function FinanceVehicleOwnersPage() {
           <p className="text-[11px] text-gray-400 mt-0.5">Who owns each managed car, and their weekly payout (I&M) plus Kivu's management margin (Equity).</p>
         </div>
         {canEdit && (
-          <button onClick={() => setOwnerDrawer({ owner: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
+          <button onClick={() => setOwnerDrawer({ owner: null, startEditing: true })} className="btn-ghost flex items-center gap-1.5 whitespace-nowrap">
             <UserPlus size={14} /> Add Owner
           </button>
         )}
@@ -101,11 +110,8 @@ export default function FinanceVehicleOwnersPage() {
           vehicles={vehicles}
           managedVehicles={managedVehicles}
           unassignedVehicles={unassignedVehicles}
-          onboardedVehicleIds={onboardedVehicleIds}
           canEdit={canEdit}
-          bkAccountId={bkAccountId}
           onEditOwner={(o) => setOwnerDrawer({ owner: o, startEditing: false })}
-          onAssignVehicle={setAssignVehicle}
           onOnboardVehicle={setOnboardVehicle}
         />
       )}
@@ -130,19 +136,10 @@ export default function FinanceVehicleOwnersPage() {
         />
       )}
 
-      {assignVehicle && (
-        <AssignVehicleOwnerDrawer
-          vehicle={assignVehicle}
-          owners={owners}
-          onClose={() => setAssignVehicle(null)}
-          onSaved={reload}
-        />
-      )}
-
       {onboardVehicle && (
-        <OnboardVehicleDrawer
+        <OnboardVehicleOwnerDrawer
           vehicle={onboardVehicle}
-          bkAccountId={bkAccountId}
+          owners={owners}
           onClose={() => setOnboardVehicle(null)}
           onSaved={reload}
         />
@@ -152,18 +149,14 @@ export default function FinanceVehicleOwnersPage() {
 }
 
 function OwnersTab({
-  owners, vehicles, managedVehicles, unassignedVehicles, onboardedVehicleIds, canEdit, bkAccountId,
-  onEditOwner, onAssignVehicle, onOnboardVehicle,
+  owners, vehicles, managedVehicles, unassignedVehicles, canEdit, onEditOwner, onOnboardVehicle,
 }: {
   owners: VehicleOwner[];
   vehicles: Vehicle[];
   managedVehicles: Vehicle[];
   unassignedVehicles: Vehicle[];
-  onboardedVehicleIds: Set<string | null>;
   canEdit: boolean;
-  bkAccountId: string;
   onEditOwner: (o: VehicleOwner) => void;
-  onAssignVehicle: (v: Vehicle) => void;
   onOnboardVehicle: (v: Vehicle) => void;
 }) {
   return (
@@ -185,18 +178,9 @@ function OwnersTab({
                   <p className="text-[10px] text-gray-400">{v.make} {v.model}</p>
                 </div>
                 {canEdit && (
-                  <>
-                    {onboardedVehicleIds.has(v.id) ? (
-                      <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-full shrink-0">Onboarded</span>
-                    ) : (
-                      <button onClick={() => onOnboardVehicle(v)} disabled={!bkAccountId} className="btn-ghost shrink-0 whitespace-nowrap disabled:opacity-50">
-                        Log Onboarding
-                      </button>
-                    )}
-                    <button onClick={() => onAssignVehicle(v)} className="btn-primary shrink-0 whitespace-nowrap">
-                      Assign Owner
-                    </button>
-                  </>
+                  <button onClick={() => onOnboardVehicle(v)} className="btn-primary shrink-0 whitespace-nowrap">
+                    Onboard Vehicle Owner
+                  </button>
                 )}
               </div>
             ))}
@@ -262,9 +246,14 @@ function PaymentsTab({
   const [statusFilter, setStatusFilter] = useState<FinanceTransactionStatus | 'all'>('all');
   const [weekFilter, setWeekFilter] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   const rows = useMemo(() => transactions.filter((t) => t.type === 'vehicle_owner_payment'), [transactions]);
+  const actionable = useMemo(
+    () => transactions.filter(isActionable).sort((a, b) => a.transaction_date.localeCompare(b.transaction_date)),
+    [transactions],
+  );
   const ownerOptions = useMemo(() => [...owners].sort((a, b) => a.full_name.localeCompare(b.full_name)).map((o) => ({ id: o.id, label: o.full_name })), [owners]);
   const vehicleOwnerId = (t: FinanceTransaction) => managedVehicles.find((v) => v.id === t.linked_vehicle_id)?.owner_id ?? '';
 
@@ -314,16 +303,62 @@ function PaymentsTab({
     reload();
   };
 
+  const actOn = async (t: FinanceTransaction) => {
+    setActingId(t.id);
+    setError('');
+    const rpc = t.type === 'onboarding_fee' ? 'confirm_onboarding_fee' : 'approve_pending_transaction';
+    const { error: err } = await supabase.rpc(rpc, { p_transaction_id: t.id });
+    setActingId(null);
+    if (err) { setError(err.message); return; }
+    reload();
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiTile icon={CheckCircle2} label="Needs Your Action" value={String(actionable.length)} tone={actionable.length > 0 ? 'negative' : undefined} color="amber" />
         <KpiTile icon={Wallet} label="Pending Payouts" value={fmt(pendingTotal)} tone={pendingTotal > 0 ? 'negative' : undefined} color="amber" />
         <KpiTile icon={Clock3} label="Paid This Month" value={fmt(paidThisMonth)} tone="positive" color="amber" />
         <KpiTile icon={TrendingUp} label="This Week's Margin" value={fmt(marginThisWeek)} tone="positive" color="amber" />
-        <KpiTile icon={Car} label="Managed Cars" value={String(managedVehicles.length)} color="amber" />
       </div>
 
       {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+
+      {actionable.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Needs Your Action</p>
+          <p className="text-[10px] text-gray-400 -mt-1">Auto-loaded onboarding fees and setup costs — confirm the fee once it's actually landed, approve costs once they're actually paid.</p>
+          <DataTable
+            rows={actionable}
+            keyFn={(t) => t.id}
+            columns={[
+              { header: 'Date', render: (t) => t.transaction_date },
+              { header: 'Vehicle', render: (t) => t.linked_vehicle?.plate_number ?? '—' },
+              { header: 'Description', render: (t) => t.description ?? '—' },
+              { header: 'Account', render: (t) => t.account?.name ?? '—' },
+              {
+                header: 'Amount',
+                render: (t) => (
+                  <span className={`font-medium ${t.direction === 'in' ? 'text-positive' : ''}`}>
+                    {t.direction === 'in' ? '+' : '−'}{fmt(t.amount)}
+                  </span>
+                ),
+              },
+              {
+                header: '',
+                className: 'text-right',
+                render: (t) => (
+                  canEdit ? (
+                    <button onClick={() => actOn(t)} disabled={actingId === t.id} className="btn-primary text-[11px] px-2.5 py-1.5 disabled:opacity-50">
+                      {actingId === t.id ? 'Working…' : t.type === 'onboarding_fee' ? 'Confirm' : 'Approve'}
+                    </button>
+                  ) : null
+                ),
+              },
+            ]}
+          />
+        </div>
+      )}
 
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
