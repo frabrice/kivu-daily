@@ -8,11 +8,19 @@ export interface SendEmailResult {
   error?: string;
 }
 
+export interface EmailAttachment {
+  filename: string;
+  // Base64-encoded file content, no data-URI prefix - matches Resend's
+  // attachments API (https://resend.com/docs/api-reference/emails/send-email).
+  content: string;
+}
+
 export async function sendWithResend(
   to: string | string[],
   subject: string,
   html: string,
-  text: string
+  text: string,
+  attachments?: EmailAttachment[]
 ): Promise<SendEmailResult> {
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
@@ -36,6 +44,7 @@ export async function sendWithResend(
         subject,
         html,
         text,
+        ...(attachments && attachments.length > 0 ? { attachments } : {}),
       }),
     });
 

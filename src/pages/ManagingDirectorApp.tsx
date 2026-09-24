@@ -34,6 +34,7 @@ import {
   Send,
   Loader2,
   Check,
+  Mail,
 } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, BarChart, Bar, Cell } from 'recharts';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
@@ -66,6 +67,7 @@ import MeetingsPage from './MeetingsPage';
 import FleetPage from './FleetPage';
 import FinanceDeptPage from './FinanceDeptPage';
 import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
+import NewslettersPage from './finance/NewslettersPage';
 import CallCenterPage from './CallCenterPage';
 import MarketingPage from './MarketingPage';
 import SocialMediaPage from './SocialMediaPage';
@@ -171,6 +173,7 @@ export default function ManagingDirectorApp() {
     { key: 'fleet', label: 'Fleet', icon: Truck },
     { key: 'finance', label: 'Finance', icon: Wallet },
     { key: 'finance_vehicle_owners', label: 'Vehicle Owners', icon: Car },
+    { key: 'finance_newsletters', label: 'Newsletters', icon: Mail },
     { key: 'call_center', label: 'Call Center', icon: PhoneCall },
     { key: 'marketing', label: 'Campaigns', icon: Target },
     { key: 'social', label: 'Content Calendar', icon: ImageIcon },
@@ -590,6 +593,7 @@ export default function ManagingDirectorApp() {
       {active === 'fleet' && <FleetPage />}
       {active === 'finance' && <FinanceDeptPage />}
       {active === 'finance_vehicle_owners' && <FinanceVehicleOwnersPage />}
+      {active === 'finance_newsletters' && <NewslettersPage />}
       {active === 'call_center' && <CallCenterPage />}
       {active === 'marketing' && <MarketingPage />}
       {active === 'social' && <SocialMediaPage />}

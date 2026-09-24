@@ -7,7 +7,7 @@ import {
   Package, AlertTriangle,
   Image as ImageIcon,
   LayoutDashboard, ArrowLeftRight, Landmark, ClipboardCheck,
-  CarFront, ShieldCheck,
+  CarFront, ShieldCheck, Mail,
 } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import NotificationBell from '../components/NotificationBell';
@@ -27,6 +27,7 @@ import FinanceDashboardPage from './finance/FinanceDashboardPage';
 import FinanceRevenuePage from './finance/FinanceRevenuePage';
 import FinanceFleetCollectionsPage from './finance/FinanceFleetCollectionsPage';
 import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
+import NewslettersPage from './finance/NewslettersPage';
 import FinancePayrollPage from './finance/FinancePayrollPage';
 import FinanceDriverPayrollPage from './finance/FinanceDriverPayrollPage';
 import FinanceSuppliersPage from './finance/FinanceSuppliersPage';
@@ -91,6 +92,7 @@ export default function EmployeeApp() {
     finance_revenue: 'Revenue',
     finance_fleet_collections: 'Fleet Collections',
     finance_vehicle_owners: 'Vehicle Owners',
+    finance_newsletters: 'Newsletters',
     finance_payroll: 'Internal Payroll',
     finance_driver_payroll: 'Driver Payroll',
     finance_suppliers: 'Supplier Payments',
@@ -129,6 +131,7 @@ export default function EmployeeApp() {
       { key: 'finance_revenue' as const, label: 'Revenue', icon: TrendingUp },
       { key: 'finance_fleet_collections' as const, label: 'Fleet Collections', icon: Wallet },
       { key: 'finance_vehicle_owners' as const, label: 'Vehicle Owners', icon: Car },
+      { key: 'finance_newsletters' as const, label: 'Newsletters', icon: Mail },
       { key: 'finance_payroll' as const, label: 'Internal Payroll', icon: Users2 },
       { key: 'finance_driver_payroll' as const, label: 'Driver Payroll', icon: Truck },
       { key: 'finance_suppliers' as const, label: 'Supplier Payments', icon: Truck },
@@ -176,6 +179,7 @@ export default function EmployeeApp() {
       {active === 'finance_revenue' && <FinanceRevenuePage />}
       {active === 'finance_fleet_collections' && <FinanceFleetCollectionsPage />}
       {active === 'finance_vehicle_owners' && <FinanceVehicleOwnersPage />}
+      {active === 'finance_newsletters' && <NewslettersPage />}
       {active === 'finance_payroll' && <FinancePayrollPage />}
       {active === 'finance_driver_payroll' && <FinanceDriverPayrollPage />}
       {active === 'finance_suppliers' && <FinanceSuppliersPage />}

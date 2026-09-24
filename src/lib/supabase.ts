@@ -676,3 +676,46 @@ export interface ChargingStationPhoto {
   file_name: string | null;
   created_at: string;
 }
+
+// ============================================================
+// NEWSLETTERS (starting with Vehicle Owners)
+// ============================================================
+export type NewsletterAudience = 'vehicle_owners';
+export type NewsletterStatus = 'draft' | 'sent';
+
+export interface Newsletter {
+  id: string;
+  audience: NewsletterAudience;
+  subject: string;
+  html_body: string;
+  status: NewsletterStatus;
+  sent_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewsletterVehicleReport {
+  id: string;
+  newsletter_id: string;
+  vehicle_id: string;
+  current_mileage: number | null;
+  remaining_mileage_to_service: number | null;
+  distance_this_week: number | null;
+  total_earnings_so_far: number | null;
+  personal_note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type NewsletterSendStatus = 'sent' | 'failed';
+
+export interface NewsletterSend {
+  id: string;
+  newsletter_id: string;
+  owner_id: string;
+  email: string;
+  status: NewsletterSendStatus;
+  error_message: string | null;
+  sent_at: string;
+}

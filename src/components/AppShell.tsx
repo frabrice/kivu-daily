@@ -40,6 +40,7 @@ export type NavKey =
   | 'finance_revenue'
   | 'finance_fleet_collections'
   | 'finance_vehicle_owners'
+  | 'finance_newsletters'
   | 'finance_payroll'
   | 'finance_driver_payroll'
   | 'finance_suppliers'
