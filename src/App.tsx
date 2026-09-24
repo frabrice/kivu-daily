@@ -8,6 +8,7 @@ import SetPasswordPage from './pages/SetPasswordPage';
 import EmployeeApp from './pages/EmployeeApp';
 import ManagingDirectorApp from './pages/ManagingDirectorApp';
 import LoadingScreen from './components/LoadingScreen';
+import PublicSurveyApp from './pages/survey/PublicSurveyApp';
 
 type PreAuthView = 'landing' | 'role-select' | 'login';
 
@@ -42,7 +43,14 @@ function AppInner() {
   return <EmployeeApp />;
 }
 
+// /survey/<token> is a fully public, unauthenticated route for field
+// data collectors with no Kivu Daily account at all - checked before
+// AuthProvider even mounts, since it must never require a login.
+const surveyMatch = window.location.pathname.match(/^\/survey\/([^/]+)/);
+
 export default function App() {
+  if (surveyMatch) return <PublicSurveyApp token={surveyMatch[1]} />;
+
   return (
     <ThemeProvider>
       <AuthProvider>

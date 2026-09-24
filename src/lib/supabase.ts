@@ -603,3 +603,76 @@ export interface PayrollLine {
   created_at: string;
   employee?: PayrollEmployee | null;
 }
+
+// ============================================================
+// MD PANEL: SURVEY CASES (Case 1 = Charging Stations)
+// ============================================================
+export type SurveyCaseStatus = 'active' | 'archived';
+
+export interface SurveyCase {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  link_token: string;
+  status: SurveyCaseStatus;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SurveyCollector {
+  id: string;
+  case_id: string;
+  email: string;
+  full_name: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export type GunType = 'type2' | 'ccs2' | 'chademo' | 'gbt' | 'other';
+export type DowntimeFrequency = 'never' | 'rarely' | 'sometimes' | 'often';
+
+export interface ChargingStation {
+  id: string;
+  case_id: string;
+  station_number: number;
+  owner_brand: string;
+  location_name: string;
+  latitude: number | null;
+  longitude: number | null;
+  reverse_geocoded_address: string | null;
+  num_chargers: number;
+  charger_brand: string | null;
+  operator_name: string | null;
+  buying_price_per_kwh: number;
+  selling_price_per_kwh: number;
+  cars_per_day: number;
+  weekday_weekend_variation: boolean;
+  weekend_cars_per_day: number | null;
+  operates_24_7: boolean;
+  operating_hours_note: string | null;
+  avg_session_minutes: number | null;
+  downtime_frequency: DowntimeFrequency | null;
+  submitted_by_email: string;
+  created_at: string;
+  guns?: ChargingStationGun[];
+  photos?: ChargingStationPhoto[];
+}
+
+export interface ChargingStationGun {
+  id: string;
+  station_id: string;
+  gun_type: GunType;
+  gun_count: number;
+  power_kw: number | null;
+  created_at: string;
+}
+
+export interface ChargingStationPhoto {
+  id: string;
+  station_id: string;
+  file_url: string;
+  file_name: string | null;
+  created_at: string;
+}
