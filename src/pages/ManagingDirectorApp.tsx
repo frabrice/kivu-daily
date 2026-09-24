@@ -28,6 +28,12 @@ import {
   HelpCircle,
   TrendingUp as TrendingUpIcon,
   ChevronRight,
+  Plus,
+  Pencil,
+  Trash2,
+  Send,
+  Loader2,
+  Check,
 } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, BarChart, Bar, Cell } from 'recharts';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
@@ -37,7 +43,7 @@ import { useCompanySnapshot } from '../lib/dashboardSnapshot';
 import { fmt } from '../lib/finance';
 import { completionColor, dateStr, addDays, greeting, formatDateFull } from '../lib/utils';
 import { completionPct } from '../lib/hooks';
-import { supabase, Task } from '../lib/supabase';
+import { supabase, Task, Department, Profile } from '../lib/supabase';
 import Avatar from '../components/Avatar';
 import ActivityFeed from '../components/ActivityFeed';
 import AssignTaskModal from '../components/AssignTaskModal';
@@ -46,9 +52,10 @@ import CreateMeetingModal from '../components/CreateMeetingModal';
 import TaskReviewModal from '../components/TaskReviewModal';
 import NotificationBell from '../components/NotificationBell';
 import EmployeeProfilePage from '../components/EmployeeProfilePage';
+import { CreateUserModal, EditUserModal } from '../components/EmployeeAdminModals';
 import Leaderboard from './Leaderboard';
 import SearchPage from './SearchPage';
-import AdminPanel from './AdminPanel';
+import MDPanel from './MDPanel';
 import SettingsPage from './SettingsPage';
 import MDTasksPage from './MDTasksPage';
 import MDCommentsPage from './MDCommentsPage';
@@ -176,7 +183,7 @@ export default function ManagingDirectorApp() {
     { key: 'departments', label: 'Departments', icon: Users2 },
     { key: 'leaderboard', label: 'Leaderboard', icon: Trophy },
     { key: 'search', label: 'Search', icon: Search },
-    { key: 'admin', label: 'Admin Panel', icon: Shield },
+    { key: 'admin', label: 'MD Panel', icon: Shield },
     { key: 'help', label: 'How to Use', icon: HelpCircle },
     { key: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -571,7 +578,13 @@ export default function ManagingDirectorApp() {
       )}
 
       {active === 'departments' && (
-        <DepartmentsView employees={employees} departments={departments} allTasks={allTasks} onSelect={setSelectedEmployee} />
+        <DepartmentsView
+          employees={employees}
+          departments={departments}
+          allTasks={allTasks}
+          onSelect={(e) => { setSelectedEmployee(e); setActive('dashboard'); }}
+          reload={reload}
+        />
       )}
       {active === 'tasks' && <MDTasksPage />}
       {active === 'fleet' && <FleetPage />}
@@ -589,7 +602,7 @@ export default function ManagingDirectorApp() {
       {active === 'activity_log' && <ActivityLogPage profiles={profiles} />}
       {active === 'leaderboard' && <Leaderboard employees={employees} allTasks={allTasks} onSelect={setSelectedEmployee} />}
       {active === 'search' && <SearchPage employees={employees} allTasks={allTasks} onSelect={setSelectedEmployee} />}
-      {active === 'admin' && <AdminPanel />}
+      {active === 'admin' && <MDPanel />}
       {active === 'settings' && <SettingsPage />}
 
       <AssignTaskModal
@@ -698,51 +711,123 @@ function DepartmentsView({
   departments,
   allTasks: _allTasks,
   onSelect,
+  reload,
 }: {
   employees: EmployeeWithStats[];
-  departments: { id: string; name: string }[];
+  departments: Department[];
   allTasks: Task[];
   onSelect: (e: EmployeeWithStats) => void;
+  reload: () => void;
 }) {
   const [openDept, setOpenDept] = useState<string | null>(null);
+  const [addDeptOpen, setAddDeptOpen] = useState(false);
+  const [newDeptName, setNewDeptName] = useState('');
+  const [savingDept, setSavingDept] = useState(false);
+  const [creatingFor, setCreatingFor] = useState<string | null>(null);
+  const [editUser, setEditUser] = useState<Profile | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resendResult, setResendResult] = useState<{ id: string; error: string | null } | null>(null);
+
+  const addDepartment = async () => {
+    if (!newDeptName.trim()) return;
+    setSavingDept(true);
+    await supabase.from('departments').insert({ name: newDeptName.trim() });
+    setSavingDept(false);
+    setNewDeptName('');
+    setAddDeptOpen(false);
+    reload();
+  };
+
+  const updateProfile = async (id: string, updates: Partial<Profile>) => {
+    await supabase.from('profiles').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+    reload();
+    setEditUser(null);
+  };
+
+  const deactivate = async (id: string) => {
+    await supabase.from('profiles').update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', id);
+    reload();
+  };
+
+  const resendInvite = async (id: string) => {
+    setResendingId(id);
+    setResendResult(null);
+    const { data, error } = await supabase.functions.invoke('resend-invite', { body: { user_id: id } });
+    setResendingId(null);
+    if (error || !data?.success) {
+      setResendResult({ id, error: data?.email_error || error?.message || 'Failed to resend invite' });
+    } else {
+      setResendResult({ id, error: null });
+    }
+  };
 
   return (
     <div className="space-y-2.5">
+      <div className="flex justify-end">
+        <button onClick={() => setAddDeptOpen(true)} className="btn-ghost flex items-center gap-1.5">
+          <Plus size={14} /> Add Department
+        </button>
+      </div>
+
       {departments.map((d) => {
         const stats = departmentStats(d.id, employees);
         const isOpen = openDept === d.id;
         return (
           <div key={d.id} className="card overflow-hidden">
-            <button
-              onClick={() => setOpenDept(isOpen ? null : d.id)}
-              className="w-full flex items-center justify-between p-3.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-            >
-              <div>
-                <p className="text-[12px] font-medium">{d.name}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{stats.deptEmployees.length} employees · {stats.activeToday} active today</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-lg font-bold leading-tight" style={{ color: completionColor(stats.pct) }}>{stats.pct}%</p>
-                  <p className="text-[10px] text-gray-400">{stats.completedTasks}/{stats.totalTasks} tasks</p>
+            <div className="w-full flex items-center justify-between p-3.5">
+              <button
+                onClick={() => setOpenDept(isOpen ? null : d.id)}
+                className="flex-1 flex items-center justify-between hover:opacity-80 transition-opacity text-left"
+              >
+                <div>
+                  <p className="text-[12px] font-medium">{d.name}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{stats.deptEmployees.length} employees · {stats.activeToday} active today</p>
                 </div>
-              </div>
-            </button>
+                <div className="flex items-center gap-4 mr-3">
+                  <div className="text-right">
+                    <p className="text-lg font-bold leading-tight" style={{ color: completionColor(stats.pct) }}>{stats.pct}%</p>
+                    <p className="text-[10px] text-gray-400">{stats.completedTasks}/{stats.totalTasks} tasks</p>
+                  </div>
+                </div>
+              </button>
+              <button onClick={() => setCreatingFor(d.id)} className="btn-ghost flex items-center gap-1.5 text-[11px] shrink-0">
+                <UserPlus size={13} /> Add Employee
+              </button>
+            </div>
             {isOpen && (
               <div className="p-3.5 pt-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 animate-fade-in">
                 {stats.deptEmployees.map((e) => (
-                  <button
-                    key={e.id}
-                    onClick={() => onSelect(e)}
-                    className="flex items-center gap-2.5 p-2.5 rounded-lg border border-gray-100 dark:border-white/5 hover:shadow-sm transition-all text-left"
-                  >
-                    <Avatar name={e.full_name} url={e.avatar_url} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-medium truncate">{e.full_name}</p>
-                      <p className="text-[10px] text-gray-400">{e.todayCompleted}/{e.todayTotal} · {e.streak} day streak</p>
+                  <div key={e.id} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-gray-100 dark:border-white/5 hover:shadow-sm transition-all">
+                    <button onClick={() => onSelect(e)} className="flex-1 flex items-center gap-2.5 min-w-0 text-left">
+                      <Avatar name={e.full_name} url={e.avatar_url} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-medium truncate">{e.full_name}</p>
+                        <p className="text-[10px] text-gray-400">{e.todayCompleted}/{e.todayTotal} · {e.streak} day streak</p>
+                        {e.force_password_change && (
+                          <p className="text-[9px] font-medium text-orange-600 dark:text-orange-400">Pending setup</p>
+                        )}
+                      </div>
+                      <span className="text-[11px] font-bold shrink-0" style={{ color: completionColor(e.todayPct) }}>{Math.round(e.todayPct)}%</span>
+                    </button>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {e.force_password_change && (
+                        <button
+                          onClick={(ev) => { ev.stopPropagation(); resendInvite(e.id); }}
+                          disabled={resendingId === e.id}
+                          title="Send them an email to set their password and activate the account"
+                          className="btn-ghost p-1.5 text-brand-600 dark:text-brand-300 disabled:opacity-50"
+                        >
+                          {resendingId === e.id ? <Loader2 size={13} className="animate-spin" /> : resendResult?.id === e.id && !resendResult.error ? <Check size={13} className="text-positive" /> : <Send size={13} />}
+                        </button>
+                      )}
+                      <button onClick={(ev) => { ev.stopPropagation(); setEditUser(e); }} className="btn-ghost p-1.5">
+                        <Pencil size={13} />
+                      </button>
+                      <button onClick={(ev) => { ev.stopPropagation(); deactivate(e.id); }} className="btn-ghost p-1.5 text-red-500">
+                        <Trash2 size={13} />
+                      </button>
                     </div>
-                    <span className="text-[11px] font-bold" style={{ color: completionColor(e.todayPct) }}>{Math.round(e.todayPct)}%</span>
-                  </button>
+                  </div>
                 ))}
                 {stats.deptEmployees.length === 0 && <p className="text-[11px] text-gray-400 col-span-full">No employees in this department.</p>}
               </div>
@@ -750,6 +835,38 @@ function DepartmentsView({
           </div>
         );
       })}
+
+      {addDeptOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setAddDeptOpen(false)}>
+          <div className="card p-4 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[12px] font-semibold mb-3">Add Department</h3>
+            <div className="flex gap-2">
+              <input value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)} placeholder="Department name" className="input" autoFocus />
+              <button onClick={addDepartment} disabled={savingDept} className="btn-primary whitespace-nowrap disabled:opacity-50">
+                {savingDept ? 'Adding…' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {creatingFor && (
+        <CreateUserModal
+          departments={departments}
+          lockedDepartmentId={creatingFor}
+          onCreated={reload}
+          onClose={() => setCreatingFor(null)}
+        />
+      )}
+
+      {editUser && (
+        <EditUserModal
+          user={editUser}
+          departments={departments}
+          onSave={(updates) => updateProfile(editUser.id, updates)}
+          onClose={() => setEditUser(null)}
+        />
+      )}
     </div>
   );
 }

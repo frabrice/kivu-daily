@@ -77,7 +77,7 @@ export default function EmployeeApp() {
     departments: 'Departments',
     leaderboard: 'Leaderboard',
     search: 'Search',
-    admin: 'Admin Panel',
+    admin: 'MD Panel',
     tasks: 'My Tasks',
     fleet: 'Fleet',
     call_center: 'Call Center',
