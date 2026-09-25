@@ -33,7 +33,7 @@ export function useFinanceData() {
     // generated rows show up in the same load.
     try { await supabase.rpc('sync_vehicle_obligations'); } catch { /* ignore */ }
     // Driver payroll (150,000/month per driver, counted from their own
-    // initial deposit date) is generated the same schedule-driven way.
+    // start date) is generated the same schedule-driven way.
     try { await supabase.rpc('sync_driver_payroll'); } catch { /* ignore */ }
 
     const [acc, tx, rec, pr, pe, ps, d, dep, v, own, emp, docs] = await Promise.all([

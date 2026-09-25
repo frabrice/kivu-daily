@@ -19,6 +19,12 @@ export function addDays(d: Date, n: number): Date {
   return r;
 }
 
+export function addMonths(d: Date, n: number): Date {
+  const r = new Date(d);
+  r.setMonth(r.getMonth() + n);
+  return r;
+}
+
 export function startOfWeek(d: Date): Date {
   const r = new Date(d);
   const day = r.getDay();

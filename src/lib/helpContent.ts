@@ -29,7 +29,7 @@ const FINANCE_ENTRY: HelpEntry = {
       heading: 'Driver Weekly Deposits — How The Math Works',
       body: [
         'Each managed car has two shift drivers (day and night). Each pays 30,000 RWF/day for 6 days = 180,000 RWF/week — the weekly deposit amount. Together the two drivers collect 360,000 RWF/week per car into BK. This is the car\'s operating remittance, not a refundable deposit — it\'s what funds the owner\'s payout and Kivu\'s margin.',
-        'A driver\'s initial deposit (paid when they join) counts as the first payment toward their first week, exactly like any later logged deposit. Pay less than 180,000 and the shortfall is what they owe before their week is even considered started; pay more and the extra rolls forward as credit against the next week.',
+        'The weekly cycle counts from the driver\'s Start Date, not from whenever their initial deposit happens to be paid — a driver who\'s been driving since their start date without paying shows as overdue from that date, not "no cycle yet" until they eventually pay. The initial deposit itself, once paid, still counts as the first payment toward that first week exactly like any later logged deposit: pay less than 180,000 and the shortfall is what they owe; pay more and the extra rolls forward as credit against the next week. The initial deposit\'s own date is accounting-only now — it confirms the money arrived, it doesn\'t schedule anything.',
         'Deposits can be logged in installments — 30k, then 40k, then 60k — without resetting anything. The "Log Deposit" button is always available; each logged payment is labeled Due, Covered, or Extra depending on where it lands. Once cumulative payments for a week reach 180,000, that week\'s cycle closes and the 7-day clock for the next week starts from that date.',
         'Status colors follow the same logic everywhere it shows up: green while there\'s no rush, amber with one day left, red from the due day onward and every day after ("Overdue by Xd"). A driver who\'s never paid shows red immediately.',
       ],
@@ -78,7 +78,7 @@ const FINANCE_ENTRY: HelpEntry = {
         'Fleet Collections: every driver\'s weekly remittance, auto-posted the moment Fleet logs a deposit or a driver\'s initial deposit is recorded. Filterable by week and by a specific driver, with a running total per driver.',
         'Deposit Confirmations: deposits Fleet logs start "Pending" — Finance (or the MD) confirms each one here before it counts as settled.',
         'Internal Payroll: standalone employee records (position, start date, salary, ID) paid on one shared date each month; monthly runs pre-fill from those salaries. Approving one auto-creates the Equity → I&M funding transfer and the payroll payment from I&M together.',
-        'Driver Payroll: a flat 150,000/month per driver, counted from their own initial deposit date, each its own pending payment until confirmed.',
+        'Driver Payroll: a flat 150,000/month per driver, counted from their own start date, each its own pending payment until confirmed.',
         'Supplier Payments: insurance, charging, maintenance, RURA, office/admin — paid from I&M against an invoice or purchase order.',
         'Inter-Bank Transfers: moving money between Kivu\'s own accounts, most commonly Equity topping up I&M. Never counted as revenue or expense — it\'s Kivu\'s own money moving, not new money.',
         'Expense Claims: employee reimbursements, needs a supporting receipt before approval.',
@@ -180,13 +180,13 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
     tips: ['Save as a draft first if you\'re still entering amounts — nothing is paid until you explicitly Approve & Pay.'],
   },
   finance_driver_payroll: {
-    blurb: "A flat 150,000/month per driver, counted from each driver's own initial deposit date.",
+    blurb: "A flat 150,000/month per driver, counted from each driver's own start date.",
     sections: [
       {
         heading: 'How a driver gets on payroll',
         body: [
-          'The moment a driver\'s initial deposit is marked paid, their deposit date becomes their "official start date" for payroll purposes — not the shared Internal Payroll date, since every driver joins on a different day.',
-          'Each driver\'s monthly payment is its own individual pending transaction, generated automatically once a full month has elapsed since their start date (or their last payment) — nothing is typed in by hand.',
+          'Every driver\'s own Start Date (set on their profile) is what payroll counts from — not the shared Internal Payroll date, since every driver starts on a different day, and not their initial deposit date either, which is accounting-only. A driver still needs their initial deposit marked paid to appear on payroll at all, but once they are, it\'s the start date that decides when each month\'s payment falls due.',
+          'Each driver\'s monthly payment is its own individual pending transaction, generated automatically once a full month has elapsed since their start date (or their last payment) — nothing is typed in by hand. The "Next Payment" column shows exactly when the next one is due.',
           'A driver whose contract ends simply stops generating new months from that point on — no partial or prorated final payment, they just drop off the list.',
         ],
       },

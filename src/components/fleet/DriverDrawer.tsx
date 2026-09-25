@@ -38,7 +38,7 @@ export default function DriverDrawer({
   const [fullName, setFullName] = useState(driver?.full_name ?? '');
   const [phone, setPhone] = useState(driver?.phone ?? '');
   const [email, setEmail] = useState(driver?.email ?? '');
-  const [joinDate, setJoinDate] = useState(driver?.join_date ?? todayStr());
+  const [startDate, setStartDate] = useState(driver?.start_date ?? todayStr());
   const [initialDepositPaid, setInitialDepositPaid] = useState(driver?.initial_deposit_paid ?? false);
   const [initialDepositDate, setInitialDepositDate] = useState(driver?.initial_deposit_date ?? '');
   const [initialDepositAmount, setInitialDepositAmount] = useState(driver?.initial_deposit_amount ? String(driver.initial_deposit_amount) : String(WEEKLY_DEPOSIT_AMOUNT));
@@ -82,7 +82,7 @@ export default function DriverDrawer({
       full_name: fullName.trim(),
       phone: phone.trim(),
       email: email.trim() || null,
-      join_date: joinDate || null,
+      start_date: startDate || null,
       initial_deposit_paid: initialDepositPaid,
       initial_deposit_date: initialDepositPaid ? initialDepositDate : null,
       initial_deposit_amount: initialDepositPaid ? Number(initialDepositAmount) : null,
@@ -140,8 +140,8 @@ export default function DriverDrawer({
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!editing} className="input" placeholder="jean@example.com" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><CalendarDays size={11} /> Join Date</label>
-            <DateInput value={joinDate} onChange={setJoinDate} disabled={!editing} />
+            <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><CalendarDays size={11} /> Start Date</label>
+            <DateInput value={startDate} onChange={setStartDate} disabled={!editing} />
           </div>
         </div>
         <div>
@@ -200,7 +200,7 @@ export default function DriverDrawer({
                 <label className="block text-[10px] font-medium mb-1 text-gray-500">Amount (RWF)</label>
                 <input type="number" value={initialDepositAmount} onChange={(e) => setInitialDepositAmount(e.target.value)} disabled={!editing} className="input" />
               </div>
-              <p className="text-[9px] text-gray-400 col-span-2">The weekly deposit cycle in Deposits counts from here until a real deposit is logged.</p>
+              <p className="text-[9px] text-gray-400 col-span-2">For accounting only, to confirm the money arrived — the weekly deposit cycle and payroll both count from Start Date, not this date.</p>
             </div>
           )}
         </div>

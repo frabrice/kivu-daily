@@ -2,18 +2,25 @@ import { useMemo, useState } from 'react';
 import { Wallet, Users2, Clock3, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFinanceData, DRIVER_MONTHLY_SALARY, STATUS_META, fmt, sumWhere } from '../../lib/finance';
-import { supabase } from '../../lib/supabase';
-import { todayStr } from '../../lib/utils';
+import { supabase, Driver, FinanceTransaction } from '../../lib/supabase';
+import { todayStr, dateStr, addMonths } from '../../lib/utils';
 import { formatDateLabelSafe } from '../../lib/fleet';
 import KpiTile from '../../components/KpiTile';
 import DataTable from '../../components/DataTable';
 
-// Drivers are paid a flat 150,000/month, counted from their own initial
-// deposit date - the "official start date" - not the shared Internal
-// Payroll date, since each driver joined on a different day. A driver
-// whose contract ends just stops generating new months from that point
-// on (sync_driver_payroll only ever loops over contract_status =
-// 'active' drivers) - no partial final payment, they simply drop off.
+// Drivers are paid a flat 150,000/month, counted from their own start
+// date - not the shared Internal Payroll date, since each driver starts
+// on a different day, and not initial_deposit_date either, which is
+// accounting-only (confirming the money arrived) and no longer
+// schedules anything. A driver whose contract ends just stops
+// generating new months from that point on (sync_driver_payroll only
+// ever loops over contract_status = 'active' drivers) - no partial
+// final payment, they simply drop off.
+function nextPayrollDate(driver: Driver, transactions: FinanceTransaction[]): string | null {
+  if (!driver.start_date) return null;
+  const existingCount = transactions.filter((t) => t.type === 'driver_payroll' && t.linked_driver_id === driver.id && t.system_generated).length;
+  return dateStr(addMonths(new Date(`${driver.start_date}T00:00:00`), existingCount + 1));
+}
 export default function FinanceDriverPayrollPage() {
   const { profile } = useAuth();
   const { drivers, transactions, loading, reload } = useFinanceData();
@@ -22,7 +29,7 @@ export default function FinanceDriverPayrollPage() {
   const [error, setError] = useState('');
 
   const onPayroll = useMemo(
-    () => drivers.filter((d) => d.initial_deposit_paid && d.initial_deposit_date && d.contract_status === 'active'),
+    () => drivers.filter((d) => d.initial_deposit_paid && d.start_date && d.contract_status === 'active'),
     [drivers],
   );
   const rows = useMemo(() => transactions.filter((t) => t.type === 'driver_payroll'), [transactions]);
@@ -47,7 +54,7 @@ export default function FinanceDriverPayrollPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Users2 size={16} className="text-amber-600 dark:text-amber-300" /> Driver Payroll</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">Flat {fmt(DRIVER_MONTHLY_SALARY)}/month per driver, counted from their own initial deposit date — paid from I&M.</p>
+        <p className="text-[11px] text-gray-400 mt-0.5">Flat {fmt(DRIVER_MONTHLY_SALARY)}/month per driver, counted from their own start date — paid from I&M.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -89,7 +96,14 @@ export default function FinanceDriverPayrollPage() {
           emptyLabel="No drivers on payroll yet."
           columns={[
             { header: 'Driver', render: (d) => d.full_name },
-            { header: 'Official Start Date', render: (d) => (d.initial_deposit_date ? formatDateLabelSafe(d.initial_deposit_date) : '—') },
+            { header: 'Start Date', render: (d) => (d.start_date ? formatDateLabelSafe(d.start_date) : '—') },
+            {
+              header: 'Next Payment',
+              render: (d) => {
+                const next = nextPayrollDate(d, transactions);
+                return next ? formatDateLabelSafe(next) : '—';
+              },
+            },
             {
               header: 'Paid To Date',
               render: (d) => {

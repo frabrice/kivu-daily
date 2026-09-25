@@ -48,7 +48,7 @@ export default function DriverProfilePage({
 
   const driverDeposits = deposits.filter((dep) => dep.driver_id === driver.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
   const isEnded = driver.contract_status === 'ended';
-  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.initial_deposit_date, driver.initial_deposit_amount, driverDeposits);
+  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.start_date, driver.initial_deposit_amount, driverDeposits);
   const daysSince = depositDaysSince(wf.currentAnchor);
   const tier = depositTier(daysSince);
   const tierStyle = DEPOSIT_TIER_STYLE[tier];
@@ -165,8 +165,8 @@ export default function DriverProfilePage({
             <p className="text-[12px] font-medium truncate">{driver.email || <span className="text-gray-400 font-normal">Not provided</span>}</p>
           </div>
           <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><CalendarDays size={10} /> Join Date</p>
-            <p className="text-[12px] font-medium">{driver.join_date ? formatDateLabelSafe(driver.join_date) : <span className="text-gray-400 font-normal">Not set</span>}</p>
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><CalendarDays size={10} /> Start Date</p>
+            <p className="text-[12px] font-medium">{driver.start_date ? formatDateLabelSafe(driver.start_date) : <span className="text-gray-400 font-normal">Not set</span>}</p>
           </div>
           <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
             <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Clock size={10} /> Initial Deposit</p>

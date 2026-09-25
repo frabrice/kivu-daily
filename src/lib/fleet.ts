@@ -194,21 +194,29 @@ export interface DepositWaterfall<T extends DepositLike = DriverDeposit> {
 // still owed, whether a given payment finished the week or overpaid it)
 // falls out of this same walk instead of a separate flat calculation.
 //
-// The initial deposit is itself the first payment toward the first
-// cycle, not a freebie the model ignores: short of 180k it leaves a
-// balance due (e.g. paid 100k, still owes 80k before the first weekly
-// deadline even starts counting against them), and over 180k the extra
-// rolls forward as credit against the next cycle (e.g. paid 210k, owes
-// only 150k next week) - exactly like an overpayment on any later
-// logged deposit rolls into the cycle after it.
+// The cycle's anchor is the driver's start date, not when (or whether)
+// the initial deposit was actually paid - a driver is expected to be
+// paying from day one of driving, so a driver who's been on since their
+// start date without ever paying should show as overdue from that date,
+// not show no cycle at all until they eventually pay. initial_deposit_date
+// itself is accounting-only now (confirming the money arrived), and no
+// longer schedules anything.
+//
+// The initial deposit amount is still the first payment toward the
+// first cycle when it exists, not a freebie the model ignores: short of
+// 180k it leaves a balance due (e.g. paid 100k, still owes 80k before
+// the first weekly deadline even starts counting against them), and
+// over 180k the extra rolls forward as credit against the next cycle
+// (e.g. paid 210k, owes only 150k next week) - exactly like an
+// overpayment on any later logged deposit rolls into the cycle after it.
 export function computeDepositWaterfall<T extends DepositLike>(
   initialDepositPaid: boolean,
-  initialDepositDate: string | null,
+  startDate: string | null,
   initialDepositAmount: number | null,
   deposits: T[]
 ): DepositWaterfall<T> {
   const sorted = [...deposits].sort((a, b) => a.paid_date.localeCompare(b.paid_date) || a.created_at.localeCompare(b.created_at));
-  let anchor = initialDepositPaid ? initialDepositDate : null;
+  let anchor = startDate;
   const initialAmount = initialDepositPaid ? (initialDepositAmount ?? 0) : 0;
   const initialRemaining = anchor ? Math.max(WEEKLY_DEPOSIT_AMOUNT - initialAmount, 0) : 0;
   const initialExtra = anchor ? Math.max(initialAmount - WEEKLY_DEPOSIT_AMOUNT, 0) : 0;
@@ -228,7 +236,7 @@ export function computeDepositWaterfall<T extends DepositLike>(
   for (const dep of sorted) {
     totalPaid += dep.amount;
     if (!anchor) {
-      // No initial deposit on file - the first-ever logged payment starts the first cycle itself.
+      // No start date on file - the first-ever logged payment starts the first cycle itself.
       anchor = dep.paid_date;
       paidInCycle = 0;
     }
@@ -328,7 +336,7 @@ export interface DepositReliability {
 // on time if that happened within 7 days of the cycle's own start.
 export function computeDepositReliability(driver: Driver, deposits: DriverDeposit[]): DepositReliability {
   const driverDeposits = deposits.filter((d) => d.driver_id === driver.id);
-  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.initial_deposit_date, driver.initial_deposit_amount, driverDeposits);
+  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.start_date, driver.initial_deposit_amount, driverDeposits);
   const onTime = wf.closedCycles.filter((c) => c.onTime).length;
   const late = wf.closedCycles.filter((c) => !c.onTime).length;
   const totalCycles = onTime + late;

@@ -100,7 +100,7 @@ export interface Driver {
   full_name: string;
   phone: string;
   email: string | null;
-  join_date: string | null;
+  start_date: string | null;
   initial_deposit_paid: boolean;
   initial_deposit_date: string | null;
   initial_deposit_amount: number | null;

@@ -35,7 +35,7 @@ export default function FinanceDashboardPage() {
     let outstandingDriverAmount = 0;
     for (const d of drivers.filter((dr) => dr.vehicle_id && dr.contract_status !== 'ended')) {
       const driverDeposits = deposits.filter((dep) => dep.driver_id === d.id);
-      const wf = computeDepositWaterfall(d.initial_deposit_paid, d.initial_deposit_date, d.initial_deposit_amount, driverDeposits);
+      const wf = computeDepositWaterfall(d.initial_deposit_paid, d.start_date, d.initial_deposit_amount, driverDeposits);
       const daysSince = depositDaysSince(wf.currentAnchor);
       if (daysSince === null || daysSince >= 7) {
         outstandingDriverCount++;
