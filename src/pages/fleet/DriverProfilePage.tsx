@@ -7,9 +7,10 @@ import {
 import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent } from '../../lib/supabase';
 import {
   STAGES, effectiveStage, REST_DAYS, computeDepositWaterfall, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, depositRemainingColor,
-  nextDepositDueDate, computeDepositReliability, formatDateLabelSafe,
+  nextDepositDueDate, computeDepositReliability, formatDateLabelSafe, depositCycleDelayDays, depositCycleCompletionLabel,
   fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel,
 } from '../../lib/fleet';
+import { addDays, dateStr } from '../../lib/utils';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import EndContractDrawer from '../../components/fleet/EndContractDrawer';
@@ -217,6 +218,44 @@ export default function DriverProfilePage({
           <p className="text-[10px] text-gray-400 mt-1.5">RWF of {totalFined.toLocaleString()} total across {driverFines.length} fine{driverFines.length === 1 ? '' : 's'}</p>
         </div>
       </div>
+
+      {/* Weekly Cycles - no week ever counts as done until the full 180k is
+          in, tracked on the driver's own 7-day clock from their start
+          date regardless of which calendar day each payment landed on. */}
+      {!isEnded && (
+        <div className="card p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><CalendarDays size={13} /> Weekly Deposit Cycles</p>
+          {[...wf.closedCycles].reverse().length === 0 && !wf.currentAnchor ? (
+            <p className="text-[11px] text-gray-400">No cycles yet — set a start date to begin tracking.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {wf.currentAnchor && (
+                <div className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Week of {formatDateLabelSafe(wf.currentAnchor)} – {formatDateLabelSafe(dateStr(addDays(new Date(`${wf.currentAnchor}T00:00:00`), 6)))}
+                  </span>
+                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${tierStyle.badge}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${tierStyle.dot}`} /> {depositStatusLabel(daysSince)} · in progress
+                  </span>
+                </div>
+              )}
+              {[...wf.closedCycles].reverse().map((cycle, i) => {
+                const delay = depositCycleDelayDays(cycle);
+                return (
+                  <div key={i} className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Week of {formatDateLabelSafe(cycle.anchor)} – {formatDateLabelSafe(dateStr(addDays(new Date(`${cycle.anchor}T00:00:00`), 6)))}
+                    </span>
+                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${delay > 0 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'}`}>
+                      {depositCycleCompletionLabel(cycle)} · {formatDateLabelSafe(cycle.closedDate)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Deposits */}
       <div className="card p-4">

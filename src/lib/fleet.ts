@@ -367,6 +367,20 @@ export function fineStatusLabel(status: FineStatus, fineAmount: number, amountPa
   return 'Unpaid';
 }
 
+// A cycle only ever closes once the full 180,000 is in - gapDays is the
+// raw day-count between when it opened and when the closing payment
+// landed, so anything beyond the 7-day window is how many days late the
+// full amount was finished, never how much is still owed (a closed
+// cycle is always fully paid by definition).
+export function depositCycleDelayDays(cycle: ClosedDepositCycle): number {
+  return Math.max(cycle.gapDays - 7, 0);
+}
+
+export function depositCycleCompletionLabel(cycle: ClosedDepositCycle): string {
+  const delay = depositCycleDelayDays(cycle);
+  return delay > 0 ? `Completed ${delay} day${delay === 1 ? '' : 's'} late` : 'Completed on time';
+}
+
 export function formatDateLabelSafe(d: string): string {
   try {
     return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });

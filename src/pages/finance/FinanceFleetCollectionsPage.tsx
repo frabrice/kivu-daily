@@ -4,6 +4,7 @@ import { useAuth } from '../../lib/auth';
 import { useFinanceData, STATUS_META, fmt, sumWhere } from '../../lib/finance';
 import { todayStr, startOfWeek, addDays, dateStr, formatDateLabel } from '../../lib/utils';
 import { FinanceTransaction, FinanceTransactionStatus } from '../../lib/supabase';
+import { computeDepositWaterfall, depositDaysSince, depositTier, depositStatusLabel, DEPOSIT_TIER_STYLE, depositCycleDelayDays, depositCycleCompletionLabel, formatDateLabelSafe } from '../../lib/fleet';
 import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import KpiTile from '../../components/KpiTile';
@@ -84,6 +85,19 @@ export default function FinanceFleetCollectionsPage() {
       firstDate: driverRows[0].transaction_date,
       lastDate: driverRows[driverRows.length - 1].transaction_date,
     };
+  }, [rows, selectedDriver]);
+
+  // Same 7-day-from-start-date waterfall Fleet uses on the driver's own
+  // profile - fleet_collection rows are the finance mirror of Fleet's own
+  // driver_deposits (one-to-one, auto-posted), so paid_date maps directly
+  // to transaction_date here. No driver's week counts as done until the
+  // full 180,000 is in, no matter how the calendar week groups above look.
+  const driverWaterfall = useMemo(() => {
+    if (!selectedDriver) return null;
+    const asDeposits = rows
+      .filter((t) => t.linked_driver_id === selectedDriver.id)
+      .map((t) => ({ paid_date: t.transaction_date, amount: t.amount, created_at: t.created_at }));
+    return computeDepositWaterfall(selectedDriver.initial_deposit_paid, selectedDriver.start_date, selectedDriver.initial_deposit_amount, asDeposits);
   }, [rows, selectedDriver]);
 
   // Grouped week-by-week, most recent first - when weekFilter narrows to
@@ -201,6 +215,40 @@ export default function FinanceFleetCollectionsPage() {
           <button onClick={() => setDriverFilter('')} className="btn-ghost p-1.5 shrink-0" title="Clear driver filter">
             <X size={14} />
           </button>
+        </div>
+      )}
+
+      {selectedDriver && driverWaterfall && selectedDriver.contract_status !== 'ended' && (driverWaterfall.currentAnchor || driverWaterfall.closedCycles.length > 0) && (
+        <div className="card p-3.5 space-y-1.5">
+          <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Weekly Deposit Cycles — {selectedDriver.full_name}</p>
+          {driverWaterfall.currentAnchor && (() => {
+            const daysSince = depositDaysSince(driverWaterfall.currentAnchor);
+            const tier = depositTier(daysSince);
+            const style = DEPOSIT_TIER_STYLE[tier];
+            return (
+              <div className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-gray-50 dark:border-white/5">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Week of {formatDateLabelSafe(driverWaterfall.currentAnchor)} – {formatDateLabelSafe(dateStr(addDays(new Date(`${driverWaterfall.currentAnchor}T00:00:00`), 6)))}
+                </span>
+                <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${style.badge}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} /> {depositStatusLabel(daysSince)} · in progress
+                </span>
+              </div>
+            );
+          })()}
+          {[...driverWaterfall.closedCycles].reverse().map((cycle, i) => {
+            const delay = depositCycleDelayDays(cycle);
+            return (
+              <div key={i} className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Week of {formatDateLabelSafe(cycle.anchor)} – {formatDateLabelSafe(dateStr(addDays(new Date(`${cycle.anchor}T00:00:00`), 6)))}
+                </span>
+                <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${delay > 0 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'}`}>
+                  {depositCycleCompletionLabel(cycle)} · {formatDateLabelSafe(cycle.closedDate)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
 
