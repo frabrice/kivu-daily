@@ -7,7 +7,7 @@ import {
   Package, AlertTriangle,
   Image as ImageIcon,
   LayoutDashboard, ArrowLeftRight, Landmark, ClipboardCheck,
-  CarFront, ShieldCheck, Mail,
+  CarFront, ShieldCheck, Mail, Trophy,
 } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import NotificationBell from '../components/NotificationBell';
@@ -21,6 +21,7 @@ import FleetPipelinePage from './fleet/FleetPipelinePage';
 import FleetVehiclesPage from './fleet/FleetVehiclesPage';
 import FleetDepositsPage from './fleet/FleetDepositsPage';
 import FleetFinesPage from './fleet/FleetFinesPage';
+import DepositLeaderboardPage from './fleet/DepositLeaderboardPage';
 import FleetPage from './FleetPage';
 import NonInsiderPage from './nonInsider/NonInsiderPage';
 import FinanceDashboardPage from './finance/FinanceDashboardPage';
@@ -105,6 +106,8 @@ export default function EmployeeApp() {
     fleet_vehicles: 'Vehicles',
     fleet_deposits: 'Deposits',
     fleet_fines: 'Fines',
+    fleet_leaderboard: 'Leaderboard',
+    finance_driver_leaderboard: 'Driver Leaderboard',
     call_center_queue: 'Call Queue',
     call_center_directory: 'Directory',
     call_center_scripts: 'Scripts',
@@ -123,6 +126,7 @@ export default function EmployeeApp() {
       { key: 'fleet_pipeline' as const, label: 'Driver Pipeline', icon: Truck },
       { key: 'fleet_vehicles' as const, label: 'Vehicles', icon: Car },
       { key: 'fleet_deposits' as const, label: 'Deposits', icon: Wallet },
+      { key: 'fleet_leaderboard' as const, label: 'Leaderboard', icon: Trophy },
       { key: 'fleet_fines' as const, label: 'Fines', icon: Receipt },
       { key: 'non_insider' as const, label: 'Non-Insider', icon: CarFront },
     ] : []),
@@ -130,6 +134,7 @@ export default function EmployeeApp() {
       { key: 'finance_dashboard' as const, label: 'Finance Dashboard', icon: LayoutDashboard },
       { key: 'finance_revenue' as const, label: 'Revenue', icon: TrendingUp },
       { key: 'finance_fleet_collections' as const, label: 'Fleet Collections', icon: Wallet },
+      { key: 'finance_driver_leaderboard' as const, label: 'Driver Leaderboard', icon: Trophy },
       { key: 'finance_vehicle_owners' as const, label: 'Vehicle Owners', icon: Car },
       { key: 'finance_newsletters' as const, label: 'Newsletters', icon: Mail },
       { key: 'finance_payroll' as const, label: 'Internal Payroll', icon: Users2 },
@@ -172,12 +177,14 @@ export default function EmployeeApp() {
       {active === 'fleet_vehicles' && <FleetVehiclesPage />}
       {active === 'fleet_deposits' && <FleetDepositsPage />}
       {active === 'fleet_fines' && <FleetFinesPage />}
+      {active === 'fleet_leaderboard' && <DepositLeaderboardPage />}
       {active === 'non_insider' && <NonInsiderPage />}
       {active === 'fleet' && <FleetPage />}
 
       {active === 'finance_dashboard' && <FinanceDashboardPage />}
       {active === 'finance_revenue' && <FinanceRevenuePage />}
       {active === 'finance_fleet_collections' && <FinanceFleetCollectionsPage />}
+      {active === 'finance_driver_leaderboard' && <DepositLeaderboardPage />}
       {active === 'finance_vehicle_owners' && <FinanceVehicleOwnersPage />}
       {active === 'finance_newsletters' && <NewslettersPage />}
       {active === 'finance_payroll' && <FinancePayrollPage />}

@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import { Truck, Car, Wallet, Receipt, Users2 } from 'lucide-react';
+import { Truck, Car, Wallet, Receipt, Users2, Trophy } from 'lucide-react';
 import { useFleetData, computeDepositWaterfall, depositDaysSince } from '../lib/fleet';
 import FleetPipelinePage from './fleet/FleetPipelinePage';
 import FleetVehiclesPage from './fleet/FleetVehiclesPage';
 import FleetDepositsPage from './fleet/FleetDepositsPage';
 import FleetFinesPage from './fleet/FleetFinesPage';
+import DepositLeaderboardPage from './fleet/DepositLeaderboardPage';
 import NonInsiderPage from './nonInsider/NonInsiderPage';
 
-// Fleet's own employees see these four areas as separate sidebar pages
+// Fleet's own employees see these five areas as separate sidebar pages
 // (src/pages/fleet/*) instead, since a fully expanded sidebar for every
 // department would be unmanageable for a role that already sees
 // everything. This bundled version is for the MD, and identically -
 // full edit rights included, see canEditFleet() in lib/fleet.ts - for
 // Call Center and IT, who both need the same full picture without yet
 // another fragmented sidebar stacked on top of their own.
-type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'fines' | 'non_insider';
+type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'leaderboard' | 'fines' | 'non_insider';
 
 export default function FleetPage() {
   const [tab, setTab] = useState<Tab>(() => {
@@ -43,6 +44,7 @@ export default function FleetPage() {
         <TabButton active={tab === 'pipeline'} onClick={() => selectTab('pipeline')} icon={Truck} label="Driver Pipeline" />
         <TabButton active={tab === 'vehicles'} onClick={() => selectTab('vehicles')} icon={Car} label="Vehicles" />
         <TabButton active={tab === 'deposits'} onClick={() => selectTab('deposits')} icon={Wallet} label="Deposits" badge={overdueCount} />
+        <TabButton active={tab === 'leaderboard'} onClick={() => selectTab('leaderboard')} icon={Trophy} label="Leaderboard" />
         <TabButton active={tab === 'fines'} onClick={() => selectTab('fines')} icon={Receipt} label="Fines" />
         <TabButton active={tab === 'non_insider'} onClick={() => selectTab('non_insider')} icon={Users2} label="Non-Insider" />
       </div>
@@ -50,6 +52,7 @@ export default function FleetPage() {
       {tab === 'pipeline' && <FleetPipelinePage data={data} />}
       {tab === 'vehicles' && <FleetVehiclesPage data={data} />}
       {tab === 'deposits' && <FleetDepositsPage data={data} />}
+      {tab === 'leaderboard' && <DepositLeaderboardPage data={data} />}
       {tab === 'fines' && <FleetFinesPage data={data} />}
       {tab === 'non_insider' && <NonInsiderPage />}
     </div>

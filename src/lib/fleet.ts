@@ -343,6 +343,76 @@ export function computeDepositReliability(driver: Driver, deposits: DriverDeposi
   return { onTime, late, totalCycles, totalPaid: wf.totalPaid, onTimeRate: totalCycles > 0 ? Math.round((onTime / totalCycles) * 100) : null };
 }
 
+// The compliance score: every day a full 180,000 lands late costs 30
+// points, whether that lateness is already locked into a closed cycle's
+// history or still accumulating live on the cycle in progress right
+// now (so a driver currently sitting unpaid past their deadline keeps
+// losing points today, not just once that week eventually closes). A
+// driver who has never once been late sits at 0 - there's no reward for
+// being on time, only a cost for being late, matching how it was
+// described: a day extra is a day lost, full stop.
+export const DEPOSIT_LATE_PENALTY_PER_DAY = 30;
+
+// Mirrors depositStatusLabel's own "Overdue by Xd" math exactly (day 7
+// itself already reads as 1 day overdue) so the score never disagrees
+// with the badge already shown for the current cycle.
+export function currentCycleDelayDays(daysSince: number | null): number {
+  return daysSince !== null && daysSince >= 7 ? daysSince - 6 : 0;
+}
+
+export function computeDriverComplianceScore<T extends DepositLike>(wf: DepositWaterfall<T>, daysSince: number | null): number {
+  const closedDelayDays = wf.closedCycles.reduce((sum, c) => sum + depositCycleDelayDays(c), 0);
+  return -DEPOSIT_LATE_PENALTY_PER_DAY * (closedDelayDays + currentCycleDelayDays(daysSince));
+}
+
+export interface LeaderboardRow<T extends DepositLike = DriverDeposit> {
+  driver: Driver;
+  wf: DepositWaterfall<T>;
+  score: number;
+  currentDaysSince: number | null;
+  currentTier: DepositTier;
+  isCurrentlyInDefault: boolean;
+  onTime: number;
+  late: number;
+  totalCycles: number;
+}
+
+// One ranking, reusable everywhere a driver's deposit compliance needs
+// to be shown side by side with every other driver's - Fleet's own
+// Leaderboard page, the same tab bundled into the MD/Call Center/IT
+// view of Fleet, and Finance's own Driver Leaderboard, all build off
+// this exact same function so the ranking can never quietly drift
+// between departments. Ended drivers and anyone without a vehicle or a
+// start date yet are excluded - there's no live cycle to rank them on.
+// Worst (most negative) score last by default; callers needing
+// worst-first for an "attention" view can just reverse it.
+export function buildDepositLeaderboard<T extends DepositLike & { driver_id: string }>(
+  drivers: Driver[],
+  deposits: T[]
+): LeaderboardRow<T>[] {
+  return drivers
+    .filter((d) => d.contract_status !== 'ended' && d.vehicle_id && d.start_date)
+    .map((d) => {
+      const driverDeposits = deposits.filter((dep) => dep.driver_id === d.id);
+      const wf = computeDepositWaterfall(d.initial_deposit_paid, d.start_date, d.initial_deposit_amount, driverDeposits);
+      const daysSince = depositDaysSince(wf.currentAnchor);
+      const onTime = wf.closedCycles.filter((c) => c.onTime).length;
+      const late = wf.closedCycles.length - onTime;
+      return {
+        driver: d,
+        wf,
+        score: computeDriverComplianceScore(wf, daysSince),
+        currentDaysSince: daysSince,
+        currentTier: depositTier(daysSince),
+        isCurrentlyInDefault: daysSince !== null && daysSince >= 7,
+        onTime,
+        late,
+        totalCycles: wf.closedCycles.length,
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.driver.full_name.localeCompare(b.driver.full_name));
+}
+
 export type FineStatus = 'unpaid' | 'partial' | 'paid';
 
 export function fineAmountPaid(fineId: string, finePayments: DriverFinePayment[]): number {

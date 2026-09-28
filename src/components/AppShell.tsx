@@ -53,6 +53,8 @@ export type NavKey =
   | 'fleet_vehicles'
   | 'fleet_deposits'
   | 'fleet_fines'
+  | 'fleet_leaderboard'
+  | 'finance_driver_leaderboard'
   | 'call_center_queue'
   | 'call_center_directory'
   | 'call_center_scripts'
