@@ -451,6 +451,15 @@ export function depositCycleCompletionLabel(cycle: ClosedDepositCycle): string {
   return delay > 0 ? `Completed ${delay} day${delay === 1 ? '' : 's'} late` : 'Completed on time';
 }
 
+// The weekday a driver's deposit cycle actually falls on - every cycle
+// is exactly 7 days from start_date, so whatever weekday they started
+// on is the weekday they pay on for as long as they're on payroll,
+// regardless of which exact date any given week's payment lands on.
+export function depositPayWeekday(startDate: string | null): string | null {
+  if (!startDate) return null;
+  return new Date(`${startDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' });
+}
+
 export function formatDateLabelSafe(d: string): string {
   try {
     return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });

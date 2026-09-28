@@ -7,7 +7,7 @@ import {
 import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent } from '../../lib/supabase';
 import {
   STAGES, effectiveStage, REST_DAYS, computeDepositWaterfall, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, depositRemainingColor,
-  nextDepositDueDate, computeDepositReliability, formatDateLabelSafe, depositCycleDelayDays, depositCycleCompletionLabel,
+  nextDepositDueDate, computeDepositReliability, formatDateLabelSafe, depositCycleDelayDays, depositCycleCompletionLabel, depositPayWeekday,
   fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel,
 } from '../../lib/fleet';
 import { addDays, dateStr } from '../../lib/utils';
@@ -167,7 +167,10 @@ export default function DriverProfilePage({
           </div>
           <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
             <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><CalendarDays size={10} /> Start Date</p>
-            <p className="text-[12px] font-medium">{driver.start_date ? formatDateLabelSafe(driver.start_date) : <span className="text-gray-400 font-normal">Not set</span>}</p>
+            <p className="text-[12px] font-medium">
+              {driver.start_date ? formatDateLabelSafe(driver.start_date) : <span className="text-gray-400 font-normal">Not set</span>}
+            </p>
+            {driver.start_date && <p className="text-[10px] text-brand-600 dark:text-brand-300 mt-0.5">Pays every {depositPayWeekday(driver.start_date)}</p>}
           </div>
           <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
             <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Clock size={10} /> Initial Deposit</p>
@@ -260,7 +263,14 @@ export default function DriverProfilePage({
       {/* Deposits */}
       <div className="card p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><Wallet size={13} /> Deposits</p>
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><Wallet size={13} /> Deposits</p>
+            {!isEnded && driver.start_date && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
+                Pays every {depositPayWeekday(driver.start_date)}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {isEnded ? (
               <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-500/10">
