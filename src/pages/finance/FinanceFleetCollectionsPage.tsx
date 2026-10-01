@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Wallet, Plus, ListChecks, Clock3, Users2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Wallet, Plus, ListChecks, Clock3, Users2, ChevronLeft, ChevronRight, X, Ban } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFinanceData, STATUS_META, fmt, sumWhere } from '../../lib/finance';
 import { todayStr, startOfWeek, addDays, dateStr, formatDateLabel } from '../../lib/utils';
@@ -10,6 +10,7 @@ import EntryActions from '../../components/EntryActions';
 import KpiTile from '../../components/KpiTile';
 import SearchableSelect from '../../components/SearchableSelect';
 import FinanceTransactionDrawer from '../../components/finance/FinanceTransactionDrawer';
+import RejectDepositModal from '../../components/finance/RejectDepositModal';
 
 interface TxDrawerState { tx: FinanceTransaction | null; startEditing: boolean }
 
@@ -41,12 +42,20 @@ function weekLabel(weekStart: string): string {
 // week by week, not just as a flat ledger list.
 export default function FinanceFleetCollectionsPage() {
   const { profile } = useAuth();
-  const { accounts, transactions, drivers, vehicles, documents, loading, reload } = useFinanceData();
+  const { accounts, transactions, drivers, vehicles, deposits, documents, loading, reload } = useFinanceData();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'finance';
   const [drawer, setDrawer] = useState<TxDrawerState | null>(null);
+  const [rejecting, setRejecting] = useState<FinanceTransaction | null>(null);
   const [driverFilter, setDriverFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<FinanceTransactionStatus | 'all'>('all');
   const [weekFilter, setWeekFilter] = useState<string | null>(null); // null = all time, grouped by week
+
+  // A collection can only be rejected through the same door Deposit
+  // Confirmations uses - its own driver_deposits row still pending
+  // Finance's confirmation. Once confirmed, it's verified real money and
+  // this option disappears, same as on that page.
+  const canReject = (t: FinanceTransaction) =>
+    canEdit && !!t.source_deposit_id && deposits.find((d) => d.id === t.source_deposit_id)?.status === 'pending';
 
   const rows = useMemo(() => transactions.filter((t) => t.type === 'fleet_collection'), [transactions]);
   const selectedDriver = driverFilter ? drivers.find((d) => d.id === driverFilter) ?? null : null;
@@ -291,7 +300,16 @@ export default function FinanceFleetCollectionsPage() {
               {
                 header: '',
                 className: 'text-right',
-                render: (t) => <EntryActions onView={() => setDrawer({ tx: t, startEditing: false })} onEdit={() => setDrawer({ tx: t, startEditing: true })} canEdit={canEdit && !t.system_generated} />,
+                render: (t) => (
+                  <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+                    {canReject(t) && (
+                      <button onClick={() => setRejecting(t)} title="Reject & delete" className="btn-ghost p-1.5 text-red-500">
+                        <Ban size={13} />
+                      </button>
+                    )}
+                    <EntryActions onView={() => setDrawer({ tx: t, startEditing: false })} onEdit={() => setDrawer({ tx: t, startEditing: true })} canEdit={canEdit && !t.system_generated} />
+                  </div>
+                ),
               },
             ]}
           />
@@ -310,6 +328,17 @@ export default function FinanceFleetCollectionsPage() {
           canEdit={canEdit}
           onClose={() => setDrawer(null)}
           onSaved={reload}
+        />
+      )}
+
+      {rejecting && rejecting.source_deposit_id && (
+        <RejectDepositModal
+          depositId={rejecting.source_deposit_id}
+          driverName={rejecting.linked_driver?.full_name ?? rejecting.counterparty ?? 'Unknown driver'}
+          amount={rejecting.amount}
+          date={rejecting.transaction_date}
+          onClose={() => setRejecting(null)}
+          onRejected={() => { setRejecting(null); reload(); }}
         />
       )}
     </div>

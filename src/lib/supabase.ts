@@ -516,6 +516,7 @@ export interface FinanceTransaction {
   counterparty: string | null;
   linked_vehicle_id: string | null;
   linked_driver_id: string | null;
+  source_deposit_id: string | null;
   transfer_group_id: string | null;
   status: FinanceTransactionStatus;
   prepared_by: string | null;
