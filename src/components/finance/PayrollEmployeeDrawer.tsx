@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Trash2, Pencil, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Trash2, Pencil, CheckCircle2, ExternalLink, UserX, Undo2 } from 'lucide-react';
 import { supabase, PayrollEmployee, PayrollEmployeeStatus } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { todayStr, timeAgo } from '../../lib/utils';
+import { formatDateLabelSafe } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 
@@ -25,6 +26,7 @@ export default function PayrollEmployeeDrawer({
   onSaved: () => void;
 }) {
   const { profile } = useAuth();
+  const isMD = profile?.role === 'managing_director';
   const [editing, setEditing] = useState(startEditing && canEdit);
   const [fullName, setFullName] = useState(employee?.full_name ?? '');
   const [position, setPosition] = useState(employee?.position ?? '');
@@ -88,11 +90,39 @@ export default function PayrollEmployeeDrawer({
     onClose();
   };
 
+  // Finance flags a removal rather than deleting outright - the MD has
+  // to confirm before the record is actually gone. The MD's own click
+  // here still deletes immediately, same as before, since the MD
+  // doesn't need to confirm their own request.
   const remove = async () => {
     if (!employee) return;
     setSaving(true);
-    await supabase.from('payroll_employees').delete().eq('id', employee.id);
+    setError('');
+    const { error: err } = await supabase.rpc('request_payroll_employee_removal', { p_employee_id: employee.id });
     setSaving(false);
+    if (err) { setError(err.message); return; }
+    onSaved();
+    onClose();
+  };
+
+  const confirmRemoval = async () => {
+    if (!employee) return;
+    setSaving(true);
+    setError('');
+    const { error: err } = await supabase.rpc('confirm_payroll_employee_removal', { p_employee_id: employee.id });
+    setSaving(false);
+    if (err) { setError(err.message); return; }
+    onSaved();
+    onClose();
+  };
+
+  const cancelRemoval = async () => {
+    if (!employee) return;
+    setSaving(true);
+    setError('');
+    const { error: err } = await supabase.rpc('cancel_payroll_employee_removal', { p_employee_id: employee.id });
+    setSaving(false);
+    if (err) { setError(err.message); return; }
     onSaved();
     onClose();
   };
@@ -100,6 +130,23 @@ export default function PayrollEmployeeDrawer({
   return (
     <Modal open onClose={onClose} title={employee ? employee.full_name : 'Add Employee'} subtitle={employee ? timeAgo(employee.updated_at) + ' updated' : 'Position, start date, salary and their ID'} maxWidth="max-w-md">
       <div className="space-y-3">
+        {employee?.pending_removal && (
+          <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5">
+            <p className="text-[11px] text-red-700 dark:text-red-300 flex items-center gap-1.5">
+              <UserX size={13} className="shrink-0" /> Removal requested{employee.removal_requested_at ? ' ' + formatDateLabelSafe(employee.removal_requested_at.slice(0, 10)) : ''} — awaiting MD confirmation.
+            </p>
+            <div className="flex items-center gap-1 shrink-0">
+              <button onClick={cancelRemoval} disabled={saving} className="btn-ghost text-[10px] px-2 py-1 flex items-center gap-1 disabled:opacity-50">
+                <Undo2 size={11} /> Cancel
+              </button>
+              {isMD && (
+                <button onClick={confirmRemoval} disabled={saving} className="bg-red-500 hover:bg-red-600 text-white text-[10px] font-medium px-2 py-1 rounded-md disabled:opacity-50">
+                  Confirm Removal
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         <div>
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Full Name</label>
           <input value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!editing} className="input" placeholder="e.g. Jean Bosco Habimana" autoFocus />
@@ -157,9 +204,9 @@ export default function PayrollEmployeeDrawer({
 
         {editing ? (
           <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
-            {employee ? (
+            {employee && !employee.pending_removal ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
-                <Trash2 size={13} /> Remove
+                <Trash2 size={13} /> {isMD ? 'Remove' : 'Request Removal'}
               </button>
             ) : <span />}
             <div className="flex gap-2">

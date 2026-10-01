@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Users2, Plus, Pencil, Trash2, ShieldCheck, Wallet, CalendarClock, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Users2, Plus, Pencil, Trash2, ShieldCheck, Wallet, CalendarClock, ExternalLink, CheckCircle2, UserX } from 'lucide-react';
 import { supabase, PayrollRun, PayrollEmployee } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useFinanceData, fmt, nextInternalPaymentDate, daysUntil } from '../../lib/finance';
@@ -112,8 +112,12 @@ function EmployeesTab({
   const [dayInput, setDayInput] = useState(String(paymentDay));
   const [savingDay, setSavingDay] = useState(false);
 
-  const activeEmployees = useMemo(() => employees.filter((e) => e.status === 'active'), [employees]);
+  // A pending-removal employee is on their way out and shouldn't be
+  // pre-filled into a new payroll run or counted as active anymore,
+  // even though the record itself still exists until the MD confirms.
+  const activeEmployees = useMemo(() => employees.filter((e) => e.status === 'active' && !e.pending_removal), [employees]);
   const totalMonthlySalary = activeEmployees.reduce((s, e) => s + e.monthly_salary, 0);
+  const pendingRemovals = useMemo(() => employees.filter((e) => e.pending_removal), [employees]);
   const nextPayment = nextInternalPaymentDate(paymentDay);
   const daysLeft = daysUntil(nextPayment);
 
@@ -135,10 +139,11 @@ function EmployeesTab({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiTile icon={CalendarClock} label="Next Payment" value={`${daysLeft}d`} tone={daysLeft <= 3 ? 'negative' : undefined} color="amber" />
         <KpiTile icon={Users2} label="Active Employees" value={String(activeEmployees.length)} color="amber" />
         <KpiTile icon={Wallet} label="Total Monthly Salary" value={fmt(totalMonthlySalary)} color="amber" />
+        <KpiTile icon={UserX} label="Pending Removal" value={String(pendingRemovals.length)} tone={pendingRemovals.length > 0 ? 'negative' : undefined} color="amber" />
       </div>
 
       <div className="card p-3.5 flex items-center justify-between gap-3 flex-wrap">
@@ -179,7 +184,11 @@ function EmployeesTab({
           },
           {
             header: 'Status',
-            render: (e) => (
+            render: (e) => e.pending_removal ? (
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                Pending Removal
+              </span>
+            ) : (
               <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${e.status === 'active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-gray-100 text-gray-500 dark:bg-white/5'}`}>
                 {e.status === 'active' ? 'Active' : 'Inactive'}
               </span>
@@ -239,7 +248,10 @@ function PayrollDrawer({
   const { profile } = useAuth();
   const [editing, setEditing] = useState(!run);
   const [period, setPeriod] = useState(run?.period ?? todayStr().slice(0, 7));
-  const activeEmployees = useMemo(() => employees.filter((e) => e.status === 'active'), [employees]);
+  // A pending-removal employee is on their way out and shouldn't be
+  // pre-filled into a new payroll run or counted as active anymore,
+  // even though the record itself still exists until the MD confirms.
+  const activeEmployees = useMemo(() => employees.filter((e) => e.status === 'active' && !e.pending_removal), [employees]);
   // A brand new run pre-fills one line per active employee at their
   // current salary - a smart default, not a hard rule, so Finance can
   // still edit or remove any line before saving.

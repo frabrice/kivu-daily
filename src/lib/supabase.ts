@@ -566,6 +566,9 @@ export interface PayrollEmployee {
   end_date: string | null;
   linked_profile_id: string | null;
   notes: string | null;
+  pending_removal: boolean;
+  removal_requested_by: string | null;
+  removal_requested_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
