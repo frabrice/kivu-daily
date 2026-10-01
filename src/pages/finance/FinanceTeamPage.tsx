@@ -1,19 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Users2, UserPlus, Pencil, Trash2, Send, Loader2, Check } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Users2, UserPlus, Pencil, UserX, Send, Loader2, Check } from 'lucide-react';
 import { supabase, Profile, Department } from '../../lib/supabase';
+import { formatDateLabelSafe } from '../../lib/fleet';
 import Avatar from '../../components/Avatar';
 import { CreateUserModal, EditUserModal } from '../../components/EmployeeAdminModals';
+import TerminateEmployeeModal from '../../components/TerminateEmployeeModal';
 
-// Finance's own employee-management page - the same add/edit/deactivate
+// Finance's own employee-management page - the same add/edit/terminate
 // rights the MD has from the Departments view, minus the task-
 // completion stats (Finance's own RLS on tasks only ever returns their
 // own rows, not the whole company's, so a stats view here would just
 // silently show zeros for everyone else) and minus "Add Department",
-// which stays a structural, MD-only action. Edits and deactivations go
+// which stays a structural, MD-only action. Edits and terminations go
 // through admin_update_employee / admin_deactivate_employee, which
 // enforce server-side that Finance can manage any regular employee but
 // can never touch a Managing Director's account or grant that role -
-// the UI mirrors that by simply not offering Edit/Deactivate on an MD
+// the UI mirrors that by simply not offering Edit/Terminate on an MD
 // row, but the real enforcement lives in the RPCs, not here.
 export default function FinanceTeamPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -21,19 +23,26 @@ export default function FinanceTeamPage() {
   const [loading, setLoading] = useState(true);
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   const [editUser, setEditUser] = useState<Profile | null>(null);
+  const [terminating, setTerminating] = useState<Profile | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resendResult, setResendResult] = useState<{ id: string; error: string | null } | null>(null);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     const [{ data: profs }, { data: depts }] = await Promise.all([
-      supabase.from('profiles').select('*, department:departments(*)').eq('is_active', true).order('full_name'),
+      supabase.from('profiles').select('*, department:departments(*)').order('full_name'),
       supabase.from('departments').select('*').order('name'),
     ]);
     setProfiles((profs as Profile[]) ?? []);
     setDepartments((depts as Department[]) ?? []);
     setLoading(false);
   }, []);
+
+  const activeProfiles = useMemo(() => profiles.filter((p) => p.is_active), [profiles]);
+  const terminatedProfiles = useMemo(
+    () => profiles.filter((p) => !p.is_active).sort((a, b) => (b.terminated_at ?? '').localeCompare(a.terminated_at ?? '')),
+    [profiles]
+  );
 
   useEffect(() => {
     load();
@@ -57,13 +66,6 @@ export default function FinanceTeamPage() {
     load();
   };
 
-  const deactivate = async (id: string) => {
-    setError('');
-    const { error: err } = await supabase.rpc('admin_deactivate_employee', { p_user_id: id });
-    if (err) { setError(err.message); return; }
-    load();
-  };
-
   const resendInvite = async (id: string) => {
     setResendingId(id);
     setResendResult(null);
@@ -82,14 +84,14 @@ export default function FinanceTeamPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Users2 size={16} className="text-amber-600 dark:text-amber-300" /> Team</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">Add, edit or deactivate an employee in any department.</p>
+        <p className="text-[11px] text-gray-400 mt-0.5">Add, edit or terminate an employee in any department.</p>
       </div>
 
       {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
       <div className="space-y-2.5">
         {departments.map((d) => {
-          const deptEmployees = profiles.filter((p) => p.department_id === d.id);
+          const deptEmployees = activeProfiles.filter((p) => p.department_id === d.id);
           return (
             <div key={d.id} className="card p-3.5">
               <div className="flex items-center justify-between mb-2.5">
@@ -125,8 +127,8 @@ export default function FinanceTeamPage() {
                       <button onClick={() => setEditUser(e)} className="btn-ghost p-1.5">
                         <Pencil size={13} />
                       </button>
-                      <button onClick={() => deactivate(e.id)} className="btn-ghost p-1.5 text-red-500">
-                        <Trash2 size={13} />
+                      <button onClick={() => setTerminating(e)} title="Terminate" className="btn-ghost p-1.5 text-red-500">
+                        <UserX size={13} />
                       </button>
                     </div>
                   </div>
@@ -137,6 +139,26 @@ export default function FinanceTeamPage() {
           );
         })}
       </div>
+
+      {terminatedProfiles.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Terminated</p>
+          <div className="card divide-y divide-gray-50 dark:divide-white/5">
+            {terminatedProfiles.map((p) => (
+              <div key={p.id} className="flex items-center gap-2.5 p-2.5">
+                <Avatar name={p.full_name} url={p.avatar_url} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-medium truncate">{p.full_name}</p>
+                  <p className="text-[10px] text-gray-400">{p.department?.name ?? '—'}</p>
+                </div>
+                <p className="text-[10px] text-red-500 shrink-0">
+                  Terminated {p.terminated_at ? formatDateLabelSafe(p.terminated_at) : '—'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {creatingFor && (
         <CreateUserModal
@@ -154,6 +176,15 @@ export default function FinanceTeamPage() {
           allowMDRole={false}
           onSave={saveEdit}
           onClose={() => setEditUser(null)}
+        />
+      )}
+
+      {terminating && (
+        <TerminateEmployeeModal
+          employeeId={terminating.id}
+          employeeName={terminating.full_name}
+          onClose={() => setTerminating(null)}
+          onTerminated={() => { setTerminating(null); load(); }}
         />
       )}
     </div>

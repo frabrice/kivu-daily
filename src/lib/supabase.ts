@@ -21,6 +21,7 @@ export interface Profile {
   department_id: string | null;
   avatar_url: string | null;
   is_active: boolean;
+  terminated_at: string | null;
   force_password_change: boolean;
   last_comment_seen_at: string | null;
   created_at: string;

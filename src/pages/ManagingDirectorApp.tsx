@@ -30,7 +30,7 @@ import {
   ChevronRight,
   Plus,
   Pencil,
-  Trash2,
+  UserX,
   Send,
   Loader2,
   Check,
@@ -54,6 +54,7 @@ import TaskReviewModal from '../components/TaskReviewModal';
 import NotificationBell from '../components/NotificationBell';
 import EmployeeProfilePage from '../components/EmployeeProfilePage';
 import { CreateUserModal, EditUserModal } from '../components/EmployeeAdminModals';
+import TerminateEmployeeModal from '../components/TerminateEmployeeModal';
 import Leaderboard from './Leaderboard';
 import SearchPage from './SearchPage';
 import MDPanel from './MDPanel';
@@ -729,6 +730,7 @@ function DepartmentsView({
   const [savingDept, setSavingDept] = useState(false);
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   const [editUser, setEditUser] = useState<Profile | null>(null);
+  const [terminating, setTerminating] = useState<EmployeeWithStats | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resendResult, setResendResult] = useState<{ id: string; error: string | null } | null>(null);
 
@@ -746,11 +748,6 @@ function DepartmentsView({
     await supabase.from('profiles').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
     reload();
     setEditUser(null);
-  };
-
-  const deactivate = async (id: string) => {
-    await supabase.from('profiles').update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', id);
-    reload();
   };
 
   const resendInvite = async (id: string) => {
@@ -827,8 +824,8 @@ function DepartmentsView({
                       <button onClick={(ev) => { ev.stopPropagation(); setEditUser(e); }} className="btn-ghost p-1.5">
                         <Pencil size={13} />
                       </button>
-                      <button onClick={(ev) => { ev.stopPropagation(); deactivate(e.id); }} className="btn-ghost p-1.5 text-red-500">
-                        <Trash2 size={13} />
+                      <button onClick={(ev) => { ev.stopPropagation(); setTerminating(e); }} title="Terminate" className="btn-ghost p-1.5 text-red-500">
+                        <UserX size={13} />
                       </button>
                     </div>
                   </div>
@@ -869,6 +866,15 @@ function DepartmentsView({
           departments={departments}
           onSave={(updates) => updateProfile(editUser.id, updates)}
           onClose={() => setEditUser(null)}
+        />
+      )}
+
+      {terminating && (
+        <TerminateEmployeeModal
+          employeeId={terminating.id}
+          employeeName={terminating.full_name}
+          onClose={() => setTerminating(null)}
+          onTerminated={() => { setTerminating(null); reload(); }}
         />
       )}
     </div>
