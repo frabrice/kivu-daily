@@ -57,28 +57,43 @@ Deno.serve(async (req: Request) => {
 
     const { data: callerProfile } = await adminClient
       .from("profiles")
-      .select("role, full_name")
+      .select("role, full_name, department:departments(slug)")
       .eq("id", user.id)
       .maybeSingle();
 
-    if (!callerProfile || callerProfile.role !== "managing_director") {
-      return new Response(JSON.stringify({ error: "Only the Managing Director can create users" }), {
+    const callerIsMD = callerProfile?.role === "managing_director";
+    const callerDept = (callerProfile?.department as unknown as { slug?: string } | null)?.slug;
+    const callerIsFinance = callerDept === "finance";
+
+    if (!callerProfile || !(callerIsMD || callerIsFinance)) {
+      return new Response(JSON.stringify({ error: "Only the Managing Director or Finance can create users" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Finance can create employees, never another Managing Director -
+    // forced here regardless of what the client sent, so there is no
+    // path to mint an MD account from anywhere but the MD's own UI.
+    const finalRole = callerIsMD ? resolvedRole : "employee";
+    if (finalRole === "employee" && !department_id) {
+      return new Response(
+        JSON.stringify({ error: "A department is required for employees" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // Create the user and a one-time invite link in a single call - no
-    // password is ever set or seen by the MD; the new employee sets their
-    // own via the emailed link.
+    // password is ever set or seen by the caller; the new employee sets
+    // their own via the emailed link.
     const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
       type: "invite",
       email,
       options: {
         data: {
           full_name,
-          role: resolvedRole,
-          department_id: resolvedRole === "employee" ? department_id : "",
+          role: finalRole,
+          department_id: finalRole === "employee" ? department_id : "",
         },
         redirectTo: appUrl,
       },
@@ -97,7 +112,7 @@ Deno.serve(async (req: Request) => {
     if (newUser.id) {
       await adminClient.from("activity_log").insert({
         actor_id: user.id,
-        department_id: resolvedRole === "employee" ? department_id : null,
+        department_id: finalRole === "employee" ? department_id : null,
         action: "created a new user",
         entity_type: "profile",
         entity_id: newUser.id,

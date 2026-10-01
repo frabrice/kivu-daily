@@ -158,11 +158,16 @@ export function EditUserModal({
   departments,
   onSave,
   onClose,
+  allowMDRole = true,
 }: {
   user: Profile;
   departments: Department[];
   onSave: (u: Partial<Profile>) => void;
   onClose: () => void;
+  // Finance can edit regular employees but must never be offered a path
+  // to grant the Managing Director role - the server-side RPC already
+  // rejects it regardless, this just keeps the option from ever showing.
+  allowMDRole?: boolean;
 }) {
   const [role, setRole] = useState(user.role);
   const [deptId, setDeptId] = useState(user.department_id ?? '');
@@ -181,9 +186,9 @@ export function EditUserModal({
       <FormSection icon={Shield} title="Access">
         <div>
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Role</label>
-          <select value={role} onChange={(e) => setRole(e.target.value as Profile['role'])} className="input">
+          <select value={role} onChange={(e) => setRole(e.target.value as Profile['role'])} className="input" disabled={!allowMDRole}>
             <option value="employee">Employee</option>
-            <option value="managing_director">Managing Director</option>
+            {allowMDRole && <option value="managing_director">Managing Director</option>}
           </select>
         </div>
         {role === 'employee' && (

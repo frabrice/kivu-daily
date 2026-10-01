@@ -47,12 +47,16 @@ Deno.serve(async (req: Request) => {
 
     const { data: callerProfile } = await adminClient
       .from("profiles")
-      .select("role, full_name")
+      .select("role, full_name, department:departments(slug)")
       .eq("id", user.id)
       .maybeSingle();
 
-    if (!callerProfile || callerProfile.role !== "managing_director") {
-      return new Response(JSON.stringify({ error: "Only the Managing Director can resend invites" }), {
+    const callerIsMD = callerProfile?.role === "managing_director";
+    const callerDept = (callerProfile?.department as unknown as { slug?: string } | null)?.slug;
+    const callerIsFinance = callerDept === "finance";
+
+    if (!callerProfile || !(callerIsMD || callerIsFinance)) {
+      return new Response(JSON.stringify({ error: "Only the Managing Director or Finance can resend invites" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -60,9 +64,16 @@ Deno.serve(async (req: Request) => {
 
     const { data: targetProfile } = await adminClient
       .from("profiles")
-      .select("id, full_name, email, force_password_change")
+      .select("id, full_name, email, force_password_change, role")
       .eq("id", user_id)
       .maybeSingle();
+
+    if (targetProfile?.role === "managing_director" && !callerIsMD) {
+      return new Response(JSON.stringify({ error: "Only the Managing Director can resend an invite for a Managing Director" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!targetProfile || !targetProfile.email) {
       return new Response(JSON.stringify({ error: "User not found or has no email on file" }), {

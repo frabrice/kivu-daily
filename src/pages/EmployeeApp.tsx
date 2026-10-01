@@ -7,7 +7,7 @@ import {
   Package, AlertTriangle,
   Image as ImageIcon,
   LayoutDashboard, ArrowLeftRight, Landmark, ClipboardCheck,
-  CarFront, ShieldCheck, Mail, Trophy,
+  CarFront, ShieldCheck, Mail, Trophy, UserCog,
 } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import NotificationBell from '../components/NotificationBell';
@@ -37,6 +37,7 @@ import FinanceExpenseClaimsPage from './finance/FinanceExpenseClaimsPage';
 import FinanceAccountsPage from './finance/FinanceAccountsPage';
 import FinanceReconciliationPage from './finance/FinanceReconciliationPage';
 import FinanceDepositConfirmationsPage from './finance/FinanceDepositConfirmationsPage';
+import FinanceTeamPage from './finance/FinanceTeamPage';
 import CallQueuePage from './callCenter/CallQueuePage';
 import CallDirectoryPage from './callCenter/CallDirectoryPage';
 import CallScriptsPage from './callCenter/CallScriptsPage';
@@ -102,6 +103,7 @@ export default function EmployeeApp() {
     finance_accounts: 'Bank Accounts',
     finance_reconciliation: 'Reconciliation',
     finance_deposit_confirmations: 'Deposit Confirmations',
+    finance_team: 'Team',
     fleet_pipeline: 'Driver Pipeline',
     fleet_vehicles: 'Vehicles',
     fleet_deposits: 'Deposits',
@@ -145,6 +147,7 @@ export default function EmployeeApp() {
       { key: 'finance_accounts' as const, label: 'Bank Accounts', icon: Landmark },
       { key: 'finance_reconciliation' as const, label: 'Reconciliation', icon: ClipboardCheck },
       { key: 'finance_deposit_confirmations' as const, label: 'Deposit Confirmations', icon: ShieldCheck },
+      { key: 'finance_team' as const, label: 'Team', icon: UserCog },
     ] : []),
     ...(profile?.department?.slug === 'call_center' ? [
       { key: 'call_center_queue' as const, label: 'Call Queue', icon: PhoneCall },
@@ -195,6 +198,7 @@ export default function EmployeeApp() {
       {active === 'finance_accounts' && <FinanceAccountsPage />}
       {active === 'finance_reconciliation' && <FinanceReconciliationPage />}
       {active === 'finance_deposit_confirmations' && <FinanceDepositConfirmationsPage />}
+      {active === 'finance_team' && <FinanceTeamPage />}
 
       {active === 'call_center_queue' && <CallQueuePage />}
       {active === 'call_center_directory' && <CallDirectoryPage />}
