@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { FileText, Upload, Trash2, Download, Building2, Globe2, Pencil, Folder, FolderPlus, ArrowLeft } from 'lucide-react';
+import { FileText, Upload, Trash2, Download, Building2, Pencil, Folder, FolderPlus, ArrowLeft } from 'lucide-react';
 import { supabase, Document as Doc, DocumentCategory, Department } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { timeAgo } from '../lib/utils';
@@ -8,13 +8,18 @@ import ViewToggle, { ViewMode } from '../components/ViewToggle';
 import DataTable from '../components/DataTable';
 import EntryActions from '../components/EntryActions';
 
-interface ScopeOption { id: string | null; label: string }
+interface ScopeOption { id: string; label: string }
 
-// A department (or company-wide) scope is chosen first, then that
-// scope's own categories show as folders - never a flat list mixing
-// categories from different scopes together, which is what made every
-// department's own "General" category look like one confusing pile of
-// identically-named tabs.
+// A department scope is chosen first, then that scope's own categories
+// show as folders - never a flat list mixing categories from different
+// scopes together, which is what made every department's own "General"
+// category look like one confusing pile of identically-named tabs.
+// There's no "Company-wide" scope - the MD has no department of their
+// own, so Admin (seeded, no real employees) is the MD's dedicated
+// creation space instead. Labeling the MD's own categories "Company-
+// wide" previously meant they read as shared with everyone even though
+// document_categories_select already kept them private - Admin is
+// unambiguous about whose space it is.
 export default function DocumentsPage() {
   const { profile } = useAuth();
   const isMD = profile?.role === 'managing_director';
@@ -31,6 +36,7 @@ export default function DocumentsPage() {
 
   const [scopeId, setScopeId] = useState<string | null>(() => profile?.department_id ?? null);
   const [activeCategoryId, setActiveCategoryId] = useState<string | 'all' | null>(null);
+  const adminDepartmentId = useMemo(() => departments.find((d) => d.slug === 'admin')?.id ?? null, [departments]);
 
   const load = useCallback(async () => {
     const [{ data }, { data: cats }, { data: depts }] = await Promise.all([
@@ -69,6 +75,13 @@ export default function DocumentsPage() {
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
+  // The MD has no department of their own, so their initial scope (null,
+  // from profile.department_id above) isn't a real tab once departments
+  // load - default them into Admin, their dedicated creation space.
+  useEffect(() => {
+    if (isMD && scopeId === null && adminDepartmentId) setScopeId(adminDepartmentId);
+  }, [isMD, scopeId, adminDepartmentId]);
+
   const remove = async (doc: Doc) => {
     await supabase.storage.from('documents').remove([doc.file_url]);
     await supabase.from('documents').delete().eq('id', doc.id);
@@ -77,17 +90,16 @@ export default function DocumentsPage() {
   const canEdit = (doc: Doc) => profile?.role === 'managing_director' || doc.uploader_id === profile?.id;
 
   const scopes: ScopeOption[] = useMemo(() => {
-    if (isMD) return [...departments.map((d) => ({ id: d.id, label: d.name })), { id: null, label: 'Company-wide' }];
+    if (isMD) return departments.map((d) => ({ id: d.id, label: d.name }));
     const opts: ScopeOption[] = [];
     if (profile?.department_id) opts.push({ id: profile.department_id, label: 'My Department' });
-    opts.push({ id: null, label: 'Company-wide' });
     return opts;
   }, [isMD, departments, profile]);
 
-  const currentScopeLabel = scopes.find((s) => s.id === scopeId)?.label ?? 'Company-wide';
+  const currentScopeLabel = scopes.find((s) => s.id === scopeId)?.label ?? '';
   const scopeDocuments = useMemo(() => documents.filter((d) => d.department_id === scopeId), [documents, scopeId]);
   const scopeCategories = useMemo(() => categories.filter((c) => c.department_id === scopeId), [categories, scopeId]);
-  const canCreateCategory = (scopeId !== null && scopeId === profile?.department_id) || (scopeId === null && isMD);
+  const canCreateCategory = scopeId !== null && (scopeId === profile?.department_id || (isMD && scopeId === adminDepartmentId));
 
   const visibleDocuments = useMemo(() => {
     if (activeCategoryId === null) return [];
@@ -97,7 +109,7 @@ export default function DocumentsPage() {
 
   const categoryDocCount = (id: string) => scopeDocuments.filter((d) => d.category_id === id).length;
 
-  const openScope = (id: string | null) => {
+  const openScope = (id: string) => {
     setScopeId(id);
     setActiveCategoryId(null);
   };
@@ -108,11 +120,11 @@ export default function DocumentsPage() {
         <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap">
           {scopes.map((s) => (
             <button
-              key={s.id ?? 'company'}
+              key={s.id}
               onClick={() => openScope(s.id)}
               className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${scopeId === s.id ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
             >
-              {s.id ? <Building2 size={13} /> : <Globe2 size={13} />} {s.label}
+              <Building2 size={13} /> {s.label}
             </button>
           ))}
         </div>
@@ -432,8 +444,7 @@ function DocumentDrawer({
         <div>
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Visible to</label>
           <p className="text-[12px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
-            {doc.department_id ? <Building2 size={13} /> : <Globe2 size={13} />}
-            {doc.department?.name ?? 'Company-wide'}
+            <Building2 size={13} /> {doc.department?.name ?? 'Unknown'}
           </p>
         </div>
 
