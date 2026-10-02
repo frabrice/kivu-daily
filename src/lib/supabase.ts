@@ -610,6 +610,45 @@ export interface PayrollLine {
 }
 
 // ============================================================
+// MD PANEL: NOTIFICATIONS (email engine - see notification_engine migration)
+// ============================================================
+export interface Responsibility {
+  key: string;
+  label: string;
+  description: string | null;
+  profile_id: string | null;
+  updated_at: string;
+}
+
+export interface NotificationRule {
+  key: string;
+  label: string;
+  description: string | null;
+  schedule_label: string;
+  audience: string[];
+  phase: number;
+  sort_order: number;
+  enabled: boolean;
+  updated_at: string;
+}
+
+export type NotificationOutboxStatus = 'pending' | 'sent' | 'failed';
+
+export interface NotificationOutboxRow {
+  id: string;
+  rule_key: string;
+  recipient_id: string | null;
+  recipient_email: string;
+  subject: string;
+  status: NotificationOutboxStatus;
+  attempts: number;
+  error: string | null;
+  is_test: boolean;
+  created_at: string;
+  sent_at: string | null;
+}
+
+// ============================================================
 // MD PANEL: SURVEY CASES (Case 1 = Charging Stations)
 // ============================================================
 export type SurveyCaseStatus = 'active' | 'archived';

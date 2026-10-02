@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Zap, ChevronRight, ClipboardList } from 'lucide-react';
+import { Zap, ChevronRight, ClipboardList, Mail } from 'lucide-react';
 import { supabase, SurveyCase } from '../lib/supabase';
 import ChargingStationsHub from './casehubs/ChargingStationsHub';
+import NotificationsSettingsPage from './NotificationsSettingsPage';
 
 const CASE_ICONS: Record<string, typeof Zap> = {
   'charging-stations': Zap,
@@ -16,6 +17,7 @@ export default function MDPanel() {
   const [cases, setCases] = useState<SurveyCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [openCase, setOpenCase] = useState<SurveyCase | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const load = async () => {
     const { data } = await supabase.from('survey_cases').select('*').order('created_at');
@@ -27,6 +29,8 @@ export default function MDPanel() {
 
   if (loading) return <div className="space-y-2">{[0, 1].map((i) => <div key={i} className="h-24 skeleton rounded-xl" />)}</div>;
 
+  if (showNotifications) return <NotificationsSettingsPage onBack={() => setShowNotifications(false)} />;
+
   if (openCase) {
     if (openCase.slug === 'charging-stations') {
       return <ChargingStationsHub surveyCase={openCase} onBack={() => setOpenCase(null)} />;
@@ -36,6 +40,20 @@ export default function MDPanel() {
 
   return (
     <div className="space-y-4">
+      <button
+        onClick={() => setShowNotifications(true)}
+        className="w-full card p-4 flex items-center gap-3 hover:shadow-md hover:border-brand/30 transition-all text-left"
+      >
+        <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center shrink-0">
+          <Mail size={18} className="text-brand-600 dark:text-brand-300" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] font-semibold">Email notifications</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Who's in charge of each follow-up, which emails are on, test sends, and what's gone out.</p>
+        </div>
+        <ChevronRight size={16} className="text-gray-300 shrink-0" />
+      </button>
+
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><ClipboardList size={16} className="text-amber-600 dark:text-amber-300" /> Research Cases</h2>
         <p className="text-[11px] text-gray-400 mt-0.5">Surveys, data collection, and the analytics built to make the call on each one.</p>
