@@ -1,16 +1,23 @@
 import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { sendWithResend, wrapEmail } from "../_shared/email.ts";
-import {
-  computeDepositStanding, firstSundayPayment, isoWeekday, sundayOf, shiftDay,
-  SUNDAY_RULE_START, WEEKLY_DEPOSIT_AMOUNT, type DepositStanding, type RestDayKey,
-} from "../_shared/depositRules.ts";
+import { isoWeekday } from "../_shared/depositRules.ts";
+import { Built, Ctx, esc, firstName, Profile, Recipient, RuleDef, ScheduledRule } from "./core.ts";
+import { driverRules } from "./drivers.ts";
+import { financeRules } from "./finance.ts";
+import { operationsRules } from "./operations.ts";
+import { workspaceRules } from "./workspace.ts";
+import { companyRules } from "./company.ts";
 
 // Runs every 5 minutes (pg_cron -> pg_net, authenticated by a shared
-// secret). Each run: (1) builds any scheduled digest that's due today in
+// secret). Each run: (1) builds any scheduled email that's due today in
 // Kigali time and hasn't run yet, (2) turns new database events into
 // emails, (3) sends everything pending in the outbox. The MD can also
 // call it with { mode: 'test', rule_key } to receive one rule's email
 // themselves, built from live data, without anyone else being emailed.
+// What each email says lives in the per-area modules; this file only
+// decides when, to whom, and makes sure nothing goes out twice.
+
+const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,31 +31,13 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 const cronSecret = Deno.env.get("NOTIFICATIONS_CRON_SECRET");
 const appUrl = Deno.env.get("APP_URL") || "https://kivu-daily.app";
 
-const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7];
-const SCHEDULE: Record<string, { days: number[]; at: number }> = {
-  driver_call_list: { days: [6], at: 9 * 60 },
-  driver_still_unpaid: { days: [7], at: 18 * 60 },
-  driver_not_cleared_monday: { days: [1], at: 7 * 60 },
-  driver_not_cleared_summary: { days: [1], at: 7 * 60 },
-  driver_not_cleared_daily: { days: [2, 3, 4, 5, 6, 7], at: 7 * 60 },
-  driver_escalation: { days: ALL_DAYS, at: 7 * 60 },
-  deposits_to_confirm: { days: ALL_DAYS, at: 17 * 60 },
-};
 const QUIET_FROM = 20 * 60;
 const QUIET_UNTIL = 6 * 60 + 30;
+// A scheduled email only goes out within 3 hours of its time - if a run
+// is missed, a morning reminder arriving in the evening is worse than none.
+const CATCH_UP = 180;
 
-interface Profile { id: string; full_name: string; email: string | null; role: string; is_active: boolean; department: { slug: string | null } | null }
-interface Recipient { id: string; email: string; name: string }
-interface Built { subject: string; heading: string; intro: string; table?: { head: string[]; rows: string[][] }; footnote?: string; inApp: string }
-interface DriverRow {
-  id: string; full_name: string; phone: string | null; start_date: string | null; rest_day: RestDayKey | null;
-  initial_deposit_paid: boolean; initial_deposit_amount: number | null; initial_deposit_date: string | null;
-  contract_status: string; vehicle_id: string | null; shift: string | null; created_at: string;
-  vehicle: { plate_number: string } | null;
-}
-interface DepositRow { id: string; driver_id: string; paid_date: string; amount: number; created_at: string; status: string; created_by: string | null }
-interface FleetData { drivers: DriverRow[]; deposits: DepositRow[] }
-interface Ctx { db: SupabaseClient; today: string; profiles: Profile[]; responsibilities: Record<string, string | null>; fleet?: FleetData }
+interface RuleRow { key: string; audience: string[]; enabled: boolean; in_app: boolean; preference_key: string | null }
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -60,226 +49,74 @@ function kigaliNow() {
   return { today, minutes: k.getUTCHours() * 60 + k.getUTCMinutes(), dow: isoWeekday(today) };
 }
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const rwf = (n: number) => `${Math.round(n).toLocaleString("en-US")} RWF`;
-const day = (d: string | null) => d ? new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }) : "—";
-
-async function loadFleet(ctx: Ctx): Promise<FleetData> {
-  if (ctx.fleet) return ctx.fleet;
-  const [{ data: drivers }, { data: deposits }] = await Promise.all([
-    ctx.db.from("drivers").select("id, full_name, phone, start_date, rest_day, initial_deposit_paid, initial_deposit_amount, initial_deposit_date, contract_status, vehicle_id, shift, created_at, vehicle:vehicles(plate_number)"),
-    ctx.db.from("driver_deposits").select("id, driver_id, paid_date, amount, created_at, status, created_by"),
-  ]);
-  ctx.fleet = { drivers: (drivers ?? []) as unknown as DriverRow[], deposits: (deposits ?? []) as DepositRow[] };
-  return ctx.fleet;
-}
-
-async function activeStandings(ctx: Ctx): Promise<{ d: DriverRow; s: DepositStanding; deps: DepositRow[] }[]> {
-  const { drivers, deposits } = await loadFleet(ctx);
-  return drivers
-    .filter((d) => d.contract_status === "active" && d.vehicle_id && d.start_date)
-    .map((d) => {
-      const deps = deposits.filter((x) => x.driver_id === d.id);
-      return { d, s: computeDepositStanding(d, deps, ctx.today), deps };
-    })
-    .sort((a, b) => a.d.full_name.localeCompare(b.d.full_name));
-}
-
-const car = (d: DriverRow) => `${d.vehicle?.plate_number ?? "—"}${d.shift ? ` (${d.shift})` : ""}`;
-const switchoverSunday = shiftDay(SUNDAY_RULE_START, -1);
-
 // ------------------------------------------------------------------
-// Scheduled digests. Each returns null when there's nothing worth
-// sending (or the rule doesn't apply yet), and `force` (test mode)
-// skips the date guards so the MD can preview any rule on any day.
+// Recipients
 // ------------------------------------------------------------------
-async function buildScheduled(key: string, ctx: Ctx, force: boolean): Promise<Built | null> {
-  const ruleInForce = ctx.today >= SUNDAY_RULE_START;
+interface Audience { ctx: Ctx; prefs: Map<string, Record<string, boolean>> }
 
-  if (key === "driver_call_list" || key === "driver_still_unpaid") {
-    if (!force && sundayOf(ctx.today) < switchoverSunday) return null;
-    const rows = await activeStandings(ctx);
-    const dueDate = rows[0]?.s.nextDueDate ?? sundayOf(ctx.today);
-    const owing = rows.filter((r) => r.s.nextDueAmount > 0).sort((a, b) => b.s.nextDueAmount - a.s.nextDueAmount);
-    const list = key === "driver_call_list" ? [...owing, ...rows.filter((r) => r.s.nextDueAmount <= 0)] : owing;
-    if (list.length === 0) return null;
-    const total = owing.reduce((s, r) => s + r.s.nextDueAmount, 0);
-    const note = (r: { d: DriverRow; s: DepositStanding }) => {
-      if (r.s.nextDueAmount <= 0) return "Already paid";
-      if (r.s.owedNow > 0) return `Includes ${rwf(r.s.owedNow)} already overdue`;
-      if (r.d.start_date && sundayOf(r.d.start_date) === r.s.nextDueDate) return "First Sunday top-up";
-      if (r.s.nextDueDate === switchoverSunday && !ruleInForce) return "Switch-over payment";
-      return "";
-    };
-    return key === "driver_call_list"
-      ? {
-          subject: `Sunday call list: ${owing.length} driver${owing.length === 1 ? "" : "s"}, ${rwf(total)} due by ${day(dueDate)}`,
-          heading: `Sunday call list — due by ${day(dueDate)}`,
-          intro: `Please remind every driver below to pay by <b>Sunday ${day(dueDate)}</b>. Anyone not paid in full by Monday morning won't be cleared to drive.`,
-          table: { head: ["Driver", "Phone", "Car", "Due by Sunday", "Note"], rows: list.map((r) => [esc(r.d.full_name), esc(r.d.phone ?? "—"), esc(car(r.d)), r.s.nextDueAmount > 0 ? rwf(r.s.nextDueAmount) : "—", note(r)]) },
-          inApp: `Sunday call list: ${owing.length} drivers, ${rwf(total)} due by ${day(dueDate)}`,
-        }
-      : {
-          subject: `Still unpaid: ${owing.length} driver${owing.length === 1 ? "" : "s"} owe ${rwf(total)} — call before Monday`,
-          heading: "Still unpaid for the coming week",
-          intro: `These drivers haven't paid yet. Please call them tonight — if they haven't paid by Monday morning, they're not cleared to drive.`,
-          table: { head: ["Driver", "Phone", "Car", "Still due", "Note"], rows: owing.map((r) => [esc(r.d.full_name), esc(r.d.phone ?? "—"), esc(car(r.d)), rwf(r.s.nextDueAmount), note(r)]) },
-          inApp: `Still unpaid: ${owing.length} drivers owe ${rwf(total)}`,
-        };
-  }
-
-  if (key === "driver_not_cleared_monday" || key === "driver_not_cleared_daily" || key === "driver_not_cleared_summary") {
-    if (!force && !ruleInForce) return null;
-    const rows = await activeStandings(ctx);
-    const blocked = rows.filter((r) => !r.s.isCleared).sort((a, b) => b.s.owedNow - a.s.owedNow);
-    const total = blocked.reduce((s, r) => s + r.s.owedNow, 0);
-    if (key === "driver_not_cleared_summary") {
-      return blocked.length === 0
-        ? { subject: `All ${rows.length} drivers are cleared to drive this week`, heading: "Everyone is cleared to drive", intro: `All ${rows.length} active drivers have paid for this week.`, inApp: `All ${rows.length} drivers cleared to drive this week` }
-        : {
-            subject: `${blocked.length} of ${rows.length} drivers not cleared to drive — ${rwf(total)} owed`,
-            heading: "Drivers not cleared to drive",
-            intro: `${blocked.length} of ${rows.length} active drivers haven't paid for this week. Janviere and Fleet have the full call list.`,
-            table: { head: ["Driver", "Car", "Owes"], rows: blocked.map((r) => [esc(r.d.full_name), esc(car(r.d)), rwf(r.s.owedNow)]) },
-            inApp: `${blocked.length} drivers not cleared to drive (${rwf(total)} owed)`,
-          };
-    }
-    if (blocked.length === 0) return null;
-    const monday = key === "driver_not_cleared_monday";
-    return {
-      subject: monday
-        ? `Not cleared to drive today: ${blocked.length} driver${blocked.length === 1 ? "" : "s"} (${rwf(total)} owed)`
-        : `Still not cleared: ${blocked.length} driver${blocked.length === 1 ? "" : "s"} (${rwf(total)} owed)`,
-      heading: monday ? "Not cleared to drive today" : "Still not cleared to drive",
-      intro: monday
-        ? "These drivers haven't paid for this week and are <b>not cleared to drive</b> until they do. Fleet: keep these cars off the road or swap the driver. Janviere: call each one now (Call Center, you're copied as backup callers)."
-        : "These drivers still haven't paid for this week. Every working day they stay uncleared is a day lost.",
-      table: { head: ["Driver", "Phone", "Car", "Owes", "Days lost"], rows: blocked.map((r) => [esc(r.d.full_name), esc(r.d.phone ?? "—"), esc(car(r.d)), rwf(r.s.owedNow), String(r.s.current?.daysLost ?? 0)]) },
-      inApp: `${monday ? "Not cleared to drive today" : "Still not cleared"}: ${blocked.length} drivers`,
-    };
-  }
-
-  if (key === "driver_escalation") {
-    if (!force && !ruleInForce) return null;
-    const rows = await activeStandings(ctx);
-    const late = rows.filter((r) => !r.s.isCleared && (r.s.current?.daysLost ?? 0) >= 2).sort((a, b) => (b.s.current?.daysLost ?? 0) - (a.s.current?.daysLost ?? 0));
-    if (late.length === 0) return null;
-    return {
-      subject: `Escalation: ${late.length} driver${late.length === 1 ? "" : "s"} uncleared for 2+ working days`,
-      heading: "Drivers losing days",
-      intro: "These drivers have lost 2 or more working days this week without paying. The last-payment column shows whether any payment has been logged for them recently.",
-      table: {
-        head: ["Driver", "Car", "Days lost", "Owes", "Last payment logged"],
-        rows: late.map((r) => {
-          const last = [...r.deps].sort((a, b) => b.paid_date.localeCompare(a.paid_date))[0];
-          return [esc(r.d.full_name), esc(car(r.d)), String(r.s.current?.daysLost ?? 0), rwf(r.s.owedNow), last ? `${day(last.paid_date)} · ${rwf(last.amount)}` : "None"];
-        }),
-      },
-      inApp: `Escalation: ${late.length} drivers uncleared 2+ days`,
-    };
-  }
-
-  if (key === "deposits_to_confirm") {
-    const { drivers, deposits } = await loadFleet(ctx);
-    const pending = deposits.filter((d) => d.status === "pending").sort((a, b) => a.paid_date.localeCompare(b.paid_date));
-    if (pending.length === 0) return null;
-    const name = (id: string | null) => ctx.profiles.find((p) => p.id === id)?.full_name ?? "—";
-    const driverName = (id: string) => drivers.find((d) => d.id === id)?.full_name ?? "Unknown driver";
-    const total = pending.reduce((s, d) => s + d.amount, 0);
-    return {
-      subject: `${pending.length} deposit${pending.length === 1 ? "" : "s"} waiting for confirmation (${rwf(total)})`,
-      heading: "Deposits waiting for your confirmation",
-      intro: "Please confirm each deposit once you've seen the money arrive, or reject it if it's a mistake. Open Deposit Confirmations in Kivu Daily.",
-      table: { head: ["Driver", "Amount", "Paid on", "Logged by"], rows: pending.map((d) => [esc(driverName(d.driver_id)), rwf(d.amount), day(d.paid_date), esc(name(d.created_by))]) },
-      inApp: `${pending.length} deposits waiting for confirmation`,
-    };
-  }
-
-  return null;
-}
-
-// ------------------------------------------------------------------
-// Instant events
-// ------------------------------------------------------------------
-async function buildEvent(key: string, payload: Record<string, unknown>, ctx: Ctx): Promise<Built | null> {
-  if (key === "driver_new" || key === "driver_contract_ended") {
-    const { drivers, deposits } = await loadFleet(ctx);
-    const d = drivers.find((x) => x.id === payload.driver_id);
-    if (!d) return null;
-    if (key === "driver_new") {
-      const first = d.start_date ? firstSundayPayment(d.start_date, d.rest_day) : null;
-      return {
-        subject: `New driver: ${d.full_name}${d.start_date ? ` starts ${day(d.start_date)}` : ""}`,
-        heading: `New driver: ${esc(d.full_name)}`,
-        intro: d.start_date
-          ? `${esc(d.full_name)} (${esc(d.phone ?? "no phone")}) starts on <b>${day(d.start_date)}</b>${d.rest_day ? `, resting on ${d.rest_day}s` : ""}.`
-            + `<br><br><b>${rwf(WEEKLY_DEPOSIT_AMOUNT)}</b> is due before the first shift${d.initial_deposit_paid ? " (already recorded as paid)" : ""}, then <b>${rwf(first!.amount)}</b> by Sunday ${day(first!.date)}, then ${rwf(WEEKLY_DEPOSIT_AMOUNT)} every Sunday.`
-          : `${esc(d.full_name)} was added without a start date yet — their payment schedule starts once one is set.`,
-        inApp: `New driver ${d.full_name}${d.start_date ? ` starts ${day(d.start_date)}` : ""}`,
-      };
-    }
-    const s = computeDepositStanding(d, deposits.filter((x) => x.driver_id === d.id), ctx.today);
-    const owed = s.ruleInForce ? s.owedNow : s.behind;
-    return {
-      subject: `Driver contract ended: ${d.full_name}`,
-      heading: `Contract ended: ${esc(d.full_name)}`,
-      intro: `${esc(d.full_name)}'s contract ended on ${day((payload.event_date as string) ?? ctx.today)}${payload.reason ? ` — ${esc(String(payload.reason))}` : ""}. No more payment reminders will go out for them.`
-        + `<br><br>${owed > 0 ? `Balance still owed: <b>${rwf(owed)}</b>.` : "No balance owed."}`,
-      inApp: `Contract ended: ${d.full_name}${owed > 0 ? ` (owes ${rwf(owed)})` : ""}`,
-    };
-  }
-
-  if (key === "deposit_rejected") {
-    return {
-      subject: `Deposit rejected: ${payload.driver_name ?? "a driver"}, ${rwf(Number(payload.amount ?? 0))}`,
-      heading: "A deposit you logged was rejected",
-      intro: `${esc(String(payload.rejected_by ?? "Finance"))} rejected the ${rwf(Number(payload.amount ?? 0))} deposit you logged for <b>${esc(String(payload.driver_name ?? "a driver"))}</b> (paid ${day((payload.paid_date as string) ?? null)}).`
-        + `<br><br>Reason: ${payload.reason ? esc(String(payload.reason)) : "none given"}. If the driver really did pay, log the correct payment again.`,
-      inApp: `Deposit rejected: ${payload.driver_name ?? "a driver"} ${rwf(Number(payload.amount ?? 0))}`,
-    };
-  }
-  return null;
-}
-
-// ------------------------------------------------------------------
-// Recipients, rendering, outbox
-// ------------------------------------------------------------------
-function resolveAudience(audience: string[], ctx: Ctx, actorId?: string | null): Recipient[] {
+function resolveRecipients(rule: RuleRow, built: Built, a: Audience, payload: Record<string, unknown> = {}): Recipient[] {
+  const { ctx } = a;
   const out = new Map<string, Recipient>();
-  const add = (p: Profile | undefined) => { if (p && p.is_active && p.email) out.set(p.id, { id: p.id, email: p.email, name: p.full_name }); };
-  for (const token of audience) {
-    if (token === "md") ctx.profiles.filter((p) => p.role === "managing_director").forEach(add);
-    else if (token === "actor") add(ctx.profiles.find((p) => p.id === actorId));
-    else if (token.startsWith("dept:")) ctx.profiles.filter((p) => p.department?.slug === token.slice(5)).forEach(add);
-    else if (token.startsWith("resp:")) add(ctx.profiles.find((p) => p.id === ctx.responsibilities[token.slice(5)]));
+  const add = (p: Profile | undefined) => { if (p && p.is_active && p.email) out.set(p.id, { id: p.id, email: p.email, name: p.full_name.trim() }); };
+  if (built.recipients) {
+    built.recipients.forEach((id) => add(ctx.profiles.find((p) => p.id === id)));
+  } else {
+    for (const token of rule.audience) {
+      if (token === "md") ctx.profiles.filter((p) => p.role === "managing_director").forEach(add);
+      else if (token === "employees") ctx.profiles.filter((p) => p.role === "employee").forEach(add);
+      else if (token === "actor") add(ctx.profiles.find((p) => p.id === payload.recipient_id));
+      else if (token.startsWith("dept:")) ctx.profiles.filter((p) => p.department?.slug === token.slice(5)).forEach(add);
+      else if (token.startsWith("resp:")) add(ctx.profiles.find((p) => p.id === ctx.responsibilities[token.slice(5)]));
+    }
+  }
+  // Nobody is emailed about something they just did themselves.
+  if (payload.actor_id && payload.actor_id !== payload.recipient_id) out.delete(String(payload.actor_id));
+  // Personal emails respect the person's own Settings switches.
+  if (rule.preference_key) {
+    for (const id of [...out.keys()]) if (a.prefs.get(id)?.[rule.preference_key] === false) out.delete(id);
   }
   return [...out.values()];
 }
 
+// ------------------------------------------------------------------
+// Rendering & outbox
+// ------------------------------------------------------------------
+function htmlTable(t: { head: string[]; rows: string[][] }) {
+  return `<table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 16px;">
+    <tr>${t.head.map((h) => `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid #e5e7eb;color:#17263A;">${h}</th>`).join("")}</tr>
+    ${t.rows.map((r) => `<tr>${r.map((c) => `<td style="padding:8px 6px;border-bottom:1px solid #f1f5f9;vertical-align:top;">${c}</td>`).join("")}</tr>`).join("")}
+  </table>`;
+}
+
+const plain = (s: string) => s.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+
 function render(b: Built, recipientName: string) {
-  const table = b.table
-    ? `<table style="width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;">
-        <tr>${b.table.head.map((h) => `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid #e5e7eb;color:#17263A;">${h}</th>`).join("")}</tr>
-        ${b.table.rows.map((r) => `<tr>${r.map((c) => `<td style="padding:8px 6px;border-bottom:1px solid #f1f5f9;">${c}</td>`).join("")}</tr>`).join("")}
-      </table>`
-    : "";
+  const blocks = (b.blocks ?? []).map((bl) => `
+    ${bl.heading ? `<div style="font-size:14px;font-weight:600;color:#17263A;margin:20px 0 6px;">${bl.heading}</div>` : ""}
+    ${bl.text ? `<p style="margin:0 0 8px;font-size:14px;">${bl.text}</p>` : ""}
+    ${bl.table ? htmlTable(bl.table) : ""}`).join("");
   const inner = `
     <div class="title">${b.heading}</div>
-    <div class="content"><p class="greeting">Hi ${esc(recipientName.split(" ")[0])},</p><p>${b.intro}</p></div>
-    ${table}
+    <div class="content"><p class="greeting">Hi ${esc(firstName(recipientName))},</p><p>${b.intro}</p></div>
+    ${b.table ? htmlTable(b.table) : ""}
+    ${blocks}
     ${b.footnote ? `<div class="content" style="font-size:12px;color:#888;"><p>${b.footnote}</p></div>` : ""}
-    <div style="text-align:center;"><a href="${appUrl}" class="button">Open Kivu Daily</a></div>`;
-  const text = [b.heading, "", b.intro.replace(/<br>/g, "\n").replace(/<[^>]+>/g, ""), "",
-    ...(b.table ? [b.table.head.join(" | "), ...b.table.rows.map((r) => r.join(" | "))] : []), "", appUrl].join("\n");
+    <div style="text-align:center;margin-top:16px;"><a href="${appUrl}" class="button">Open Kivu Daily</a></div>`;
+  const tableText = (t?: { head: string[]; rows: string[][] }) => (t ? [t.head.join(" | "), ...t.rows.map((r) => r.join(" | "))] : []);
+  const text = plain([
+    b.heading, "", b.intro, "", ...tableText(b.table),
+    ...(b.blocks ?? []).flatMap((bl) => ["", bl.heading ?? "", bl.text ?? "", ...tableText(bl.table)]),
+    "", b.footnote ?? "", appUrl,
+  ].join("\n"));
   return { html: wrapEmail(inner), text };
 }
 
-async function enqueue(ctx: Ctx, ruleKey: string, dedupeBase: string, built: Built, recipients: Recipient[], isTest = false) {
+async function enqueue(ctx: Ctx, rule: RuleRow, dedupeBase: string, built: Built, recipients: Recipient[], isTest = false) {
   let queued = 0;
   for (const r of recipients) {
     const { html, text } = render(built, r.name);
     const { data, error } = await ctx.db.from("notification_outbox").upsert({
-      rule_key: ruleKey,
+      rule_key: rule.key,
       dedupe_key: `${dedupeBase}:${r.id}`,
       recipient_id: r.id,
       recipient_email: r.email,
@@ -291,7 +128,7 @@ async function enqueue(ctx: Ctx, ruleKey: string, dedupeBase: string, built: Bui
     }, { onConflict: "dedupe_key", ignoreDuplicates: true }).select("id");
     if (!error && data && data.length > 0) {
       queued++;
-      if (!isTest) await ctx.db.from("notifications").insert({ user_id: r.id, type: ruleKey, message: built.inApp, link: null, read: false });
+      if (!isTest && rule.in_app) await ctx.db.from("notifications").insert({ user_id: r.id, type: rule.key, message: built.inApp, link: null, read: false });
     }
   }
   return queued;
@@ -300,9 +137,9 @@ async function enqueue(ctx: Ctx, ruleKey: string, dedupeBase: string, built: Bui
 async function sendPending(db: SupabaseClient, onlyIds?: string[]) {
   let query = db.from("notification_outbox").select("*").neq("status", "sent").lt("attempts", 3).order("created_at").limit(50);
   if (onlyIds) query = query.in("id", onlyIds);
-  const { data: rows } = await query;
+  const { data: pending } = await query;
   const results: { id: string; ok: boolean; error?: string }[] = [];
-  for (const row of rows ?? []) {
+  for (const row of pending ?? []) {
     const res = await sendWithResend(row.recipient_email, row.subject, row.html, row.text_body);
     await db.from("notification_outbox").update({
       status: res.success ? "sent" : "failed",
@@ -321,12 +158,17 @@ async function sendPending(db: SupabaseClient, onlyIds?: string[]) {
 
 async function loadContext(db: SupabaseClient, today: string): Promise<Ctx> {
   const [{ data: profiles }, { data: resp }] = await Promise.all([
-    db.from("profiles").select("id, full_name, email, role, is_active, department:departments(slug)"),
+    db.from("profiles").select("id, full_name, email, role, is_active, department:departments(slug, name)"),
     db.from("responsibilities").select("key, profile_id"),
   ]);
   const responsibilities: Record<string, string | null> = {};
   for (const r of resp ?? []) responsibilities[r.key] = r.profile_id;
-  return { db, today, profiles: (profiles ?? []) as unknown as Profile[], responsibilities };
+  return { db, today, profiles: (profiles ?? []) as unknown as Profile[], responsibilities, cache: new Map() };
+}
+
+async function loadPrefs(db: SupabaseClient) {
+  const { data } = await db.from("email_preferences").select("*");
+  return new Map((data ?? []).map((p: Record<string, unknown>) => [String(p.user_id), p as Record<string, boolean>]));
 }
 
 Deno.serve(async (req: Request) => {
@@ -352,27 +194,27 @@ Deno.serve(async (req: Request) => {
 
     const clock = kigaliNow();
     const ctx = await loadContext(db, clock.today);
-    const { data: rules } = await db.from("notification_rules").select("key, audience, enabled");
-    const ruleMap = new Map((rules ?? []).map((r) => [r.key as string, r as { key: string; audience: string[]; enabled: boolean }]));
+    const { data: ruleRows } = await db.from("notification_rules").select("key, audience, enabled, in_app, preference_key");
+    const ruleMap = new Map((ruleRows ?? []).map((r) => [r.key as string, r as RuleRow]));
 
     // ---- Test: build one rule from live data, send to the MD only ----
     if (body?.mode === "test") {
       const key = String(body.rule_key ?? "");
-      if (!ruleMap.has(key)) return json({ error: "Unknown rule" }, 400);
+      const def = RULES[key];
+      const rule = ruleMap.get(key);
+      if (!def || !rule) return json({ error: "Unknown rule" }, 400);
       let built: Built | null = null;
-      if (SCHEDULE[key]) built = await buildScheduled(key, ctx, true);
-      else if (key === "deposit_rejected") built = await buildEvent(key, { driver_name: "Example Driver", amount: 180000, paid_date: clock.today, reason: "Example — logged twice by mistake", rejected_by: "Finance" }, ctx);
+      if (def.kind === "scheduled") built = (await def.build(ctx, true))[0] ?? null;
       else {
-        const { drivers } = await loadFleet(ctx);
-        const sample = [...drivers].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
-        if (sample) built = await buildEvent(key, { driver_id: sample.id, event_date: clock.today, reason: "Example reason" }, ctx);
+        const sample = await def.sample(ctx);
+        if (sample) built = await def.build(sample, ctx);
       }
       if (!built) return json({ sent: false, message: "Nothing to send for this rule right now - it would be skipped today." });
       // Test sends only ever go to the MD - the caller, or (from the
       // scheduler's secret, used for maintenance checks) the active MD.
       const md = ctx.profiles.find((p) => (callerMdId ? p.id === callerMdId : p.role === "managing_director" && p.is_active && !!p.email));
       if (!md?.email) return json({ error: "No MD email to send the test to" }, 400);
-      await enqueue(ctx, key, `test:${key}:${Date.now()}`, built, [{ id: md.id, email: md.email, name: md.full_name }], true);
+      await enqueue(ctx, rule, `test:${key}:${Date.now()}`, built, [{ id: md.id, email: md.email, name: md.full_name.trim() }], true);
       const { data: queued } = await db.from("notification_outbox").select("id").eq("is_test", true).eq("rule_key", key).eq("status", "pending");
       const results = await sendPending(db, (queued ?? []).map((q) => q.id));
       const failed = results.find((r) => !r.ok);
@@ -380,41 +222,62 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!isCron) return json({ error: "Unauthorized" }, 401);
+    const audience: Audience = { ctx, prefs: await loadPrefs(db) };
 
-    // ---- Preview: build rules for any date and return them, send nothing ----
+    // ---- Preview: build scheduled rules for any date, send nothing ----
     if (body?.mode === "preview") {
       const pctx = await loadContext(db, String(body.today ?? clock.today));
+      const pa: Audience = { ctx: pctx, prefs: audience.prefs };
+      const keys = body.rule_key ? [String(body.rule_key)] : Object.keys(RULES).filter((k) => RULES[k].kind === "scheduled");
       const out: Record<string, unknown> = {};
-      for (const key of SCHEDULE[body.rule_key] ? [body.rule_key as string] : Object.keys(SCHEDULE)) {
-        const built = await buildScheduled(key, pctx, false);
-        out[key] = built
-          ? { subject: built.subject, rows: built.table?.rows.length ?? 0, to: resolveAudience(ruleMap.get(key)?.audience ?? [], pctx).map((r) => r.name) }
-          : "skipped";
+      for (const key of keys) {
+        const def = RULES[key];
+        const rule = ruleMap.get(key);
+        if (!def || !rule || def.kind !== "scheduled") { out[key] = "not a scheduled rule"; continue; }
+        const built = await def.build(pctx, false);
+        out[key] = built.length === 0 ? "skipped" : built.map((b) => ({ subject: b.subject, to: resolveRecipients(rule, b, pa).map((r) => r.name) }));
       }
       return json({ today: pctx.today, preview: out });
     }
 
-    const summary = { scheduled: [] as string[], events: 0, queued: 0, sent: 0, failed: 0 };
+    const summary = { scheduled: [] as string[], events: 0, queued: 0, sent: 0, failed: 0, errors: [] as string[] };
 
-    // ---- Scheduled digests ----
-    for (const [key, sched] of Object.entries(SCHEDULE)) {
+    // ---- Scheduled emails ----
+    for (const [key, def] of Object.entries(RULES)) {
+      if (def.kind !== "scheduled") continue;
       const rule = ruleMap.get(key);
-      if (!rule?.enabled || !sched.days.includes(clock.dow) || clock.minutes < sched.at || clock.minutes >= QUIET_FROM) continue;
+      const s = def as ScheduledRule;
+      if (!rule?.enabled || !s.days.includes(clock.dow) || clock.minutes < s.at || clock.minutes >= s.at + CATCH_UP || clock.minutes >= QUIET_FROM) continue;
+      if (s.when && !s.when(clock.today)) continue;
       const { error: claimErr } = await db.from("notification_rule_runs").insert({ rule_key: key, period_key: clock.today });
       if (claimErr) continue; // already ran today
-      const built = await buildScheduled(key, ctx, false);
-      if (!built) continue;
-      summary.scheduled.push(key);
-      summary.queued += await enqueue(ctx, key, `${key}:${clock.today}`, built, resolveAudience(rule.audience, ctx));
+      try {
+        const built = await s.build(ctx, false);
+        if (built.length) summary.scheduled.push(key);
+        for (const b of built) summary.queued += await enqueue(ctx, rule, `${key}:${clock.today}`, b, resolveRecipients(rule, b, audience));
+      } catch (err) {
+        // One broken rule must never stop the others; free the claim so
+        // the next run retries it.
+        summary.errors.push(`${key}: ${err instanceof Error ? err.message : err}`);
+        console.error("notifications-run rule failed", key, err);
+        await db.from("notification_rule_runs").delete().eq("rule_key", key).eq("period_key", clock.today);
+      }
     }
 
     // ---- Events ----
     const { data: events } = await db.from("notification_events").select("*").is("processed_at", null).order("created_at").limit(50);
     for (const ev of events ?? []) {
+      const def = RULES[ev.rule_key];
       const rule = ruleMap.get(ev.rule_key);
-      if (rule?.enabled) {
-        const built = await buildEvent(ev.rule_key, ev.payload ?? {}, ctx);
-        if (built) summary.queued += await enqueue(ctx, ev.rule_key, `${ev.rule_key}:${ev.id}`, built, resolveAudience(rule.audience, ctx, (ev.payload ?? {}).recipient_id as string | undefined));
+      try {
+        if (def?.kind === "event" && rule?.enabled) {
+          const payload = (ev.payload ?? {}) as Record<string, unknown>;
+          const built = await def.build(payload, ctx);
+          if (built) summary.queued += await enqueue(ctx, rule, `${ev.rule_key}:${ev.id}`, built, resolveRecipients(rule, built, audience, payload));
+        }
+      } catch (err) {
+        summary.errors.push(`${ev.rule_key}: ${err instanceof Error ? err.message : err}`);
+        console.error("notifications-run event failed", ev.rule_key, ev.id, err);
       }
       await db.from("notification_events").update({ processed_at: new Date().toISOString() }).eq("id", ev.id);
       summary.events++;

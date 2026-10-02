@@ -440,7 +440,8 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
       {
         heading: 'Email notifications',
         body: [
-          'Five separate toggles: Morning Reminder (7 AM nudge to add tasks), Daily Summary (6 PM completion report), Comment Notifications (instant, when you get feedback), Unfinished Task Reminders (midday nudges), and Performance Nudges (weekly, if productivity drops). "Enable all" / "Disable all" set them all at once.',
+          'Three switches for your own emails: "Add today\'s tasks" (8 AM Monday–Saturday, only if you haven\'t added any), "Unfinished tasks" (5:30 PM Monday–Saturday, only if some are still open), and "Comments and replies" (instant). "Enable all" / "Disable all" set them all at once.',
+          'Emails about a duty you\'re in charge of — driver payment follow-up, Finance approvals, the call queue — can\'t be switched off here; the MD manages those in MD Panel → Email notifications.',
         ],
       },
     ],

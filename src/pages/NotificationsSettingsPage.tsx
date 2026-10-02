@@ -64,7 +64,9 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
   const personName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? 'Nobody assigned';
   const audienceLabel = (token: string) => {
     if (token === 'md') return 'MD';
-    if (token === 'actor') return 'Whoever logged it';
+    if (token === 'actor') return 'The person it concerns';
+    if (token === 'employees') return 'Each employee';
+    if (token === 'person') return "The person it's addressed to";
     if (token.startsWith('dept:')) return `${departments.find((d) => d.slug === token.slice(5))?.name ?? token.slice(5)} team`;
     if (token.startsWith('resp:')) {
       const duty = duties.find((d) => d.key === token.slice(5));
@@ -73,6 +75,7 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
     return token;
   };
   const ruleLabel = (key: string) => rules.find((r) => r.key === key)?.label ?? key;
+  const areas = [...new Set(rules.map((r) => r.area))];
 
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-24 skeleton rounded-xl" />)}</div>;
 
@@ -104,9 +107,10 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
         ))}
       </section>
 
-      <section className="space-y-2">
-        <h3 className="text-[12px] font-semibold">Emails</h3>
-        {rules.map((r) => {
+      {areas.map((area) => (
+      <section key={area} className="space-y-2">
+        <h3 className="text-[12px] font-semibold">{area}</h3>
+        {rules.filter((r) => r.area === area).map((r) => {
           const res = testResult[r.key];
           return (
             <div key={r.key} className={`card p-4 ${r.enabled ? '' : 'opacity-60'}`}>
@@ -118,6 +122,7 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
                   </div>
                   {r.description && <p className="text-[11px] text-gray-400 mt-0.5">{r.description}</p>}
                   <p className="text-[11px] mt-1.5"><span className="text-gray-400">To:</span> {r.audience.map(audienceLabel).join(', ')}</p>
+                  {r.preference_key && <p className="text-[11px] text-gray-400 mt-0.5">Each person can also switch this off for themselves in Settings.</p>}
                 </div>
                 <button
                   onClick={() => toggleRule(r)}
@@ -141,6 +146,7 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
           );
         })}
       </section>
+      ))}
 
       <section className="card p-4">
         <h3 className="text-[12px] font-semibold mb-2">Recently sent</h3>

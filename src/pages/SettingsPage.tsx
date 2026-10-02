@@ -2,15 +2,22 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
 import { supabase } from '../lib/supabase';
-import { Moon, Sun, User, Lock, Bell, Mail, Clock, MessageSquare, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Moon, Sun, User, Lock, Bell, Mail, Clock, MessageSquare } from 'lucide-react';
 
 interface EmailPreferences {
   morning_reminder: boolean;
-  end_day_report: boolean;
-  comment_notifications: boolean;
   unfinished_task_reminders: boolean;
-  performance_nudges: boolean;
+  comment_notifications: boolean;
 }
+
+// The personal emails the notification engine sends (see the
+// notification_rules rows with a preference_key). A missing
+// email_preferences row means everything is on.
+const EMAIL_SWITCHES: { key: keyof EmailPreferences; label: string; when: string; icon: typeof Clock; tint: string }[] = [
+  { key: 'morning_reminder', label: "Add today's tasks", when: "8:00 AM, Monday–Saturday — only if you haven't added any yet", icon: Clock, tint: 'bg-amber-50 dark:bg-amber-500/10 text-amber-500' },
+  { key: 'unfinished_task_reminders', label: 'Unfinished tasks', when: '5:30 PM, Monday–Saturday — only if some are still open', icon: Bell, tint: 'bg-orange-50 dark:bg-orange-500/10 text-orange-500' },
+  { key: 'comment_notifications', label: 'Comments and replies', when: 'Instant — when someone comments on your work or replies to you', icon: MessageSquare, tint: 'bg-blue-50 dark:bg-blue-500/10 text-blue-500' },
+];
 
 export default function SettingsPage() {
   const { profile, refreshProfile } = useAuth();
@@ -22,10 +29,8 @@ export default function SettingsPage() {
   const [pwMsg, setPwMsg] = useState('');
   const [emailPrefs, setEmailPrefs] = useState<EmailPreferences>({
     morning_reminder: true,
-    end_day_report: true,
-    comment_notifications: true,
     unfinished_task_reminders: true,
-    performance_nudges: true,
+    comment_notifications: true,
   });
   const [loadingPrefs, setLoadingPrefs] = useState(true);
   const [savingPrefs, setSavingPrefs] = useState(false);
@@ -46,10 +51,8 @@ export default function SettingsPage() {
     if (data) {
       setEmailPrefs({
         morning_reminder: data.morning_reminder,
-        end_day_report: data.end_day_report,
-        comment_notifications: data.comment_notifications,
         unfinished_task_reminders: data.unfinished_task_reminders,
-        performance_nudges: data.performance_nudges,
+        comment_notifications: data.comment_notifications,
       });
     }
     setLoadingPrefs(false);
@@ -77,10 +80,8 @@ export default function SettingsPage() {
     setSavingPrefs(true);
     const newPrefs: EmailPreferences = {
       morning_reminder: enabled,
-      end_day_report: enabled,
-      comment_notifications: enabled,
       unfinished_task_reminders: enabled,
-      performance_nudges: enabled,
+      comment_notifications: enabled,
     };
     setEmailPrefs(newPrefs);
 
@@ -195,130 +196,39 @@ export default function SettingsPage() {
           <p className="text-sm text-gray-400">Loading preferences...</p>
         ) : (
           <div className="space-y-4">
-            {/* Morning Reminder */}
-            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-                  <Clock size={16} className="text-amber-500" />
+            {EMAIL_SWITCHES.map(({ key, label, when, icon: Icon, tint }, i) => (
+              <div key={key} className={`flex items-center justify-between py-3 ${i < EMAIL_SWITCHES.length - 1 ? 'border-b border-gray-100 dark:border-white/5' : ''}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${tint}`}>
+                    <Icon size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{label}</p>
+                    <p className="text-xs text-gray-500">{when}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Morning Reminder</p>
-                  <p className="text-xs text-gray-500">7:00 AM - Reminder to add your daily tasks</p>
-                </div>
-              </div>
-              <button
-                onClick={() => updateEmailPreference('morning_reminder', !emailPrefs.morning_reminder)}
-                className={`w-12 h-6 rounded-full transition-all relative ${
-                  emailPrefs.morning_reminder ? 'bg-[#007BFF]' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
-                    emailPrefs.morning_reminder ? 'right-1' : 'left-1'
+                <button
+                  onClick={() => updateEmailPreference(key, !emailPrefs[key])}
+                  role="switch"
+                  aria-checked={emailPrefs[key]}
+                  aria-label={label}
+                  className={`w-12 h-6 rounded-full transition-all relative ${
+                    emailPrefs[key] ? 'bg-[#007BFF]' : 'bg-gray-200 dark:bg-gray-700'
                   }`}
-                />
-              </button>
-            </div>
-
-            {/* Daily Summary */}
-            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle2 size={16} className="text-green-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Daily Summary</p>
-                  <p className="text-xs text-gray-500">6:00 PM - End-of-day task completion report</p>
-                </div>
+                >
+                  <span
+                    className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
+                      emailPrefs[key] ? 'right-1' : 'left-1'
+                    }`}
+                  />
+                </button>
               </div>
-              <button
-                onClick={() => updateEmailPreference('end_day_report', !emailPrefs.end_day_report)}
-                className={`w-12 h-6 rounded-full transition-all relative ${
-                  emailPrefs.end_day_report ? 'bg-[#007BFF]' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
-                    emailPrefs.end_day_report ? 'right-1' : 'left-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Comment Notifications */}
-            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-                  <MessageSquare size={16} className="text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Comment Notifications</p>
-                  <p className="text-xs text-gray-500">Instant - When you receive feedback from managers</p>
-                </div>
-              </div>
-              <button
-                onClick={() => updateEmailPreference('comment_notifications', !emailPrefs.comment_notifications)}
-                className={`w-12 h-6 rounded-full transition-all relative ${
-                  emailPrefs.comment_notifications ? 'bg-[#007BFF]' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
-                    emailPrefs.comment_notifications ? 'right-1' : 'left-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Unfinished Task Reminders */}
-            <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
-                  <Bell size={16} className="text-orange-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Unfinished Task Reminders</p>
-                  <p className="text-xs text-gray-500">12:00 PM & 3:00 PM - Nudges for incomplete tasks</p>
-                </div>
-              </div>
-              <button
-                onClick={() => updateEmailPreference('unfinished_task_reminders', !emailPrefs.unfinished_task_reminders)}
-                className={`w-12 h-6 rounded-full transition-all relative ${
-                  emailPrefs.unfinished_task_reminders ? 'bg-[#007BFF]' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
-                    emailPrefs.unfinished_task_reminders ? 'right-1' : 'left-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Performance Nudges */}
-            <div className="flex items-center justify-between py-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center">
-                  <TrendingUp size={16} className="text-purple-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Performance Nudges</p>
-                  <p className="text-xs text-gray-500">Weekly - Encouragement when productivity is low</p>
-                </div>
-              </div>
-              <button
-                onClick={() => updateEmailPreference('performance_nudges', !emailPrefs.performance_nudges)}
-                className={`w-12 h-6 rounded-full transition-all relative ${
-                  emailPrefs.performance_nudges ? 'bg-[#007BFF]' : 'bg-gray-200 dark:bg-gray-700'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
-                    emailPrefs.performance_nudges ? 'right-1' : 'left-1'
-                  }`}
-                />
-              </button>
-            </div>
+            ))}
+            <p className="text-xs text-gray-400 pt-1">
+              {profile?.role === 'managing_director'
+                ? 'These are sent to employees. Your own briefings and reports are managed in MD Panel → Email notifications.'
+                : "Emails about duties you're in charge of (driver payments, Finance approvals, call queues) can't be turned off here — they're part of the job."}
+            </p>
           </div>
         )}
 

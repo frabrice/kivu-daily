@@ -126,6 +126,7 @@ export function wrapEmail(innerHtml: string): string {
     <!DOCTYPE html>
     <html>
     <head>
+      <meta charset="utf-8">
       ${getEmailBaseStyles()}
     </head>
     <body>

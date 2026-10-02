@@ -629,6 +629,11 @@ export interface NotificationRule {
   phase: number;
   sort_order: number;
   enabled: boolean;
+  area: string;
+  // false where the app already raises its own in-app alert for this.
+  in_app: boolean;
+  // Set for personal emails each person can switch off in Settings.
+  preference_key: string | null;
   updated_at: string;
 }
 
