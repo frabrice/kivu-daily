@@ -1,15 +1,21 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ShieldCheck, Smartphone, Landmark } from 'lucide-react';
-import { supabase, Driver, DepositPaymentMethod } from '../../lib/supabase';
+import { supabase, Driver, DriverDeposit, DepositPaymentMethod } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { todayStr } from '../../lib/utils';
-import { WEEKLY_DEPOSIT_AMOUNT, DEPOSIT_PAYMENT_METHODS, formatDateLabelSafe } from '../../lib/fleet';
+import { WEEKLY_DEPOSIT_AMOUNT, DEPOSIT_PAYMENT_METHODS, formatDateLabelSafe, computeDepositStanding, formatRwf } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 
-export default function LogDepositDrawer({ driver, currentRemaining, onClose, onSaved }: { driver: Driver; currentRemaining: number; onClose: () => void; onSaved: () => void }) {
+// Pre-fills what the driver actually needs right now - enough to be
+// cleared to drive if they aren't, otherwise what's due this Sunday -
+// and previews what the payment will cover before it's logged.
+export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }: { driver: Driver; deposits: DriverDeposit[]; onClose: () => void; onSaved: () => void }) {
   const { profile } = useAuth();
-  const [amount, setAmount] = useState(String(currentRemaining > 0 ? currentRemaining : WEEKLY_DEPOSIT_AMOUNT));
+  const driverDeposits = useMemo(() => deposits.filter((d) => d.driver_id === driver.id), [deposits, driver.id]);
+  const before = useMemo(() => computeDepositStanding(driver, driverDeposits), [driver, driverDeposits]);
+  const suggested = before.owedNow > 0 ? before.owedNow : before.nextDueAmount > 0 ? before.nextDueAmount : WEEKLY_DEPOSIT_AMOUNT;
+  const [amount, setAmount] = useState(String(suggested));
   const [paidDate, setPaidDate] = useState(todayStr());
   const [paymentMethod, setPaymentMethod] = useState<DepositPaymentMethod>('momo');
   const [bankName, setBankName] = useState('');
@@ -18,9 +24,22 @@ export default function LogDepositDrawer({ driver, currentRemaining, onClose, on
   const [error, setError] = useState('');
 
   const numAmount = Number(amount);
-  const shortfall = numAmount > 0 ? Math.max(currentRemaining - numAmount, 0) : currentRemaining;
-  const extra = numAmount > 0 ? Math.max(numAmount - currentRemaining, 0) : 0;
   const canContinue = !!numAmount && numAmount > 0 && !!paidDate && (paymentMethod === 'momo' || !!bankName.trim());
+  const after = useMemo(
+    () => (numAmount > 0 ? computeDepositStanding(driver, [...driverDeposits, { paid_date: paidDate, amount: numAmount, created_at: '9999' } as DriverDeposit]) : before),
+    [driver, driverDeposits, paidDate, numAmount, before]
+  );
+  const dueSunday = after.nextDueDate ? formatDateLabelSafe(after.nextDueDate) : '';
+  const clearedText = after.ruleInForce
+    ? (before.isCleared ? 'Still cleared' : 'Clears them to drive')
+    : (before.isCleared ? 'Still up to date' : 'Brings them up to date');
+  const effect = !after.hasStarted
+    ? null
+    : !after.isCleared
+      ? { tone: 'text-amber-500', text: after.ruleInForce ? `${formatRwf(after.owedNow)} still needed before they're cleared to drive.` : `Still ${formatRwf(after.owedNow)} behind.` }
+      : after.nextDueAmount > 0
+        ? { tone: 'text-emerald-600 dark:text-emerald-400', text: `${clearedText} · ${formatRwf(after.nextDueAmount)} still due by Sunday ${dueSunday}.` }
+        : { tone: 'text-emerald-600 dark:text-emerald-400', text: `${clearedText} · the week after Sunday ${dueSunday} is covered too.` };
 
   const save = async () => {
     if (!canContinue) return;
@@ -47,18 +66,22 @@ export default function LogDepositDrawer({ driver, currentRemaining, onClose, on
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
             <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="input" />
-            <p className="text-[10px] text-gray-400 mt-1">{currentRemaining.toLocaleString()} RWF remaining on this week's deposit.</p>
-            {numAmount > 0 && shortfall > 0 && (
-              <p className="text-[10px] text-amber-500 font-medium mt-1">{shortfall.toLocaleString()} RWF would still be owed this week.</p>
+            <p className="text-[10px] text-gray-400 mt-1">
+              {before.owedNow > 0
+                ? (before.ruleInForce ? `${formatRwf(before.owedNow)} needed now to be cleared to drive.` : `${formatRwf(before.owedNow)} behind today.`)
+                : before.nextDueAmount > 0
+                  ? `${formatRwf(before.nextDueAmount)} due by Sunday ${before.nextDueDate ? formatDateLabelSafe(before.nextDueDate) : ''}.`
+                  : 'Already paid for next week - this goes further ahead.'}
+            </p>
+            {numAmount > 0 && after.paidThrough && (
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Covers them through {formatDateLabelSafe(after.paidThrough)}.</p>
             )}
-            {numAmount > 0 && extra > 0 && (
-              <p className="text-[10px] text-blue-500 font-medium mt-1">{extra.toLocaleString()} RWF extra, beyond this week's deposit.</p>
-            )}
+            {numAmount > 0 && effect && <p className={`text-[10px] font-medium mt-1 ${effect.tone}`}>{effect.text}</p>}
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date Paid</label>
             <DateInput value={paidDate} onChange={setPaidDate} />
-            <p className="text-[10px] text-gray-400 mt-1">Their next deposit will be due 7 days after this date.</p>
+            <p className="text-[10px] text-gray-400 mt-1">Every driver pays by Sunday for the Monday–Sunday week ahead.</p>
           </div>
           <div>
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Payment Method</label>
@@ -103,14 +126,10 @@ export default function LogDepositDrawer({ driver, currentRemaining, onClose, on
             <p className="text-[12px] text-gray-500 dark:text-gray-400">
               Via {paymentMethod === 'momo' ? 'MoMo' : `Bank Transfer · ${bankName.trim()}`}
             </p>
-            {shortfall > 0 && (
-              <p className="text-[12px] text-amber-500 font-medium">{shortfall.toLocaleString()} RWF still owed for this week</p>
-            )}
-            {extra > 0 && (
-              <p className="text-[12px] text-blue-500 font-medium">{extra.toLocaleString()} RWF extra, beyond this week's deposit</p>
-            )}
+            {after.paidThrough && <p className="text-[12px] text-gray-500 dark:text-gray-400">Covers through {formatDateLabelSafe(after.paidThrough)}</p>}
+            {effect && <p className={`text-[12px] font-medium ${effect.tone}`}>{effect.text}</p>}
           </div>
-          <p className="text-[10px] text-gray-400">It stays pending until Finance confirms it. If this doesn't cover the full week, you can log another payment for the rest at any time.</p>
+          <p className="text-[10px] text-gray-400">It stays pending until Finance confirms it. If this doesn't cover everything owed, you can log another payment for the rest at any time.</p>
 
           {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, DriverStage, DriverContractStatus } from './supabase';
-import { computeDepositWaterfall, depositDaysSince, effectiveStage } from './fleet';
+import { supabase, DriverStage, DriverContractStatus, DriverRestDay } from './supabase';
+import { computeDepositStanding, effectiveStage } from './fleet';
 import { todayStr } from './utils';
 
 export interface CompanySnapshot {
@@ -42,7 +42,7 @@ export function useCompanySnapshot() {
       campaignsRes, contactsRes,
       productsRes, storiesRes,
     ] = await Promise.all([
-      supabase.from('drivers').select('id, stage, vehicle_id, start_date, initial_deposit_paid, initial_deposit_date, initial_deposit_amount, contract_status'),
+      supabase.from('drivers').select('id, stage, vehicle_id, start_date, rest_day, initial_deposit_paid, initial_deposit_date, initial_deposit_amount, contract_status'),
       supabase.from('vehicles').select('id', { count: 'exact', head: true }),
       supabase.from('driver_deposits').select('driver_id, paid_date, amount, created_at'),
       supabase.from('finance_transactions').select('amount, direction').gte('transaction_date', monthStart),
@@ -54,16 +54,11 @@ export function useCompanySnapshot() {
       supabase.from('user_stories').select('source, status'),
     ]);
 
-    const drivers = (driversRes.data as { id: string; stage: DriverStage; vehicle_id: string | null; start_date: string | null; initial_deposit_paid: boolean; initial_deposit_date: string | null; initial_deposit_amount: number | null; contract_status: DriverContractStatus }[]) ?? [];
+    const drivers = (driversRes.data as { id: string; stage: DriverStage; vehicle_id: string | null; start_date: string | null; rest_day: DriverRestDay | null; initial_deposit_paid: boolean; initial_deposit_date: string | null; initial_deposit_amount: number | null; contract_status: DriverContractStatus }[]) ?? [];
     const deposits = (depositsRes.data as { driver_id: string; paid_date: string; amount: number; created_at: string }[]) ?? [];
     const overdueDeposits = drivers
       .filter((d) => d.vehicle_id && d.contract_status !== 'ended')
-      .filter((d) => {
-        const driverDeposits = deposits.filter((dep) => dep.driver_id === d.id);
-        const wf = computeDepositWaterfall(d.initial_deposit_paid, d.start_date, d.initial_deposit_amount, driverDeposits);
-        const daysSince = depositDaysSince(wf.currentAnchor);
-        return daysSince === null || daysSince >= 7;
-      }).length;
+      .filter((d) => !computeDepositStanding(d, deposits.filter((dep) => dep.driver_id === d.id)).isCleared).length;
 
     const monthTx = (monthTxRes.data as { amount: number; direction: 'in' | 'out' }[]) ?? [];
 

@@ -3,7 +3,7 @@ import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, BedDouble, FileText } fr
 import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay, DriverDocument } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { MANUAL_STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT, availableForReplacement } from '../../lib/fleet';
+import { MANUAL_STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT, availableForReplacement, firstSundayPayment, formatRwf, formatDateLabelSafe } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import SearchableSelect from '../SearchableSelect';
@@ -176,6 +176,20 @@ export default function DriverDrawer({
           <p className="text-[9px] text-gray-400">Every driver must have one fixed day off each week.</p>
         </div>
 
+        {!driver && startDate && restDay && (() => {
+          const first = firstSundayPayment(startDate, restDay);
+          return (
+            <div className="p-2.5 rounded-lg border border-brand/30 bg-brand/5">
+              <p className="text-[11px] font-medium mb-1">Payment schedule</p>
+              <p className="text-[10px] text-gray-600 dark:text-gray-300 leading-relaxed">
+                {formatRwf(WEEKLY_DEPOSIT_AMOUNT)} on {formatDateLabelSafe(startDate)} before the first shift
+                {' → '}{formatRwf(first.amount)} by Sunday {formatDateLabelSafe(first.date)}
+                {' → '}{formatRwf(WEEKLY_DEPOSIT_AMOUNT)} every Sunday after.
+              </p>
+            </div>
+          );
+        })()}
+
         <div className={`p-2.5 rounded-lg border space-y-2 ${initialDepositPaid ? 'border-brand/30 bg-brand/5' : 'border-gray-200 dark:border-white/10'}`}>
           <label className="flex items-center gap-2.5">
             <input
@@ -200,7 +214,7 @@ export default function DriverDrawer({
                 <label className="block text-[10px] font-medium mb-1 text-gray-500">Amount (RWF)</label>
                 <input type="number" value={initialDepositAmount} onChange={(e) => setInitialDepositAmount(e.target.value)} disabled={!editing} className="input" />
               </div>
-              <p className="text-[9px] text-gray-400 col-span-2">For accounting only, to confirm the money arrived — the weekly deposit cycle and payroll both count from Start Date, not this date.</p>
+              <p className="text-[9px] text-gray-400 col-span-2">This is the 180,000 paid upfront on the start day. Weekly payments are due every Sunday from then on; payroll counts from Start Date.</p>
             </div>
           )}
         </div>

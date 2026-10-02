@@ -29,9 +29,11 @@ const FINANCE_ENTRY: HelpEntry = {
       heading: 'Driver Weekly Deposits — How The Math Works',
       body: [
         'Each managed car has two shift drivers (day and night). Each pays 30,000 RWF/day for 6 days = 180,000 RWF/week — the weekly deposit amount. Together the two drivers collect 360,000 RWF/week per car into BK. This is the car\'s operating remittance, not a refundable deposit — it\'s what funds the owner\'s payout and Kivu\'s margin.',
-        'The weekly cycle counts from the driver\'s Start Date, not from whenever their initial deposit happens to be paid — a driver who\'s been driving since their start date without paying shows as overdue from that date, not "no cycle yet" until they eventually pay. The initial deposit itself, once paid, still counts as the first payment toward that first week exactly like any later logged deposit: pay less than 180,000 and the shortfall is what they owe; pay more and the extra rolls forward as credit against the next week. The initial deposit\'s own date is accounting-only now — it confirms the money arrived, it doesn\'t schedule anything.',
-        'Deposits can be logged in installments — 30k, then 40k, then 60k — without resetting anything. The "Log Deposit" button is always available; each logged payment is labeled Due, Covered, or Extra depending on where it lands. Once cumulative payments for a week reach 180,000, that week\'s cycle closes and the 7-day clock for the next week starts from that date.',
-        'Status colors follow the same logic everywhere it shows up: green while there\'s no rush, amber with one day left, red from the due day onward and every day after ("Overdue by Xd"). A driver who\'s never paid shows red immediately.',
+        'Every driver pays on the same day: by Sunday, for the Monday–Sunday week ahead. The rest day is free, so a week is 6 working days × 30,000 = 180,000. This rule starts with payments due Sunday 11 October 2026 (first check Monday 12 October).',
+        'Monday morning is the check: a driver who hasn\'t paid for every working day up to the coming Sunday is "Not cleared to drive". A payment logged on Monday still counts as on time (assumed paid before the shift). Each working day spent uncleared is a day lost and costs 30 points on the Leaderboard; a rest day missed while unpaid doesn\'t count.',
+        'A new driver pays 180,000 upfront on their start day, before the first shift — the initial deposit is this payment. On their first Sunday they top up the working days already driven (start day through Sunday × 30,000), and from then on pay 180,000 every Sunday. Example: start Friday → 180,000 Friday, then 90,000 Sunday (Fri, Sat, Sun), then 180,000 every Sunday. The Add Driver form shows this schedule as soon as you enter the start date and rest day.',
+        'Deposits can be logged in installments — they simply add up. Each logged payment shows how far the running total now covers ("Through Sun 18 Oct"), and the Log Deposit form pre-fills what the driver owes and previews what the payment covers before you save it.',
+        'Status colors are the same everywhere: red when not cleared, amber when cleared but Sunday\'s payment is due today or tomorrow, green when next week is already paid, grey otherwise.',
       ],
     },
     {
@@ -119,7 +121,8 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
         heading: 'How it gets here',
         body: [
           'Auto-posted the moment Fleet logs a driver\'s deposit, or the moment a new driver\'s initial deposit is recorded — nothing needs to be entered here by hand.',
-          'Use "By Week" to see one week at a time, or pick a specific driver from the dropdown to see their full deposit history and running total in one place.',
+          'Use "By Week" to see one week at a time, or pick a specific driver from the dropdown to see their full deposit history, whether they\'re cleared to drive, what\'s due Sunday, and each Monday–Sunday week marked cleared on time, cleared late, or not cleared.',
+          'A collection whose deposit is still pending Finance\'s confirmation can be rejected and deleted here (the red icon) if it was a mistake or duplicate.',
         ],
       },
     ],

@@ -6,11 +6,10 @@ import {
 } from 'lucide-react';
 import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent } from '../../lib/supabase';
 import {
-  STAGES, effectiveStage, REST_DAYS, computeDepositWaterfall, depositDaysSince, depositTier, DEPOSIT_TIER_STYLE, depositStatusLabel, depositRemainingColor,
-  nextDepositDueDate, computeDepositReliability, formatDateLabelSafe, depositCycleDelayDays, depositCycleCompletionLabel, depositPayWeekday,
+  STAGES, effectiveStage, REST_DAYS, DEPOSIT_TIER_STYLE, depositRemainingColor, formatDateLabelSafe,
+  computeDepositStanding, depositStandingTier, depositStandingLabel, depositPeriodLabel, paidThroughDate, formatRwf, SUNDAY_RULE_START,
   fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel,
 } from '../../lib/fleet';
-import { addDays, dateStr } from '../../lib/utils';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import EndContractDrawer from '../../components/fleet/EndContractDrawer';
@@ -49,15 +48,24 @@ export default function DriverProfilePage({
 
   const driverDeposits = deposits.filter((dep) => dep.driver_id === driver.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
   const isEnded = driver.contract_status === 'ended';
-  const wf = computeDepositWaterfall(driver.initial_deposit_paid, driver.start_date, driver.initial_deposit_amount, driverDeposits);
-  const daysSince = depositDaysSince(wf.currentAnchor);
-  const tier = depositTier(daysSince);
+  const standing = computeDepositStanding(driver, driverDeposits);
+  const tier = depositStandingTier(standing);
   const tierStyle = DEPOSIT_TIER_STYLE[tier];
-  const nextDue = nextDepositDueDate(wf.currentAnchor);
-  const remaining = wf.currentRemaining;
-  const reliability = computeDepositReliability(driver, deposits);
   const totalDepositCount = driverDeposits.length + (driver.initial_deposit_paid ? 1 : 0);
-  const annotatedDeposits = [...wf.annotated].reverse();
+  const scoredWeeks = standing.onTimeWeeks + standing.lateWeeks;
+  const onTimeRate = scoredWeeks > 0 ? Math.round((standing.onTimeWeeks / scoredWeeks) * 100) : null;
+
+  // Each payment shows how far the running total reaches after it, so
+  // the list reads as "this payment carried them through X".
+  const paidThroughAfter = new Map<string, string | null>();
+  if (driver.start_date) {
+    let cumulative = driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0;
+    paidThroughAfter.set('initial', cumulative > 0 ? paidThroughDate(driver.start_date, driver.rest_day, cumulative) : null);
+    for (const dep of [...driverDeposits].sort((a, b) => a.paid_date.localeCompare(b.paid_date) || a.created_at.localeCompare(b.created_at))) {
+      cumulative += dep.amount;
+      paidThroughAfter.set(dep.id, paidThroughDate(driver.start_date, driver.rest_day, cumulative));
+    }
+  }
 
   const driverFines = fines.filter((f) => f.driver_id === driver.id).sort((a, b) => b.fine_date.localeCompare(a.fine_date));
   const totalFined = driverFines.reduce((sum, f) => sum + f.amount, 0);
@@ -170,7 +178,7 @@ export default function DriverProfilePage({
             <p className="text-[12px] font-medium">
               {driver.start_date ? formatDateLabelSafe(driver.start_date) : <span className="text-gray-400 font-normal">Not set</span>}
             </p>
-            {driver.start_date && <p className="text-[10px] text-brand-600 dark:text-brand-300 mt-0.5">Pays every {depositPayWeekday(driver.start_date)}</p>}
+            {driver.start_date && <p className="text-[10px] text-brand-600 dark:text-brand-300 mt-0.5">Pays every Sunday</p>}
           </div>
           <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
             <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Clock size={10} /> Initial Deposit</p>
@@ -195,13 +203,15 @@ export default function DriverProfilePage({
         <div className="card p-4">
           <div className="flex items-center gap-1.5 mb-2">
             <div className="w-6 h-6 rounded-lg bg-brand/10 flex items-center justify-center shrink-0"><TrendingUp size={12} className="text-brand-600 dark:text-brand-300" /></div>
-            <p className="stat-label">On-Time Deposits</p>
+            <p className="stat-label">On-Time Weeks</p>
           </div>
           <p className="text-2xl font-bold leading-none">
-            {reliability.onTimeRate === null ? '—' : `${reliability.onTimeRate}%`}
+            {onTimeRate === null ? '—' : `${onTimeRate}%`}
           </p>
           <p className="text-[10px] text-gray-400 mt-1.5">
-            {reliability.totalCycles === 0 ? 'No completed cycles yet' : `${reliability.onTime} on time · ${reliability.late} late (${reliability.totalCycles} cycles)`}
+            {scoredWeeks === 0
+              ? `Counted from ${formatDateLabelSafe(SUNDAY_RULE_START)}`
+              : `${standing.onTimeWeeks} on time · ${standing.lateWeeks} late · ${standing.score} points`}
           </p>
         </div>
         <div className="card p-4">
@@ -209,7 +219,7 @@ export default function DriverProfilePage({
             <div className="w-6 h-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0"><Wallet size={12} className="text-emerald-600 dark:text-emerald-300" /></div>
             <p className="stat-label">Total Deposited</p>
           </div>
-          <p className="text-2xl font-bold leading-none">{reliability.totalPaid.toLocaleString()}</p>
+          <p className="text-2xl font-bold leading-none">{standing.totalPaid.toLocaleString()}</p>
           <p className="text-[10px] text-gray-400 mt-1.5">RWF across {totalDepositCount} deposit{totalDepositCount === 1 ? '' : 's'}{driver.initial_deposit_paid ? ' (incl. initial)' : ''}</p>
         </div>
         <div className="card p-4">
@@ -222,35 +232,29 @@ export default function DriverProfilePage({
         </div>
       </div>
 
-      {/* Weekly Cycles - no week ever counts as done until the full 180k is
-          in, tracked on the driver's own 7-day clock from their start
-          date regardless of which calendar day each payment landed on. */}
+      {/* Weekly history - Monday-Sunday weeks from the switch-over on. A
+          week counts as done only once every working day up to its Sunday
+          is paid for; lost days are working days spent uncleared. */}
       {!isEnded && (
         <div className="card p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><CalendarDays size={13} /> Weekly Deposit Cycles</p>
-          {[...wf.closedCycles].reverse().length === 0 && !wf.currentAnchor ? (
-            <p className="text-[11px] text-gray-400">No cycles yet — set a start date to begin tracking.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><CalendarDays size={13} /> Weekly Deposits</p>
+          {standing.periods.length === 0 ? (
+            <p className="text-[11px] text-gray-400">
+              {!driver.start_date
+                ? 'No start date set yet.'
+                : `Weekly tracking starts ${formatDateLabelSafe(SUNDAY_RULE_START)} — first payment due Sunday ${standing.nextDueDate ? formatDateLabelSafe(standing.nextDueDate) : ''}.`}
+            </p>
           ) : (
             <div className="space-y-1.5">
-              {wf.currentAnchor && (
-                <div className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5">
-                  <span className="text-gray-500 dark:text-gray-400">
-                    Week of {formatDateLabelSafe(wf.currentAnchor)} – {formatDateLabelSafe(dateStr(addDays(new Date(`${wf.currentAnchor}T00:00:00`), 6)))}
-                  </span>
-                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${tierStyle.badge}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${tierStyle.dot}`} /> {depositStatusLabel(daysSince)} · in progress
-                  </span>
-                </div>
-              )}
-              {[...wf.closedCycles].reverse().map((cycle, i) => {
-                const delay = depositCycleDelayDays(cycle);
+              {[...standing.periods].reverse().map((p) => {
+                const style = p.state === 'open' ? DEPOSIT_TIER_STYLE.red : p.state === 'late' ? DEPOSIT_TIER_STYLE.yellow : DEPOSIT_TIER_STYLE.green;
                 return (
-                  <div key={i} className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
+                  <div key={p.start} className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
                     <span className="text-gray-500 dark:text-gray-400">
-                      Week of {formatDateLabelSafe(cycle.anchor)} – {formatDateLabelSafe(dateStr(addDays(new Date(`${cycle.anchor}T00:00:00`), 6)))}
+                      {p.isStartSegment ? 'First days' : 'Week of'} {formatDateLabelSafe(p.start)} – {formatDateLabelSafe(p.end)}
                     </span>
-                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${delay > 0 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'}`}>
-                      {depositCycleCompletionLabel(cycle)} · {formatDateLabelSafe(cycle.closedDate)}
+                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${style.badge}`}>
+                      {depositPeriodLabel(p)}{p.clearedDate ? ` · ${formatDateLabelSafe(p.clearedDate)}` : ''}
                     </span>
                   </div>
                 );
@@ -267,7 +271,7 @@ export default function DriverProfilePage({
             <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><Wallet size={13} /> Deposits</p>
             {!isEnded && driver.start_date && (
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
-                Pays every {depositPayWeekday(driver.start_date)}
+                Pays every Sunday
               </span>
             )}
           </div>
@@ -278,7 +282,7 @@ export default function DriverProfilePage({
               </span>
             ) : (
               <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${tierStyle.badge}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${tierStyle.dot}`} /> {depositStatusLabel(daysSince)}
+                <span className={`w-1.5 h-1.5 rounded-full ${tierStyle.dot}`} /> {depositStandingLabel(standing)}
               </span>
             )}
             {canEdit && !isEnded && (
@@ -286,25 +290,33 @@ export default function DriverProfilePage({
             )}
           </div>
         </div>
-        {!isEnded && nextDue && (
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">
-            Next deposit due <span className="font-medium text-gray-700 dark:text-gray-200">{formatDateLabelSafe(nextDue)}</span>
-          </p>
-        )}
-        {!isEnded && remaining > 0 && (
-          <p className={`text-[11px] font-medium mb-2.5 ${depositRemainingColor(tier)}`}>{remaining.toLocaleString()} RWF remaining this week</p>
+        {!isEnded && standing.hasStarted && (
+          <div className="space-y-1 mb-2.5">
+            {standing.owedNow > 0 && (
+              <p className={`text-[11px] font-medium ${depositRemainingColor(tier)}`}>
+                {standing.ruleInForce ? `Owes ${formatRwf(standing.owedNow)} to be cleared to drive` : `Behind by ${formatRwf(standing.owedNow)}`}
+              </p>
+            )}
+            {standing.nextDueDate && (
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                {standing.nextDueAmount > 0
+                  ? <>Due by Sunday <span className="font-medium text-gray-700 dark:text-gray-200">{formatDateLabelSafe(standing.nextDueDate)}</span>: <span className="font-medium text-gray-700 dark:text-gray-200">{formatRwf(standing.nextDueAmount)}</span>{!standing.ruleInForce && ' (switch-over)'}</>
+                  : <>Already paid for the week after Sunday {formatDateLabelSafe(standing.nextDueDate)}</>}
+              </p>
+            )}
+            {standing.paidThrough && (
+              <p className="text-[10px] text-gray-400">Paid through {formatDateLabelSafe(standing.paidThrough)}</p>
+            )}
+          </div>
         )}
         {totalDepositCount === 0 ? (
           <p className="text-[11px] text-gray-400">No deposits logged yet.</p>
         ) : (
           <div className="space-y-1.5">
-            {annotatedDeposits.map(({ deposit: dep, remainingAfter, extra, closesCycle }) => {
-              const statusLabel = extra > 0 ? `${extra.toLocaleString()} extra` : closesCycle ? 'Covered' : `${remainingAfter.toLocaleString()} due`;
-              const statusClass = extra > 0
-                ? 'text-blue-600 dark:text-blue-300'
-                : closesCycle
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-amber-600 dark:text-amber-400';
+            {driverDeposits.map((dep) => {
+              const through = paidThroughAfter.get(dep.id);
+              const statusLabel = through ? `Through ${formatDateLabelSafe(through)}` : 'Partial';
+              const statusClass = 'text-gray-500 dark:text-gray-400';
               return (
                 <div key={dep.id} className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
                   <div className="flex items-center gap-2 min-w-0">
@@ -331,12 +343,9 @@ export default function DriverProfilePage({
               );
             })}
             {driver.initial_deposit_paid && driver.initial_deposit_date && (() => {
-              const initialStatusLabel = wf.initialExtra > 0 ? `${wf.initialExtra.toLocaleString()} extra` : wf.initialRemaining > 0 ? `${wf.initialRemaining.toLocaleString()} due` : 'Covered';
-              const initialStatusClass = wf.initialExtra > 0
-                ? 'text-blue-600 dark:text-blue-300'
-                : wf.initialRemaining > 0
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-emerald-600 dark:text-emerald-400';
+              const initialThrough = paidThroughAfter.get('initial');
+              const initialStatusLabel = initialThrough ? `Through ${formatDateLabelSafe(initialThrough)}` : 'Partial';
+              const initialStatusClass = 'text-gray-500 dark:text-gray-400';
               return (
                 <div className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
                   <div className="flex items-center gap-2 min-w-0">
@@ -420,7 +429,7 @@ export default function DriverProfilePage({
       {loggingDeposit && (
         <LogDepositDrawer
           driver={driver}
-          currentRemaining={remaining}
+          deposits={driverDeposits}
           onClose={() => setLoggingDeposit(false)}
           onSaved={reload}
         />

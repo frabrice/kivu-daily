@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { LayoutDashboard, Car, Users2, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Landmark, Wallet, PiggyBank, Handshake } from 'lucide-react';
 import { useFinanceData, sumWhere, fmt, KIVU_REVENUE_TYPES } from '../../lib/finance';
-import { effectiveStage, computeDepositWaterfall, depositDaysSince } from '../../lib/fleet';
+import { effectiveStage, computeDepositStanding } from '../../lib/fleet';
 import { todayStr } from '../../lib/utils';
 import KpiTile from '../../components/KpiTile';
 
@@ -27,19 +27,16 @@ export default function FinanceDashboardPage() {
     const operationalCars = vehicles.filter((v) => drivers.some((d) => d.vehicle_id === v.id)).length;
     const activeDrivers = drivers.filter((d) => effectiveStage(d) === 'active').length;
 
-    // Same waterfall Fleet's own Deposits page uses, so "what's owed"
-    // agrees everywhere instead of this page's own flatter estimate
-    // (driver hasn't paid in 7+ days x a flat weekly amount) drifting
-    // from what installments/rollover credit actually leave outstanding.
+    // Same standing Fleet's own Deposits page uses, so "what's owed"
+    // agrees everywhere - the amount each driver still needs to pay to be
+    // cleared to drive this week.
     let outstandingDriverCount = 0;
     let outstandingDriverAmount = 0;
     for (const d of drivers.filter((dr) => dr.vehicle_id && dr.contract_status !== 'ended')) {
-      const driverDeposits = deposits.filter((dep) => dep.driver_id === d.id);
-      const wf = computeDepositWaterfall(d.initial_deposit_paid, d.start_date, d.initial_deposit_amount, driverDeposits);
-      const daysSince = depositDaysSince(wf.currentAnchor);
-      if (daysSince === null || daysSince >= 7) {
+      const standing = computeDepositStanding(d, deposits.filter((dep) => dep.driver_id === d.id));
+      if (!standing.isCleared) {
         outstandingDriverCount++;
-        outstandingDriverAmount += wf.currentRemaining;
+        outstandingDriverAmount += standing.owedNow;
       }
     }
 

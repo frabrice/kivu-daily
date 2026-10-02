@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Truck, Car, Wallet, Receipt, Users2, Trophy } from 'lucide-react';
-import { useFleetData, computeDepositWaterfall, depositDaysSince } from '../lib/fleet';
+import { useFleetData, computeDepositStanding } from '../lib/fleet';
 import FleetPipelinePage from './fleet/FleetPipelinePage';
 import FleetVehiclesPage from './fleet/FleetVehiclesPage';
 import FleetDepositsPage from './fleet/FleetDepositsPage';
@@ -32,11 +32,9 @@ export default function FleetPage() {
   const data = useFleetData();
   const { drivers, deposits } = data;
 
-  const overdueCount = drivers.filter((d) => d.vehicle_id && d.contract_status !== 'ended').filter((d) => {
-    const wf = computeDepositWaterfall(d.initial_deposit_paid, d.start_date, d.initial_deposit_amount, deposits.filter((dep) => dep.driver_id === d.id));
-    const daysSince = depositDaysSince(wf.currentAnchor);
-    return daysSince === null || daysSince >= 7;
-  }).length;
+  const overdueCount = drivers
+    .filter((d) => d.vehicle_id && d.contract_status !== 'ended')
+    .filter((d) => !computeDepositStanding(d, deposits.filter((dep) => dep.driver_id === d.id)).isCleared).length;
 
   return (
     <div className="space-y-4">

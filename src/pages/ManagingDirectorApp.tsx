@@ -42,7 +42,8 @@ import { useCompanyData, buildEmployeeStats, departmentStats, EmployeeWithStats 
 import { useActivityFeed } from '../lib/activity';
 import { useCompanySnapshot } from '../lib/dashboardSnapshot';
 import { fmt } from '../lib/finance';
-import { completionColor, dateStr, addDays, greeting, formatDateFull } from '../lib/utils';
+import { completionColor, dateStr, addDays, greeting, formatDateFull, todayStr } from '../lib/utils';
+import { SUNDAY_RULE_START } from '../lib/fleet';
 import { completionPct } from '../lib/hooks';
 import { supabase, Task, Department, Profile } from '../lib/supabase';
 import Avatar from '../components/Avatar';
@@ -294,7 +295,9 @@ export default function ManagingDirectorApp() {
                   { label: 'Active drivers', value: `${snapshot.fleet.activeDrivers}/${snapshot.fleet.totalDrivers}` },
                   { label: 'Vehicles', value: snapshot.fleet.totalVehicles },
                 ]}
-                alert={snapshot.fleet.overdueDeposits > 0 ? `${snapshot.fleet.overdueDeposits} deposit${snapshot.fleet.overdueDeposits === 1 ? '' : 's'} overdue` : undefined}
+                alert={snapshot.fleet.overdueDeposits > 0
+                  ? `${snapshot.fleet.overdueDeposits} driver${snapshot.fleet.overdueDeposits === 1 ? '' : 's'} ${todayStr() >= SUNDAY_RULE_START ? 'not cleared to drive' : 'behind on deposits'}`
+                  : undefined}
               />
               <DeptSnapshotCard
                 icon={Wallet}

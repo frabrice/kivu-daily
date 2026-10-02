@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, computeDepositWaterfall, depositDaysSince, depositTier, depositStatusLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 
@@ -32,18 +32,17 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       const history = depositsForDriver(d.id).sort((a, b) => b.paid_date.localeCompare(a.paid_date));
       const lastDeposit = history[0] ?? null;
       const isEnded = d.contract_status === 'ended';
-      const wf = computeDepositWaterfall(d.initial_deposit_paid, d.start_date, d.initial_deposit_amount, depositsForDriver(d.id));
-      const daysSince = depositDaysSince(wf.currentAnchor);
-      const tier = depositTier(daysSince);
-      const label = depositStatusLabel(daysSince);
-      return { driver: d, daysSince, tier, priority: isEnded ? 4 : TIER_PRIORITY[tier], label, lastDeposit, remaining: wf.currentRemaining, isEnded };
+      const standing = computeDepositStanding(d, depositsForDriver(d.id));
+      const tier = depositStandingTier(standing);
+      const label = depositStandingLabel(standing);
+      return { driver: d, standing, tier, priority: isEnded ? 4 : TIER_PRIORITY[tier], label, lastDeposit, isEnded };
     });
     return rows
       .filter((r) => {
         const q = search.trim().toLowerCase();
         return !q || r.driver.full_name.toLowerCase().includes(q);
       })
-      .sort((a, b) => a.priority - b.priority || (b.daysSince ?? 999) - (a.daysSince ?? 999));
+      .sort((a, b) => a.priority - b.priority || b.standing.owedNow - a.standing.owedNow);
   }, [drivers, deposits, search]);
 
   const overdueCount = depositQueue.filter((r) => !r.isEnded && r.tier === 'red').length;
@@ -58,7 +57,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
             <Wallet size={16} className="text-blue-600 dark:text-blue-300" /> Deposits
             {overdueCount > 0 && <span className="text-[8px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{overdueCount}</span>}
           </h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Weekly RWF 180,000 driver deposit, tracked on a rolling 7-day cycle.</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Every driver pays 180,000 by Sunday for the Monday–Sunday week ahead. Unpaid on Monday means not cleared to drive.</p>
         </div>
         <div className="relative">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -79,8 +78,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                   <Car size={10} /> {row.driver.vehicle?.plate_number}
                   {row.driver.shift && <span>· {row.driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
                 </p>
-                {!row.isEnded && row.remaining > 0 && (
-                  <p className={`text-[10px] font-medium mt-0.5 ${depositRemainingColor(row.tier)}`}>{row.remaining.toLocaleString()} RWF remaining this week</p>
+                {!row.isEnded && (row.standing.owedNow > 0 || row.standing.nextDueAmount > 0) && (
+                  <p className={`text-[10px] font-medium mt-0.5 ${depositRemainingColor(row.tier)}`}>
+                    {row.standing.owedNow > 0
+                      ? `Owes ${formatRwf(row.standing.owedNow)} now`
+                      : `${formatRwf(row.standing.nextDueAmount)} due Sunday ${row.standing.nextDueDate ? formatDateLabelSafe(row.standing.nextDueDate) : ''}`}
+                  </p>
                 )}
               </div>
               {row.lastDeposit?.status === 'pending' && (
@@ -116,7 +119,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       {loggingDepositFor && (
         <LogDepositDrawer
           driver={loggingDepositFor}
-          currentRemaining={computeDepositWaterfall(loggingDepositFor.initial_deposit_paid, loggingDepositFor.start_date, loggingDepositFor.initial_deposit_amount, depositsForDriver(loggingDepositFor.id)).currentRemaining}
+          deposits={deposits}
           onClose={() => setLoggingDepositFor(null)}
           onSaved={reload}
         />
