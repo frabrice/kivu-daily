@@ -1,21 +1,22 @@
 import { useState } from 'react';
-import { Truck, Car, Wallet, Receipt, Users2, Trophy } from 'lucide-react';
-import { useFleetData, computeDepositStanding } from '../lib/fleet';
+import { Truck, Car, Wallet, Receipt, Users2, Trophy, Eye, Paintbrush } from 'lucide-react';
+import { useFleetData, computeDepositStanding, canEditFleet } from '../lib/fleet';
+import { useAuth } from '../lib/auth';
 import FleetPipelinePage from './fleet/FleetPipelinePage';
 import FleetVehiclesPage from './fleet/FleetVehiclesPage';
 import FleetDepositsPage from './fleet/FleetDepositsPage';
 import FleetFinesPage from './fleet/FleetFinesPage';
 import DepositLeaderboardPage from './fleet/DepositLeaderboardPage';
 import NonInsiderPage from './nonInsider/NonInsiderPage';
+import BrandingDevicesPage from './fleet/BrandingDevicesPage';
 
-// Fleet's own employees see these five areas as separate sidebar pages
+// Fleet's own employees see these areas as separate sidebar pages
 // (src/pages/fleet/*) instead, since a fully expanded sidebar for every
 // department would be unmanageable for a role that already sees
-// everything. This bundled version is for the MD, and identically -
-// full edit rights included, see canEditFleet() in lib/fleet.ts - for
-// Call Center and IT, who both need the same full picture without yet
-// another fragmented sidebar stacked on top of their own.
-type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'leaderboard' | 'fines' | 'non_insider';
+// everything. This bundled version is for the MD and IT (full edit
+// rights) and for Call Center, read-only - see canEditFleet() in
+// lib/fleet.ts.
+type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'leaderboard' | 'fines' | 'non_insider' | 'branding';
 
 export default function FleetPage() {
   const [tab, setTab] = useState<Tab>(() => {
@@ -29,6 +30,8 @@ export default function FleetPage() {
     setTab(t);
     try { localStorage.setItem('kivu-active-nav-fleet-tab', t); } catch { /* ignore */ }
   };
+  const { profile } = useAuth();
+  const readOnly = !canEditFleet(profile);
   const data = useFleetData();
   const { drivers, deposits } = data;
 
@@ -38,6 +41,11 @@ export default function FleetPage() {
 
   return (
     <div className="space-y-4">
+      {readOnly && (
+        <div className="flex items-center gap-2 text-[11px] px-3 py-2 rounded-lg bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-300 w-fit">
+          <Eye size={13} /> View only — Fleet makes changes here. On Non-Insider cars you can update branding and device answers.
+        </div>
+      )}
       <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap">
         <TabButton active={tab === 'pipeline'} onClick={() => selectTab('pipeline')} icon={Truck} label="Driver Pipeline" />
         <TabButton active={tab === 'vehicles'} onClick={() => selectTab('vehicles')} icon={Car} label="Vehicles" />
@@ -45,6 +53,7 @@ export default function FleetPage() {
         <TabButton active={tab === 'leaderboard'} onClick={() => selectTab('leaderboard')} icon={Trophy} label="Leaderboard" />
         <TabButton active={tab === 'fines'} onClick={() => selectTab('fines')} icon={Receipt} label="Fines" />
         <TabButton active={tab === 'non_insider'} onClick={() => selectTab('non_insider')} icon={Users2} label="Non-Insider" />
+        {!readOnly && <TabButton active={tab === 'branding'} onClick={() => selectTab('branding')} icon={Paintbrush} label="Branding & Devices" />}
       </div>
 
       {tab === 'pipeline' && <FleetPipelinePage data={data} />}
@@ -53,6 +62,7 @@ export default function FleetPage() {
       {tab === 'leaderboard' && <DepositLeaderboardPage data={data} />}
       {tab === 'fines' && <FleetFinesPage data={data} />}
       {tab === 'non_insider' && <NonInsiderPage />}
+      {tab === 'branding' && !readOnly && <BrandingDevicesPage />}
     </div>
   );
 }

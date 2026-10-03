@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, CarFront, User, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { canEditFleet } from '../../lib/fleet';
+import { canEditFleet, canSetCarInterest } from '../../lib/fleet';
 import { useNonInsiderData, yesNoUnknown, matchesTri, TriFilter } from '../../lib/nonInsider';
 import { PlatformCar } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
@@ -17,6 +17,7 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
   const { profile } = useAuth();
   const { drivers, cars, reload } = data;
   const canEdit = canEditFleet(profile);
+  const canSetInterest = canSetCarInterest(profile);
   const [view, setView] = useState<ViewMode>('cards');
   const [search, setSearch] = useState('');
   const [makeFilter, setMakeFilter] = useState('all');
@@ -127,7 +128,7 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
                   <EntryActions
                     onView={() => setDrawer({ car: c, startEditing: false })}
                     onEdit={() => setDrawer({ car: c, startEditing: true })}
-                    canEdit={canEdit}
+                    canEdit={canEdit || canSetInterest}
                   />
                 </div>
                 {(c.make || c.model || c.color) && (
@@ -185,7 +186,7 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
                 <EntryActions
                   onView={() => setDrawer({ car: c, startEditing: false })}
                   onEdit={() => setDrawer({ car: c, startEditing: true })}
-                  canEdit={canEdit}
+                  canEdit={canEdit || canSetInterest}
                 />
               ),
             },
@@ -198,6 +199,7 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
           car={drawer.car}
           startEditing={drawer.startEditing}
           canEdit={canEdit}
+          canSetInterest={canSetInterest}
           onClose={() => setDrawer(null)}
           onSaved={reload}
         />

@@ -36,7 +36,38 @@ export async function carsWithoutDriver(ctx: Ctx): Promise<VehicleRow[]> {
 
 const storyLabel = (s: StoryRow) => s.title?.trim() || s.need?.trim() || "an issue";
 
+interface CarRow { id: string; plate_number: string; make: string | null; model: string | null; notes: string | null; branding_status: string | null; device_status: string | null }
+
+export function loadPlatformCars(ctx: Ctx) {
+  return cached(ctx, "platform_cars", () => rows<CarRow>(ctx.db.from("platform_cars").select("id, plate_number, make, model, notes, branding_status, device_status")));
+}
+
 export const operationsRules: Record<string, RuleDef> = {
+  car_interest_recorded: {
+    kind: "event",
+    sample: async (ctx) => {
+      const car = (await loadPlatformCars(ctx)).find((c) => c.branding_status === "to_contact" || c.device_status === "to_contact");
+      return car ? { car_id: car.id, kind: car.branding_status === "to_contact" ? "branding" : "device" } : null;
+    },
+    build: async (p, ctx): Promise<Built | null> => {
+      const car = (await loadPlatformCars(ctx)).find((c) => c.id === p.car_id);
+      if (!car) return null;
+      const [owner] = await rows<{ full_name: string; phone: string | null }>(ctx.db.from("platform_drivers").select("full_name, phone").eq("car_id", car.id).limit(1));
+      const branding = p.kind === "branding";
+      const what = branding ? "allows branding" : "wants to buy our device";
+      return {
+        subject: `${car.plate_number}: owner ${what}`,
+        heading: branding ? "A car owner allows branding" : "A car owner wants our device",
+        intro: `${p.actor_id ? `<b>${esc(personName(ctx, p.actor_id as string))}</b> recorded that` : "It's recorded that"} the owner of <b>${esc(car.plate_number)}</b>${car.make || car.model ? ` (${esc([car.make, car.model].filter(Boolean).join(" "))})` : ""} ${what}.`
+          + (owner ? `<br><br>Driver: ${esc(owner.full_name)}${owner.phone ? ` · <a href="tel:${esc(owner.phone.replace(/[^\d+]/g, ""))}">${esc(owner.phone)}</a>` : ""}` : "")
+          + (car.notes ? `<br><br><span style="color:#666;white-space:pre-wrap;">${esc(car.notes)}</span>` : "")
+          + `<br><br>Contact them and move the car along on <b>Branding & Devices</b>.`,
+        cta: { label: "Open Branding & Devices", query: "page=fleet_branding" },
+        inApp: `${car.plate_number}: owner ${what}`,
+      };
+    },
+  },
+
   fleet_weekly: {
     kind: "scheduled", days: [1], at: hm(8),
     build: async (ctx) => {
@@ -60,6 +91,10 @@ export const operationsRules: Record<string, RuleDef> = {
       const licences = vehicles.filter((v) => v.rura_license_expiry_date && v.rura_license_expiry_date <= soon);
 
       const blocks: Block[] = [];
+      const platformCars = await loadPlatformCars(ctx);
+      const brandingOpen = platformCars.filter((c) => c.branding_status === "to_contact" || c.branding_status === "scheduled").length;
+      const deviceOpen = platformCars.filter((c) => c.device_status === "to_contact" || c.device_status === "agreed").length;
+      if (brandingOpen || deviceOpen) blocks.push({ heading: "Branding & Devices", text: `${plural(brandingOpen, "car")} waiting for branding, ${plural(deviceOpen, "owner")} waiting for a device. Follow up on the Branding & Devices page.` });
       if (idle.length) blocks.push({ heading: `Cars without a driver (${idle.length})`, text: idle.map((v) => esc(v.plate_number)).join(", ") + " — every idle day is lost income for the owner and for us." });
       if (licences.length) blocks.push({
         heading: `RURA licences expired or expiring within 30 days (${licences.length})`,
@@ -94,6 +129,7 @@ export const operationsRules: Record<string, RuleDef> = {
           licences.length && plural(licences.length, "licence") + " to renew",
           unpaid.length && plural(unpaid.length, "unpaid fine"),
           missingDocs.length && `${plural(missingDocs.length, "driver")} missing documents`,
+          (brandingOpen || deviceOpen) && `${brandingOpen + deviceOpen} branding/device follow-ups`,
         ].filter(Boolean).join(", ")}`,
         heading: "Fleet — this week's housekeeping",
         intro: "Everything below is open in Kivu Daily right now. Fix what you can this week.",

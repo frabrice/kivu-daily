@@ -197,6 +197,16 @@ export interface PlatformCar {
   allows_branding: boolean | null;
   willing_to_buy_device: boolean | null;
   notes: string | null;
+  // Fleet Manager's follow-up once an owner allows branding / wants a device.
+  branding_status: 'to_contact' | 'scheduled' | 'branded' | 'not_going_ahead' | null;
+  branding_recorded_at: string | null;
+  branding_recorded_by: string | null;
+  device_status: 'to_contact' | 'agreed' | 'installed' | 'not_going_ahead' | null;
+  device_recorded_at: string | null;
+  device_recorded_by: string | null;
+  followup_notes: string | null;
+  followup_updated_at: string | null;
+  followup_updated_by: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

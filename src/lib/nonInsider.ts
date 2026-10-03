@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, PlatformDriver, PlatformCar } from './supabase';
 
 // Non-insider drivers: live on the passenger app but their car isn't part
@@ -10,6 +10,8 @@ export function useNonInsiderData() {
   const [drivers, setDrivers] = useState<PlatformDriver[]>([]);
   const [cars, setCars] = useState<PlatformCar[]>([]);
   const [loading, setLoading] = useState(true);
+  // Unique per mount - two pages using this hook at once must not share a channel.
+  const channelName = useRef(`platform-fleet-feed-${Math.random().toString(36).slice(2)}`);
 
   const load = useCallback(async () => {
     const [d, c] = await Promise.all([
@@ -24,7 +26,7 @@ export function useNonInsiderData() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('platform-fleet-feed')
+      .channel(channelName.current)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_drivers' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_cars' }, () => load())
       .subscribe();
@@ -51,4 +53,26 @@ export function matchesTri(value: boolean | null, filter: TriFilter): boolean {
   if (filter === 'yes') return value === true;
   if (filter === 'no') return value === false;
   return value === null;
+}
+
+// Branding & Devices: cars whose owner allows branding / wants our device
+// and still need the Fleet Manager's follow-up (sidebar badge).
+export function useCarFollowupCount(enabled: boolean): number {
+  const [count, setCount] = useState(0);
+  const channelName = useRef(`car-followups-${Math.random().toString(36).slice(2)}`);
+  const load = useCallback(async () => {
+    if (!enabled) return;
+    const { count: c } = await supabase.from('platform_cars').select('id', { count: 'exact', head: true })
+      .or('branding_status.eq.to_contact,device_status.eq.to_contact');
+    setCount(c ?? 0);
+  }, [enabled]);
+  useEffect(() => {
+    load();
+    if (!enabled) return;
+    const channel = supabase.channel(channelName.current)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_cars' }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [load, enabled]);
+  return count;
 }

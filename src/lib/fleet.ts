@@ -2,15 +2,25 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, DriverDocument, DriverDocumentType, DriverStage, DriverContractStatus, DriverRestDay, DepositPaymentMethod, Profile } from './supabase';
 import { todayStr } from './utils';
 
-// Fleet's own dashboard, plus the identical bundled view given to Call
-// Center and IT (both need the full Fleet picture - not a read-only
-// mirror of it, and not fragmented into separate sidebar pages the way
-// Fleet's own staff see it) - kept as one helper so the departments
-// allowed to edit stay in sync with the RLS policies on the other end.
-const FLEET_EDIT_DEPARTMENTS = ['fleet', 'call_center', 'it'];
+// Who may change Fleet data - kept in step with the RLS policies. Call
+// Center sees the same bundled Fleet view but read-only (confirmed with
+// the operator): the only thing they may set is a Non-Insider car's
+// branding / device answers, see canSetCarInterest.
+const FLEET_EDIT_DEPARTMENTS = ['fleet', 'it'];
 
 export function canEditFleet(profile: Profile | null | undefined): boolean {
   return profile?.role === 'managing_director' || FLEET_EDIT_DEPARTMENTS.includes(profile?.department?.slug ?? '');
+}
+
+// Is branded / allows branding / wants our device, plus a note - via the
+// set_platform_car_interest RPC.
+export function canSetCarInterest(profile: Profile | null | undefined): boolean {
+  return canEditFleet(profile) || profile?.department?.slug === 'call_center';
+}
+
+// Driver documents (ID, criminal record, medical) are hidden from Call Center.
+export function canSeeDriverDocuments(profile: Profile | null | undefined): boolean {
+  return profile?.department?.slug !== 'call_center';
 }
 
 // Shared by every Fleet page (Driver Pipeline, Vehicles, Deposits, Fines) so

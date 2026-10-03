@@ -55,6 +55,7 @@ export type NavKey =
   | 'fleet_deposits'
   | 'fleet_fines'
   | 'fleet_leaderboard'
+  | 'fleet_branding'
   | 'finance_driver_leaderboard'
   | 'call_center_queue'
   | 'call_center_directory'

@@ -7,7 +7,7 @@ import {
   Package, AlertTriangle,
   Image as ImageIcon,
   LayoutDashboard, ArrowLeftRight, Landmark, ClipboardCheck,
-  CarFront, ShieldCheck, Mail, Trophy, UserCog, Headphones, PhoneIncoming,
+  CarFront, ShieldCheck, Mail, Trophy, UserCog, Headphones, PhoneIncoming, Paintbrush,
 } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import NotificationBell from '../components/NotificationBell';
@@ -50,6 +50,8 @@ import HowToUsePage from './HowToUsePage';
 import FromCallCenterPage from './FromCallCenterPage';
 import CallTicketsPage from './callCenter/CallTicketsPage';
 import { takeTicketLink, useMyOpenTicketCount } from '../lib/callTickets';
+import BrandingDevicesPage from './fleet/BrandingDevicesPage';
+import { useCarFollowupCount } from '../lib/nonInsider';
 
 export default function EmployeeApp() {
   const { profile } = useAuth();
@@ -61,6 +63,11 @@ export default function EmployeeApp() {
   // A ticket link from an email (?ticket=...) opens straight onto it.
   const [link] = useState(() => takeTicketLink());
   const [active, setActiveRaw] = useState<NavKey>(() => {
+    if (link.page === 'fleet_branding') {
+      if (profile?.department?.slug === 'fleet') return 'fleet_branding';
+      try { localStorage.setItem('kivu-active-nav-fleet-tab', 'branding'); } catch { /* ignore */ }
+      return 'fleet';
+    }
     if (link.ticketId || link.page) return isCallCenter && link.page !== 'from_call_center' ? 'call_center_tickets' : 'from_call_center';
     try {
       const saved = localStorage.getItem(navStorageKey);
@@ -74,6 +81,7 @@ export default function EmployeeApp() {
   };
   const { tasks, reload } = useTasks(profile?.id);
   const myOpenTickets = useMyOpenTicketCount(profile?.id);
+  const carFollowups = useCarFollowupCount(profile?.department?.slug === 'fleet');
 
   const TITLES: Record<NavKey, string> = {
     home: 'General',
@@ -117,6 +125,7 @@ export default function EmployeeApp() {
     fleet_deposits: 'Deposits',
     fleet_fines: 'Fines',
     fleet_leaderboard: 'Leaderboard',
+    fleet_branding: 'Branding & Devices',
     finance_driver_leaderboard: 'Driver Leaderboard',
     call_center_queue: 'Call Queue',
     call_center_directory: 'Directory',
@@ -141,6 +150,7 @@ export default function EmployeeApp() {
       { key: 'fleet_deposits' as const, label: 'Deposits', icon: Wallet },
       { key: 'fleet_leaderboard' as const, label: 'Leaderboard', icon: Trophy },
       { key: 'fleet_fines' as const, label: 'Fines', icon: Receipt },
+      { key: 'fleet_branding' as const, label: 'Branding & Devices', icon: Paintbrush, badge: carFollowups },
       { key: 'non_insider' as const, label: 'Non-Insider', icon: CarFront },
     ] : []),
     ...(profile?.department?.slug === 'finance' ? [
@@ -193,6 +203,7 @@ export default function EmployeeApp() {
       {active === 'fleet_deposits' && <FleetDepositsPage />}
       {active === 'fleet_fines' && <FleetFinesPage />}
       {active === 'fleet_leaderboard' && <DepositLeaderboardPage />}
+      {active === 'fleet_branding' && <BrandingDevicesPage />}
       {active === 'non_insider' && <NonInsiderPage />}
       {active === 'fleet' && <FleetPage />}
 

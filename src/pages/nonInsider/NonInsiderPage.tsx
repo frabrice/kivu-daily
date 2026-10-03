@@ -22,6 +22,8 @@ interface SyncResult {
 export default function NonInsiderPage() {
   const { profile } = useAuth();
   const canEdit = canEditFleet(profile);
+  // Sync only refreshes the list from the platform, so Call Center keeps it.
+  const canSync = canEdit || profile?.department?.slug === 'call_center';
   const [tab, setTab] = useState<Tab>('drivers');
   const data = useNonInsiderData();
   const [syncing, setSyncing] = useState(false);
@@ -53,7 +55,7 @@ export default function NonInsiderPage() {
             Drivers live on the platform whose car isn't part of our managed fleet - onboarded early to build up visible fleet size. Driver and car are tracked separately so a swap or repossession never needs touching the driver's login.
           </p>
         </div>
-        {canEdit && (
+        {canSync && (
           <button onClick={runSync} disabled={syncing} className="btn-ghost flex items-center gap-1.5 shrink-0 whitespace-nowrap disabled:opacity-60">
             <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing…' : 'Sync from Platform'}
           </button>

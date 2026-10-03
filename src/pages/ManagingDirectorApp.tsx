@@ -115,6 +115,10 @@ export default function ManagingDirectorApp() {
   // A ticket link from an email (?ticket=...) opens straight onto it.
   const [link] = useState(() => takeTicketLink());
   const [active, setActiveRaw] = useState<NavKey>(() => {
+    if (link.page === 'fleet_branding') {
+      try { localStorage.setItem('kivu-active-nav-fleet-tab', 'branding'); } catch { /* ignore */ }
+      return 'fleet';
+    }
     if (link.ticketId || link.page) return 'from_call_center';
     try {
       const saved = localStorage.getItem('kivu-active-nav-md');

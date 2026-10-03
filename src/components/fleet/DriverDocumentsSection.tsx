@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CheckCircle2, ExternalLink } from 'lucide-react';
 import { supabase, DriverDocument, DriverDocumentType } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import { DRIVER_DOCUMENT_TYPES } from '../../lib/fleet';
+import { DRIVER_DOCUMENT_TYPES, canSeeDriverDocuments } from '../../lib/fleet';
 
 // The seven documents Fleet collects from every applying driver. Each
 // upload goes straight to the shared 'documents' storage bucket and a
@@ -51,6 +51,10 @@ export default function DriverDocumentsSection({
     if (err || !data) { setError(err?.message ?? 'Could not open this file.'); return; }
     window.open(data.signedUrl, '_blank');
   };
+
+  if (!canSeeDriverDocuments(profile)) {
+    return <p className="text-[11px] text-gray-400">Driver documents are visible to Fleet only.</p>;
+  }
 
   return (
     <div className="space-y-1.5">
