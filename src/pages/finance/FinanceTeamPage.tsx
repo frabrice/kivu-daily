@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Users2, UserPlus, Pencil, UserX, Send, Loader2, Check } from 'lucide-react';
 import { supabase, Profile, Department } from '../../lib/supabase';
+import { edgeFunctionError } from '../../lib/edgeFunctions';
 import { formatDateLabelSafe } from '../../lib/fleet';
 import Avatar from '../../components/Avatar';
 import { CreateUserModal, EditUserModal } from '../../components/EmployeeAdminModals';
@@ -73,7 +74,7 @@ export default function FinanceTeamPage() {
     const { data, error: err } = await supabase.functions.invoke('resend-invite', { body: { user_id: id } });
     setResendingId(null);
     if (err || !data?.success) {
-      setResendResult({ id, error: data?.email_error || err?.message || 'Failed to resend invite' });
+      setResendResult({ id, error: data?.email_error || (err ? await edgeFunctionError(err) : 'Failed to resend invite') });
     } else {
       setResendResult({ id, error: null });
     }

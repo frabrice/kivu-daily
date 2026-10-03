@@ -3,6 +3,7 @@ import { Users2, CarFront, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { canEditFleet } from '../../lib/fleet';
 import { supabase } from '../../lib/supabase';
+import { edgeFunctionError } from '../../lib/edgeFunctions';
 import { useNonInsiderData } from '../../lib/nonInsider';
 import NonInsiderDriversPage from './NonInsiderDriversPage';
 import NonInsiderVehiclesPage from './NonInsiderVehiclesPage';
@@ -36,7 +37,7 @@ export default function NonInsiderPage() {
     const { data: result, error } = await supabase.functions.invoke('sync-independent-drivers');
     setSyncing(false);
     if (error || result?.error) {
-      setSyncError(result?.error ?? error?.message ?? 'Sync failed.');
+      setSyncError(result?.error ?? (error ? await edgeFunctionError(error) : 'Sync failed.'));
       return;
     }
     setSyncResult(result as SyncResult);

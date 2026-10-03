@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Mail, Send, CheckCircle2, XCircle, Clock, UserCog } from 'lucide-react';
 import { supabase, Department, NotificationOutboxRow, NotificationRule, Profile, Responsibility } from '../lib/supabase';
 import { timeAgo } from '../lib/utils';
+import { edgeFunctionError } from '../lib/edgeFunctions';
 
 // The MD's control room for the email engine (notifications-run): who
 // owns each follow-up duty, which emails are switched on, a "send it to
@@ -52,7 +53,7 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
     setTesting(rule.key);
     const { data, error } = await supabase.functions.invoke('notifications-run', { body: { mode: 'test', rule_key: rule.key } });
     const result = error
-      ? { ok: false, message: error.message }
+      ? { ok: false, message: await edgeFunctionError(error) }
       : data?.sent
         ? { ok: true, message: `Sent to ${data.to}` }
         : { ok: false, message: data?.error ?? data?.message ?? 'Not sent' };

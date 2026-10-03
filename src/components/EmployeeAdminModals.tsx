@@ -1,6 +1,7 @@
 import { useState, ReactNode } from 'react';
 import { Loader2, Mail, Shield, UserCog } from 'lucide-react';
 import { supabase, Profile, Department } from '../lib/supabase';
+import { edgeFunctionError } from '../lib/edgeFunctions';
 import Modal from './Modal';
 
 function FormSection({ icon: Icon, title, children }: { icon: typeof Mail; title: string; children: ReactNode }) {
@@ -58,7 +59,7 @@ export function CreateUserModal({
           department_id: role === 'employee' ? deptId : null,
         },
       });
-      if (fnError) throw fnError;
+      if (fnError) throw new Error(await edgeFunctionError(fnError));
       if (data?.error) throw new Error(data.error);
       onCreated();
       if (!data?.email_sent) {

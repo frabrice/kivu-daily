@@ -74,6 +74,7 @@ import NewslettersPage from './finance/NewslettersPage';
 import CallCenterPage from './CallCenterPage';
 import FromCallCenterPage from './FromCallCenterPage';
 import { takeTicketLink, useMyOpenTicketCount } from '../lib/callTickets';
+import { edgeFunctionError } from '../lib/edgeFunctions';
 import MarketingPage from './MarketingPage';
 import SocialMediaPage from './SocialMediaPage';
 import ITHubPage from './ITHubPage';
@@ -768,7 +769,7 @@ function DepartmentsView({
     const { data, error } = await supabase.functions.invoke('resend-invite', { body: { user_id: id } });
     setResendingId(null);
     if (error || !data?.success) {
-      setResendResult({ id, error: data?.email_error || error?.message || 'Failed to resend invite' });
+      setResendResult({ id, error: data?.email_error || (error ? await edgeFunctionError(error) : 'Failed to resend invite') });
     } else {
       setResendResult({ id, error: null });
     }

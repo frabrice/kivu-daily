@@ -413,3 +413,23 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# This project signs session tokens with ES256 (asymmetric JWT signing
+# keys), which the Edge gateway's legacy verify_jwt check can't validate -
+# with it on, every signed-in call fails with a 401 before the function
+# runs. Each of these functions verifies the caller itself
+# (auth.getUser() + a role check), or a shared cron secret.
+[functions.create-user]
+verify_jwt = false
+
+[functions.resend-invite]
+verify_jwt = false
+
+[functions.send-newsletter]
+verify_jwt = false
+
+[functions.sync-independent-drivers]
+verify_jwt = false
+
+[functions.notifications-run]
+verify_jwt = false

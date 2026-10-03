@@ -37,6 +37,24 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // The caller is checked here rather than by the gateway's JWT check,
+    // which can't verify this project's ES256-signed session tokens.
+    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: { user } } = await userClient.auth.getUser();
+    const { data: caller } = user
+      ? await supabase.from("profiles").select("role, department:departments(slug)").eq("id", user.id).maybeSingle()
+      : { data: null };
+    const callerDept = (caller?.department as unknown as { slug?: string } | null)?.slug;
+    if (!caller || !(caller.role === "managing_director" || callerDept === "finance")) {
+      return new Response(JSON.stringify({ error: "Only Finance or the MD can send newsletters" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body: SendNewsletterRequest = await req.json();
     const { newsletter_id, owner_id, to, subject, html, pdf_base64, pdf_filename } = body;
 
