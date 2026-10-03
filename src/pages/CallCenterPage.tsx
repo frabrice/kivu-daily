@@ -3,7 +3,7 @@ import { PhoneCall, Users2, BookOpen, CarFront, PhoneIncoming } from 'lucide-rea
 import { useCallCenterData } from '../lib/callCenter';
 import CallQueuePage from './callCenter/CallQueuePage';
 import CallDirectoryPage from './callCenter/CallDirectoryPage';
-import CallScriptsPage from './callCenter/CallScriptsPage';
+import ScriptBookPage from './callCenter/ScriptBookPage';
 import NonInsiderPage from './nonInsider/NonInsiderPage';
 import CallTicketsPage from './callCenter/CallTicketsPage';
 
@@ -31,14 +31,14 @@ export default function CallCenterPage() {
         <TabButton active={tab === 'tickets'} onClick={() => setTab('tickets')} icon={PhoneIncoming} label="Calls & Tickets" />
         <TabButton active={tab === 'queue'} onClick={() => setTab('queue')} icon={PhoneCall} label="Call Queue" badge={urgentCount} />
         <TabButton active={tab === 'directory'} onClick={() => setTab('directory')} icon={Users2} label="Directory" />
-        <TabButton active={tab === 'scripts'} onClick={() => setTab('scripts')} icon={BookOpen} label="Scripts" />
+        <TabButton active={tab === 'scripts'} onClick={() => setTab('scripts')} icon={BookOpen} label="Script Book" />
         <TabButton active={tab === 'non_insider'} onClick={() => setTab('non_insider')} icon={CarFront} label="Non-Insider" />
       </div>
 
       {tab === 'tickets' && <CallTicketsPage />}
       {tab === 'queue' && <CallQueuePage data={data} />}
       {tab === 'directory' && <CallDirectoryPage data={data} />}
-      {tab === 'scripts' && <CallScriptsPage data={data} />}
+      {tab === 'scripts' && <ScriptBookPage />}
       {tab === 'non_insider' && <NonInsiderPage />}
     </div>
   );

@@ -1,3 +1,4 @@
+import DriverCasesList from '../callTickets/DriverCasesList';
 import { useState } from 'react';
 import { Trash2, Pencil, CarFront, ChevronDown } from 'lucide-react';
 import { supabase, PlatformDriver, PlatformCar } from '../../lib/supabase';
@@ -238,6 +239,8 @@ export default function PlatformDriverDrawer({
           <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="How they were onboarded, survey findings…" />
         </div>
+
+        {driver && !editing && <DriverCasesList platformDriverId={driver.id} />}
 
         {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 

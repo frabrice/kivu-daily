@@ -73,14 +73,14 @@ export default function FromCallCenterPage({ initialTicketId }: { initialTicketI
       <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap" role="tablist">
         <TabButton active={tab === 'open'} onClick={() => setTab('open')} icon={Inbox} label="New" badge={openT.length} hot />
         <TabButton active={tab === 'in_progress'} onClick={() => setTab('in_progress')} icon={PlayCircle} label="In progress" badge={progressT.length} />
-        <TabButton active={tab === 'waiting'} onClick={() => setTab('waiting')} icon={Hourglass} label="Waiting on caller" badge={waitingT.length} />
+        <TabButton active={tab === 'waiting'} onClick={() => setTab('waiting')} icon={Hourglass} label="Pending" badge={waitingT.length} />
         <TabButton active={tab === 'resolved'} onClick={() => setTab('resolved')} icon={CheckCircle2} label="Resolved" />
         {isMD && <TabButton active={tab === 'all'} onClick={() => setTab('all')} icon={Users2} label="All tickets" badge={companyOpen.length} />}
       </div>
 
       {tab === 'open' && <TicketList tickets={openT} personName={personName} onOpen={open} showAssignee={false} empty="Nothing new from the Call Center." />}
       {tab === 'in_progress' && <TicketList tickets={progressT} personName={personName} onOpen={open} showAssignee={false} empty="Nothing in progress." />}
-      {tab === 'waiting' && <TicketList tickets={waitingT} personName={personName} onOpen={open} showAssignee={false} empty="Not waiting on any caller." />}
+      {tab === 'waiting' && <TicketList tickets={waitingT} personName={personName} onOpen={open} showAssignee={false} empty="Nothing pending on a caller." />}
       {tab === 'resolved' && <TicketList tickets={resolvedT} personName={personName} onOpen={open} showAssignee={false} empty="You haven't resolved any tickets yet." />}
       {tab === 'all' && isMD && (
         <div className="space-y-4">

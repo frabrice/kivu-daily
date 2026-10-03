@@ -3,7 +3,7 @@ import { activeStandings, car, loadDeposits, loadDrivers } from "./drivers.ts";
 import { KIVU_REVENUE_TYPES, loadTransactions, openTransactions, OPERATING_COST_TYPES, txTable, type TxRow } from "./finance.ts";
 import { carsWithoutDriver, loadCalls, loadFlaggedStories } from "./operations.ts";
 import { loadRecentTasks } from "./workspace.ts";
-import { isOverdue, loadTickets, UNRESOLVED, waitingFor } from "./tickets.ts";
+import { isOverdue, isResponseOverdue, loadTickets, UNRESOLVED, waitingFor } from "./tickets.ts";
 import {
   activeEmployees, ALL_DAYS, Block, Ctx, day, esc, hm, lastWeek, longDay, monthOf, personName, plural, RuleDef, rows, rwf,
 } from "./core.ts";
@@ -88,17 +88,20 @@ export const companyRules: Record<string, RuleDef> = {
 
       const tickets = await loadTickets(ctx);
       const openTickets = tickets.filter((t) => UNRESOLVED.includes(t.status));
-      const overdueTickets = openTickets.filter((t) => isOverdue(t));
+      const overdueTickets = openTickets.filter((t) => isOverdue(t) || isResponseOverdue(t));
+      const unackedEmergencies = tickets.filter((t) => t.priority === "emergency" && !t.md_acknowledged_at && t.status !== "closed");
       const yTickets = tickets.filter((t) => new Date(new Date(t.created_at).getTime() + 2 * 3600000).toISOString().slice(0, 10) === yesterday);
       blocks.push({
-        heading: "Call Center tickets",
+        heading: "Call Center cases",
         text: [
-          `Yesterday: ${plural(yTickets.length, "call")} logged, ${yTickets.filter((t) => t.resolved_on_call).length} solved on the call.`,
-          `${plural(openTickets.length, "ticket")} open${openTickets.filter((t) => t.priority === "urgent").length ? ` (${openTickets.filter((t) => t.priority === "urgent").length} urgent)` : ""}${overdueTickets.length ? ` — <b style="color:#dc2626;">${overdueTickets.length} overdue</b>:` : "."}`,
-        ].join("<br>"),
+          unackedEmergencies.length ? `<b style="color:#7f1d1d;">${plural(unackedEmergencies.length, "emergency", "emergencies")} waiting for your acknowledgement: ${unackedEmergencies.map((t) => esc(t.reference)).join(", ")}.</b>` : "",
+          `Yesterday: ${plural(yTickets.length, "contact")} logged, ${yTickets.filter((t) => t.resolved_on_call).length} solved on the call.`,
+          `${plural(openTickets.length, "case")} open${openTickets.filter((t) => t.priority !== "normal").length ? ` (${openTickets.filter((t) => t.priority !== "normal").length} urgent or emergency)` : ""}${overdueTickets.length ? ` — <b style="color:#dc2626;">${overdueTickets.length} late</b>:` : "."}`,
+        ].filter(Boolean).join("<br>"),
         table: overdueTickets.length ? {
-          head: ["Ticket", "Assigned to", "Issue", "Waiting"],
-          rows: overdueTickets.map((t) => [`${esc(t.reference)}${t.priority === "urgent" ? " (urgent)" : ""}`, esc(personName(ctx, t.assignee_id)), esc(t.caller_name), waitingFor(t)]),
+          head: ["Case", "Assigned to", "Caller", "Why late"],
+          rows: overdueTickets.map((t) => [`${esc(t.reference)}${t.priority !== "normal" ? ` (${t.priority})` : ""}`, esc(personName(ctx, t.assignee_id)), esc(t.caller_name),
+            isResponseOverdue(t) ? `No response in ${waitingFor({ ...t, created_at: t.assigned_at ?? t.created_at })}` : `Unresolved for ${waitingFor(t)}`]),
         } : undefined,
       });
 

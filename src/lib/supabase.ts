@@ -626,10 +626,42 @@ export interface PayrollLine {
 // CALL CENTER TICKETS ("From Call Center")
 // ============================================================
 export type CallTicketStatus = 'open' | 'in_progress' | 'waiting_on_caller' | 'resolved' | 'closed';
-export type CallTicketPriority = 'normal' | 'urgent';
-export type CallTicketCategory = 'app' | 'payment' | 'trip' | 'driver_behaviour' | 'lost_item' | 'complaint' | 'other';
-export type CallTicketCallerType = 'passenger' | 'driver' | 'car_owner' | 'partner' | 'other';
-export type CallTicketUpdateKind = 'created' | 'note' | 'status' | 'reassigned' | 'resolved' | 'closed' | 'reopened';
+export type CallTicketPriority = 'normal' | 'urgent' | 'emergency';
+// Script Book sections, plus the original categories kept for older tickets.
+export type CallTicketCategory =
+  | 'booking' | 'fares_payments' | 'before_pickup' | 'during_trip' | 'lost_property' | 'complaint' | 'emergency'
+  | 'driver_support' | 'fleet_partner' | 'smart_account' | 'general'
+  | 'app' | 'payment' | 'trip' | 'driver_behaviour' | 'lost_item' | 'other';
+export type CallTicketCallerType =
+  | 'passenger' | 'driver' | 'car_owner' | 'partner' | 'smart_account' | 'prospective_driver' | 'organization' | 'government_media' | 'other';
+export type CallTicketChannel = 'call' | 'whatsapp' | 'sms' | 'web';
+export type CallTicketOutcome = 'booking_dispatched' | 'booking_declined_wait' | 'booking_no_driver' | 'abusive_ended' | 'info_given';
+export type CallTicketUpdateKind = 'created' | 'note' | 'status' | 'reassigned' | 'resolved' | 'closed' | 'reopened' | 'acknowledged' | 'callback';
+
+export interface EmergencyDetails {
+  location?: string;
+  injuries?: string;
+  services_called?: string[];
+  people?: string;
+}
+
+export interface ScriptCard {
+  id: string;
+  section_key: string;
+  section_title: string;
+  section_order: number;
+  card_order: number;
+  situation: string;
+  say: string | null;
+  steps: string[];
+  collect: string[];
+  owner_duty: string | null;
+  default_priority: CallTicketPriority;
+  is_quick: boolean;
+  approved: boolean;
+  updated_by: string | null;
+  updated_at: string;
+}
 
 export interface CallTicket {
   id: string;
@@ -654,8 +686,26 @@ export interface CallTicket {
   last_activity_at: string;
   created_at: string;
   updated_at: string;
+  channel: CallTicketChannel;
+  script_card_id: string | null;
+  situation: string | null;
+  trip_reference: string | null;
+  vehicle_plate: string | null;
+  platform_driver_id: string | null;
+  actions_taken: string | null;
+  promised_update_at: string | null;
+  first_response_at: string | null;
+  assigned_at: string | null;
+  callback_at: string | null;
+  satisfaction: 'happy' | 'neutral' | 'unhappy' | null;
+  driver_verified: boolean | null;
+  emergency_details: EmergencyDetails | null;
+  outcome_kind: CallTicketOutcome | null;
+  md_acknowledged_at: string | null;
+  md_acknowledged_by: string | null;
   // Only visible to departments that can read drivers (RLS returns null otherwise).
   driver?: { full_name: string; vehicle: { plate_number: string } | null } | null;
+  platform_driver?: { full_name: string; phone: string | null } | null;
 }
 
 export interface CallTicketUpdate {

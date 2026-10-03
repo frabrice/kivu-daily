@@ -40,7 +40,7 @@ import FinanceDepositConfirmationsPage from './finance/FinanceDepositConfirmatio
 import FinanceTeamPage from './finance/FinanceTeamPage';
 import CallQueuePage from './callCenter/CallQueuePage';
 import CallDirectoryPage from './callCenter/CallDirectoryPage';
-import CallScriptsPage from './callCenter/CallScriptsPage';
+import ScriptBookPage from './callCenter/ScriptBookPage';
 import CampaignsPage from './marketing/CampaignsPage';
 import FollowUpsPage from './marketing/FollowUpsPage';
 import SocialMediaPage from './SocialMediaPage';
@@ -129,7 +129,7 @@ export default function EmployeeApp() {
     finance_driver_leaderboard: 'Driver Leaderboard',
     call_center_queue: 'Call Queue',
     call_center_directory: 'Directory',
-    call_center_scripts: 'Scripts',
+    call_center_scripts: 'Script Book',
     call_center_tickets: 'Calls & Tickets',
     from_call_center: 'From Call Center',
     marketing_campaigns: 'Campaigns',
@@ -174,7 +174,7 @@ export default function EmployeeApp() {
       { key: 'call_center_tickets' as const, label: 'Calls & Tickets', icon: PhoneIncoming },
       { key: 'call_center_queue' as const, label: 'Call Queue', icon: PhoneCall },
       { key: 'call_center_directory' as const, label: 'Directory', icon: Users2 },
-      { key: 'call_center_scripts' as const, label: 'Scripts', icon: BookOpen },
+      { key: 'call_center_scripts' as const, label: 'Script Book', icon: BookOpen },
       { key: 'fleet' as const, label: 'Fleet', icon: Truck },
       { key: 'non_insider' as const, label: 'Non-Insider', icon: CarFront },
     ] : []),
@@ -225,7 +225,7 @@ export default function EmployeeApp() {
 
       {active === 'call_center_queue' && <CallQueuePage />}
       {active === 'call_center_directory' && <CallDirectoryPage />}
-      {active === 'call_center_scripts' && <CallScriptsPage />}
+      {active === 'call_center_scripts' && <ScriptBookPage />}
       {active === 'call_center_tickets' && <CallTicketsPage initialTicketId={link.ticketId} />}
       {active === 'from_call_center' && <FromCallCenterPage initialTicketId={link.ticketId} />}
 

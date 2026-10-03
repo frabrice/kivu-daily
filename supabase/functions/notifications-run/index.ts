@@ -140,8 +140,8 @@ async function enqueue(ctx: Ctx, rule: RuleRow, dedupeBase: string, built: Built
 // Runs can overlap (every new event triggers one, plus the 5-minute
 // cron), so rows are claimed atomically before sending - two runs can
 // never send the same email.
-async function sendPending(db: SupabaseClient, onlyIds?: string[]) {
-  const { data: claimed, error: claimError } = await db.rpc("claim_notification_outbox", { p_limit: 50, p_only: onlyIds ?? null });
+async function sendPending(db: SupabaseClient, onlyIds?: string[], ruleKeys?: string[]) {
+  const { data: claimed, error: claimError } = await db.rpc("claim_notification_outbox", { p_limit: 50, p_only: onlyIds ?? null, p_rule_keys: ruleKeys ?? null });
   if (claimError) throw new Error(claimError.message);
   const results: { id: string; ok: boolean; error?: string }[] = [];
   for (const row of (claimed ?? []) as Record<string, any>[]) {
@@ -268,6 +268,10 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ---- Two-hour response check (Script Book standard) ----
+    const { error: overdueError } = await db.rpc("flag_response_overdue");
+    if (overdueError) summary.errors.push(`flag_response_overdue: ${overdueError.message}`);
+
     // ---- Events ----
     const { data: events } = await db.from("notification_events").select("*").is("processed_at", null).order("created_at").limit(50);
     for (const ev of events ?? []) {
@@ -287,12 +291,14 @@ Deno.serve(async (req: Request) => {
       summary.events++;
     }
 
-    // ---- Send (held during quiet hours, 20:00-06:30 Kigali) ----
-    if (clock.minutes >= QUIET_UNTIL && clock.minutes < QUIET_FROM) {
-      const results = await sendPending(db);
-      summary.sent = results.filter((r) => r.ok).length;
-      summary.failed = results.filter((r) => !r.ok).length;
-    }
+    // ---- Send. The call center is 24/7, so instant emails (new cases,
+    // emergencies, replies) go out at any hour; scheduled digests that
+    // are still pending wait until 06:30. ----
+    const daytime = clock.minutes >= QUIET_UNTIL && clock.minutes < QUIET_FROM;
+    const instantKeys = Object.keys(RULES).filter((k) => RULES[k].kind === "event");
+    const results = await sendPending(db, undefined, daytime ? undefined : instantKeys);
+    summary.sent = results.filter((r) => r.ok).length;
+    summary.failed = results.filter((r) => !r.ok).length;
 
     return json({ ok: true, kigali: `${clock.today} ${Math.floor(clock.minutes / 60)}:${String(clock.minutes % 60).padStart(2, "0")}`, ...summary });
   } catch (err) {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { PhoneIncoming, Plus, PhoneCall, CheckCircle2, Inbox, AlertTriangle, PhoneForwarded, Search } from 'lucide-react';
-import { useCallTickets, isOverdue, isUnresolved, sortForWork } from '../../lib/callTickets';
+import { PhoneIncoming, Plus, PhoneCall, CheckCircle2, Inbox, AlertTriangle, PhoneForwarded, Search, CarTaxiFront, ShieldAlert } from 'lucide-react';
+import { useCallTickets, isOverdue, isResponseOverdue, isUnresolved, needsMdAck, sortForWork } from '../../lib/callTickets';
 import { todayStr, dateStr } from '../../lib/utils';
 import KpiTile from '../../components/KpiTile';
 import TicketList from '../../components/callTickets/TicketList';
@@ -16,7 +16,7 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
   const { tickets, people, assignable, loading, reload, personName, updatesFor } = useCallTickets();
   const [tab, setTab] = useState<Tab>('open');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<false | 'call' | 'booking'>(false);
   const [toast, setToast] = useState('');
   const [q, setQ] = useState('');
 
@@ -33,7 +33,8 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
   const open = useMemo(() => tickets.filter(isUnresolved).sort(sortForWork), [tickets]);
   const todays = tickets.filter((t) => dateStr(new Date(t.created_at)) === today);
   const solvedToday = todays.filter((t) => t.resolved_on_call).length;
-  const overdue = open.filter((t) => isOverdue(t)).length;
+  const overdue = open.filter((t) => isOverdue(t) || isResponseOverdue(t)).length;
+  const emergencies = tickets.filter(needsMdAck);
   const all = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return tickets.filter((t) => !needle || [t.reference, t.caller_name, t.caller_phone, t.details].some((f) => f.toLowerCase().includes(needle)));
@@ -50,8 +51,17 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
           <h2 className="text-base font-semibold flex items-center gap-2"><PhoneIncoming size={16} className="text-brand-600 dark:text-brand-300" /> Calls & Tickets</h2>
           <p className="text-[11px] text-gray-400 mt-0.5">Log every call. Solve it on the spot, or send it to the person in charge.</p>
         </div>
-        <button onClick={() => setCreating(true)} className="btn-primary flex items-center gap-1.5 whitespace-nowrap"><Plus size={14} /> New call</button>
+        <div className="flex gap-2">
+          <button onClick={() => setCreating('booking')} className="btn-ghost flex items-center gap-1.5 whitespace-nowrap"><CarTaxiFront size={14} /> Log booking</button>
+          <button onClick={() => setCreating('call')} className="btn-primary flex items-center gap-1.5 whitespace-nowrap"><Plus size={14} /> New call</button>
+        </div>
       </div>
+
+      {emergencies.length > 0 && (
+        <button onClick={() => setSelectedId(emergencies[0].id)} className="w-full text-left rounded-lg bg-red-700 text-white px-3 py-2 text-[12px] flex items-center gap-2">
+          <ShieldAlert size={15} /> {emergencies.length === 1 ? `Emergency ${emergencies[0].reference} is open` : `${emergencies.length} emergencies are open`} — the MD has been alerted. Keep the record updated.
+        </button>
+      )}
 
       {toast && (
         <div className="flex items-center gap-2 text-[12px] px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" role="status">
@@ -93,10 +103,12 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
       {creating && (
         <NewCallDrawer
           people={assignable}
+          tickets={tickets}
+          initialOutcome={creating === 'booking' ? 'booking' : undefined}
           onClose={() => setCreating(false)}
-          onSaved={(ref, to) => {
+          onSaved={(ref, to, emergency) => {
             setCreating(false);
-            setToast(to ? `${ref} sent to ${to}. They've been emailed.` : `${ref} saved and closed.`);
+            setToast(emergency ? `EMERGENCY ${ref} logged — the MD and Fleet Manager have been alerted.` : to ? `${ref} sent to ${to}. They've been emailed.` : `${ref} saved and closed.`);
             setTab(to ? 'open' : 'all');
             reload();
           }}

@@ -1,3 +1,4 @@
+import DriverCasesList from '../../components/callTickets/DriverCasesList';
 import { useState } from 'react';
 import {
   ArrowLeft, Pencil, Flag, Phone, Mail, Car, CalendarDays, Clock, BedDouble,
@@ -263,6 +264,10 @@ export default function DriverProfilePage({
           )}
         </div>
       )}
+
+      <div className="card p-4">
+        <DriverCasesList driverId={driver.id} />
+      </div>
 
       {/* Deposits */}
       <div className="card p-4">
