@@ -689,7 +689,7 @@ export interface NotificationRule {
   updated_at: string;
 }
 
-export type NotificationOutboxStatus = 'pending' | 'sent' | 'failed';
+export type NotificationOutboxStatus = 'pending' | 'sending' | 'sent' | 'failed';
 
 export interface NotificationOutboxRow {
   id: string;

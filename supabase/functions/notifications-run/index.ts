@@ -137,16 +137,17 @@ async function enqueue(ctx: Ctx, rule: RuleRow, dedupeBase: string, built: Built
   return queued;
 }
 
+// Runs can overlap (every new event triggers one, plus the 5-minute
+// cron), so rows are claimed atomically before sending - two runs can
+// never send the same email.
 async function sendPending(db: SupabaseClient, onlyIds?: string[]) {
-  let query = db.from("notification_outbox").select("*").neq("status", "sent").lt("attempts", 3).order("created_at").limit(50);
-  if (onlyIds) query = query.in("id", onlyIds);
-  const { data: pending } = await query;
+  const { data: claimed, error: claimError } = await db.rpc("claim_notification_outbox", { p_limit: 50, p_only: onlyIds ?? null });
+  if (claimError) throw new Error(claimError.message);
   const results: { id: string; ok: boolean; error?: string }[] = [];
-  for (const row of pending ?? []) {
+  for (const row of (claimed ?? []) as Record<string, any>[]) {
     const res = await sendWithResend(row.recipient_email, row.subject, row.html, row.text_body, undefined, notificationsFrom);
     await db.from("notification_outbox").update({
       status: res.success ? "sent" : "failed",
-      attempts: row.attempts + 1,
       error: res.success ? null : res.error ?? "unknown error",
       sent_at: res.success ? new Date().toISOString() : null,
     }).eq("id", row.id);
