@@ -20,7 +20,9 @@ export async function sendWithResend(
   subject: string,
   html: string,
   text: string,
-  attachments?: EmailAttachment[]
+  attachments?: EmailAttachment[],
+  // Overrides FROM_EMAIL (the invites address) for a different sender.
+  from?: string
 ): Promise<SendEmailResult> {
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
@@ -29,7 +31,7 @@ export async function sendWithResend(
     return { success: false, error: "RESEND_API_KEY not configured" };
   }
 
-  const fromEmail = Deno.env.get("FROM_EMAIL") || "onboarding@resend.dev";
+  const fromEmail = from || Deno.env.get("FROM_EMAIL") || "onboarding@resend.dev";
 
   try {
     const response = await fetch("https://api.resend.com/emails", {

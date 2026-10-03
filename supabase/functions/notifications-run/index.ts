@@ -30,6 +30,8 @@ const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 const cronSecret = Deno.env.get("NOTIFICATIONS_CRON_SECRET");
 const appUrl = Deno.env.get("APP_URL") || "https://kivu-daily.app";
+// Notifications come from their own address, separate from account invites.
+const notificationsFrom = Deno.env.get("NOTIFICATIONS_FROM_EMAIL") || "Kivu Daily <updates@kivuride.com>";
 
 const QUIET_FROM = 20 * 60;
 const QUIET_UNTIL = 6 * 60 + 30;
@@ -140,7 +142,7 @@ async function sendPending(db: SupabaseClient, onlyIds?: string[]) {
   const { data: pending } = await query;
   const results: { id: string; ok: boolean; error?: string }[] = [];
   for (const row of pending ?? []) {
-    const res = await sendWithResend(row.recipient_email, row.subject, row.html, row.text_body);
+    const res = await sendWithResend(row.recipient_email, row.subject, row.html, row.text_body, undefined, notificationsFrom);
     await db.from("notification_outbox").update({
       status: res.success ? "sent" : "failed",
       attempts: row.attempts + 1,
