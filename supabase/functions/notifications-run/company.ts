@@ -3,6 +3,7 @@ import { activeStandings, car, loadDeposits, loadDrivers } from "./drivers.ts";
 import { KIVU_REVENUE_TYPES, loadTransactions, openTransactions, OPERATING_COST_TYPES, txTable, type TxRow } from "./finance.ts";
 import { carsWithoutDriver, loadCalls, loadFlaggedStories } from "./operations.ts";
 import { loadRecentTasks } from "./workspace.ts";
+import { isOverdue, loadTickets, UNRESOLVED, waitingFor } from "./tickets.ts";
 import {
   activeEmployees, ALL_DAYS, Block, Ctx, day, esc, hm, lastWeek, longDay, monthOf, personName, plural, RuleDef, rows, rwf,
 } from "./core.ts";
@@ -83,6 +84,22 @@ export const companyRules: Record<string, RuleDef> = {
       blocks.push({
         heading: `Team yesterday (${day(yesterday)})`,
         ...(yTasks.length ? { table: teamTable(ctx, yTasks) } : { text: "Nobody logged tasks yesterday." }),
+      });
+
+      const tickets = await loadTickets(ctx);
+      const openTickets = tickets.filter((t) => UNRESOLVED.includes(t.status));
+      const overdueTickets = openTickets.filter((t) => isOverdue(t));
+      const yTickets = tickets.filter((t) => new Date(new Date(t.created_at).getTime() + 2 * 3600000).toISOString().slice(0, 10) === yesterday);
+      blocks.push({
+        heading: "Call Center tickets",
+        text: [
+          `Yesterday: ${plural(yTickets.length, "call")} logged, ${yTickets.filter((t) => t.resolved_on_call).length} solved on the call.`,
+          `${plural(openTickets.length, "ticket")} open${openTickets.filter((t) => t.priority === "urgent").length ? ` (${openTickets.filter((t) => t.priority === "urgent").length} urgent)` : ""}${overdueTickets.length ? ` — <b style="color:#dc2626;">${overdueTickets.length} overdue</b>:` : "."}`,
+        ].join("<br>"),
+        table: overdueTickets.length ? {
+          head: ["Ticket", "Assigned to", "Issue", "Waiting"],
+          rows: overdueTickets.map((t) => [`${esc(t.reference)}${t.priority === "urgent" ? " (urgent)" : ""}`, esc(personName(ctx, t.assignee_id)), esc(t.caller_name), waitingFor(t)]),
+        } : undefined,
       });
 
       const openFlags = flagged.filter((s) => s.status !== "done");

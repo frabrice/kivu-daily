@@ -1,5 +1,6 @@
 import { daysUntilDate, shiftDay } from "../_shared/depositRules.ts";
 import { car, loadDrivers } from "./drivers.ts";
+import { loadTickets } from "./tickets.ts";
 import { Block, Built, cached, Ctx, day, dayWithYear, esc, hm, MON_SAT, personName, plural, RuleDef, rows, rwf } from "./core.ts";
 
 // Operations (Phase 3): Fleet's Monday housekeeping list, Call Center's
@@ -118,13 +119,24 @@ export const operationsRules: Record<string, RuleDef> = {
         })
         .filter((r) => r.why)
         .sort((a, b) => a.rank - b.rank || a.d.full_name.localeCompare(b.d.full_name));
-      if (due.length === 0) return [];
-      return [{
-        subject: `Call queue today: ${plural(due.length, "driver")} to call`,
-        heading: "Today's call queue",
-        intro: "Drivers due a call today, most urgent first. Log each call in Kivu Daily so the queue updates.",
+      const callbacks = (await loadTickets(ctx)).filter((t) => t.status === "resolved");
+      if (due.length === 0 && callbacks.length === 0) return [];
+      const blocks: Block[] = [];
+      if (callbacks.length) blocks.push({
+        heading: `Call these callers back (${callbacks.length})`,
+        text: "Their issue is resolved. Tell them, then mark the ticket Closed — or Reopen it if it isn't fixed.",
+        table: { head: ["Ticket", "Caller", "Phone", "Resolved by"], rows: callbacks.map((t) => [esc(t.reference), esc(t.caller_name), esc(t.caller_phone), esc(personName(ctx, t.resolved_by))]) },
+      });
+      if (due.length) blocks.push({
+        heading: `Drivers to call (${due.length})`,
         table: { head: ["Driver", "Phone", "Why", "Last call"], rows: due.map((r) => [esc(r.d.full_name), esc(r.d.phone ?? "—"), esc(r.why!), r.last ? `${day(r.last.created_at.slice(0, 10))} · ${esc(personName(ctx, r.last.caller_id))}` : "—"]) },
-        inApp: `Call queue: ${plural(due.length, "driver")} to call today`,
+      });
+      return [{
+        subject: `Call queue today: ${[callbacks.length && plural(callbacks.length, "caller") + " to call back", due.length && plural(due.length, "driver") + " to call"].filter(Boolean).join(", ")}`,
+        heading: "Today's call queue",
+        intro: "Most urgent first. Log each call in Kivu Daily so the queue updates.",
+        blocks,
+        inApp: `Call queue: ${[callbacks.length && plural(callbacks.length, "call-back"), due.length && plural(due.length, "driver")].filter(Boolean).join(", ")}`,
       }];
     },
   },

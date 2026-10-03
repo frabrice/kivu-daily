@@ -59,6 +59,8 @@ export type NavKey =
   | 'call_center_queue'
   | 'call_center_directory'
   | 'call_center_scripts'
+  | 'call_center_tickets'
+  | 'from_call_center'
   | 'marketing_campaigns'
   | 'marketing_followups'
   | 'it_hub_products'

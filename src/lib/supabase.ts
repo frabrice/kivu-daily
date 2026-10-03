@@ -22,6 +22,9 @@ export interface Profile {
   avatar_url: string | null;
   is_active: boolean;
   terminated_at: string | null;
+  // What they're in charge of, shown as "Name (Head of IT)" when the
+  // Call Center assigns a ticket.
+  responsibility_label: string | null;
   force_password_change: boolean;
   last_comment_seen_at: string | null;
   created_at: string;
@@ -607,6 +610,55 @@ export interface PayrollLine {
   net_amount: number;
   created_at: string;
   employee?: PayrollEmployee | null;
+}
+
+// ============================================================
+// CALL CENTER TICKETS ("From Call Center")
+// ============================================================
+export type CallTicketStatus = 'open' | 'in_progress' | 'waiting_on_caller' | 'resolved' | 'closed';
+export type CallTicketPriority = 'normal' | 'urgent';
+export type CallTicketCategory = 'app' | 'payment' | 'trip' | 'driver_behaviour' | 'lost_item' | 'complaint' | 'other';
+export type CallTicketCallerType = 'passenger' | 'driver' | 'car_owner' | 'partner' | 'other';
+export type CallTicketUpdateKind = 'created' | 'note' | 'status' | 'reassigned' | 'resolved' | 'closed' | 'reopened';
+
+export interface CallTicket {
+  id: string;
+  reference: string;
+  caller_name: string;
+  caller_phone: string;
+  caller_email: string | null;
+  caller_type: CallTicketCallerType;
+  driver_id: string | null;
+  category: CallTicketCategory;
+  priority: CallTicketPriority;
+  details: string;
+  status: CallTicketStatus;
+  resolved_on_call: boolean;
+  assignee_id: string | null;
+  created_by: string | null;
+  resolution_note: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  closed_at: string | null;
+  closed_by: string | null;
+  last_activity_at: string;
+  created_at: string;
+  updated_at: string;
+  // Only visible to departments that can read drivers (RLS returns null otherwise).
+  driver?: { full_name: string; vehicle: { plate_number: string } | null } | null;
+}
+
+export interface CallTicketUpdate {
+  id: string;
+  ticket_id: string;
+  author_id: string | null;
+  kind: CallTicketUpdateKind;
+  body: string | null;
+  from_status: CallTicketStatus | null;
+  to_status: CallTicketStatus | null;
+  from_assignee: string | null;
+  to_assignee: string | null;
+  created_at: string;
 }
 
 // ============================================================

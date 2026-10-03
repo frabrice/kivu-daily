@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import {
+  Headphones,
   LayoutDashboard,
   Trophy,
   Search,
@@ -71,6 +72,8 @@ import FinanceDeptPage from './FinanceDeptPage';
 import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
 import NewslettersPage from './finance/NewslettersPage';
 import CallCenterPage from './CallCenterPage';
+import FromCallCenterPage from './FromCallCenterPage';
+import { takeTicketLink, useMyOpenTicketCount } from '../lib/callTickets';
 import MarketingPage from './MarketingPage';
 import SocialMediaPage from './SocialMediaPage';
 import ITHubPage from './ITHubPage';
@@ -108,7 +111,10 @@ export default function ManagingDirectorApp() {
   };
   const axisColor = theme === 'dark' ? '#5d7791' : '#9ca3af';
   const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.05)' : '#f1f5f9';
+  // A ticket link from an email (?ticket=...) opens straight onto it.
+  const [link] = useState(() => takeTicketLink());
   const [active, setActiveRaw] = useState<NavKey>(() => {
+    if (link.ticketId || link.page) return 'from_call_center';
     try {
       const saved = localStorage.getItem('kivu-active-nav-md');
       if (saved) return saved as NavKey;
@@ -120,6 +126,7 @@ export default function ManagingDirectorApp() {
     try { localStorage.setItem('kivu-active-nav-md', key); } catch { /* ignore */ }
   };
   const { profiles, departments, allTasks, loading, reload } = useCompanyData();
+  const myOpenTickets = useMyOpenTicketCount(profile?.id);
   const { entries: activity, loading: activityLoading } = useActivityFeed(15);
   const snapshot = useCompanySnapshot();
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithStats | null>(null);
@@ -172,6 +179,7 @@ export default function ManagingDirectorApp() {
   const NAV: NavItem[] = [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { key: 'tasks', label: 'My Tasks', icon: ListTodo },
+    { key: 'from_call_center', label: 'From Call Center', icon: Headphones, badge: myOpenTickets },
     { key: 'fleet', label: 'Fleet', icon: Truck },
     { key: 'finance', label: 'Finance', icon: Wallet },
     { key: 'finance_vehicle_owners', label: 'Vehicle Owners', icon: Car },
@@ -599,6 +607,7 @@ export default function ManagingDirectorApp() {
       {active === 'finance_vehicle_owners' && <FinanceVehicleOwnersPage />}
       {active === 'finance_newsletters' && <NewslettersPage />}
       {active === 'call_center' && <CallCenterPage />}
+      {active === 'from_call_center' && <FromCallCenterPage initialTicketId={link.ticketId} />}
       {active === 'marketing' && <MarketingPage />}
       {active === 'social' && <SocialMediaPage />}
       {active === 'it_hub' && <ITHubPage />}

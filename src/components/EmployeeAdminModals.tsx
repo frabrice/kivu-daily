@@ -171,6 +171,7 @@ export function EditUserModal({
 }) {
   const [role, setRole] = useState(user.role);
   const [deptId, setDeptId] = useState(user.department_id ?? '');
+  const [inChargeOf, setInChargeOf] = useState(user.responsibility_label ?? '');
   const [error, setError] = useState('');
 
   const save = () => {
@@ -178,7 +179,7 @@ export function EditUserModal({
       setError('A department is required for employees');
       return;
     }
-    onSave({ role, department_id: role === 'employee' ? deptId : null });
+    onSave({ role, department_id: role === 'employee' ? deptId : null, responsibility_label: inChargeOf.trim() || null });
   };
 
   return (
@@ -202,6 +203,11 @@ export function EditUserModal({
             </select>
           </div>
         )}
+        <div>
+          <label className="block text-[11px] font-medium mb-1.5 text-gray-500" htmlFor="in-charge-of">In charge of</label>
+          <input id="in-charge-of" value={inChargeOf} onChange={(e) => setInChargeOf(e.target.value)} className="input" placeholder="e.g. Head of IT, Finance, Operations Manager" />
+          <p className="text-[10px] text-gray-400 mt-1">Shown to the Call Center when they assign a caller's issue: "{user.full_name.trim()} ({inChargeOf.trim() || 'In charge of…'})".</p>
+        </div>
       </FormSection>
       {error && (
         <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2 mb-4">{error}</div>

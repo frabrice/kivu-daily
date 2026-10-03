@@ -7,6 +7,7 @@ import { financeRules } from "./finance.ts";
 import { operationsRules } from "./operations.ts";
 import { workspaceRules } from "./workspace.ts";
 import { companyRules } from "./company.ts";
+import { ticketRules } from "./tickets.ts";
 
 // Runs every 5 minutes (pg_cron -> pg_net, authenticated by a shared
 // secret). Each run: (1) builds any scheduled email that's due today in
@@ -17,7 +18,7 @@ import { companyRules } from "./company.ts";
 // What each email says lives in the per-area modules; this file only
 // decides when, to whom, and makes sure nothing goes out twice.
 
-const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules };
+const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,7 +86,7 @@ function resolveRecipients(rule: RuleRow, built: Built, a: Audience, payload: Re
 // ------------------------------------------------------------------
 function htmlTable(t: { head: string[]; rows: string[][] }) {
   return `<table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 16px;">
-    <tr>${t.head.map((h) => `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid #e5e7eb;color:#17263A;">${h}</th>`).join("")}</tr>
+    ${t.head.some(Boolean) ? `<tr>${t.head.map((h) => `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid #e5e7eb;color:#17263A;">${h}</th>`).join("")}</tr>` : ""}
     ${t.rows.map((r) => `<tr>${r.map((c) => `<td style="padding:8px 6px;border-bottom:1px solid #f1f5f9;vertical-align:top;">${c}</td>`).join("")}</tr>`).join("")}
   </table>`;
 }
@@ -103,7 +104,7 @@ function render(b: Built, recipientName: string) {
     ${b.table ? htmlTable(b.table) : ""}
     ${blocks}
     ${b.footnote ? `<div class="content" style="font-size:12px;color:#888;"><p>${b.footnote}</p></div>` : ""}
-    <div style="text-align:center;margin-top:16px;"><a href="${appUrl}" class="button">Open Kivu Daily</a></div>`;
+    <div style="text-align:center;margin-top:16px;"><a href="${b.cta ? `${appUrl.replace(/\/$/, "")}/?${b.cta.query}` : appUrl}" class="button">${b.cta?.label ?? "Open Kivu Daily"}</a></div>`;
   const tableText = (t?: { head: string[]; rows: string[][] }) => (t ? [t.head.join(" | "), ...t.rows.map((r) => r.join(" | "))] : []);
   const text = plain([
     b.heading, "", b.intro, "", ...tableText(b.table),

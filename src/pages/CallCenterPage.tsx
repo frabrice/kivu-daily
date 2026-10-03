@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { PhoneCall, Users2, BookOpen, CarFront } from 'lucide-react';
+import { PhoneCall, Users2, BookOpen, CarFront, PhoneIncoming } from 'lucide-react';
 import { useCallCenterData } from '../lib/callCenter';
 import CallQueuePage from './callCenter/CallQueuePage';
 import CallDirectoryPage from './callCenter/CallDirectoryPage';
 import CallScriptsPage from './callCenter/CallScriptsPage';
 import NonInsiderPage from './nonInsider/NonInsiderPage';
+import CallTicketsPage from './callCenter/CallTicketsPage';
 
-// MD-only: Call Center employees see Queue/Directory/Scripts as separate
+// MD-only: Call Center employees see Tickets/Queue/Directory/Scripts as separate
 // sidebar pages (src/pages/callCenter/*); the MD sees them as tabs here.
-type Tab = 'queue' | 'directory' | 'scripts' | 'non_insider';
+type Tab = 'tickets' | 'queue' | 'directory' | 'scripts' | 'non_insider';
 
 export default function CallCenterPage() {
-  const [tab, setTab] = useState<Tab>('queue');
+  const [tab, setTab] = useState<Tab>('tickets');
   const data = useCallCenterData();
   const { drivers, logs } = data;
 
@@ -27,12 +28,14 @@ export default function CallCenterPage() {
   return (
     <div className="space-y-4">
       <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+        <TabButton active={tab === 'tickets'} onClick={() => setTab('tickets')} icon={PhoneIncoming} label="Calls & Tickets" />
         <TabButton active={tab === 'queue'} onClick={() => setTab('queue')} icon={PhoneCall} label="Call Queue" badge={urgentCount} />
         <TabButton active={tab === 'directory'} onClick={() => setTab('directory')} icon={Users2} label="Directory" />
         <TabButton active={tab === 'scripts'} onClick={() => setTab('scripts')} icon={BookOpen} label="Scripts" />
         <TabButton active={tab === 'non_insider'} onClick={() => setTab('non_insider')} icon={CarFront} label="Non-Insider" />
       </div>
 
+      {tab === 'tickets' && <CallTicketsPage />}
       {tab === 'queue' && <CallQueuePage data={data} />}
       {tab === 'directory' && <CallDirectoryPage data={data} />}
       {tab === 'scripts' && <CallScriptsPage data={data} />}

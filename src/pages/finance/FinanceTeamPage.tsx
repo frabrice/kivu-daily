@@ -60,6 +60,7 @@ export default function FinanceTeamPage() {
       p_user_id: editUser.id,
       p_role: updates.role,
       p_department_id: updates.department_id ?? null,
+      p_responsibility_label: updates.responsibility_label ?? '',
     });
     if (err) { setError(err.message); return; }
     setEditUser(null);

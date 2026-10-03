@@ -7,7 +7,7 @@ import {
   Package, AlertTriangle,
   Image as ImageIcon,
   LayoutDashboard, ArrowLeftRight, Landmark, ClipboardCheck,
-  CarFront, ShieldCheck, Mail, Trophy, UserCog,
+  CarFront, ShieldCheck, Mail, Trophy, UserCog, Headphones, PhoneIncoming,
 } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import NotificationBell from '../components/NotificationBell';
@@ -47,6 +47,9 @@ import SocialMediaPage from './SocialMediaPage';
 import ProductsPage from './itHub/ProductsPage';
 import IssuesPage from './itHub/IssuesPage';
 import HowToUsePage from './HowToUsePage';
+import FromCallCenterPage from './FromCallCenterPage';
+import CallTicketsPage from './callCenter/CallTicketsPage';
+import { takeTicketLink, useMyOpenTicketCount } from '../lib/callTickets';
 
 export default function EmployeeApp() {
   const { profile } = useAuth();
@@ -54,7 +57,11 @@ export default function EmployeeApp() {
   // never leaks into another employee's nav (or a re-assigned employee's
   // new one) - a reload lands back on the same page instead of General.
   const navStorageKey = `kivu-active-nav-${profile?.department?.slug ?? 'none'}`;
+  const isCallCenter = profile?.department?.slug === 'call_center';
+  // A ticket link from an email (?ticket=...) opens straight onto it.
+  const [link] = useState(() => takeTicketLink());
   const [active, setActiveRaw] = useState<NavKey>(() => {
+    if (link.ticketId || link.page) return isCallCenter && link.page !== 'from_call_center' ? 'call_center_tickets' : 'from_call_center';
     try {
       const saved = localStorage.getItem(navStorageKey);
       if (saved) return saved as NavKey;
@@ -66,6 +73,7 @@ export default function EmployeeApp() {
     try { localStorage.setItem(navStorageKey, key); } catch { /* ignore */ }
   };
   const { tasks, reload } = useTasks(profile?.id);
+  const myOpenTickets = useMyOpenTicketCount(profile?.id);
 
   const TITLES: Record<NavKey, string> = {
     home: 'General',
@@ -113,6 +121,8 @@ export default function EmployeeApp() {
     call_center_queue: 'Call Queue',
     call_center_directory: 'Directory',
     call_center_scripts: 'Scripts',
+    call_center_tickets: 'Calls & Tickets',
+    from_call_center: 'From Call Center',
     marketing_campaigns: 'Campaigns',
     marketing_followups: 'Follow-ups',
     it_hub_products: 'Products',
@@ -124,6 +134,7 @@ export default function EmployeeApp() {
   const NAV: NavItem[] = [
     { key: 'home', label: 'General', icon: ListTodo },
     { key: 'calendar', label: 'Calendar', icon: CheckCircle2 },
+    { key: 'from_call_center', label: 'From Call Center', icon: Headphones, badge: myOpenTickets },
     ...(profile?.department?.slug === 'fleet' ? [
       { key: 'fleet_pipeline' as const, label: 'Driver Pipeline', icon: Truck },
       { key: 'fleet_vehicles' as const, label: 'Vehicles', icon: Car },
@@ -150,6 +161,7 @@ export default function EmployeeApp() {
       { key: 'finance_team' as const, label: 'Team', icon: UserCog },
     ] : []),
     ...(profile?.department?.slug === 'call_center' ? [
+      { key: 'call_center_tickets' as const, label: 'Calls & Tickets', icon: PhoneIncoming },
       { key: 'call_center_queue' as const, label: 'Call Queue', icon: PhoneCall },
       { key: 'call_center_directory' as const, label: 'Directory', icon: Users2 },
       { key: 'call_center_scripts' as const, label: 'Scripts', icon: BookOpen },
@@ -203,6 +215,8 @@ export default function EmployeeApp() {
       {active === 'call_center_queue' && <CallQueuePage />}
       {active === 'call_center_directory' && <CallDirectoryPage />}
       {active === 'call_center_scripts' && <CallScriptsPage />}
+      {active === 'call_center_tickets' && <CallTicketsPage initialTicketId={link.ticketId} />}
+      {active === 'from_call_center' && <FromCallCenterPage initialTicketId={link.ticketId} />}
 
       {active === 'marketing_campaigns' && <CampaignsPage />}
       {active === 'marketing_followups' && <FollowUpsPage />}

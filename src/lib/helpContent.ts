@@ -521,6 +521,42 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
     ],
   },
 
+  call_center_tickets: {
+    blurb: 'Your inbound desk: log every call, solve what you can on the spot, and send the rest to the person in charge.',
+    sections: [
+      {
+        heading: 'Logging a call',
+        body: [
+          `Press "New call". Type the caller's phone number first — if it belongs to one of our drivers, Kivu Daily recognises them and links the ticket to that driver.`,
+          `Write down the caller's name and, for anything serious (urgent, a complaint, driver behaviour), ask for their email too. Pick a category, mark it Urgent if it can't wait, and write what happened in the caller's own words.`,
+          `If you solved it on the call, choose "I resolved it on the call", say what you did, and save — it's recorded and closed. If you can't, choose "Needs someone else", press the person in charge (shown as "Name (what they're in charge of)") and Send. They get an email straight away. Give the caller the reference, e.g. CC-2026-10-001.`,
+        ],
+      },
+      {
+        heading: 'Closing the loop',
+        body: [
+          `"Call back" lists tickets someone has resolved. Call the caller, tell them the outcome, then open the ticket and press "Close — caller informed". If they say it isn't fixed, press "Reopen" and write what they said — it goes back to the same person.`,
+          `When a ticket is "Waiting on caller", you're emailed what's needed: call the caller, get it, and add it as a note.`,
+        ],
+      },
+    ],
+    tips: [`Urgent tickets are overdue after 24 hours, normal ones after 3 days — overdue tickets are flagged red and appear in the MD's morning briefing.`, 'You can reassign any open ticket if it went to the wrong person.'],
+  },
+  from_call_center: {
+    blurb: `Callers' issues the Call Center couldn't solve on the call and assigned to you.`,
+    sections: [
+      {
+        heading: 'Working a ticket',
+        body: [
+          `You're emailed every time a ticket is assigned to you, with the caller's details and a button that opens it here. The sidebar badge shows how many are still open.`,
+          'Open a ticket to read everything the caller said, then press "Start working". Add notes as you go — the agent who took the call is emailed, so they can update the caller if they ring again.',
+          `If you need something from the caller, press "Waiting on caller" and say what — the Call Center will ring them. When it's done, press "Mark resolved" and write what you did; the Call Center calls the caller back with your answer and closes it.`,
+          'Not yours? Press "Reassign", pick the right person and say why.',
+        ],
+      },
+    ],
+    tips: ['Urgent tickets are overdue after 24 hours, normal ones after 3 days.', 'Every morning at 8:00 (Monday–Saturday) you get one email listing your open tickets, overdue first.'],
+  },
   call_center: {
     blurb: 'Everything for calling drivers: a prioritized queue of who to call next, a full directory, and reusable scripts.',
     sections: [

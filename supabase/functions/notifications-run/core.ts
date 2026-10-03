@@ -31,6 +31,9 @@ export interface Built {
   // Personal emails (e.g. "you have unfinished tasks") name their one
   // recipient; everything else goes to the rule's whole audience.
   recipients?: string[];
+  // The email's button: a label and a query string for the app, e.g.
+  // { label: "Open ticket", query: "ticket=<id>" }. Defaults to the app home.
+  cta?: { label: string; query: string };
 }
 
 export interface Ctx {
