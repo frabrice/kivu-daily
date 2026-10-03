@@ -1,4 +1,5 @@
 import { NavKey } from '../components/AppShell';
+import { CALL_CENTER_HELP } from './helpCallCenter';
 
 export interface HelpSection {
   heading: string;
@@ -99,6 +100,7 @@ const FINANCE_ENTRY: HelpEntry = {
 };
 
 export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
+  ...CALL_CENTER_HELP,
   finance: FINANCE_ENTRY,
   finance_dashboard: FINANCE_ENTRY,
   finance_revenue: {
@@ -516,77 +518,11 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
       },
     ],
     tips: [
-      'Call Center can see this same driver list (read-only) so calls and pipeline stage stay in sync — only Fleet can actually move a driver between columns.',
+      `Call Center sees all of Fleet read-only (they can't change drivers, cars, deposits or fines, and don't see driver documents) — only Fleet makes changes.`,
       'Use search to jump straight to a driver by name or phone instead of scanning columns.',
     ],
   },
 
-  call_center_tickets: {
-    blurb: 'Your inbound desk: log every call, solve what you can on the spot, and send the rest to the person in charge.',
-    sections: [
-      {
-        heading: 'Logging a call',
-        body: [
-          `Press "New call". Type the caller's phone number first — if it belongs to one of our drivers, Kivu Daily recognises them and links the ticket to that driver.`,
-          `Write down the caller's name and, for anything serious (urgent, a complaint, driver behaviour), ask for their email too. Pick a category, mark it Urgent if it can't wait, and write what happened in the caller's own words.`,
-          `If you solved it on the call, choose "I resolved it on the call", say what you did, and save — it's recorded and closed. If you can't, choose "Needs someone else", press the person in charge (shown as "Name (what they're in charge of)") and Send. They get an email straight away. Give the caller the reference, e.g. CC-2026-10-001.`,
-        ],
-      },
-      {
-        heading: 'Closing the loop',
-        body: [
-          `"Call back" lists tickets someone has resolved. Call the caller, tell them the outcome, then open the ticket and press "Close — caller informed". If they say it isn't fixed, press "Reopen" and write what they said — it goes back to the same person.`,
-          `When a ticket is "Waiting on caller", you're emailed what's needed: call the caller, get it, and add it as a note.`,
-        ],
-      },
-    ],
-    tips: [`Urgent tickets are overdue after 24 hours, normal ones after 3 days — overdue tickets are flagged red and appear in the MD's morning briefing.`, 'You can reassign any open ticket if it went to the wrong person.'],
-  },
-  from_call_center: {
-    blurb: `Callers' issues the Call Center couldn't solve on the call and assigned to you.`,
-    sections: [
-      {
-        heading: 'Working a ticket',
-        body: [
-          `You're emailed every time a ticket is assigned to you, with the caller's details and a button that opens it here. The sidebar badge shows how many are still open.`,
-          'Open a ticket to read everything the caller said, then press "Start working". Add notes as you go — the agent who took the call is emailed, so they can update the caller if they ring again.',
-          `If you need something from the caller, press "Waiting on caller" and say what — the Call Center will ring them. When it's done, press "Mark resolved" and write what you did; the Call Center calls the caller back with your answer and closes it.`,
-          'Not yours? Press "Reassign", pick the right person and say why.',
-        ],
-      },
-    ],
-    tips: ['Urgent tickets are overdue after 24 hours, normal ones after 3 days.', 'Every morning at 8:00 (Monday–Saturday) you get one email listing your open tickets, overdue first.'],
-  },
-  call_center: {
-    blurb: 'Everything for calling drivers: a prioritized queue of who to call next, a full directory, and reusable scripts.',
-    sections: [
-      {
-        heading: 'Call Queue',
-        body: [
-          'Automatically ranks every active driver by urgency: never-called drivers first, then anyone flagged "needs follow-up" from their last call, then anyone not called in 7+ days, then everyone else. No manual sorting needed — just start from the top.',
-          'Click a driver to log a call with them.',
-        ],
-      },
-      {
-        heading: 'Logging a call',
-        body: [
-          'Everything is selection-only — no free typing for driver, reason, or outcome, so logs stay consistent and searchable. Pick the driver, pick a reason for the call, pick the outcome, and optionally add a short note.',
-          'If a matching script exists for the reason you picked, it appears automatically so you know what to say.',
-          'A "Flag to IT" button is also here — use it if the call reveals a product problem, even before you finish logging the call itself.',
-        ],
-      },
-      {
-        heading: 'Directory & Scripts',
-        body: [
-          'Directory is a searchable list of every driver with their call history at a glance (never called, or last call time). Scripts is a library of what-to-say guides, taggable by call reason — "Add Script" lets anyone in Call Center contribute a new one.',
-        ],
-      },
-    ],
-    tips: [
-      'The Call Queue re-ranks itself the instant you log a call — a driver you just called drops out of "urgent" immediately.',
-      'A call outcome marked "needs follow-up" is what pushes a driver back to the top of tomorrow\'s queue — pick outcomes honestly, not just to clear the queue.',
-    ],
-  },
 
   marketing: {
     blurb: 'The outreach CRM — campaigns (a push with a goal) holding contacts (the actual organizations/people you\'re reaching), each moving through a pipeline.',

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import HelpButton from '../components/HelpButton';
 import { Inbox, PlayCircle, Hourglass, CheckCircle2, AlertTriangle, Users2, Headphones } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useCallTickets, isOverdue, isUnresolved, sortForWork, ageLabel } from '../lib/callTickets';
@@ -58,9 +59,12 @@ export default function FromCallCenterPage({ initialTicketId }: { initialTicketI
 
   return (
     <div className="space-y-4">
-      <div>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Headphones size={16} className="text-brand-600 dark:text-brand-300" /> From Call Center</h2>
         <p className="text-[11px] text-gray-400 mt-0.5">Callers' issues the Call Center assigned to you. Resolve them and the Call Center calls the caller back.</p>
+      </div>
+        <HelpButton navKey="from_call_center" title="From Call Center" />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

@@ -3,7 +3,7 @@ import { activeStandings, car, loadDeposits, loadDrivers } from "./drivers.ts";
 import { KIVU_REVENUE_TYPES, loadTransactions, openTransactions, OPERATING_COST_TYPES, txTable, type TxRow } from "./finance.ts";
 import { carsWithoutDriver, loadCalls, loadFlaggedStories } from "./operations.ts";
 import { loadRecentTasks } from "./workspace.ts";
-import { isOverdue, isResponseOverdue, loadTickets, UNRESOLVED, waitingFor } from "./tickets.ts";
+import { CATEGORY_LABEL, isOverdue, isResponseOverdue, loadTickets, UNRESOLVED, waitingFor } from "./tickets.ts";
 import {
   activeEmployees, ALL_DAYS, Block, Ctx, day, esc, hm, lastWeek, longDay, monthOf, personName, plural, RuleDef, rows, rwf,
 } from "./core.ts";
@@ -189,7 +189,40 @@ export const companyRules: Record<string, RuleDef> = {
       const wCalls = calls.filter((c) => inWeek(c.created_at.slice(0, 10)));
       const byCaller = new Map<string, number>();
       for (const c of wCalls) byCaller.set(personName(ctx, c.caller_id), (byCaller.get(personName(ctx, c.caller_id)) ?? 0) + 1);
-      blocks.push({ heading: "Call Center", text: wCalls.length ? `${plural(wCalls.length, "call")} logged — ${[...byCaller].map(([n, c]) => `${esc(n)}: ${c}`).join(", ")}.` : "No calls logged." });
+      // Inbound desk (tickets) + outbound driver calls.
+      const kigaliDay = (iso: string) => new Date(new Date(iso).getTime() + 2 * 3600000).toISOString().slice(0, 10);
+      const allTickets = await loadTickets(ctx);
+      const wTickets = allTickets.filter((t) => inWeek(kigaliDay(t.created_at)));
+      const onCall = wTickets.filter((t) => t.resolved_on_call).length;
+      const cases = wTickets.filter((t) => !t.resolved_on_call);
+      const resolvedInWeek = allTickets.filter((t) => t.resolved_at && !t.resolved_on_call && inWeek(kigaliDay(t.resolved_at)));
+      const avgHours = resolvedInWeek.length
+        ? resolvedInWeek.reduce((s, t) => s + (new Date(t.resolved_at!).getTime() - new Date(t.created_at).getTime()) / 3600000, 0) / resolvedInWeek.length
+        : null;
+      const lateResponse = cases.filter((t) => {
+        const start = new Date(t.assigned_at ?? t.created_at).getTime();
+        const first = t.first_response_at ? new Date(t.first_response_at).getTime() : Date.now();
+        return t.priority !== "emergency" && first - start > 2 * 3600000;
+      }).length;
+      const topics = new Map<string, number>();
+      for (const t of wTickets) topics.set(t.situation ?? CATEGORY_LABEL[t.category] ?? t.category, (topics.get(t.situation ?? CATEGORY_LABEL[t.category] ?? t.category) ?? 0) + 1);
+      const top = [...topics].sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const closedWeek = allTickets.filter((t) => t.satisfaction && t.resolved_at && inWeek(kigaliDay(t.resolved_at)));
+      const sat = (k: string) => closedWeek.filter((t) => t.satisfaction === k).length;
+      const emergenciesWeek = wTickets.filter((t) => t.priority === "emergency").length;
+      blocks.push({
+        heading: "Call Center",
+        text: [
+          wTickets.length
+            ? `<b>${plural(wTickets.length, "contact")}</b> logged — ${onCall} solved on the spot (${Math.round((onCall / wTickets.length) * 100)}%), ${plural(cases.length, "case")} handed on${emergenciesWeek ? `, <b style="color:#7f1d1d;">${plural(emergenciesWeek, "emergency", "emergencies")}</b>` : ""}.`
+            : "No inbound contacts logged.",
+          resolvedInWeek.length ? `${plural(resolvedInWeek.length, "case")} resolved, on average ${avgHours! < 24 ? `${Math.round(avgHours!)} h` : `${(avgHours! / 24).toFixed(1)} days`} after the call.` : "",
+          cases.length ? `Two-hour response standard: ${cases.length - lateResponse} of ${cases.length} met it${lateResponse ? ` — <b style="color:#dc2626;">${lateResponse} missed</b>` : ""}.` : "",
+          top.length ? `Top reasons: ${top.map(([n, c]) => `${esc(n)} (${c})`).join(", ")}.` : "",
+          closedWeek.length ? `Caller satisfaction at close: ${sat("happy")} happy, ${sat("neutral")} neutral, ${sat("unhappy")} unhappy.` : "",
+          wCalls.length ? `Driver calls: ${plural(wCalls.length, "call")} — ${[...byCaller].map(([n, c]) => `${esc(n)}: ${c}`).join(", ")}.` : "No driver calls logged.",
+        ].filter(Boolean).join("<br>"),
+      });
 
       return [{
         subject: `Week of ${day(week.start)}: net ${rwf(revenue + fleetIn - ownersOut - costs)}, ${plural(wDeposits.length, "weekly payment")}`,

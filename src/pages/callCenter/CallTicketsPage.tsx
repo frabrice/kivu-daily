@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { PhoneIncoming, Plus, PhoneCall, CheckCircle2, Inbox, AlertTriangle, PhoneForwarded, Search, CarTaxiFront, ShieldAlert } from 'lucide-react';
+import HelpButton from '../../components/HelpButton';
+import { PhoneIncoming, Plus, PhoneCall, CheckCircle2, Inbox, AlertTriangle, PhoneForwarded, Search, CarTaxiFront, ShieldAlert, ArrowRightLeft } from 'lucide-react';
 import { useCallTickets, isOverdue, isResponseOverdue, isUnresolved, needsMdAck, sortForWork } from '../../lib/callTickets';
 import { todayStr, dateStr } from '../../lib/utils';
 import KpiTile from '../../components/KpiTile';
 import TicketList from '../../components/callTickets/TicketList';
 import TicketDrawer from '../../components/callTickets/TicketDrawer';
 import NewCallDrawer from '../../components/callTickets/NewCallDrawer';
+import { HandoverBanner, HandoverDrawer, useLatestHandover } from '../../components/callTickets/ShiftHandover';
 
 type Tab = 'callback' | 'open' | 'all';
 
@@ -18,6 +20,11 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState<false | 'call' | 'booking'>(false);
   const [toast, setToast] = useState('');
+  const [handingOver, setHandingOver] = useState(false);
+  // One-time welcome for new agents (per browser).
+  const [welcome, setWelcome] = useState(() => { try { return !localStorage.getItem('kivu-cc-welcome-seen'); } catch { return false; } });
+  const dismissWelcome = () => { setWelcome(false); try { localStorage.setItem('kivu-cc-welcome-seen', '1'); } catch { /* ignore */ } };
+  const { handover, reload: reloadHandover } = useLatestHandover();
   const [q, setQ] = useState('');
 
   useEffect(() => {
@@ -51,11 +58,27 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
           <h2 className="text-base font-semibold flex items-center gap-2"><PhoneIncoming size={16} className="text-brand-600 dark:text-brand-300" /> Calls & Tickets</h2>
           <p className="text-[11px] text-gray-400 mt-0.5">Log every call. Solve it on the spot, or send it to the person in charge.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <HelpButton navKey="call_center_tickets" title="Calls & Tickets" />
+          <button onClick={() => setHandingOver(true)} className="btn-ghost flex items-center gap-1.5 whitespace-nowrap"><ArrowRightLeft size={14} /> Hand over</button>
           <button onClick={() => setCreating('booking')} className="btn-ghost flex items-center gap-1.5 whitespace-nowrap"><CarTaxiFront size={14} /> Log booking</button>
           <button onClick={() => setCreating('call')} className="btn-primary flex items-center gap-1.5 whitespace-nowrap"><Plus size={14} /> New call</button>
         </div>
       </div>
+
+      {welcome && (
+        <div className="rounded-xl border border-brand/20 bg-brand/5 p-4 text-[12px] space-y-1.5">
+          <p className="font-semibold text-[13px]">Welcome to the Kivu Ride desk</p>
+          <p>Every contact goes here: press <b>New call</b>, type the caller's phone number first, then type a word for what it's about — the Script Book card appears beside the form and the right person is pre-selected.</p>
+          <p>Solve it on the call, or send it on and give the caller the reference. Emergencies: public help first (112 / 113 / 912 / 111), then set Priority to Emergency.</p>
+          <div className="flex gap-2 pt-1">
+            <button onClick={dismissWelcome} className="btn-primary text-[12px]">Got it</button>
+            <span className="text-[11px] text-gray-500 self-center">Full guide: <b>How this works</b> (top right) or How to Use.</span>
+          </div>
+        </div>
+      )}
+
+      {handover && <HandoverBanner handover={handover} personName={(id) => personName(id)} onAcknowledged={reloadHandover} />}
 
       {emergencies.length > 0 && (
         <button onClick={() => setSelectedId(emergencies[0].id)} className="w-full text-left rounded-lg bg-red-700 text-white px-3 py-2 text-[12px] flex items-center gap-2">
@@ -113,6 +136,9 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
             reload();
           }}
         />
+      )}
+      {handingOver && (
+        <HandoverDrawer openCases={open} onClose={() => setHandingOver(false)} onSaved={() => { setHandingOver(false); setToast('Handover saved — the next shift will see it here.'); reloadHandover(); }} />
       )}
       {selected && (
         <TicketDrawer ticket={selected} updates={updatesFor(selected.id)} people={people} personName={personName} onClose={() => setSelectedId(null)} onChanged={reload} />

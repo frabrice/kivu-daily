@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import HelpButton from '../../components/HelpButton';
 import { Paintbrush, Cpu, Phone, User, Save, CheckCircle2 } from 'lucide-react';
 import { supabase, PlatformCar, PlatformDriver } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
@@ -57,9 +58,12 @@ export default function BrandingDevicesPage() {
 
   return (
     <div className="space-y-4">
-      <div>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Paintbrush size={16} className="text-brand-600 dark:text-brand-300" /> Branding & Devices</h2>
         <p className="text-[11px] text-gray-400 mt-0.5">Non-Insider car owners who allow branding or want to buy our device. Contact them and move each car along.</p>
+      </div>
+        <HelpButton navKey="fleet_branding" title="Branding & Devices" />
       </div>
 
       <div className="flex flex-wrap items-center gap-2 justify-between">

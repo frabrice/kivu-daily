@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import HelpButton from '../../components/HelpButton';
 import { BookOpen, Search, Plus, Pencil, Pin } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { supabase, ScriptCard } from '../../lib/supabase';
@@ -45,7 +46,10 @@ export default function ScriptBookPage() {
           <h2 className="text-base font-semibold flex items-center gap-2"><BookOpen size={16} className="text-brand-600 dark:text-brand-300" /> Script Book</h2>
           <p className="text-[11px] text-gray-400 mt-0.5">Find the situation, see what to say and do, and who owns it. Kivu Ride Call Center Script Book v1.0.</p>
         </div>
-        {isMD && <button onClick={() => setEditing('new')} className="btn-primary flex items-center gap-1.5"><Plus size={14} /> Add card</button>}
+        <div className="flex gap-2">
+          <HelpButton navKey="call_center_scripts" title="the Script Book" />
+          {isMD && <button onClick={() => setEditing('new')} className="btn-primary flex items-center gap-1.5"><Plus size={14} /> Add card</button>}
+        </div>
       </div>
 
       <div className="relative">
