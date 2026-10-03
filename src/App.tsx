@@ -13,7 +13,7 @@ import PublicSurveyApp from './pages/survey/PublicSurveyApp';
 type PreAuthView = 'landing' | 'role-select' | 'login';
 
 function AppInner() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const [preAuthView, setPreAuthView] = useState<PreAuthView>('landing');
   const [prefillEmail, setPrefillEmail] = useState('');
 
@@ -35,6 +35,20 @@ function AppInner() {
       );
     }
     return <AuthPage prefillEmail={prefillEmail} onBack={() => setPreAuthView('role-select')} />;
+  }
+
+  // Deactivated or terminated: their sign-in is also blocked server-side,
+  // but a session opened before that can still be loaded once.
+  if (!profile.is_active) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50 dark:bg-navy-950">
+        <div className="card p-8 max-w-sm text-center">
+          <p className="text-[14px] font-semibold">This account is no longer active</p>
+          <p className="text-[12px] text-gray-500 mt-2">If you think this is a mistake, contact the Managing Director.</p>
+          <button onClick={signOut} className="btn-primary mt-5">Sign out</button>
+        </div>
+      </div>
+    );
   }
 
   if (profile.force_password_change) return <SetPasswordPage />;

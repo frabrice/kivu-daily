@@ -40,6 +40,7 @@ export function CreateUserModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [warning, setWarning] = useState('');
+  const [replaced, setReplaced] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
@@ -62,6 +63,7 @@ export function CreateUserModal({
       if (fnError) throw new Error(await edgeFunctionError(fnError));
       if (data?.error) throw new Error(data.error);
       onCreated();
+      setReplaced(data?.replaced_account ?? null);
       if (!data?.email_sent) {
         setWarning(
           data?.email_error
@@ -91,6 +93,11 @@ export function CreateUserModal({
               <p className="text-[12px] font-medium">Invite sent to {email}</p>
               <p className="text-[11px] text-gray-400 mt-1">They'll get an email with a link to sign in and set their own password.</p>
             </>
+          )}
+          {replaced && (
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 max-w-sm mx-auto">
+              This email belonged to {replaced}'s former account. That account stays deactivated with its history kept, and this is a brand-new account.
+            </p>
           )}
           <button onClick={onClose} className="btn-primary mt-4">Done</button>
         </div>

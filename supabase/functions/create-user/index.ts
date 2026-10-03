@@ -83,6 +83,25 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // One sign-in per email. An active account keeps it; a deactivated or
+    // terminated one gives it up - its sign-in email is archived (its
+    // profile and history stay untouched) so a fresh account can use it.
+    const { data: existing, error: lookupError } = await adminClient.rpc("find_account_by_email", { p_email: email });
+    if (lookupError) throw new Error(lookupError.message);
+    const holder = (existing as { user_id: string; is_active: boolean; full_name: string | null }[] | null)?.[0];
+    let replacedAccount: string | null = null;
+    if (holder?.is_active) {
+      return new Response(
+        JSON.stringify({ error: `${holder.full_name?.trim() || "Someone"} already has an active Kivu Daily account with this email. Use a different email.` }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (holder) {
+      const { error: archiveError } = await adminClient.rpc("archive_account_email", { p_user_id: holder.user_id });
+      if (archiveError) throw new Error(archiveError.message);
+      replacedAccount = holder.full_name?.trim() || "a former employee";
+    }
+
     // Create the user and a one-time invite link in a single call - no
     // password is ever set or seen by the caller; the new employee sets
     // their own via the emailed link.
@@ -151,7 +170,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, user_id: newUser.id, email_sent: emailSent, email_error: emailError }),
+      JSON.stringify({ success: true, user_id: newUser.id, email_sent: emailSent, email_error: emailError, replaced_account: replacedAccount }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
