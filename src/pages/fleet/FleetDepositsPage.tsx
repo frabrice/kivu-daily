@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 
@@ -42,7 +42,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
         const q = search.trim().toLowerCase();
         return !q || r.driver.full_name.toLowerCase().includes(q);
       })
-      .sort((a, b) => a.priority - b.priority || b.standing.owedNow - a.standing.owedNow);
+      .sort((a, b) => a.priority - b.priority || b.standing.owes - a.standing.owes || b.standing.weekBehind - a.standing.weekBehind);
   }, [drivers, deposits, search]);
 
   const overdueCount = depositQueue.filter((r) => !r.isEnded && r.tier === 'red').length;
@@ -78,11 +78,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                   <Car size={10} /> {row.driver.vehicle?.plate_number}
                   {row.driver.shift && <span>· {row.driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
                 </p>
-                {!row.isEnded && (row.standing.owedNow > 0 || row.standing.nextDueAmount > 0) && (
+                {!row.isEnded && depositOwesLabel(row.standing) && (
+                  <p className="text-[10px] font-semibold mt-0.5 text-red-600 dark:text-red-400">{depositOwesLabel(row.standing)} for days already worked</p>
+                )}
+                {!row.isEnded && !depositOwesLabel(row.standing) && row.standing.weekBehind === 0 && row.standing.nextDueAmount > 0 && (
                   <p className={`text-[10px] font-medium mt-0.5 ${depositRemainingColor(row.tier)}`}>
-                    {row.standing.owedNow > 0
-                      ? `Owes ${formatRwf(row.standing.owedNow)} now`
-                      : `${formatRwf(row.standing.nextDueAmount)} due Sunday ${row.standing.nextDueDate ? formatDateLabelSafe(row.standing.nextDueDate) : ''}`}
+                    {formatRwf(row.standing.nextDueAmount)} due Sunday {row.standing.nextDueDate ? formatDateLabelSafe(row.standing.nextDueDate) : ''}
                   </p>
                 )}
               </div>

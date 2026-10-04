@@ -59,14 +59,16 @@ export const companyRules: Record<string, RuleDef> = {
       }
 
       const blocked = standings.filter((r) => !r.s.isCleared);
-      const owed = blocked.reduce((s, r) => s + r.s.owedNow, 0);
+      const owed = standings.reduce((s, r) => s + r.s.owes, 0);
+      const behindWeek = standings.reduce((s, r) => s + r.s.weekBehind, 0);
       const dueSunday = standings.filter((r) => r.s.nextDueAmount > 0);
       const dueDate = standings[0]?.s.nextDueDate ?? sundayOf(ctx.today);
       blocks.push({
         heading: "Driver payments",
         text: (ctx.today >= SUNDAY_RULE_START
-          ? `<b>${standings.length - blocked.length} of ${standings.length}</b> drivers are cleared to drive.${blocked.length ? ` ${plural(blocked.length, "driver")} owe ${rwf(owed)}: ${blocked.map((r) => esc(r.d.full_name)).join(", ")}.` : ""}`
-          : `${plural(blocked.length, "driver")} behind on days already driven (${rwf(owed)}).`)
+          ? `<b>${standings.length - blocked.length} of ${standings.length}</b> drivers are cleared to drive.${blocked.length ? ` Not cleared: ${blocked.map((r) => esc(r.d.full_name)).join(", ")}.` : ""}`
+          : "")
+          + `${ctx.today >= SUNDAY_RULE_START ? "<br>" : ""}Owed for days already worked: <b>${rwf(owed)}</b> · behind on this week: <b>${rwf(behindWeek)}</b>.`
           + `<br>Due by ${day(dueDate)}: ${rwf(dueSunday.reduce((s, r) => s + r.s.nextDueAmount, 0))} from ${plural(dueSunday.length, "driver")}.`,
       });
 

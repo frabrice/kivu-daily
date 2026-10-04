@@ -309,7 +309,7 @@ export default function ManagingDirectorApp() {
                   { label: 'Vehicles', value: snapshot.fleet.totalVehicles },
                 ]}
                 alert={snapshot.fleet.overdueDeposits > 0
-                  ? `${snapshot.fleet.overdueDeposits} driver${snapshot.fleet.overdueDeposits === 1 ? '' : 's'} ${todayStr() >= SUNDAY_RULE_START ? 'not cleared to drive' : 'behind on deposits'}`
+                  ? `${snapshot.fleet.overdueDeposits} driver${snapshot.fleet.overdueDeposits === 1 ? '' : 's'} ${todayStr() >= SUNDAY_RULE_START ? 'not cleared to drive' : 'owe for days already worked'}`
                   : undefined}
               />
               <DeptSnapshotCard

@@ -66,9 +66,14 @@ export interface DepositStanding {
   current: DepositPeriod | null;
   totalPaid: number;
   paidThrough: string | null;
-  // Working days already driven but not yet paid for - the same truth
-  // under the old rule and the new one, used before the rule starts.
-  behind: number;
+  // The two amounts every dashboard shows (confirmed with the operator):
+  // OWES - working days already driven (start of the week through today)
+  // that haven't been paid for. Grows by 30,000 each unpaid working day.
+  owes: number;
+  // BEHIND - the whole week that should have been paid on its first day,
+  // minus what's been paid. Only shrinks as payments come in. Being
+  // cleared to drive depends on this reaching zero, not on owes.
+  weekBehind: number;
   isCleared: boolean;
   owedNow: number;
   nextDueDate: string | null;
@@ -172,7 +177,7 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
 
   if (!start || start > today) {
     return {
-      hasStarted: false, ruleInForce, periods: [], current: null, totalPaid, paidThrough: null, behind: 0,
+      hasStarted: false, ruleInForce, periods: [], current: null, totalPaid, paidThrough: null, owes: 0, weekBehind: 0,
       isCleared: true, owedNow: 0, nextDueDate: start, nextDueAmount: Math.max(WEEKLY_DEPOSIT_AMOUNT - totalPaid, 0),
       daysLost: 0, score: 0, onTimeWeeks: 0, lateWeeks: 0,
     };
@@ -211,8 +216,11 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
   });
 
   const current = periods.length > 0 ? periods[periods.length - 1] : null;
-  const behind = Math.max(costThrough(today) - paidToDate, 0);
-  const owedNow = ruleInForce && current ? Math.max(current.required - paidToDate, 0) : behind;
+  const owes = Math.max(costThrough(today) - paidToDate, 0);
+  const owedNow = ruleInForce && current ? Math.max(current.required - paidToDate, 0) : owes;
+  // Before the Sunday rule starts there's no enforced week yet, so the
+  // week is simply Monday-Sunday: everything up to this Sunday.
+  const weekBehind = ruleInForce ? owedNow : Math.max(costThrough(sundayOf(today)) - paidToDate, 0);
   const nextDueDate = ruleInForce ? sundayOf(today) : shiftDay(SUNDAY_RULE_START, -1);
   const nextDueAmount = Math.max(costThrough(shiftDay(nextDueDate, 7)) - paidToDate, 0);
   const daysLost = periods.reduce((s, p) => s + p.daysLost, 0);
@@ -224,7 +232,8 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     current,
     totalPaid,
     paidThrough: paidThroughDate(start, rest, paidToDate),
-    behind,
+    owes,
+    weekBehind,
     isCleared: owedNow === 0,
     owedNow,
     nextDueDate,

@@ -297,9 +297,14 @@ export default function DriverProfilePage({
         </div>
         {!isEnded && standing.hasStarted && (
           <div className="space-y-1 mb-2.5">
-            {standing.owedNow > 0 && (
+            {standing.owes > 0 && (
+              <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                Owes {formatRwf(standing.owes)} for days already worked
+              </p>
+            )}
+            {standing.weekBehind > 0 && (
               <p className={`text-[11px] font-medium ${depositRemainingColor(tier)}`}>
-                {standing.ruleInForce ? `Owes ${formatRwf(standing.owedNow)} to be cleared to drive` : `Behind by ${formatRwf(standing.owedNow)}`}
+                Behind {formatRwf(standing.weekBehind)} on this week{standing.ruleInForce ? ' — needs to be paid in full to be cleared to drive' : ''}
               </p>
             )}
             {standing.nextDueDate && (

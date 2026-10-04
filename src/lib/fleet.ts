@@ -158,13 +158,14 @@ import type { DepositLike, DepositPeriod, DepositStanding } from '../../supabase
 
 export type DepositTier = 'red' | 'yellow' | 'green' | 'neutral';
 
-// Red: not cleared (or, before the rule starts, behind). Yellow: cleared
-// for now but next Sunday's payment isn't in and Sunday is today or
-// tomorrow. Green: already paid for the coming week. Neutral: cleared,
-// mid-week, nothing to flag yet.
+// Red: owes for days already worked, or not cleared to drive. Yellow:
+// owes nothing yet but is behind on the week, or next Sunday's payment
+// isn't in and Sunday is today or tomorrow. Green: already paid for the
+// coming week. Neutral: up to date, mid-week, nothing to flag yet.
 export function depositStandingTier(s: DepositStanding, today: string = todayStr()): DepositTier {
   if (!s.hasStarted) return 'neutral';
-  if (!s.isCleared) return 'red';
+  if (!s.isCleared || s.owes > 0) return 'red';
+  if (s.weekBehind > 0) return 'yellow';
   if (s.nextDueAmount <= 0) return 'green';
   if (s.nextDueDate && daysUntilDate(today, s.nextDueDate) <= 1) return 'yellow';
   return 'neutral';
@@ -194,18 +195,26 @@ export function formatRwf(amount: number): string {
   return `${amount.toLocaleString()} RWF`;
 }
 
+// The badge on the right: Behind = the whole week still unpaid (it should
+// have been paid on the week's first day). The red "Owes" line beside the
+// name is depositOwesLabel.
 export function depositStandingLabel(s: DepositStanding, today: string = todayStr()): string {
   if (!s.hasStarted) return 'Not started';
-  if (!s.isCleared) {
-    if (!s.ruleInForce) return `Behind ${formatRwf(s.behind)}`;
-    const lost = s.current?.daysLost ?? 0;
-    return lost > 0 ? `Not cleared · ${lost}d lost` : 'Not cleared to drive';
+  if (s.weekBehind > 0) {
+    const lost = s.ruleInForce ? s.current?.daysLost ?? 0 : 0;
+    return `Behind ${formatRwf(s.weekBehind)}${lost > 0 ? ` · ${lost}d lost` : ''}`;
   }
   if (s.nextDueAmount <= 0) return 'Paid for next week';
   const days = s.nextDueDate ? daysUntilDate(today, s.nextDueDate) : null;
   if (days === 0) return 'Due today';
   if (days === 1) return 'Due tomorrow';
   return s.ruleInForce ? 'Cleared to drive' : 'Up to date';
+}
+
+// The red line: working days already driven and not paid for. Null when
+// nothing is owed (even if the driver is still behind on the week).
+export function depositOwesLabel(s: DepositStanding): string | null {
+  return s.hasStarted && s.owes > 0 ? `Owes ${formatRwf(s.owes)}` : null;
 }
 
 export interface LeaderboardRow {

@@ -104,7 +104,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
                   <span className="flex items-center gap-1"><Car size={10} /> {row.driver.vehicle?.plate_number ?? '—'}</span>
                   <span>· Started {row.driver.start_date ? formatDateLabelSafe(row.driver.start_date) : '—'}</span>
                   {s.onTimeWeeks + s.lateWeeks > 0 && <span>· {s.onTimeWeeks} on time · {s.lateWeeks} late</span>}
-                  {notCleared && <span className="text-red-500 font-medium">· owes {formatRwf(s.owedNow)}</span>}
+                  {s.owes > 0 && <span className="text-red-500 font-medium">· owes {formatRwf(s.owes)}</span>}
                 </p>
               </div>
               <div className="text-right shrink-0 w-20">

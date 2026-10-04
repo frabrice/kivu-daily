@@ -14,7 +14,8 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
   const { profile } = useAuth();
   const driverDeposits = useMemo(() => deposits.filter((d) => d.driver_id === driver.id), [deposits, driver.id]);
   const before = useMemo(() => computeDepositStanding(driver, driverDeposits), [driver, driverDeposits]);
-  const suggested = before.owedNow > 0 ? before.owedNow : before.nextDueAmount > 0 ? before.nextDueAmount : WEEKLY_DEPOSIT_AMOUNT;
+  // Suggest clearing the whole week (Behind); otherwise what's due Sunday.
+  const suggested = before.weekBehind > 0 ? before.weekBehind : before.nextDueAmount > 0 ? before.nextDueAmount : WEEKLY_DEPOSIT_AMOUNT;
   const [amount, setAmount] = useState(String(suggested));
   const [paidDate, setPaidDate] = useState(todayStr());
   const [paymentMethod, setPaymentMethod] = useState<DepositPaymentMethod>('momo');
@@ -36,7 +37,9 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
   const effect = !after.hasStarted
     ? null
     : !after.isCleared
-      ? { tone: 'text-amber-500', text: after.ruleInForce ? `${formatRwf(after.owedNow)} still needed before they're cleared to drive.` : `Still ${formatRwf(after.owedNow)} behind.` }
+      ? { tone: 'text-amber-500', text: `Still behind ${formatRwf(after.weekBehind)} on the week${after.owes > 0 ? ` and owes ${formatRwf(after.owes)} for days worked` : ''}${after.ruleInForce ? ' — not cleared to drive yet' : ''}.` }
+      : after.weekBehind > 0
+        ? { tone: 'text-amber-500', text: `Owes nothing for days worked, but still behind ${formatRwf(after.weekBehind)} on the week.` }
       : after.nextDueAmount > 0
         ? { tone: 'text-emerald-600 dark:text-emerald-400', text: `${clearedText} · ${formatRwf(after.nextDueAmount)} still due by Sunday ${dueSunday}.` }
         : { tone: 'text-emerald-600 dark:text-emerald-400', text: `${clearedText} · the week after Sunday ${dueSunday} is covered too.` };
@@ -67,8 +70,8 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
             <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
             <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="input" />
             <p className="text-[10px] text-gray-400 mt-1">
-              {before.owedNow > 0
-                ? (before.ruleInForce ? `${formatRwf(before.owedNow)} needed now to be cleared to drive.` : `${formatRwf(before.owedNow)} behind today.`)
+              {before.weekBehind > 0
+                ? `Behind ${formatRwf(before.weekBehind)} on the week${before.owes > 0 ? ` · owes ${formatRwf(before.owes)} for days already worked` : ''}${before.ruleInForce ? ' — the full amount clears them to drive' : ''}.`
                 : before.nextDueAmount > 0
                   ? `${formatRwf(before.nextDueAmount)} due by Sunday ${before.nextDueDate ? formatDateLabelSafe(before.nextDueDate) : ''}.`
                   : 'Already paid for next week - this goes further ahead.'}

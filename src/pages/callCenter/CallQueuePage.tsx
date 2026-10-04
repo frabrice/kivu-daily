@@ -46,8 +46,8 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
       const days = lastCall ? Math.floor((Date.now() - new Date(lastCall.created_at).getTime()) / 86400000) : null;
       const stage = effectiveStage(d);
       const standing = stage === 'active' ? computeDepositStanding(d, deposits.filter((x) => x.driver_id === d.id)) : null;
-      if (standing && !standing.isCleared) {
-        out.payment.push({ driver: d, reasonLabel: `Owes ${formatRwf(standing.owedNow)}` });
+      if (standing && (standing.owes > 0 || standing.weekBehind > 0)) {
+        out.payment.push({ driver: d, reasonLabel: standing.owes > 0 ? `Owes ${formatRwf(standing.owes)} · behind ${formatRwf(standing.weekBehind)}` : `Behind ${formatRwf(standing.weekBehind)}` });
       } else if (lastCall?.outcome?.needs_followup || stage === 'flagged') {
         out.followup.push({ driver: d, reasonLabel: lastCall?.outcome?.needs_followup ? `Follow-up: ${lastCall.outcome.label}` : 'Flagged by Fleet' });
       } else if (stage !== 'active') {

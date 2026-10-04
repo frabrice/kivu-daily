@@ -54,7 +54,7 @@ async function sundayLists(key: "call" | "unpaid", ctx: Ctx, force: boolean): Pr
   const total = owing.reduce((s, r) => s + r.s.nextDueAmount, 0);
   const note = (r: StandingRow) => {
     if (r.s.nextDueAmount <= 0) return "Already paid";
-    if (r.s.owedNow > 0) return `Includes ${rwf(r.s.owedNow)} already overdue`;
+    if (r.s.owes > 0) return `Already owes ${rwf(r.s.owes)} for days worked`;
     if (r.d.start_date && sundayOf(r.d.start_date) === r.s.nextDueDate) return "First Sunday top-up";
     if (r.s.nextDueDate === switchoverSunday && !ruleInForce) return "Switch-over payment";
     return "";
@@ -83,28 +83,30 @@ async function sundayLists(key: "call" | "unpaid", ctx: Ctx, force: boolean): Pr
 async function notCleared(kind: "monday" | "daily" | "summary", ctx: Ctx, force: boolean): Promise<Built[]> {
   if (!force && ctx.today < SUNDAY_RULE_START) return [];
   const all = await activeStandings(ctx);
-  const blocked = all.filter((r) => !r.s.isCleared).sort((a, b) => b.s.owedNow - a.s.owedNow);
-  const total = blocked.reduce((s, r) => s + r.s.owedNow, 0);
+  // Owes = days already worked unpaid; Behind = rest of the week unpaid.
+  const blocked = all.filter((r) => !r.s.isCleared).sort((a, b) => b.s.owes - a.s.owes || b.s.weekBehind - a.s.weekBehind);
+  const total = blocked.reduce((s, r) => s + r.s.weekBehind, 0);
+  const owesTotal = blocked.reduce((s, r) => s + r.s.owes, 0);
   if (kind === "summary") {
     return [blocked.length === 0
       ? { subject: `All ${all.length} drivers are cleared to drive this week`, heading: "Everyone is cleared to drive", intro: `All ${all.length} active drivers have paid for this week.`, inApp: `All ${all.length} drivers cleared to drive this week` }
       : {
-          subject: `${blocked.length} of ${all.length} drivers not cleared to drive — ${rwf(total)} owed`,
+          subject: `${blocked.length} of ${all.length} drivers not cleared to drive — ${rwf(total)} behind`,
           heading: "Drivers not cleared to drive",
-          intro: `${blocked.length} of ${all.length} active drivers haven't paid for this week. Janviere and Fleet have the full call list.`,
-          table: { head: ["Driver", "Car", "Owes"], rows: blocked.map((r) => [esc(r.d.full_name), esc(car(r.d)), rwf(r.s.owedNow)]) },
-          inApp: `${plural(blocked.length, "driver")} not cleared to drive (${rwf(total)} owed)`,
+          intro: `${blocked.length} of ${all.length} active drivers haven't paid this week in full: ${rwf(total)} behind on the week, of which ${rwf(owesTotal)} is owed for days already worked. Janviere and Fleet have the full call list.`,
+          table: { head: ["Driver", "Car", "Owes (days worked)", "Behind (week)"], rows: blocked.map((r) => [esc(r.d.full_name), esc(car(r.d)), r.s.owes > 0 ? rwf(r.s.owes) : "—", rwf(r.s.weekBehind)]) },
+          inApp: `${plural(blocked.length, "driver")} not cleared to drive (${rwf(total)} behind)`,
         }];
   }
   if (blocked.length === 0) return [];
   const monday = kind === "monday";
   return [{
-    subject: `${monday ? "Not cleared to drive today" : "Still not cleared"}: ${plural(blocked.length, "driver")} (${rwf(total)} owed)`,
+    subject: `${monday ? "Not cleared to drive today" : "Still not cleared"}: ${plural(blocked.length, "driver")} (${rwf(total)} behind)`,
     heading: monday ? "Not cleared to drive today" : "Still not cleared to drive",
     intro: monday
       ? "These drivers haven't paid for this week and are <b>not cleared to drive</b> until they do. Fleet: keep these cars off the road or swap the driver. Janviere: call each one now (Call Center, you're copied as backup callers)."
       : "These drivers still haven't paid for this week. Every working day they stay uncleared is a day lost.",
-    table: { head: ["Driver", "Phone", "Car", "Owes", "Days lost"], rows: blocked.map((r) => [esc(r.d.full_name), esc(r.d.phone ?? "—"), esc(car(r.d)), rwf(r.s.owedNow), String(r.s.current?.daysLost ?? 0)]) },
+    table: { head: ["Driver", "Phone", "Car", "Owes (days worked)", "Behind (week)", "Days lost"], rows: blocked.map((r) => [esc(r.d.full_name), esc(r.d.phone ?? "—"), esc(car(r.d)), r.s.owes > 0 ? rwf(r.s.owes) : "—", rwf(r.s.weekBehind), String(r.s.current?.daysLost ?? 0)]) },
     inApp: `${monday ? "Not cleared to drive today" : "Still not cleared"}: ${plural(blocked.length, "driver")}`,
   }];
 }
@@ -129,10 +131,10 @@ export const driverRules: Record<string, RuleDef> = {
         heading: "Drivers losing days",
         intro: "These drivers have lost 2 or more working days this week without paying. The last-payment column shows whether any payment has been logged for them recently.",
         table: {
-          head: ["Driver", "Car", "Days lost", "Owes", "Last payment logged"],
+          head: ["Driver", "Car", "Days lost", "Owes (days worked)", "Behind (week)", "Last payment logged"],
           rows: late.map((r) => {
             const last = [...r.deps].sort((a, b) => b.paid_date.localeCompare(a.paid_date))[0];
-            return [esc(r.d.full_name), esc(car(r.d)), String(r.s.current?.daysLost ?? 0), rwf(r.s.owedNow), last ? `${day(last.paid_date)} · ${rwf(last.amount)}` : "None"];
+            return [esc(r.d.full_name), esc(car(r.d)), String(r.s.current?.daysLost ?? 0), rwf(r.s.owes), rwf(r.s.weekBehind), last ? `${day(last.paid_date)} · ${rwf(last.amount)}` : "None"];
           }),
         },
         inApp: `Escalation: ${plural(late.length, "driver")} uncleared 2+ days`,
@@ -191,7 +193,8 @@ export const driverRules: Record<string, RuleDef> = {
       const d = drivers.find((x) => x.id === payload.driver_id);
       if (!d) return null;
       const s = computeDepositStanding(d, deposits.filter((x) => x.driver_id === d.id), ctx.today);
-      const owed = s.ruleInForce ? s.owedNow : s.behind;
+      // At contract end, what he really owes is the days he worked unpaid.
+      const owed = s.owes;
       return {
         subject: `Driver contract ended: ${d.full_name}`,
         heading: `Contract ended: ${esc(d.full_name)}`,

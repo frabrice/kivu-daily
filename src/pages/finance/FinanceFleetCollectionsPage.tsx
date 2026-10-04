@@ -236,7 +236,8 @@ export default function FinanceFleetCollectionsPage() {
               </span>
             </div>
             <p className="text-[10px] text-gray-500 dark:text-gray-400">
-              {s.owedNow > 0 && <span className="text-red-500 font-medium">Owes {formatRwf(s.owedNow)} now · </span>}
+              {s.owes > 0 && <span className="text-red-500 font-semibold">Owes {formatRwf(s.owes)} for days worked · </span>}
+              {s.weekBehind > 0 && <span className="text-amber-600 dark:text-amber-400 font-medium">Behind {formatRwf(s.weekBehind)} on the week · </span>}
               {s.nextDueDate && (s.nextDueAmount > 0 ? `${formatRwf(s.nextDueAmount)} due by Sunday ${formatDateLabelSafe(s.nextDueDate)}` : `Paid for the week after Sunday ${formatDateLabelSafe(s.nextDueDate)}`)}
               {s.paidThrough && ` · paid through ${formatDateLabelSafe(s.paidThrough)}`}
             </p>

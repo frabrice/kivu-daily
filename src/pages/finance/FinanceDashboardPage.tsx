@@ -27,17 +27,15 @@ export default function FinanceDashboardPage() {
     const operationalCars = vehicles.filter((v) => drivers.some((d) => d.vehicle_id === v.id)).length;
     const activeDrivers = drivers.filter((d) => effectiveStage(d) === 'active').length;
 
-    // Same standing Fleet's own Deposits page uses, so "what's owed"
-    // agrees everywhere - the amount each driver still needs to pay to be
-    // cleared to drive this week.
-    let outstandingDriverCount = 0;
-    let outstandingDriverAmount = 0;
+    // Same standing Fleet's own Deposits page uses, so the numbers agree
+    // everywhere. Owed = days drivers already worked without paying;
+    // behind = the rest of this week that should have been paid upfront.
+    let driversOwedAmount = 0;
+    let driversBehindAmount = 0;
     for (const d of drivers.filter((dr) => dr.vehicle_id && dr.contract_status !== 'ended')) {
       const standing = computeDepositStanding(d, deposits.filter((dep) => dep.driver_id === d.id));
-      if (!standing.isCleared) {
-        outstandingDriverCount++;
-        outstandingDriverAmount += standing.owedNow;
-      }
+      driversOwedAmount += standing.owes;
+      driversBehindAmount += standing.weekBehind;
     }
 
     const outstandingOwnerAmount = transactions
@@ -48,7 +46,7 @@ export default function FinanceDashboardPage() {
       revenueIn, fleetIn, ownerOut, opexOut, netCashFlow,
       managementMarginMonth, onboardingRevenueMonth, managedCars, pendingOwnerPayments,
       activeCars, operationalCars, activeDrivers,
-      outstandingDriverCount, outstandingDriverAmount, outstandingOwnerAmount,
+      driversOwedAmount, driversBehindAmount, outstandingOwnerAmount,
     };
   }, [monthTx, vehicles, drivers, deposits, transactions]);
 
@@ -97,8 +95,9 @@ export default function FinanceDashboardPage() {
 
       <div>
         <h3 className="section-title mb-2.5">Needs Attention</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <KpiTile icon={ArrowUpCircle} label="Outstanding Driver Payments" value={fmt(dashboard.outstandingDriverAmount)} tone={dashboard.outstandingDriverAmount > 0 ? 'negative' : undefined} color="amber" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <KpiTile icon={ArrowUpCircle} label="Owed by Drivers (days worked)" value={fmt(dashboard.driversOwedAmount)} tone={dashboard.driversOwedAmount > 0 ? 'negative' : undefined} color="amber" />
+          <KpiTile icon={ArrowUpCircle} label="Drivers Behind on the Week" value={fmt(dashboard.driversBehindAmount)} tone={dashboard.driversBehindAmount > 0 ? 'negative' : undefined} color="amber" />
           <KpiTile icon={ArrowUpCircle} label="Outstanding Owner Payments" value={fmt(dashboard.outstandingOwnerAmount)} tone={dashboard.outstandingOwnerAmount > 0 ? 'negative' : undefined} color="amber" />
         </div>
       </div>
