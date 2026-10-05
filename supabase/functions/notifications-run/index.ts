@@ -8,6 +8,8 @@ import { operationsRules } from "./operations.ts";
 import { workspaceRules } from "./workspace.ts";
 import { companyRules } from "./company.ts";
 import { ticketRules } from "./tickets.ts";
+import { shiftRules } from "./shifts.ts";
+import { moneyRules } from "./money.ts";
 
 // Runs every 5 minutes (pg_cron -> pg_net, authenticated by a shared
 // secret). Each run: (1) builds any scheduled email that's due today in
@@ -18,7 +20,7 @@ import { ticketRules } from "./tickets.ts";
 // What each email says lives in the per-area modules; this file only
 // decides when, to whom, and makes sure nothing goes out twice.
 
-const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules };
+const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -279,6 +281,10 @@ Deno.serve(async (req: Request) => {
         await db.from("notification_rule_runs").delete().eq("rule_key", key).eq("period_key", clock.today);
       }
     }
+
+    // ---- Call Center shifts left open more than 10 hours ----
+    const { error: staleError } = await db.rpc("auto_close_stale_shifts");
+    if (staleError) summary.errors.push(`auto_close_stale_shifts: ${staleError.message}`);
 
     // ---- Two-hour response check (Script Book standard) ----
     const { error: overdueError } = await db.rpc("flag_response_overdue");

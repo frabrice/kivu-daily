@@ -15,19 +15,14 @@ export const SLOTS: { key: ShiftSlot; label: string; hours: string }[] = [
 export const SLOT_LABEL: Record<ShiftSlot, string> = { morning: 'Morning 06:00–14:00', afternoon: 'Afternoon 14:00–22:00', night: 'Night 22:00–06:00' };
 export const STATIONS = ['Computer 1', 'Computer 2'];
 
-// The slot that starts nearest to now (an agent arriving 05:50 is on the
-// morning shift, not the night one).
+// The shift running now - or the next one if it starts within the hour
+// (an agent arriving 05:30 is on the morning shift; one signing in at
+// 10:45 is on the morning shift too, just late).
 export function suggestSlot(now = new Date()): ShiftSlot {
-  const mins = now.getHours() * 60 + now.getMinutes();
-  const starts: [ShiftSlot, number][] = [['morning', 360], ['afternoon', 840], ['night', 1320]];
-  let best: ShiftSlot = 'morning';
-  let bestDiff = Infinity;
-  for (const [slot, start] of starts) {
-    let d = Math.abs(mins - start);
-    d = Math.min(d, 1440 - d);
-    if (d < bestDiff) { bestDiff = d; best = slot; }
-  }
-  return best;
+  const mins = (now.getHours() * 60 + now.getMinutes() + 60) % 1440;
+  if (mins >= 360 && mins < 840) return 'morning';
+  if (mins >= 840 && mins < 1320) return 'afternoon';
+  return 'night';
 }
 
 export interface ShiftReport {

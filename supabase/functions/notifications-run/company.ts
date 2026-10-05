@@ -3,6 +3,8 @@ import { activeStandings, car, loadDeposits, loadDrivers } from "./drivers.ts";
 import { KIVU_REVENUE_TYPES, loadTransactions, openTransactions, OPERATING_COST_TYPES, txTable, type TxRow } from "./finance.ts";
 import { carsWithoutDriver, loadCalls, loadFlaggedStories } from "./operations.ts";
 import { loadRecentTasks } from "./workspace.ts";
+import { hours, loadShifts } from "./shifts.ts";
+import { weeklyTips } from "./money.ts";
 import { CATEGORY_LABEL, isOverdue, isResponseOverdue, loadTickets, UNRESOLVED, waitingFor } from "./tickets.ts";
 import {
   activeEmployees, ALL_DAYS, Block, Ctx, day, esc, hm, lastWeek, longDay, monthOf, personName, plural, RuleDef, rows, rwf,
@@ -239,6 +241,28 @@ export const companyRules: Record<string, RuleDef> = {
           wCalls.length ? `Driver calls: ${plural(wCalls.length, "call")} — ${[...byCaller].map(([n, c]) => `${esc(n)}: ${c}`).join(", ")}.` : "No driver calls logged.",
         ].filter(Boolean).join("<br>"),
       });
+
+      // Shifts per agent (agent-reported calls vs what was logged).
+      const wShifts = (await loadShifts(ctx, `${week.start}T00:00:00+02:00`)).filter((x) => inWeek(kigaliDay(x.started_at)));
+      if (wShifts.length) {
+        const agents = new Map<string, typeof wShifts>();
+        for (const x of wShifts) agents.set(x.agent_id, [...(agents.get(x.agent_id) ?? []), x]);
+        blocks.push({
+          heading: "Call Center shifts",
+          table: {
+            head: ["Agent", "Shifts", "Time", "Late", "Calls in / out (reported)", "Logged", "Not ended"],
+            rows: [...agents].map(([id, list]) => {
+              const sum = (f: (x: typeof list[number]) => number) => list.reduce((acc, x) => acc + f(x), 0);
+              return [esc(personName(ctx, id)), String(list.length), hours(sum((x) => x.stats.minutes ?? 0)), String(list.filter((x) => x.late_minutes > 10).length),
+                `${sum((x) => Number(x.report.calls_received ?? 0))} / ${sum((x) => Number(x.report.calls_made ?? 0))}`,
+                String(sum((x) => x.stats.contacts_logged ?? 0)), String(list.filter((x) => x.status === "auto_closed").length)];
+            }),
+          },
+        });
+      }
+
+      const focus = await weeklyTips(ctx);
+      if (focus.length) blocks.push({ heading: "What to focus on this week", text: focus.map((t, i) => `${i + 1}. ${t}`).join("<br><br>") });
 
       return [{
         subject: `Week of ${day(week.start)}: net ${rwf(revenue + fleetIn - ownersOut - costs)}, ${plural(wDeposits.length, "weekly payment")}`,

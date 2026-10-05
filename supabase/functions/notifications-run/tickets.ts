@@ -12,7 +12,7 @@ export interface TicketRow {
   resolution_note: string | null; resolved_by: string | null; resolved_at: string | null; created_at: string; last_activity_at: string;
   channel: string; situation: string | null; trip_reference: string | null; vehicle_plate: string | null; actions_taken: string | null;
   promised_update_at: string | null; first_response_at: string | null; assigned_at: string | null; callback_at: string | null;
-  emergency_details: Record<string, unknown> | null; md_acknowledged_at: string | null; satisfaction: string | null;
+  emergency_details: Record<string, unknown> | null; md_acknowledged_at: string | null; satisfaction: string | null; outcome_kind: string | null;
   driver: { full_name: string; vehicle: { plate_number: string } | null } | null;
   platform_driver: { full_name: string; phone: string | null } | null;
 }
@@ -38,7 +38,7 @@ export const UNRESOLVED = ["open", "in_progress", "waiting_on_caller"];
 
 export function loadTickets(ctx: Ctx) {
   return cached(ctx, "tickets", () => rows<TicketRow>(ctx.db.from("call_tickets").select(
-    "id, reference, caller_name, caller_phone, caller_email, caller_type, driver_id, platform_driver_id, category, priority, details, status, resolved_on_call, assignee_id, created_by, resolution_note, resolved_by, resolved_at, created_at, last_activity_at, channel, situation, trip_reference, vehicle_plate, actions_taken, promised_update_at, first_response_at, assigned_at, callback_at, emergency_details, md_acknowledged_at, satisfaction, driver:drivers(full_name, vehicle:vehicles(plate_number)), platform_driver:platform_drivers(full_name, phone)",
+    "id, reference, caller_name, caller_phone, caller_email, caller_type, driver_id, platform_driver_id, category, priority, details, status, resolved_on_call, assignee_id, created_by, resolution_note, resolved_by, resolved_at, created_at, last_activity_at, channel, situation, trip_reference, vehicle_plate, actions_taken, promised_update_at, first_response_at, assigned_at, callback_at, emergency_details, md_acknowledged_at, satisfaction, outcome_kind, driver:drivers(full_name, vehicle:vehicles(plate_number)), platform_driver:platform_drivers(full_name, phone)",
   ).order("created_at", { ascending: false }).limit(1000)));
 }
 

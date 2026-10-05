@@ -37,7 +37,7 @@ export const shiftRules: Record<string, RuleDef> = {
       const r = s.report;
       const st = s.stats;
       const who = personName(ctx, s.agent_id);
-      const text = (label: string, key: string) => (r[key] && String(r[key]).trim() ? { heading: label, text: `<div style="white-space:pre-wrap;">${esc(String(r[key]))}</div>` } : null);
+      const text = (label: string, key: string): Block | null => (r[key] && String(r[key]).trim() ? { heading: label, text: `<div style="white-space:pre-wrap;">${esc(String(r[key]))}</div>` } : null);
       const blocks: Block[] = [
         {
           table: {
@@ -51,7 +51,7 @@ export const shiftRules: Record<string, RuleDef> = {
           },
         },
         ...[text("Worked on", "worked_on"), text("Resolved", "resolved_summary"), text("Still unresolved", "unresolved_summary"),
-          text("Problems", "problems"), text("What callers said", "feedback"), text("Suggestions", "suggestions")].filter((b): b is Block => !!b),
+          text("Problems", "problems"), text("What callers said", "feedback"), text("Suggestions", "suggestions")].filter((b): b is Block => b !== null),
       ];
       const gap = Number(r.calls_received ?? 0) - (st.contacts_logged ?? 0);
       if (gap >= 5) blocks.push({ text: `<span style="color:#d97706;">${gap} calls received weren't logged as contacts — ask ${esc(who.split(" ")[0])} to log every call.</span>` });
