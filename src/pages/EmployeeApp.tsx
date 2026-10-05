@@ -50,11 +50,13 @@ import HowToUsePage from './HowToUsePage';
 import FromCallCenterPage from './FromCallCenterPage';
 import CallTicketsPage from './callCenter/CallTicketsPage';
 import { takeTicketLink, useMyOpenTicketCount } from '../lib/callTickets';
+import { useMyOpenShift } from '../lib/shifts';
+import { StartShiftScreen, ShiftChip, EndShiftDrawer } from '../components/callTickets/ShiftControls';
 import BrandingDevicesPage from './fleet/BrandingDevicesPage';
 import { useCarFollowupCount } from '../lib/nonInsider';
 
 export default function EmployeeApp() {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   // Scoped by department slug so a persisted page from one department
   // never leaks into another employee's nav (or a re-assigned employee's
   // new one) - a reload lands back on the same page instead of General.
@@ -81,6 +83,10 @@ export default function EmployeeApp() {
   };
   const { tasks, reload } = useTasks(profile?.id);
   const myOpenTickets = useMyOpenTicketCount(profile?.id);
+  // Call Center: a shift must be started to work, and ended to sign out.
+  const { shift, loading: shiftLoading, reload: reloadShift } = useMyOpenShift(profile?.id, isCallCenter);
+  const [ending, setEnding] = useState<null | 'end' | 'signout'>(null);
+  const needsShift = isCallCenter && !shiftLoading && !shift;
   const carFollowups = useCarFollowupCount(profile?.department?.slug === 'fleet');
 
   const TITLES: Record<NavKey, string> = {
@@ -194,7 +200,14 @@ export default function EmployeeApp() {
   ];
 
   return (
-    <AppShell active={active} onNavigate={setActive} navItems={NAV} title={title} notifications={<NotificationBell />}>
+    <AppShell active={active} onNavigate={setActive} navItems={NAV} title={title}
+      notifications={<>{shift && <ShiftChip shift={shift} onEnd={() => setEnding('end')} />}<NotificationBell /></>}
+      onSignOut={isCallCenter && shift ? () => setEnding('signout') : undefined}>
+      {ending && shift && (
+        <EndShiftDrawer shift={shift} onClose={() => setEnding(null)}
+          onEnded={() => { const thenSignOut = ending === 'signout'; setEnding(null); if (thenSignOut) signOut(); else reloadShift(); }} />
+      )}
+      {needsShift ? <StartShiftScreen onStarted={reloadShift} /> : <>
       {active === 'home' && <GeneralPage tasks={tasks} reload={reload} />}
       {active === 'calendar' && <CalendarView tasks={tasks} />}
 
@@ -240,6 +253,7 @@ export default function EmployeeApp() {
       {active === 'help' && <HowToUsePage navItems={NAV} />}
       {active === 'analytics' && <PersonalAnalytics tasks={tasks} profileName={profile?.full_name ?? ''} />}
       {active === 'settings' && <SettingsPage />}
+      </>}
     </AppShell>
   );
 }

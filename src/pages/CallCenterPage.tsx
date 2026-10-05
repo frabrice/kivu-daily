@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { PhoneCall, Users2, BookOpen, CarFront, PhoneIncoming } from 'lucide-react';
+import { PhoneCall, Users2, BookOpen, CarFront, PhoneIncoming, Timer } from 'lucide-react';
 import { useCallCenterData } from '../lib/callCenter';
 import CallQueuePage from './callCenter/CallQueuePage';
 import CallDirectoryPage from './callCenter/CallDirectoryPage';
 import ScriptBookPage from './callCenter/ScriptBookPage';
 import NonInsiderPage from './nonInsider/NonInsiderPage';
 import CallTicketsPage from './callCenter/CallTicketsPage';
+import ShiftsPerformancePage from './callCenter/ShiftsPerformancePage';
 
 // MD-only: Call Center employees see Tickets/Queue/Directory/Scripts as separate
 // sidebar pages (src/pages/callCenter/*); the MD sees them as tabs here.
-type Tab = 'tickets' | 'queue' | 'directory' | 'scripts' | 'non_insider';
+type Tab = 'tickets' | 'shifts' | 'queue' | 'directory' | 'scripts' | 'non_insider';
 
 export default function CallCenterPage() {
   const [tab, setTab] = useState<Tab>('tickets');
@@ -29,6 +30,7 @@ export default function CallCenterPage() {
     <div className="space-y-4">
       <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
         <TabButton active={tab === 'tickets'} onClick={() => setTab('tickets')} icon={PhoneIncoming} label="Calls & Tickets" />
+        <TabButton active={tab === 'shifts'} onClick={() => setTab('shifts')} icon={Timer} label="Shifts & performance" />
         <TabButton active={tab === 'queue'} onClick={() => setTab('queue')} icon={PhoneCall} label="Call Queue" badge={urgentCount} />
         <TabButton active={tab === 'directory'} onClick={() => setTab('directory')} icon={Users2} label="Directory" />
         <TabButton active={tab === 'scripts'} onClick={() => setTab('scripts')} icon={BookOpen} label="Script Book" />
@@ -36,6 +38,7 @@ export default function CallCenterPage() {
       </div>
 
       {tab === 'tickets' && <CallTicketsPage />}
+      {tab === 'shifts' && <ShiftsPerformancePage />}
       {tab === 'queue' && <CallQueuePage data={data} />}
       {tab === 'directory' && <CallDirectoryPage data={data} />}
       {tab === 'scripts' && <ScriptBookPage />}

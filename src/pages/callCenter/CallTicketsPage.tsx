@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import HelpButton from '../../components/HelpButton';
-import { PhoneIncoming, Plus, PhoneCall, CheckCircle2, Inbox, AlertTriangle, PhoneForwarded, Search, CarTaxiFront, ShieldAlert, ArrowRightLeft } from 'lucide-react';
+import { PhoneIncoming, Plus, PhoneCall, CheckCircle2, Inbox, AlertTriangle, PhoneForwarded, Search, CarTaxiFront, ShieldAlert } from 'lucide-react';
 import { useCallTickets, isOverdue, isResponseOverdue, isUnresolved, needsMdAck, sortForWork } from '../../lib/callTickets';
 import { todayStr, dateStr } from '../../lib/utils';
 import KpiTile from '../../components/KpiTile';
 import TicketList from '../../components/callTickets/TicketList';
 import TicketDrawer from '../../components/callTickets/TicketDrawer';
 import NewCallDrawer from '../../components/callTickets/NewCallDrawer';
-import { HandoverBanner, HandoverDrawer, useLatestHandover } from '../../components/callTickets/ShiftHandover';
+import { HandoverBanner, useLatestHandover } from '../../components/callTickets/ShiftHandover';
 
 type Tab = 'callback' | 'open' | 'all';
 
@@ -20,7 +20,6 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState<false | 'call' | 'booking'>(false);
   const [toast, setToast] = useState('');
-  const [handingOver, setHandingOver] = useState(false);
   // One-time welcome for new agents (per browser).
   const [welcome, setWelcome] = useState(() => { try { return !localStorage.getItem('kivu-cc-welcome-seen'); } catch { return false; } });
   const dismissWelcome = () => { setWelcome(false); try { localStorage.setItem('kivu-cc-welcome-seen', '1'); } catch { /* ignore */ } };
@@ -60,7 +59,6 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
         </div>
         <div className="flex gap-2 flex-wrap">
           <HelpButton navKey="call_center_tickets" title="Calls & Tickets" />
-          <button onClick={() => setHandingOver(true)} className="btn-ghost flex items-center gap-1.5 whitespace-nowrap"><ArrowRightLeft size={14} /> Hand over</button>
           <button onClick={() => setCreating('booking')} className="btn-ghost flex items-center gap-1.5 whitespace-nowrap"><CarTaxiFront size={14} /> Log booking</button>
           <button onClick={() => setCreating('call')} className="btn-primary flex items-center gap-1.5 whitespace-nowrap"><Plus size={14} /> New call</button>
         </div>
@@ -136,9 +134,6 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
             reload();
           }}
         />
-      )}
-      {handingOver && (
-        <HandoverDrawer openCases={open} onClose={() => setHandingOver(false)} onSaved={() => { setHandingOver(false); setToast('Handover saved — the next shift will see it here.'); reloadHandover(); }} />
       )}
       {selected && (
         <TicketDrawer ticket={selected} updates={updatesFor(selected.id)} people={people} personName={personName} onClose={() => setSelectedId(null)} onChanged={reload} />

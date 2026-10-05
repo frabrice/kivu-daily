@@ -80,12 +80,15 @@ interface ShellProps {
   onNavigate: (k: NavKey) => void;
   children: ReactNode;
   notifications?: ReactNode;
+  // Replaces plain sign-out (Call Center must end their shift first).
+  onSignOut?: () => void;
   navItems: NavItem[];
   title: string;
 }
 
-export default function AppShell({ active, onNavigate, children, notifications, navItems, title }: ShellProps) {
-  const { profile, signOut } = useAuth();
+export default function AppShell({ active, onNavigate, children, notifications, navItems, title, onSignOut }: ShellProps) {
+  const { profile, signOut: plainSignOut } = useAuth();
+  const signOut = onSignOut ?? plainSignOut;
   const { theme, toggle } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('kivu-sidebar-collapsed') === '1');

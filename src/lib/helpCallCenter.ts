@@ -54,9 +54,12 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
         ],
       },
       {
-        heading: 'Shift handover',
+        heading: 'Shifts: start, end, hand over',
         body: [
-          `At the end of your shift press "Hand over". Write anything the next shift must know, and for each open case the last action and the exact next action. The next shift sees it at the top of this page and presses "Got it".`,
+          `There are three shifts a day — Morning 06:00–14:00, Afternoon 14:00–22:00, Night 22:00–06:00 — in teams of two on Computer 1 and Computer 2. When you sign in, press "Start shift" (pick the shift, your computer and who you're working with). Your time starts then; arriving more than 10 minutes after the shift starts shows as late.`,
+          `You can't sign out without ending your shift. Press "End shift" (top of the screen, or Sign Out) and fill in the shift report: calls received, calls made, missed calls, WhatsApp/SMS handled, what you worked on, what was resolved and what's still open, problems you hit, what drivers and passengers told you, and your suggestions. Kivu Daily shows what you logged during the shift next to it.`,
+          `The same form is your handover: a note for the next shift, plus the last action and exact next action for each open case. The next shift sees it at the top of Calls & Tickets and presses "Got it". The MD receives every shift report by email.`,
+          `Quiet shift? Use the time: work the Call Queue (check-ins, payment backup, follow-ups) and explain new features to drivers. It all counts in your shift report.`,
         ],
       },
     ],
