@@ -246,6 +246,18 @@ Deno.serve(async (req: Request) => {
 
     const summary = { scheduled: [] as string[], events: 0, queued: 0, sent: 0, failed: 0, errors: [] as string[] };
 
+    // ---- Standing duties: create today's recurring tasks once, from 05:00 ----
+    if (clock.minutes >= 5 * 60) {
+      const { error: claimErr } = await db.from("notification_rule_runs").insert({ rule_key: "recurring_tasks", period_key: clock.today });
+      if (!claimErr) {
+        const { error: genErr } = await db.rpc("generate_recurring_tasks", { p_date: clock.today });
+        if (genErr) {
+          summary.errors.push(`generate_recurring_tasks: ${genErr.message}`);
+          await db.from("notification_rule_runs").delete().eq("rule_key", "recurring_tasks").eq("period_key", clock.today);
+        }
+      }
+    }
+
     // ---- Scheduled emails ----
     for (const [key, def] of Object.entries(RULES)) {
       if (def.kind !== "scheduled") continue;

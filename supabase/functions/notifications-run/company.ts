@@ -83,8 +83,17 @@ export const companyRules: Record<string, RuleDef> = {
       });
 
       const yTasks = tasks.filter((t) => t.date === yesterday);
+      // Standing duties are the accountability line: missed ones by name.
+      const yDuties = yTasks.filter((t) => t.recurring_task_id);
+      const missed = yDuties.filter((t) => !t.completed);
+      const missedBy = new Map<string, string[]>();
+      for (const t of missed) missedBy.set(personName(ctx, t.user_id), [...(missedBy.get(personName(ctx, t.user_id)) ?? []), t.title]);
       blocks.push({
         heading: `Team yesterday (${day(yesterday)})`,
+        text: yDuties.length
+          ? `Standing duties: <b>${yDuties.length - missed.length} of ${yDuties.length}</b> done.${missed.length ? "" : " Nothing missed."}`
+            + [...missedBy].map(([who, titles]) => `<br><b style="color:#dc2626;">${esc(who)}</b> missed: ${titles.map(esc).join("; ")}`).join("")
+          : undefined,
         ...(yTasks.length ? { table: teamTable(ctx, yTasks) } : { text: "Nobody logged tasks yesterday." }),
       });
 
@@ -186,7 +195,12 @@ export const companyRules: Record<string, RuleDef> = {
       if (changes.length) blocks.push({ heading: "Driver changes", text: changes.join("<br>") });
 
       const wTasks = tasks.filter((t) => inWeek(t.date));
-      blocks.push({ heading: "Team", ...(wTasks.length ? { table: teamTable(ctx, wTasks) } : { text: "Nobody logged tasks last week." }) });
+      const wDuties = wTasks.filter((t) => t.recurring_task_id);
+      blocks.push({
+        heading: "Team",
+        text: wDuties.length ? `Standing duties done last week: <b>${Math.round((wDuties.filter((t) => t.completed).length / wDuties.length) * 100)}%</b> (${wDuties.filter((t) => t.completed).length} of ${wDuties.length}). Each person's rate is below — "Done" includes standing duties.` : undefined,
+        ...(wTasks.length ? { table: teamTable(ctx, wTasks) } : { text: "Nobody logged tasks last week." }),
+      });
 
       const wCalls = calls.filter((c) => inWeek(c.created_at.slice(0, 10)));
       const byCaller = new Map<string, number>();

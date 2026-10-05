@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Zap, ChevronRight, ClipboardList, Mail } from 'lucide-react';
+import { Zap, ChevronRight, ClipboardList, Mail, Repeat } from 'lucide-react';
 import { supabase, SurveyCase } from '../lib/supabase';
 import ChargingStationsHub from './casehubs/ChargingStationsHub';
 import NotificationsSettingsPage from './NotificationsSettingsPage';
+import RecurringTasksPage from './RecurringTasksPage';
 
 const CASE_ICONS: Record<string, typeof Zap> = {
   'charging-stations': Zap,
@@ -18,6 +19,7 @@ export default function MDPanel() {
   const [loading, setLoading] = useState(true);
   const [openCase, setOpenCase] = useState<SurveyCase | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showRecurring, setShowRecurring] = useState(false);
 
   const load = async () => {
     const { data } = await supabase.from('survey_cases').select('*').order('created_at');
@@ -30,6 +32,7 @@ export default function MDPanel() {
   if (loading) return <div className="space-y-2">{[0, 1].map((i) => <div key={i} className="h-24 skeleton rounded-xl" />)}</div>;
 
   if (showNotifications) return <NotificationsSettingsPage onBack={() => setShowNotifications(false)} />;
+  if (showRecurring) return <RecurringTasksPage onBack={() => setShowRecurring(false)} />;
 
   if (openCase) {
     if (openCase.slug === 'charging-stations') {
@@ -50,6 +53,20 @@ export default function MDPanel() {
         <div className="flex-1 min-w-0">
           <p className="text-[12px] font-semibold">Email notifications</p>
           <p className="text-[11px] text-gray-400 mt-0.5">Who's in charge of each follow-up, which emails are on, test sends, and what's gone out.</p>
+        </div>
+        <ChevronRight size={16} className="text-gray-300 shrink-0" />
+      </button>
+
+      <button
+        onClick={() => setShowRecurring(true)}
+        className="w-full card p-4 flex items-center gap-3 hover:shadow-md hover:border-brand/30 transition-all text-left"
+      >
+        <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center shrink-0">
+          <Repeat size={18} className="text-brand-600 dark:text-brand-300" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] font-semibold">Recurring tasks</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Standing duties that land on everyone's task list automatically, with how often each gets done.</p>
         </div>
         <ChevronRight size={16} className="text-gray-300 shrink-0" />
       </button>

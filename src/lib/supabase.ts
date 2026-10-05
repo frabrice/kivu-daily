@@ -245,7 +245,31 @@ export interface Task {
   reviewed_at: string | null;
   assigned_by: string | null;
   source_meeting_id: string | null;
+  // Set when the task was created from a standing duty (recurring_tasks).
+  recurring_task_id?: string | null;
+  due_time?: string | null;
   created_at: string;
+}
+
+export type RecurringFrequency = 'daily' | 'mon_sat' | 'weekdays' | 'weekly' | 'monthly';
+
+export interface RecurringTask {
+  id: string;
+  title: string;
+  description: string | null;
+  target_type: 'person' | 'department' | 'duty';
+  target_profile_id: string | null;
+  target_department_slug: string | null;
+  target_duty: string | null;
+  frequency: RecurringFrequency;
+  weekdays: number[];
+  month_day: number | null;
+  due_time: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Comment {

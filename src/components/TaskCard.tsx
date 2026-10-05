@@ -98,6 +98,11 @@ export default function TaskCard({ task, onToggle, onDelete, showTime = true, on
                 Carried Over
               </span>
             )}
+            {task.recurring_task_id && (
+              <span className="text-[9px] font-medium text-teal-700 bg-teal-50 dark:text-teal-300 dark:bg-teal-500/10 px-1.5 py-0.5 rounded">
+                Standing duty{task.due_time ? ` · by ${task.due_time}` : ''}
+              </span>
+            )}
             {reviewBadge}
             {task.completed ? (
               <span className="flex items-center gap-1 text-[10px] text-green-500">
