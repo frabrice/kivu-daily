@@ -62,6 +62,8 @@ export type NavKey =
   | 'call_center_scripts'
   | 'call_center_tickets'
   | 'from_call_center'
+  | 'call_center_outreach'
+  | 'call_analytics'
   | 'marketing_campaigns'
   | 'marketing_followups'
   | 'it_hub_products'
@@ -222,7 +224,7 @@ export default function AppShell({ active, onNavigate, children, notifications, 
       )}
 
       {/* Main content */}
-      <main className={`flex-1 pt-14 md:pt-0 min-h-screen transition-all duration-200 ${collapsed ? 'md:ml-[68px]' : 'md:ml-60'}`}>
+      <main className={`flex-1 min-w-0 pt-14 md:pt-0 min-h-screen transition-all duration-200 ${collapsed ? 'md:ml-[68px]' : 'md:ml-60'}`}>
         <div className="hidden md:flex items-center justify-between px-6 h-14 border-b border-gray-100 dark:border-white/5 bg-white dark:bg-navy-900 sticky top-0 z-20">
           <h1 className="text-[14px] font-semibold">{title}</h1>
           <div className="flex items-center gap-3">

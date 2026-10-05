@@ -3,7 +3,7 @@ import { activeStandings, car, loadDeposits, loadDrivers } from "./drivers.ts";
 import { KIVU_REVENUE_TYPES, loadTransactions, openTransactions, OPERATING_COST_TYPES, txTable, type TxRow } from "./finance.ts";
 import { carsWithoutDriver, loadCalls, loadFlaggedStories } from "./operations.ts";
 import { loadRecentTasks } from "./workspace.ts";
-import { hours, loadShifts } from "./shifts.ts";
+import { hours, IN_TYPES, loadShifts, OUT_TYPES } from "./shifts.ts";
 import { weeklyTips } from "./money.ts";
 import { CATEGORY_LABEL, isOverdue, isResponseOverdue, loadTickets, UNRESOLVED, waitingFor } from "./tickets.ts";
 import {
@@ -247,6 +247,11 @@ export const companyRules: Record<string, RuleDef> = {
       if (wShifts.length) {
         const agents = new Map<string, typeof wShifts>();
         for (const x of wShifts) agents.set(x.agent_id, [...(agents.get(x.agent_id) ?? []), x]);
+        const tot = (k: string) => wShifts.reduce((acc, x) => acc + Number(x.report[k] ?? 0), 0);
+        const mix = (types: [string, string][]) => types.map(([k, l]) => [l, tot(k)] as const).filter(([, v]) => v > 0).map(([l, v]) => `${v} ${l}`).join(" · ");
+        const inMix = mix(IN_TYPES);
+        const outMix = mix(OUT_TYPES);
+        if (inMix || outMix) blocks.push({ heading: "Calls by type", text: [inMix && `<b>Received ${tot("calls_received")}</b> — ${inMix}`, outMix && `<b>Made ${tot("calls_made")}</b> — ${outMix}`].filter(Boolean).join("<br>") });
         blocks.push({
           heading: "Call Center shifts",
           table: {

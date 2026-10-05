@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   LayoutDashboard, ArrowLeftRight, Landmark, ClipboardCheck,
   CarFront, ShieldCheck, Mail, Trophy, UserCog, Headphones, PhoneIncoming, Paintbrush,
+  BarChart3, Megaphone,
 } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import NotificationBell from '../components/NotificationBell';
@@ -48,6 +49,8 @@ import ProductsPage from './itHub/ProductsPage';
 import IssuesPage from './itHub/IssuesPage';
 import HowToUsePage from './HowToUsePage';
 import FromCallCenterPage from './FromCallCenterPage';
+import OutreachPage from './callCenter/OutreachPage';
+import CallAnalyticsPage from './callCenter/CallAnalyticsPage';
 import CallTicketsPage from './callCenter/CallTicketsPage';
 import { takeTicketLink, useMyOpenTicketCount } from '../lib/callTickets';
 import { useMyOpenShift } from '../lib/shifts';
@@ -138,6 +141,8 @@ export default function EmployeeApp() {
     call_center_scripts: 'Script Book',
     call_center_tickets: 'Calls & Tickets',
     from_call_center: 'From Call Center',
+    call_center_outreach: 'Non-Insider Outreach',
+    call_analytics: 'Call Analytics',
     marketing_campaigns: 'Campaigns',
     marketing_followups: 'Follow-ups',
     it_hub_products: 'Products',
@@ -175,12 +180,14 @@ export default function EmployeeApp() {
       { key: 'finance_reconciliation' as const, label: 'Reconciliation', icon: ClipboardCheck },
       { key: 'finance_deposit_confirmations' as const, label: 'Deposit Confirmations', icon: ShieldCheck },
       { key: 'finance_team' as const, label: 'Team', icon: UserCog },
+      { key: 'call_analytics' as const, label: 'Call Analytics', icon: BarChart3 },
     ] : []),
     ...(profile?.department?.slug === 'call_center' ? [
       { key: 'call_center_tickets' as const, label: 'Calls & Tickets', icon: PhoneIncoming },
       { key: 'call_center_queue' as const, label: 'Call Queue', icon: PhoneCall },
       { key: 'call_center_directory' as const, label: 'Directory', icon: Users2 },
       { key: 'call_center_scripts' as const, label: 'Script Book', icon: BookOpen },
+      { key: 'call_center_outreach' as const, label: 'Non-Insider Outreach', icon: Megaphone },
       { key: 'fleet' as const, label: 'Fleet', icon: Truck },
       { key: 'non_insider' as const, label: 'Non-Insider', icon: CarFront },
     ] : []),
@@ -241,6 +248,8 @@ export default function EmployeeApp() {
       {active === 'call_center_scripts' && <ScriptBookPage />}
       {active === 'call_center_tickets' && <CallTicketsPage initialTicketId={link.ticketId} />}
       {active === 'from_call_center' && <FromCallCenterPage initialTicketId={link.ticketId} />}
+      {active === 'call_center_outreach' && isCallCenter && <OutreachPage />}
+      {active === 'call_analytics' && profile?.department?.slug === 'finance' && <CallAnalyticsPage />}
 
       {active === 'marketing_campaigns' && <CampaignsPage />}
       {active === 'marketing_followups' && <FollowUpsPage />}

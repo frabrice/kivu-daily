@@ -18,8 +18,12 @@ import BrandingDevicesPage from './fleet/BrandingDevicesPage';
 // lib/fleet.ts.
 type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'leaderboard' | 'fines' | 'non_insider' | 'branding';
 
+// Money pages stay with Fleet, Finance, IT and the MD - Call Center sees
+// drivers and vehicles only.
+const NOT_FOR_VIEW_ONLY: Tab[] = ['deposits', 'leaderboard', 'fines', 'branding'];
+
 export default function FleetPage() {
-  const [tab, setTab] = useState<Tab>(() => {
+  const [savedTab, setTab] = useState<Tab>(() => {
     try {
       const saved = localStorage.getItem('kivu-active-nav-fleet-tab');
       if (saved) return saved as Tab;
@@ -32,6 +36,7 @@ export default function FleetPage() {
   };
   const { profile } = useAuth();
   const readOnly = !canEditFleet(profile);
+  const tab: Tab = readOnly && NOT_FOR_VIEW_ONLY.includes(savedTab) ? 'pipeline' : savedTab;
   const data = useFleetData();
   const { drivers, deposits } = data;
 
@@ -49,18 +54,20 @@ export default function FleetPage() {
       <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap">
         <TabButton active={tab === 'pipeline'} onClick={() => selectTab('pipeline')} icon={Truck} label="Driver Pipeline" />
         <TabButton active={tab === 'vehicles'} onClick={() => selectTab('vehicles')} icon={Car} label="Vehicles" />
-        <TabButton active={tab === 'deposits'} onClick={() => selectTab('deposits')} icon={Wallet} label="Deposits" badge={overdueCount} />
-        <TabButton active={tab === 'leaderboard'} onClick={() => selectTab('leaderboard')} icon={Trophy} label="Leaderboard" />
-        <TabButton active={tab === 'fines'} onClick={() => selectTab('fines')} icon={Receipt} label="Fines" />
+        {!readOnly && <>
+          <TabButton active={tab === 'deposits'} onClick={() => selectTab('deposits')} icon={Wallet} label="Deposits" badge={overdueCount} />
+          <TabButton active={tab === 'leaderboard'} onClick={() => selectTab('leaderboard')} icon={Trophy} label="Leaderboard" />
+          <TabButton active={tab === 'fines'} onClick={() => selectTab('fines')} icon={Receipt} label="Fines" />
+        </>}
         <TabButton active={tab === 'non_insider'} onClick={() => selectTab('non_insider')} icon={Users2} label="Non-Insider" />
         {!readOnly && <TabButton active={tab === 'branding'} onClick={() => selectTab('branding')} icon={Paintbrush} label="Branding & Devices" />}
       </div>
 
       {tab === 'pipeline' && <FleetPipelinePage data={data} />}
       {tab === 'vehicles' && <FleetVehiclesPage data={data} />}
-      {tab === 'deposits' && <FleetDepositsPage data={data} />}
-      {tab === 'leaderboard' && <DepositLeaderboardPage data={data} />}
-      {tab === 'fines' && <FleetFinesPage data={data} />}
+      {tab === 'deposits' && !readOnly && <FleetDepositsPage data={data} />}
+      {tab === 'leaderboard' && !readOnly && <DepositLeaderboardPage data={data} />}
+      {tab === 'fines' && !readOnly && <FleetFinesPage data={data} />}
       {tab === 'non_insider' && <NonInsiderPage />}
       {tab === 'branding' && !readOnly && <BrandingDevicesPage />}
     </div>

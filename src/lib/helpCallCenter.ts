@@ -57,9 +57,9 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
         heading: 'Shifts: start, end, hand over',
         body: [
           `There are three shifts a day — Morning 06:00–14:00, Afternoon 14:00–22:00, Night 22:00–06:00 — in teams of two on Computer 1 and Computer 2. When you sign in, press "Start shift" (pick the shift, your computer and who you're working with). Your time starts then; arriving more than 10 minutes after the shift starts shows as late.`,
-          `You can't sign out without ending your shift. Press "End shift" (top of the screen, or Sign Out) and fill in the shift report: calls received, calls made, missed calls, WhatsApp/SMS handled, what you worked on, what was resolved and what's still open, problems you hit, what drivers and passengers told you, and your suggestions. Kivu Daily shows what you logged during the shift next to it.`,
+          `You can't sign out without ending your shift. Press "End shift" (top of the screen, or Sign Out) and fill in the shift report. Check your phone's call log and enter your calls by type — received from passengers, our drivers, Non-Insider drivers, owners & partners and others; made to our drivers, Non-Insider drivers, call-backs to passengers and others (0 where you had none) — then missed calls, WhatsApp/SMS handled, what you worked on, what was resolved and what's still open, problems you hit, what drivers and passengers told you, and your suggestions. Kivu Daily shows what you logged during the shift next to it.`,
           `The same form is your handover: a note for the next shift, plus the last action and exact next action for each open case. The next shift sees it at the top of Calls & Tickets and presses "Got it". The MD receives every shift report by email.`,
-          `Quiet shift? Use the time: work the Call Queue (check-ins, payment backup, follow-ups) and explain new features to drivers. It all counts in your shift report.`,
+          `Quiet shift? Use the time: work the Call Queue (check-ins, payment backup, follow-ups), then Non-Insider Outreach — call Non-Insider drivers about what's new, our device and branding. It all counts in your shift report and on the Call Analytics page.`,
         ],
       },
     ],
@@ -161,7 +161,61 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
         body: [`Outbound calls to our drivers, grouped by purpose (payment backup, follow-ups, onboarding, check-ins).`],
       },
     ],
-    tips: [`Call Center sees Fleet read-only. On Non-Insider cars they can only set branded / allows branding / wants our device.`],
+    tips: [
+      `Call Center sees drivers and vehicles read-only — Deposits, Fines and the Leaderboard are hidden from them. On Non-Insider cars they can only set branded / allows branding / wants our device.`,
+      `Call numbers by type, agent punctuality and outreach results are on the Call Analytics page (you and Finance only).`,
+    ],
+  },
+
+  call_center_outreach: {
+    blurb: `Use quiet time to call Non-Insider drivers: tell them what's new in the app, and offer our device and branding so more drivers are online in more places.`,
+    sections: [
+      {
+        heading: 'The offer',
+        body: [
+          `Our device — 120,000 RWF, a one-time payment. It brings the driver more clients and keeps them online more.`,
+          `Branding — 20,000 RWF, a one-time payment by the driver. Branded drivers become priority drivers.`,
+          `Never promise a number of trips, an income figure or a discount.`,
+        ],
+      },
+      {
+        heading: 'Working the list',
+        body: [
+          `The list on the left is your queue: call-backs that are due first, then drivers nobody has called yet, then drivers to try again (no answer yesterday, or not interested more than 30 days ago).`,
+          `Pick a driver, press their number to call, and follow the steps on the right (opening, what's new, device, branding, objections, closing).`,
+          `Log every call — even no answer — with "Log call & next driver". The next driver opens automatically.`,
+          `"Interested" sends the car straight to the Fleet Manager's Branding & Devices list, who arranges the payment and the work.`,
+        ],
+      },
+    ],
+    tips: [
+      `Goal: 15 outreach calls a day — it's on your daily task list. Your count is at the top of the page and in your shift report.`,
+      `The pitch is in the Script Book under "Non-Insider outreach"; the MD can edit it there.`,
+    ],
+  },
+
+  call_analytics: {
+    blurb: `How the Call Center is doing: calls per day and by type, what callers need, the busiest hours, and how each agent performs. For the MD and Finance.`,
+    sections: [
+      {
+        heading: 'Where the numbers come from',
+        body: [
+          `Calls received and made come from each agent's end-of-shift report, by type (passengers, our drivers, Non-Insider drivers, owners & partners, call-backs). Reports before 5 Oct 2026 only had totals, so those show as "Other".`,
+          `"What calls are about", busiest hours, solved on the spot, the two-hour reply standard and caller satisfaction come from the contacts agents log in Calls & Tickets.`,
+        ],
+      },
+      {
+        heading: 'Agent performance',
+        body: [
+          `On time = the shift was started within 10 minutes of its start (06:00, 14:00 or 22:00). "Not ended" = the agent signed off without a shift report and the shift was closed automatically.`,
+          `"Made / hour" is outgoing calls per hour on shift — the best measure of how quiet time is used. Outreach shows Non-Insider calls and how many drivers said yes.`,
+        ],
+      },
+    ],
+    tips: [
+      `Press "Table" on a chart to see the exact numbers day by day.`,
+      `If calls received are much higher than contacts logged, agents aren't logging every call.`,
+    ],
   },
 
   from_call_center: {

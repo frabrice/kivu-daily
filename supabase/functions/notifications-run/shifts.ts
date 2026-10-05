@@ -24,6 +24,14 @@ async function shift(ctx: Ctx, id: unknown) {
 
 const n = (v: unknown) => (v === undefined || v === null || v === "" ? "—" : String(v));
 
+// Calls by type (reports filed before 5 Oct 2026 only have the totals).
+export const IN_TYPES: [string, string][] = [["in_passengers", "passengers"], ["in_drivers", "our drivers"], ["in_noninsider", "Non-Insider"], ["in_partners", "owners & partners"], ["in_other", "other"]];
+export const OUT_TYPES: [string, string][] = [["out_drivers", "our drivers"], ["out_noninsider", "Non-Insider"], ["out_callbacks", "call-backs"], ["out_other", "other"]];
+const breakdown = (r: Record<string, unknown>, types: [string, string][]) => {
+  const parts = types.filter(([k]) => Number(r[k] ?? 0) > 0).map(([k, l]) => `${r[k]} ${l}`);
+  return parts.length ? ` — ${parts.join(" · ")}` : "";
+};
+
 export const shiftRules: Record<string, RuleDef> = {
   shift_report: {
     kind: "event",
@@ -45,8 +53,11 @@ export const shiftRules: Record<string, RuleDef> = {
             rows: [
               ["Time", `${kigaliTime(s.started_at)}–${s.ended_at ? kigaliTime(s.ended_at) : "now"} (${hours(st.minutes ?? 0)})${s.late_minutes > 10 ? ` <span style="color:#d97706;">· ${s.late_minutes} min late</span>` : ""}`],
               ["Computer / partner", `${esc(s.station)}${s.partner_id ? ` · with ${esc(personName(ctx, s.partner_id))}` : ""}`],
-              ["Calls (reported)", `${n(r.calls_received)} received · ${n(r.calls_made)} made · ${n(r.calls_missed)} missed · ${n(r.messages_handled)} WhatsApp/SMS`],
+              ["Calls received", `<b>${n(r.calls_received)}</b>${breakdown(r, IN_TYPES)}`],
+              ["Calls made", `<b>${n(r.calls_made)}</b>${breakdown(r, OUT_TYPES)}`],
+              ["Missed · WhatsApp/SMS", `${n(r.calls_missed)} missed · ${n(r.messages_handled)} messages`],
               ["Logged in Kivu Daily", `${st.contacts_logged ?? 0} contacts (${st.solved_on_call ?? 0} solved on the spot, ${st.handed_on ?? 0} handed on, ${st.bookings ?? 0} bookings) · ${st.cases_closed ?? 0} cases closed · ${st.driver_calls ?? 0} driver calls`],
+              ...(st.outreach_calls ? [["Non-Insider outreach", `${st.outreach_calls} calls logged · ${st.outreach_interested ?? 0} interested`]] : []),
             ],
           },
         },

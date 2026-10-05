@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Clock, LogOut, Monitor, PlayCircle, Users2 } from 'lucide-react';
 import { supabase, CallTicket, Profile } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import { CallCenterShift, durationLabel, ShiftReport, ShiftSlot, ShiftStats, SLOT_LABEL, SLOTS, STATIONS, suggestSlot } from '../../lib/shifts';
+import { CallCenterShift, CallCountKey, durationLabel, INCOMING_TYPES, OUTGOING_TYPES, ShiftReport, ShiftSlot, ShiftStats, SLOT_LABEL, SLOTS, STATIONS, suggestSlot } from '../../lib/shifts';
 import { STATUS_META } from '../../lib/callTickets';
 import Modal from '../Modal';
 
@@ -96,7 +96,12 @@ export function EndShiftDrawer({ shift, onClose, onEnded }: { shift: CallCenterS
   const [error, setError] = useState('');
 
   useEffect(() => {
-    supabase.rpc('shift_stats', { p_shift_id: shift.id }).then(({ data }) => setStats((data as Partial<ShiftStats>) ?? {}));
+    supabase.rpc('shift_stats', { p_shift_id: shift.id }).then(({ data }) => {
+      const st = (data as Partial<ShiftStats>) ?? {};
+      setStats(st);
+      // Outreach calls are logged one by one, so start from that number.
+      if (st.outreach_calls) setReport((r) => (r.out_noninsider === undefined ? { ...r, out_noninsider: st.outreach_calls } : r));
+    });
     supabase.from('call_tickets').select('*').in('status', ['open', 'in_progress', 'waiting_on_caller', 'resolved']).order('created_at')
       .then(({ data }) => setOpenCases((data as CallTicket[]) ?? []));
   }, [shift.id]);
@@ -109,13 +114,18 @@ export function EndShiftDrawer({ shift, onClose, onEnded }: { shift: CallCenterS
     <textarea value={(report[k] as string | undefined) ?? ''} onChange={(e) => setReport((r) => ({ ...r, [k]: e.target.value }))} rows={rows} className="input resize-none" placeholder={placeholder} aria-label={k} />
   );
 
+  const sum = (keys: readonly { key: CallCountKey }[]) => keys.reduce((t, k) => t + (report[k.key] ?? 0), 0);
+  const totalIn = sum(INCOMING_TYPES);
+  const totalOut = sum(OUTGOING_TYPES);
+
   const submit = async () => {
-    if (report.calls_received === undefined || report.calls_made === undefined) { setError('Enter how many calls you received and made (0 if none).'); return; }
+    const missing = [...INCOMING_TYPES, ...OUTGOING_TYPES].filter((k) => report[k.key] === undefined);
+    if (missing.length || report.calls_missed === undefined) { setError('Fill in every call number — put 0 where you had none.'); return; }
     if (!report.worked_on?.trim()) { setError('Say what you worked on this shift.'); return; }
     setBusy(true);
     setError('');
     const items = openCases.map((t) => ({ ticket_id: t.id, reference: t.reference, caller: t.caller_name, status: t.status, next_action: (actions[t.id] ?? '').trim() }));
-    const { error: err } = await supabase.rpc('end_call_center_shift', { p_shift_id: shift.id, p_report: report, p_handover_note: handoverNote, p_items: items });
+    const { error: err } = await supabase.rpc('end_call_center_shift', { p_shift_id: shift.id, p_report: { ...report, calls_received: totalIn, calls_made: totalOut, messages_handled: report.messages_handled ?? 0 }, p_handover_note: handoverNote, p_items: items });
     setBusy(false);
     if (err) { setError(err.message); return; }
     onEnded();
@@ -138,17 +148,28 @@ export function EndShiftDrawer({ shift, onClose, onEnded }: { shift: CallCenterS
             {statTile(stats?.handed_on, 'Handed on')}
             {statTile(stats?.cases_closed, 'Closed')}
             {statTile(stats?.driver_calls, 'Driver calls')}
-            {statTile(stats?.bookings, 'Bookings')}
+            {statTile(stats?.outreach_calls, 'Outreach')}
           </div>
         </section>
 
         <section className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Your numbers *</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <div><span className={label}>Calls received</span>{num('calls_received')}</div>
-            <div><span className={label}>Calls made</span>{num('calls_made')}</div>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Your calls this shift * <span className="normal-case font-normal">— check your phone's call log, put 0 where you had none</span></p>
+          <fieldset className="rounded-lg border border-gray-100 dark:border-white/10 p-2.5">
+            <legend className="px-1 text-[11px] font-semibold">Calls you received <span className="font-normal text-gray-500">· {totalIn} total</span></legend>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {INCOMING_TYPES.map((t) => <div key={t.key}><span className={label}>{t.label}</span>{num(t.key)}</div>)}
+            </div>
+          </fieldset>
+          <fieldset className="rounded-lg border border-gray-100 dark:border-white/10 p-2.5">
+            <legend className="px-1 text-[11px] font-semibold">Calls you made <span className="font-normal text-gray-500">· {totalOut} total</span></legend>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {OUTGOING_TYPES.map((t) => <div key={t.key}><span className={label}>{t.label}</span>{num(t.key)}</div>)}
+            </div>
+            {!!stats?.outreach_calls && <p className="text-[10px] text-gray-500 mt-1.5">You logged {stats.outreach_calls} Non-Insider outreach calls ({stats.outreach_interested ?? 0} interested) — add any you didn't log.</p>}
+          </fieldset>
+          <div className="grid grid-cols-2 gap-2">
             <div><span className={label}>Missed calls</span>{num('calls_missed')}</div>
-            <div><span className={label}>WhatsApp/SMS</span>{num('messages_handled')}</div>
+            <div><span className={label}>WhatsApp/SMS handled</span>{num('messages_handled')}</div>
           </div>
         </section>
 

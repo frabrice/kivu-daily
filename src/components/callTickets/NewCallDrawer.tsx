@@ -39,7 +39,9 @@ export default function NewCallDrawer({
   onSaved: (reference: string, assigneeName: string | null, emergency: boolean) => void;
   initialOutcome?: Outcome;
 }) {
-  const { cards } = useScriptCards();
+  const { cards: allCards } = useScriptCards();
+  // Outreach cards are for calls we make (Non-Insider outreach page), not incoming calls.
+  const cards = useMemo(() => allCards.filter((c) => c.section_key !== 'outreach'), [allCards]);
   const duties = useDuties();
   const [channel, setChannel] = useState<CallTicketChannel>('call');
   const [callerPhone, setCallerPhone] = useState('');

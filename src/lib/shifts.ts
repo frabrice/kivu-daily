@@ -25,7 +25,24 @@ export function suggestSlot(now = new Date()): ShiftSlot {
   return 'night';
 }
 
-export interface ShiftReport {
+// Calls by type, reported when ending a shift. calls_received / calls_made
+// are the totals (the server adds them up).
+export const INCOMING_TYPES = [
+  { key: 'in_passengers', label: 'Passengers' },
+  { key: 'in_drivers', label: 'Our drivers' },
+  { key: 'in_noninsider', label: 'Non-Insider drivers' },
+  { key: 'in_partners', label: 'Owners & partners' },
+  { key: 'in_other', label: 'Other' },
+] as const;
+export const OUTGOING_TYPES = [
+  { key: 'out_drivers', label: 'To our drivers' },
+  { key: 'out_noninsider', label: 'To Non-Insider drivers' },
+  { key: 'out_callbacks', label: 'Call-backs to passengers' },
+  { key: 'out_other', label: 'Other' },
+] as const;
+export type CallCountKey = (typeof INCOMING_TYPES)[number]['key'] | (typeof OUTGOING_TYPES)[number]['key'];
+
+export interface ShiftReport extends Partial<Record<CallCountKey, number>> {
   calls_received: number;
   calls_made: number;
   calls_missed: number;
@@ -49,6 +66,8 @@ export interface ShiftStats {
   cases_closed: number;
   notes_added: number;
   driver_calls: number;
+  outreach_calls: number;
+  outreach_interested: number;
   open_cases_at_end: number;
 }
 

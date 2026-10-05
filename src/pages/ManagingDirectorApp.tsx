@@ -13,6 +13,7 @@ import {
   MessageSquare,
   UserPlus,
   Megaphone,
+  BarChart3,
   CalendarPlus,
   ClipboardCheck,
   MoonStar,
@@ -72,6 +73,7 @@ import FinanceDeptPage from './FinanceDeptPage';
 import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
 import NewslettersPage from './finance/NewslettersPage';
 import CallCenterPage from './CallCenterPage';
+import CallAnalyticsPage from './callCenter/CallAnalyticsPage';
 import FromCallCenterPage from './FromCallCenterPage';
 import { takeTicketLink, useMyOpenTicketCount } from '../lib/callTickets';
 import { edgeFunctionError } from '../lib/edgeFunctions';
@@ -190,6 +192,7 @@ export default function ManagingDirectorApp() {
     { key: 'finance_vehicle_owners', label: 'Vehicle Owners', icon: Car },
     { key: 'finance_newsletters', label: 'Newsletters', icon: Mail },
     { key: 'call_center', label: 'Call Center', icon: PhoneCall },
+    { key: 'call_analytics', label: 'Call Analytics', icon: BarChart3 },
     { key: 'marketing', label: 'Campaigns', icon: Target },
     { key: 'social', label: 'Content Calendar', icon: ImageIcon },
     { key: 'it_hub', label: 'Product Hub', icon: Package },
@@ -612,6 +615,7 @@ export default function ManagingDirectorApp() {
       {active === 'finance_vehicle_owners' && <FinanceVehicleOwnersPage />}
       {active === 'finance_newsletters' && <NewslettersPage />}
       {active === 'call_center' && <CallCenterPage />}
+      {active === 'call_analytics' && <CallAnalyticsPage />}
       {active === 'from_call_center' && <FromCallCenterPage initialTicketId={link.ticketId} />}
       {active === 'marketing' && <MarketingPage />}
       {active === 'social' && <SocialMediaPage />}
