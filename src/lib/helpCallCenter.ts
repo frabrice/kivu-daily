@@ -168,28 +168,41 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
   },
 
   call_center_outreach: {
-    blurb: `Use quiet time to call Non-Insider drivers: tell them what's new in the app, and offer our device and branding so more drivers are online in more places.`,
+    blurb: `Call every Non-Insider driver, one by one, in rounds — get them the updated app, our device and branding, so more drivers are online in more places.`,
     sections: [
       {
-        heading: 'The offer',
+        heading: 'The three questions',
         body: [
-          `Our device — 120,000 RWF, a one-time payment. It brings the driver more clients and keeps them online more.`,
-          `Branding — 20,000 RWF, a one-time payment by the driver. Branded drivers become priority drivers.`,
-          `Never promise a number of trips, an income figure or a discount.`,
+          `1. The updated app — we now send clients to our drivers. Will they come to our office so IT installs the updated app and shows the new features, or do they already have it? Also ask how much they use the Kivu Ride app.`,
+          `2. Our device — 120,000 RWF, one-time. Yes, thinking about it, or no.`,
+          `3. Branding — 20,000 RWF, one-time, paid by the driver. Branded drivers become priority drivers. Yes, thinking about it, or no.`,
+          `A Yes to the device or branding goes straight to the Fleet Manager's Branding & Devices list. Never promise a number of trips, an income figure or a discount.`,
         ],
       },
       {
-        heading: 'Working the list',
+        heading: 'Working a round',
         body: [
-          `The list on the left is your queue: call-backs that are due first, then drivers nobody has called yet, then drivers to try again (no answer yesterday, or not interested more than 30 days ago).`,
-          `Pick a driver, press their number to call, and follow the steps on the right (opening, what's new, device, branding, objections, closing).`,
-          `Log every call — even no answer — with "Log call & next driver". The next driver opens automatically.`,
-          `"Interested" sends the car straight to the Fleet Manager's Branding & Devices list, who arranges the payment and the work.`,
+          `Press "Call next driver": you get the next driver nobody else is calling (call-backs that are due first, then drivers not called yet this round). The other computer can't get the same driver — a driver someone is calling shows a lock with their name.`,
+          `Choose whether you reached them. If you did, answer all three questions (their earlier answers are already filled in — change what's changed), then "Save & call next driver". No answer comes back after 2 hours; "Call back later" comes back at the time you set; a wrong number leaves the rounds.`,
+          `The round is finished when every driver has been reached. Then press "Start round 2", write what to tell drivers this round (for example this week's average passengers per driver, from IT or the MD), and call everyone again who hasn't come to the office.`,
+        ],
+      },
+      {
+        heading: 'Came to the office',
+        body: [
+          `When IT tells you a driver came to the office, find them (search by name, phone or plate) and press "Mark as came" with the date. They leave the call rounds. Undo if it was a mistake.`,
+        ],
+      },
+      {
+        heading: 'Categories and filters',
+        body: [
+          `Every driver is in one category from their answers: Accepted — expected at office, Came to the office, Thinking about it, Said no, Not reached yet, Wrong number.`,
+          `Narrow any list by answer — Updated app, Device, Branding (or "Not asked yet"). For example: Accepted + Branding Yes = drivers to remind to come and get branded.`,
         ],
       },
     ],
     tips: [
-      `Goal: 15 outreach calls a day — it's on your daily task list. Your count is at the top of the page and in your shift report.`,
+      `Goal: 15 outreach calls a day — it's on your daily task list, and your count is at the top of the page and in your shift report.`,
       `The pitch is in the Script Book under "Non-Insider outreach"; the MD can edit it there.`,
     ],
   },

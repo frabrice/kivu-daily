@@ -32,7 +32,7 @@ interface Analytics {
   heatmap: { dow: number; hour: number; n: number }[];
   agents: Agent[];
   quality: { contacts: number; solved_on_call: number; cases: number; response_met: number; happy: number; neutral: number; unhappy: number; emergencies: number };
-  outreach: { drivers: number; called: number; reached: number; interested: number; branded: number; device_installed: number; calls_in_period: number; by_outcome: Record<string, number> };
+  outreach: { drivers: number; called: number; reached: number; accepted: number; came: number; device_yes: number; branding_yes: number; has_latest: number; branded: number; device_installed: number; calls_in_period: number; round: number; round_left: number };
 }
 
 // Reference categorical palette (validated light on #fff, dark on navy-800).
@@ -451,14 +451,15 @@ function OutreachFunnel({ o, dark }: { o: Analytics['outreach']; dark: boolean }
     { label: 'Non-Insider drivers', n: o.drivers },
     { label: 'Called at least once', n: o.called },
     { label: 'Reached (answered)', n: o.reached },
-    { label: 'Interested', n: o.interested },
+    { label: 'Accepted something', n: o.accepted },
+    { label: 'Came to the office', n: o.came },
   ];
   const max = Math.max(1, o.drivers);
   return (
     <div className="card p-4 space-y-3">
       <div>
         <p className="text-[13px] font-semibold flex items-center gap-1.5"><Megaphone size={14} /> Non-Insider outreach</p>
-        <p className="text-[11px] text-gray-500">Since the campaign started · {o.calls_in_period} outreach calls in this period</p>
+        <p className="text-[11px] text-gray-500">Since the campaign started · round {o.round}, {o.round_left} drivers left to reach · {o.calls_in_period} outreach calls in this period</p>
       </div>
       <div className="space-y-1.5">
         {stages.map((s, i) => (
@@ -470,6 +471,7 @@ function OutreachFunnel({ o, dark }: { o: Analytics['outreach']; dark: boolean }
         ))}
       </div>
       <p className="text-[11px] text-gray-500 pt-2 border-t border-gray-100 dark:border-white/5">
+        Said yes: <b className="text-gray-800 dark:text-gray-100">{o.device_yes}</b> to the device · <b className="text-gray-800 dark:text-gray-100">{o.branding_yes}</b> to branding · <b className="text-gray-800 dark:text-gray-100">{o.has_latest}</b> already have the updated app<br />
         Fleet results: <b className="text-gray-800 dark:text-gray-100">{o.branded}</b> Non-Insider cars branded · <b className="text-gray-800 dark:text-gray-100">{o.device_installed}</b> devices installed
       </p>
     </div>

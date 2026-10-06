@@ -29,7 +29,7 @@ export default function CallCenterPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+      <div className="flex flex-wrap gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit max-w-full">
         <TabButton active={tab === 'tickets'} onClick={() => setTab('tickets')} icon={PhoneIncoming} label="Calls & Tickets" />
         <TabButton active={tab === 'shifts'} onClick={() => setTab('shifts')} icon={Timer} label="Shifts & performance" />
         <TabButton active={tab === 'queue'} onClick={() => setTab('queue')} icon={PhoneCall} label="Call Queue" badge={urgentCount} />
