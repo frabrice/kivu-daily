@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import HelpButton from '../../components/HelpButton';
 import { Phone, PhoneCall } from 'lucide-react';
 import { useCallCenterData, STAGE_LABEL } from '../../lib/callCenter';
-import { effectiveStage, computeDepositStanding, formatRwf } from '../../lib/fleet';
+import { effectiveStage } from '../../lib/fleet';
 import LogCallDrawer from '../../components/callCenter/LogCallDrawer';
-import { Driver, supabase } from '../../lib/supabase';
+import { Driver } from '../../lib/supabase';
 
 interface CallQueuePageProps { data?: ReturnType<typeof useCallCenterData> }
 
@@ -18,10 +18,11 @@ function CallQueuePageWithData() {
   return <CallQueuePageView data={useCallCenterData()} />;
 }
 
-type Group = 'payment' | 'followup' | 'onboarding' | 'checkin' | 'recent';
+// Driver payments are not the Call Center's business (MD, 8 Oct 2026) -
+// Janviere and Fleet chase them; there is no payment group here.
+type Group = 'followup' | 'onboarding' | 'checkin' | 'recent';
 
 const GROUPS: { key: Group; title: string; hint: string; dot: string }[] = [
-  { key: 'payment', title: 'Payment backup', hint: "Behind on their weekly payment — Janviere leads; call if she asks or they're still behind.", dot: 'bg-red-500' },
   { key: 'followup', title: 'Follow-ups', hint: 'Last call needed a follow-up, or Fleet flagged the driver.', dot: 'bg-orange-500' },
   { key: 'onboarding', title: 'Onboarding', hint: 'Applicants not driving yet — help them finish onboarding.', dot: 'bg-blue-500' },
   { key: 'checkin', title: 'Check-ins', hint: 'Active drivers not called in 7+ days (or never).', dot: 'bg-amber-400' },
@@ -31,24 +32,16 @@ const GROUPS: { key: Group; title: string; hint: string; dot: string }[] = [
 function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData> }) {
   const { drivers, logs, reasons, outcomes, scripts, loading, reload } = data;
   const [callDriver, setCallDriver] = useState<Driver | null>(null);
-  const [deposits, setDeposits] = useState<{ driver_id: string; paid_date: string; amount: number; created_at: string }[]>([]);
   const [showRecent, setShowRecent] = useState(false);
-
-  useEffect(() => {
-    supabase.from('driver_deposits').select('driver_id, paid_date, amount, created_at').then(({ data: d }) => setDeposits((d as typeof deposits) ?? []));
-  }, []);
 
   // Each driver lands in exactly one group, most urgent purpose first.
   const grouped = useMemo(() => {
-    const out: Record<Group, { driver: Driver; reasonLabel: string }[]> = { payment: [], followup: [], onboarding: [], checkin: [], recent: [] };
+    const out: Record<Group, { driver: Driver; reasonLabel: string }[]> = { followup: [], onboarding: [], checkin: [], recent: [] };
     for (const d of drivers.filter((x) => x.stage !== 'inactive' && x.contract_status !== 'ended')) {
       const lastCall = logs.find((l) => l.driver_id === d.id) ?? null;
       const days = lastCall ? Math.floor((Date.now() - new Date(lastCall.created_at).getTime()) / 86400000) : null;
       const stage = effectiveStage(d);
-      const standing = stage === 'active' ? computeDepositStanding(d, deposits.filter((x) => x.driver_id === d.id)) : null;
-      if (standing && (standing.owes > 0 || standing.weekBehind > 0)) {
-        out.payment.push({ driver: d, reasonLabel: standing.owes > 0 ? `Owes ${formatRwf(standing.owes)} · behind ${formatRwf(standing.weekBehind)}` : `Behind ${formatRwf(standing.weekBehind)}` });
-      } else if (lastCall?.outcome?.needs_followup || stage === 'flagged') {
+      if (lastCall?.outcome?.needs_followup || stage === 'flagged') {
         out.followup.push({ driver: d, reasonLabel: lastCall?.outcome?.needs_followup ? `Follow-up: ${lastCall.outcome.label}` : 'Flagged by Fleet' });
       } else if (stage !== 'active') {
         out.onboarding.push({ driver: d, reasonLabel: `${STAGE_LABEL[stage]}${lastCall ? ` · called ${days === 0 ? 'today' : `${days}d ago`}` : ' · never called'}` });
@@ -60,7 +53,7 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
     }
     for (const g of Object.values(out)) g.sort((a, b) => a.driver.full_name.localeCompare(b.driver.full_name));
     return out;
-  }, [drivers, logs, deposits]);
+  }, [drivers, logs]);
 
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-14 skeleton rounded-xl" />)}</div>;
 

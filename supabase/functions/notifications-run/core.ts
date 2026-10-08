@@ -17,13 +17,22 @@ export interface Profile {
 
 export interface Recipient { id: string; email: string; name: string }
 
-export interface Table { head: string[]; rows: string[][] }
-export interface Block { heading?: string; text?: string; table?: Table }
+// Tone colours a stat, an alert box or a whole table row.
+export type Tone = "danger" | "warning" | "good" | "info";
+// Numeric columns are right-aligned automatically; `align` overrides.
+// `tones` highlights rows (same order as `rows`).
+// `phoneHide` lists column indexes dropped on narrow phone screens.
+export interface Table { head: string[]; rows: string[][]; align?: ("left" | "right" | "center")[]; tones?: (Tone | null)[]; phoneHide?: number[] }
+export interface Stat { label: string; value: string; sub?: string; tone?: Tone }
+export interface Block { heading?: string; text?: string; table?: Table; stats?: Stat[]; alert?: { tone: Tone; text: string } }
 
 export interface Built {
   subject: string;
   heading: string;
   intro: string;
+  // Headline numbers shown as tiles under the intro.
+  stats?: Stat[];
+  alert?: { tone: Tone; text: string };
   table?: Table;
   blocks?: Block[];
   footnote?: string;

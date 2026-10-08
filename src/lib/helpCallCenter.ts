@@ -59,7 +59,7 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
           `There are three shifts a day — Morning 06:00–14:00, Afternoon 14:00–22:00, Night 22:00–06:00 — in teams of two on Computer 1 and Computer 2. When you sign in, press "Start shift" (pick the shift, your computer and who you're working with). Your time starts then; arriving more than 10 minutes after the shift starts shows as late.`,
           `You can't sign out without ending your shift. Press "End shift" (top of the screen, or Sign Out) and fill in the shift report. Check your phone's call log and enter your calls by type — received from passengers, our drivers, Non-Insider drivers, owners & partners and others; made to our drivers, Non-Insider drivers, call-backs to passengers and others (0 where you had none) — then missed calls, WhatsApp/SMS handled, what you worked on, what was resolved and what's still open, problems you hit, what drivers and passengers told you, and your suggestions. Kivu Daily shows what you logged during the shift next to it.`,
           `The same form is your handover: a note for the next shift, plus the last action and exact next action for each open case. The next shift sees it at the top of Calls & Tickets and presses "Got it". The MD receives every shift report by email.`,
-          `Quiet shift? Use the time: work the Call Queue (check-ins, payment backup, follow-ups), then Non-Insider Outreach — call Non-Insider drivers about what's new, our device and branding. It all counts in your shift report and on the Call Analytics page.`,
+          `Quiet shift? Use the time: work the Call Queue (follow-ups, onboarding, check-ins), then Non-Insider Outreach — call Non-Insider drivers about what's new, our device and branding. It all counts in your shift report and on the Call Analytics page.`,
         ],
       },
     ],
@@ -86,12 +86,11 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
   },
 
   call_center_queue: {
-    blurb: 'Drivers to call, grouped by why — payment backup, follow-ups, onboarding and check-ins.',
+    blurb: 'Drivers to call, grouped by why — follow-ups, onboarding and check-ins.',
     sections: [
       {
         heading: 'The groups',
         body: [
-          `Payment backup — active drivers behind on their weekly payment. Janviere leads payment reminders; you're the backup (use the "Payment reminder (backup)" reason).`,
           `Follow-ups — the last call needed a follow-up, or Fleet flagged the driver.`,
           `Onboarding — applicants not driving yet; help them finish their documents and steps.`,
           `Check-ins — active drivers not called in 7 days or more.`,
@@ -158,7 +157,7 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
       },
       {
         heading: 'Call Queue and Directory',
-        body: [`Outbound calls to our drivers, grouped by purpose (payment backup, follow-ups, onboarding, check-ins).`],
+        body: [`Outbound calls to our drivers, grouped by purpose (follow-ups, onboarding, check-ins). Driver payments are not shown to the Call Center — Janviere, Fleet and Finance handle them.`],
       },
     ],
     tips: [

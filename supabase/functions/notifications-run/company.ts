@@ -67,21 +67,23 @@ export const companyRules: Record<string, RuleDef> = {
       const dueDate = standings[0]?.s.nextDueDate ?? sundayOf(ctx.today);
       blocks.push({
         heading: "Driver payments",
-        text: (ctx.today >= SUNDAY_RULE_START
-          ? `<b>${standings.length - blocked.length} of ${standings.length}</b> drivers are cleared to drive.${blocked.length ? ` Not cleared: ${blocked.map((r) => esc(r.d.full_name)).join(", ")}.` : ""}`
-          : "")
-          + `${ctx.today >= SUNDAY_RULE_START ? "<br>" : ""}Owed for days already worked: <b>${rwf(owed)}</b> · behind on this week: <b>${rwf(behindWeek)}</b>.`
-          + `<br>Due by ${day(dueDate)}: ${rwf(dueSunday.reduce((s, r) => s + r.s.nextDueAmount, 0))} from ${plural(dueSunday.length, "driver")}.`,
+        stats: [
+          { label: "Cleared to drive", value: `${standings.length - blocked.length} / ${standings.length}`, tone: blocked.length ? "danger" : "good" },
+          { label: "Owed (days driven)", value: rwf(owed), tone: owed > 0 ? "danger" : undefined },
+          { label: "Behind this week", value: rwf(behindWeek), tone: behindWeek > 0 ? "warning" : undefined },
+          { label: `Due by ${day(dueDate)}`, value: rwf(dueSunday.reduce((s, r) => s + r.s.nextDueAmount, 0)), sub: plural(dueSunday.length, "driver") },
+        ],
+        text: blocked.length ? `Not cleared: ${blocked.map((r) => esc(r.d.full_name)).join(", ")}. The full list is in "Driver payments this morning".` : undefined,
       });
 
       const pendingDeposits = deposits.filter((d) => d.status === "pending").sort((a, b) => a.created_at.localeCompare(b.created_at));
       const overdue = open.filter((t) => t.transaction_date < ctx.today);
       blocks.push({
         heading: "Finance",
-        text: [
-          pendingDeposits.length ? `${plural(pendingDeposits.length, "driver deposit")} waiting for Finance to confirm (oldest logged ${day(pendingDeposits[0].created_at.slice(0, 10))}).` : "All driver deposits are confirmed.",
-          overdue.length ? `${plural(overdue.length, "payment")} past their date and not yet posted (${rwf(overdue.reduce((s, t) => s + t.amount, 0))}).` : "No overdue payments.",
-        ].join("<br>"),
+        stats: [
+          { label: "Deposits to confirm", value: String(pendingDeposits.length), sub: pendingDeposits.length ? `oldest logged ${day(pendingDeposits[0].created_at.slice(0, 10))}` : "all confirmed", tone: pendingDeposits.length ? "warning" : "good" },
+          { label: "Payments past due", value: String(overdue.length), sub: overdue.length ? rwf(overdue.reduce((s, t) => s + t.amount, 0)) : "none", tone: overdue.length ? "danger" : "good" },
+        ],
       });
 
       const yTasks = tasks.filter((t) => t.date === yesterday);
@@ -92,11 +94,15 @@ export const companyRules: Record<string, RuleDef> = {
       for (const t of missed) missedBy.set(personName(ctx, t.user_id), [...(missedBy.get(personName(ctx, t.user_id)) ?? []), t.title]);
       blocks.push({
         heading: `Team yesterday (${day(yesterday)})`,
-        text: yDuties.length
-          ? `Standing duties: <b>${yDuties.length - missed.length} of ${yDuties.length}</b> done.${missed.length ? "" : " Nothing missed."}`
-            + [...missedBy].map(([who, titles]) => `<br><b style="color:#dc2626;">${esc(who)}</b> missed: ${titles.map(esc).join("; ")}`).join("")
-          : undefined,
+        stats: yDuties.length ? [
+          { label: "Standing duties done", value: `${yDuties.length - missed.length} / ${yDuties.length}`, tone: missed.length ? "warning" : "good" },
+          { label: "People who missed one", value: String(missedBy.size), tone: missedBy.size ? "danger" : "good" },
+        ] : undefined,
         ...(yTasks.length ? { table: teamTable(ctx, yTasks) } : { text: "Nobody logged tasks yesterday." }),
+      });
+      if (missedBy.size) blocks.push({
+        heading: "Standing duties missed yesterday",
+        table: { head: ["Person", "Missed"], rows: [...missedBy].map(([who, titles]) => [`<b>${esc(who)}</b>`, titles.map(esc).join("<br>")]), tones: [...missedBy].map(() => "danger" as const) },
       });
 
       const tickets = await loadTickets(ctx);
@@ -122,11 +128,12 @@ export const companyRules: Record<string, RuleDef> = {
       const yCalls = calls.filter((c) => c.created_at.slice(0, 10) === yesterday).length;
       blocks.push({
         heading: "Operations",
-        text: [
-          idle.length ? `Cars without a driver: ${idle.map((v) => esc(v.plate_number)).join(", ")}.` : "Every car has a driver.",
-          `${plural(openFlags.length, "issue")} flagged to IT still open.`,
-          `${plural(yCalls, "call")} logged by Call Center yesterday.`,
-        ].join("<br>"),
+        stats: [
+          { label: "Cars without a driver", value: String(idle.length), tone: idle.length ? "warning" : "good" },
+          { label: "IT issues open", value: String(openFlags.length) },
+          { label: "Driver calls yesterday", value: String(yCalls) },
+        ],
+        text: idle.length ? `Cars without a driver: ${idle.map((v) => esc(v.plate_number)).join(", ")}.` : undefined,
       });
 
       return [{

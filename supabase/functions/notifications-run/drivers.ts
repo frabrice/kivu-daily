@@ -2,7 +2,7 @@ import {
   computeDepositStanding, firstSundayPayment, sundayOf, shiftDay,
   SUNDAY_RULE_START, WEEKLY_DEPOSIT_AMOUNT, type DepositStanding, type RestDayKey,
 } from "../_shared/depositRules.ts";
-import { ALL_DAYS, Built, cached, Ctx, day, esc, hm, personName, plural, RuleDef, rows, rwf } from "./core.ts";
+import { ALL_DAYS, Block, Built, cached, Ctx, day, esc, hm, personName, plural, RuleDef, rows, rwf, Tone } from "./core.ts";
 
 // Driver weekly payments (Phase 1): the Sunday cadence Janviere runs,
 // and Finance's deposit confirmations.
@@ -111,7 +111,81 @@ async function notCleared(kind: "monday" | "daily" | "summary", ctx: Ctx, force:
   }];
 }
 
+// Every morning, to everyone who acts on unpaid drivers: Henry (stops the
+// car and takes it back), the MD, Janviere (calls), Bertrand (Fleet) and
+// Rodrigue (Finance). A driver stays on it every day until they pay in
+// full or their contract ends. Never sent to the Call Center.
+async function paymentsMorning(ctx: Ctx): Promise<Built[]> {
+  const [all, drivers, deposits] = await Promise.all([activeStandings(ctx), loadDrivers(ctx), loadDeposits(ctx)]);
+  const owing = all.filter((r) => !r.s.isCleared || r.s.owes > 0 || r.s.weekBehind > 0)
+    .sort((a, b) => Number(a.s.isCleared) - Number(b.s.isCleared) || (b.s.current?.daysLost ?? 0) - (a.s.current?.daysLost ?? 0) || b.s.owes - a.s.owes || b.s.weekBehind - a.s.weekBehind);
+  const pending = deposits.filter((d) => d.status === "pending").sort((a, b) => a.paid_date.localeCompare(b.paid_date));
+  const owesTotal = owing.reduce((s, r) => s + r.s.owes, 0);
+  const behindTotal = owing.reduce((s, r) => s + r.s.weekBehind, 0);
+  const daysLost = owing.reduce((s, r) => s + (r.s.current?.daysLost ?? 0), 0);
+  const driverName = (id: string) => drivers.find((d) => d.id === id)?.full_name ?? "Unknown driver";
+
+  const blocks: Block[] = [];
+  if (pending.length) blocks.push({
+    heading: `Payments waiting for Finance (${pending.length})`,
+    text: "Logged as paid and counted for now. Rodrigue: confirm or reject each one today so this list is exact.",
+    table: { head: ["Driver", "Amount", "Paid on", "Logged by"], rows: pending.map((d) => [esc(driverName(d.driver_id)), rwf(d.amount), day(d.paid_date), esc(personName(ctx, d.created_by))]) },
+  });
+
+  if (owing.length === 0) {
+    return [{
+      subject: `Driver payments ${day(ctx.today)}: all ${all.length} drivers paid up`,
+      heading: "Every driver is paid up",
+      intro: `All ${all.length} active drivers have paid in full and are cleared to drive today.`,
+      alert: { tone: "good", text: "Nothing to chase this morning." },
+      stats: [{ label: "Active drivers", value: String(all.length) }, { label: "Not cleared", value: "0", tone: "good" }],
+      blocks,
+      inApp: `Driver payments: all ${all.length} drivers paid up`,
+    }];
+  }
+
+  const notCleared = owing.filter((r) => !r.s.isCleared).length;
+  const tone = (r: StandingRow): Tone => (!r.s.isCleared || r.s.owes > 0 ? "danger" : "warning");
+  const last = (r: StandingRow) => {
+    const l = [...r.deps].sort((a, b) => b.paid_date.localeCompare(a.paid_date))[0];
+    return l ? `${day(l.paid_date)}<br><span style="color:#6b7280;">${rwf(l.amount)}${l.status === "pending" ? " · not confirmed" : ""}</span>` : "None";
+  };
+  return [{
+    subject: `Driver payments ${day(ctx.today)}: ${plural(owing.length, "driver")} owe money, ${notCleared} not cleared — ${rwf(behindTotal)} unpaid`,
+    heading: `${plural(owing.length, "driver")} owe${owing.length === 1 ? "s" : ""} us money today`,
+    intro: `Every driver below owes us money. They stay on this report every morning until they pay in full or their contract is ended — we don't lose a single day.`,
+    alert: { tone: "danger", text: `<b>Henry:</b> the ${plural(notCleared, "red row")} ${notCleared === 1 ? "is" : "are"} <b>not cleared to drive</b> — keep ${notCleared === 1 ? "that car" : "those cars"} off the road until they pay in full. Amber rows can still drive but haven't paid the rest of the week. <b>Janviere:</b> call every driver below this morning. Log each payment in Kivu Daily the moment it arrives.` },
+    stats: [
+      { label: "Not cleared", value: `${notCleared} / ${all.length}`, sub: `${plural(owing.length, "driver")} owe money`, tone: notCleared ? "danger" : "warning" },
+      { label: "Owed (days driven)", value: rwf(owesTotal), tone: owesTotal > 0 ? "danger" : undefined },
+      { label: "Behind this week", value: rwf(behindTotal), tone: "warning" },
+      { label: "Working days lost", value: String(daysLost) },
+    ],
+    table: (() => {
+      const showLost = owing.some((r) => (r.s.current?.daysLost ?? 0) > 0);
+      const status = (r: StandingRow) => r.s.isCleared
+        ? `<span style="color:#b45309;font-weight:600;white-space:nowrap;">Behind</span>`
+        : `<span style="color:#b91c1c;font-weight:600;white-space:nowrap;">Not cleared</span>`;
+      return {
+        head: ["Driver", "Status", ...(showLost ? ["Days lost"] : []), "Owes", "Behind", "Last payment"],
+        rows: owing.map((r) => [
+          `<b>${esc(r.d.full_name)}</b><br><span style="color:#6b7280;font-size:12px;">${esc(car(r.d))} · ${esc(r.d.phone ?? "no phone")}</span>`,
+          status(r), ...(showLost ? [String(r.s.current?.daysLost ?? 0)] : []),
+          r.s.owes > 0 ? rwf(r.s.owes) : "—", rwf(r.s.weekBehind), last(r),
+        ]),
+        align: ["left", "left", ...(showLost ? ["right" as const] : []), "right", "right", "left"] as ("left" | "right")[],
+        tones: owing.map(tone),
+        phoneHide: [showLost ? 5 : 4],
+      };
+    })(),
+    blocks,
+    footnote: "Owes = working days already driven this week that aren't paid (30,000 RWF a day). Behind = what's still unpaid for the whole week. Being cleared to drive needs Behind at zero.",
+    inApp: `Driver payments: ${plural(owing.length, "driver")} owe money, ${notCleared} not cleared`,
+  }];
+}
+
 export const driverRules: Record<string, RuleDef> = {
+  driver_payments_morning: { kind: "scheduled", days: ALL_DAYS, at: hm(6, 30), build: (ctx) => paymentsMorning(ctx) },
   driver_call_list: { kind: "scheduled", days: [6], at: hm(9), build: (ctx, f) => sundayLists("call", ctx, f) },
   driver_still_unpaid: { kind: "scheduled", days: [7], at: hm(18), build: (ctx, f) => sundayLists("unpaid", ctx, f) },
   driver_not_cleared_monday: { kind: "scheduled", days: [1], at: hm(7), build: (ctx, f) => notCleared("monday", ctx, f) },

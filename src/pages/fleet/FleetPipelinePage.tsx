@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, Phone, Car, Truck } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, STAGES, effectiveStage, canEditFleet } from '../../lib/fleet';
+import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
@@ -140,7 +140,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                       </p>
                     ) : (
                       <p className="text-[9px] text-gray-300 dark:text-white/20 mt-1">
-                        {d.initial_deposit_paid ? 'Deposit paid · no vehicle' : 'No vehicle'}
+                        {d.initial_deposit_paid && canSeeDriverPayments(profile) ? 'Deposit paid · no vehicle' : 'No vehicle'}
                       </p>
                     )}
                   </div>

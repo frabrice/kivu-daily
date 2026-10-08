@@ -1,7 +1,8 @@
 import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { sendWithResend, wrapEmail } from "../_shared/email.ts";
+import { sendWithResend } from "../_shared/email.ts";
+import { renderEmail } from "./render.ts";
 import { isoWeekday } from "../_shared/depositRules.ts";
-import { Built, Ctx, esc, firstName, Profile, Recipient, RuleDef, ScheduledRule } from "./core.ts";
+import { Built, Ctx, longDay, Profile, Recipient, RuleDef, ScheduledRule } from "./core.ts";
 import { driverRules } from "./drivers.ts";
 import { financeRules } from "./finance.ts";
 import { operationsRules } from "./operations.ts";
@@ -86,40 +87,10 @@ function resolveRecipients(rule: RuleRow, built: Built, a: Audience, payload: Re
 // ------------------------------------------------------------------
 // Rendering & outbox
 // ------------------------------------------------------------------
-function htmlTable(t: { head: string[]; rows: string[][] }) {
-  return `<table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 16px;">
-    ${t.head.some(Boolean) ? `<tr>${t.head.map((h) => `<th style="text-align:left;padding:8px 6px;border-bottom:2px solid #e5e7eb;color:#17263A;">${h}</th>`).join("")}</tr>` : ""}
-    ${t.rows.map((r) => `<tr>${r.map((c) => `<td style="padding:8px 6px;border-bottom:1px solid #f1f5f9;vertical-align:top;">${c}</td>`).join("")}</tr>`).join("")}
-  </table>`;
-}
-
-const plain = (s: string) => s.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-
-function render(b: Built, recipientName: string) {
-  const blocks = (b.blocks ?? []).map((bl) => `
-    ${bl.heading ? `<div style="font-size:14px;font-weight:600;color:#17263A;margin:20px 0 6px;">${bl.heading}</div>` : ""}
-    ${bl.text ? `<p style="margin:0 0 8px;font-size:14px;">${bl.text}</p>` : ""}
-    ${bl.table ? htmlTable(bl.table) : ""}`).join("");
-  const inner = `
-    <div class="title">${b.heading}</div>
-    <div class="content"><p class="greeting">Hi ${esc(firstName(recipientName))},</p><p>${b.intro}</p></div>
-    ${b.table ? htmlTable(b.table) : ""}
-    ${blocks}
-    ${b.footnote ? `<div class="content" style="font-size:12px;color:#888;"><p>${b.footnote}</p></div>` : ""}
-    <div style="text-align:center;margin-top:16px;"><a href="${b.cta ? `${appUrl.replace(/\/$/, "")}/?${b.cta.query}` : appUrl}" class="button">${b.cta?.label ?? "Open Kivu Daily"}</a></div>`;
-  const tableText = (t?: { head: string[]; rows: string[][] }) => (t ? [t.head.join(" | "), ...t.rows.map((r) => r.join(" | "))] : []);
-  const text = plain([
-    b.heading, "", b.intro, "", ...tableText(b.table),
-    ...(b.blocks ?? []).flatMap((bl) => ["", bl.heading ?? "", bl.text ?? "", ...tableText(bl.table)]),
-    "", b.footnote ?? "", appUrl,
-  ].join("\n"));
-  return { html: wrapEmail(inner), text };
-}
-
 async function enqueue(ctx: Ctx, rule: RuleRow, dedupeBase: string, built: Built, recipients: Recipient[], isTest = false) {
   let queued = 0;
   for (const r of recipients) {
-    const { html, text } = render(built, r.name);
+    const { html, text } = renderEmail(built, r.name, appUrl, longDay(ctx.today));
     const { data, error } = await ctx.db.from("notification_outbox").upsert({
       rule_key: rule.key,
       dedupe_key: `${dedupeBase}:${r.id}`,
@@ -241,7 +212,12 @@ Deno.serve(async (req: Request) => {
         const rule = ruleMap.get(key);
         if (!def || !rule || def.kind !== "scheduled") { out[key] = "not a scheduled rule"; continue; }
         const built = await def.build(pctx, false);
-        out[key] = built.length === 0 ? "skipped" : built.map((b) => ({ subject: b.subject, to: resolveRecipients(rule, b, pa).map((r) => r.name) }));
+        // { html: true } also returns the rendered email, so the design can be
+        // checked without sending anything.
+        out[key] = built.length === 0 ? "skipped" : built.map((b) => ({
+          subject: b.subject, to: resolveRecipients(rule, b, pa).map((r) => r.name),
+          ...(body.html ? { html: renderEmail(b, "Preview", appUrl, longDay(pctx.today)).html } : {}),
+        }));
       }
       return json({ today: pctx.today, preview: out });
     }

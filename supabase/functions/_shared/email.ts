@@ -74,73 +74,97 @@ export async function sendWithResend(
   }
 }
 
-export function getEmailBaseStyles(): string {
-  return `
-    <style>
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f5; }
-      .container { background-color: #ffffff; border-radius: 12px; padding: 32px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-      .header { text-align: center; margin-bottom: 24px; }
-      .logo { font-size: 24px; font-weight: bold; color: #17263A; }
-      .logo-subtitle { font-size: 12px; color: #888; margin-top: 4px; }
-      .title { font-size: 22px; font-weight: 600; color: #17263A; margin-bottom: 16px; }
-      .content { color: #555; margin-bottom: 20px; }
-      .button { display: inline-block; background-color: #2F8C86; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0; }
-      .footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #888; text-align: center; }
-      .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
-      .stat-box { background: #f8fafc; border-radius: 8px; padding: 16px; text-align: center; }
-      .stat-number { font-size: 28px; font-weight: bold; color: #2F8C86; }
-      .stat-label { font-size: 12px; color: #888; margin-top: 4px; }
-      .task-list { background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; }
-      .task-item { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
-      .task-item:last-child { border-bottom: none; }
-      .greeting { font-size: 18px; margin-bottom: 16px; }
-      .highlight { color: #2F8C86; font-weight: 600; }
-      .warning { color: #f97316; }
-      .success { color: #4F7B3E; }
-      @media (prefers-color-scheme: dark) {
-        body { background-color: #1a1a1a; }
-        .container { background-color: #1f2937; color: #e5e7eb; }
-        .content { color: #d1d5db; }
-        .title { color: #5eb8b0; }
-        .stat-box { background: #374151; }
-        .task-list { background: #374151; }
-        .task-item { border-bottom-color: #4b5563; }
-      }
-    </style>
-  `;
+// ---------------------------------------------------------------------
+// Branded email shell. Table-based with inline styles so it renders the
+// same in Gmail, Outlook and phone mail apps: navy header with the logo,
+// a white card, and a quiet footer. Every Kivu Daily email uses it.
+// ---------------------------------------------------------------------
+export const BRAND = {
+  navy: "#17263A", teal: "#2F8C86", ink: "#1f2937", body: "#374151", muted: "#6b7280",
+  line: "#e5e7eb", soft: "#f8fafc", page: "#eef1f4", headerMuted: "#aebcc9",
+};
+
+const appUrlOf = () => (Deno.env.get("APP_URL") || "https://kivu-daily.app").replace(/\/$/, "");
+
+export function emailShell(opts: { inner: string; preheader?: string; dateLabel?: string; footerNote?: string }): string {
+  const appUrl = appUrlOf();
+  const pre = opts.preheader
+    ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${opts.preheader}</div>`
+    : "";
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Kivu Daily</title>
+${legacyStyles()}
+</head>
+<body style="margin:0;padding:0;background:${BRAND.page};-webkit-text-size-adjust:100%;">
+${pre}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BRAND.page};">
+  <tr><td align="center" style="padding:24px 12px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;border-collapse:separate;">
+      <tr><td style="background:${BRAND.navy};border-radius:14px 14px 0 0;padding:18px 28px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="vertical-align:middle;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td style="vertical-align:middle;padding-right:10px;">
+                <div style="width:34px;height:34px;border-radius:8px;background:#ffffff;text-align:center;">
+                  <img src="${appUrl}/kivu-ride-logo.png" width="26" height="26" alt="Kivu Ride" style="display:inline-block;margin-top:4px;border:0;">
+                </div>
+              </td>
+              <td style="vertical-align:middle;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+                <div style="font-size:16px;font-weight:700;color:#ffffff;line-height:1.2;">Kivu Daily</div>
+                <div style="font-size:11px;color:${BRAND.headerMuted};line-height:1.3;">Kivu Ride Ltd</div>
+              </td>
+            </tr></table>
+          </td>
+          ${opts.dateLabel ? `<td align="right" style="vertical-align:middle;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:12px;color:${BRAND.headerMuted};white-space:nowrap;">${opts.dateLabel}</td>` : ""}
+        </tr></table>
+      </td></tr>
+      <tr><td style="background:${BRAND.teal};height:3px;line-height:3px;font-size:0;">&nbsp;</td></tr>
+      <tr><td class="kd-card" style="background:#ffffff;border-radius:0 0 14px 14px;padding:28px;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:${BRAND.body};font-size:14px;line-height:1.55;">
+        ${opts.inner}
+      </td></tr>
+      <tr><td align="center" style="padding:18px 12px 4px;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.6;color:#8699ad;">
+        Kivu Daily · Kivu Ride Ltd<br>
+        ${opts.footerNote ? `${opts.footerNote}<br>` : ""}Automated message — please don't reply. <a href="${appUrl}/?page=settings" style="color:${BRAND.teal};text-decoration:none;">Email preferences</a>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
 }
 
-export function getEmailFooter(): string {
-  const appUrl = Deno.env.get("APP_URL") || "https://kivu-daily.app";
-  return `
-    <div class="footer">
-      <p>Kivu Daily - Kivu Ride Ltd</p>
-      <p>
-        <a href="${appUrl}/settings" style="color: #2F8C86;">Manage notification preferences</a>
-      </p>
-      <p style="margin-top: 12px;">This is an automated message. Please do not reply directly to this email.</p>
-    </div>
-  `;
+// Classes still used by the invite and generic emails' own HTML.
+function legacyStyles(): string {
+  return `<style>
+  .title { font-size: 21px; font-weight: 700; color: ${BRAND.navy}; margin: 0 0 14px; line-height: 1.3; }
+  .content { color: ${BRAND.body}; margin-bottom: 18px; }
+  .greeting { font-size: 14px; color: ${BRAND.muted}; margin: 0 0 6px; }
+  .button { display: inline-block; background: ${BRAND.teal}; color: #ffffff !important; padding: 12px 26px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 12px 0; }
+  .highlight { color: ${BRAND.teal}; font-weight: 600; }
+  .warning { color: #b45309; }
+  .success { color: #15803d; }
+  .stat-box { background: ${BRAND.soft}; border: 1px solid ${BRAND.line}; border-radius: 10px; padding: 14px; text-align: center; }
+  .stat-number { font-size: 24px; font-weight: 700; color: ${BRAND.navy}; }
+  .stat-label { font-size: 11px; color: ${BRAND.muted}; text-transform: uppercase; letter-spacing: .04em; }
+  .task-list { background: ${BRAND.soft}; border-radius: 10px; padding: 14px 16px; margin: 14px 0; }
+  .task-item { padding: 8px 0; border-bottom: 1px solid ${BRAND.line}; }
+  .task-item:last-child { border-bottom: none; }
+  @media (max-width: 520px) {
+    .kd-card { padding: 20px 14px !important; }
+    .kd-cell { padding: 8px 6px !important; font-size: 12px !important; }
+    .kd-num { white-space: normal !important; }
+    .kd-hide-sm { display: none !important; }
+    .kd-stat { display: inline-block !important; width: 50% !important; box-sizing: border-box; padding: 0 4px 8px 0 !important; vertical-align: top; }
+  }
+</style>`;
 }
 
-export function wrapEmail(innerHtml: string): string {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      ${getEmailBaseStyles()}
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <div class="logo">Kivu Daily</div>
-          <div class="logo-subtitle">Kivu Ride Ltd</div>
-        </div>
-        ${innerHtml}
-        ${getEmailFooter()}
-      </div>
-    </body>
-    </html>
-  `;
+export function wrapEmail(innerHtml: string, opts: { preheader?: string; dateLabel?: string } = {}): string {
+  return emailShell({ inner: innerHtml, ...opts });
 }

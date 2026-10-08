@@ -23,6 +23,12 @@ export function canSeeDriverDocuments(profile: Profile | null | undefined): bool
   return profile?.department?.slug !== 'call_center';
 }
 
+// Deposits, fines, what a driver owes: never shown to the Call Center
+// (MD's rule, 8 Oct 2026). The database refuses them the data too.
+export function canSeeDriverPayments(profile: Profile | null | undefined): boolean {
+  return !!profile && profile.department?.slug !== 'call_center';
+}
+
 // Shared by every Fleet page (Driver Pipeline, Vehicles, Deposits, Fines) so
 // each can be its own nav destination without re-fetching/duplicating the
 // same four tables four times over.

@@ -9,8 +9,9 @@ import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEve
 import {
   STAGES, effectiveStage, REST_DAYS, DEPOSIT_TIER_STYLE, depositRemainingColor, formatDateLabelSafe,
   computeDepositStanding, depositStandingTier, depositStandingLabel, depositPeriodLabel, paidThroughDate, formatRwf, SUNDAY_RULE_START,
-  fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel,
+  fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, canSeeDriverPayments,
 } from '../../lib/fleet';
+import { useAuth } from '../../lib/auth';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import EndContractDrawer from '../../components/fleet/EndContractDrawer';
@@ -41,6 +42,8 @@ export default function DriverProfilePage({
 }) {
   const [flagOpen, setFlagOpen] = useState(false);
   const [loggingDeposit, setLoggingDeposit] = useState(false);
+  const { profile } = useAuth();
+  const showMoney = canSeeDriverPayments(profile);
   const [endContractOpen, setEndContractOpen] = useState(false);
   const [reactivateOpen, setReactivateOpen] = useState(false);
 
@@ -179,8 +182,9 @@ export default function DriverProfilePage({
             <p className="text-[12px] font-medium">
               {driver.start_date ? formatDateLabelSafe(driver.start_date) : <span className="text-gray-400 font-normal">Not set</span>}
             </p>
-            {driver.start_date && <p className="text-[10px] text-brand-600 dark:text-brand-300 mt-0.5">Pays every Sunday</p>}
+            {driver.start_date && showMoney && <p className="text-[10px] text-brand-600 dark:text-brand-300 mt-0.5">Pays every Sunday</p>}
           </div>
+          {showMoney && (
           <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
             <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Clock size={10} /> Initial Deposit</p>
             <p className="text-[12px] font-medium">
@@ -189,6 +193,7 @@ export default function DriverProfilePage({
                 : <span className="text-gray-400 font-normal">Not paid</span>}
             </p>
           </div>
+          )}
         </div>
 
         {driver.notes && (
@@ -199,6 +204,7 @@ export default function DriverProfilePage({
         )}
       </div>
 
+      {showMoney && (<>
       {/* Reliability */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="card p-4">
@@ -233,10 +239,12 @@ export default function DriverProfilePage({
         </div>
       </div>
 
+      </>)}
+
       {/* Weekly history - Monday-Sunday weeks from the switch-over on. A
           week counts as done only once every working day up to its Sunday
           is paid for; lost days are working days spent uncleared. */}
-      {!isEnded && (
+      {!isEnded && showMoney && (
         <div className="card p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><CalendarDays size={13} /> Weekly Deposits</p>
           {standing.periods.length === 0 ? (
@@ -269,6 +277,7 @@ export default function DriverProfilePage({
         <DriverCasesList driverId={driver.id} />
       </div>
 
+      {showMoney && (<>
       {/* Deposits */}
       <div className="card p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -404,6 +413,8 @@ export default function DriverProfilePage({
           </div>
         )}
       </div>
+
+      </>)}
 
       {/* Contract History */}
       {driverContractEvents.length > 0 && (
