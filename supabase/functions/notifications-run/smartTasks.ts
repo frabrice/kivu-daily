@@ -1,6 +1,6 @@
 import { daysUntilDate } from "../_shared/depositRules.ts";
 import { Ctx, day, plural, rows, rwf } from "./core.ts";
-import { activeStandings, car, loadDeposits, loadDrivers } from "./drivers.ts";
+import { activeStandings, car, loadDeposits, loadDrivers, PAUSE_REASON } from "./drivers.ts";
 import { openTransactions, TYPE_LABEL } from "./finance.ts";
 import { carsWithoutDriver, loadFlaggedStories } from "./operations.ts";
 import { isOverdue, isResponseOverdue, loadTickets, UNRESOLVED } from "./tickets.ts";
@@ -46,7 +46,38 @@ async function onShiftAgents(ctx: Ctx): Promise<string[]> {
   return [...new Set(open.map((s) => s.agent_id))].sort();
 }
 
+const finance = (ctx: Ctx) => ctx.responsibilities["route_finance"] ?? null;
+
 const LIST_KINDS: ListKind[] = [
+  {
+    key: "pauses_to_review", priority: "normal", due: "12:00",
+    title: (n) => `Approve or reject ${plural(n, "driver pause")}`, doneTitle: "Driver pauses reviewed",
+    intro: "Days paused for sick drivers, cars in the garage, etc. don't count while the pause stands. Check each one (Driver days off).",
+    compute: async (ctx) => {
+      const seen = new Set<string>();
+      const items: SmartItem[] = [];
+      for (const d of await loadDrivers(ctx)) for (const p of d.pauses) {
+        if (p.approval_status !== "pending" || seen.has(p.group_id)) continue;
+        seen.add(p.group_id);
+        items.push({ id: p.group_id, label: `${d.full_name} — ${PAUSE_REASON[p.reason] ?? p.reason}`, detail: `${day(p.start_date)}${p.end_date ? `–${day(p.end_date)}` : " onward"} · by ${ctx.profiles.find((x) => x.id === p.recorded_by)?.full_name.trim().split(/\s+/)[0] ?? "—"}` });
+      }
+      return { assignments: [...assign(md(ctx), items), ...assign(finance(ctx), items)], open: setOf(items) };
+    },
+  },
+  {
+    key: "pauses_check_in", priority: "normal", due: "12:00",
+    title: (n) => `Check on ${plural(n, "paused driver")}`, doneTitle: "Paused drivers checked",
+    intro: "Open-ended pauses for more than 3 days. Call the driver (or garage): resume them in Kivu Daily as soon as they're back.",
+    compute: async (ctx) => {
+      const limit = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
+      const items: SmartItem[] = [];
+      for (const d of await loadDrivers(ctx)) for (const p of d.pauses) {
+        if (p.end_date || p.approval_status === "rejected" || p.start_date > limit) continue;
+        items.push({ id: p.id, label: d.full_name, detail: `${PAUSE_REASON[p.reason] ?? p.reason} since ${day(p.start_date)}${d.phone ? ` · ${d.phone}` : ""}` });
+      }
+      return { assignments: assign(one(ctx, "fleet_manager"), items), open: setOf(items) };
+    },
+  },
   {
     key: "deposits_confirm", priority: "high", due: "17:00",
     title: (n) => `Confirm ${plural(n, "driver deposit")}`, doneTitle: "Driver deposits confirmed",
@@ -75,7 +106,7 @@ const LIST_KINDS: ListKind[] = [
     intro: "These drivers are not cleared to drive. Each one ticks off by itself when they pay in full.",
     compute: async (ctx) => {
       const items = (await activeStandings(ctx)).filter((r) => !r.s.isCleared)
-        .map((r) => ({ id: r.d.id, label: car(r.d), detail: `${r.d.full_name} · ${plural(r.s.current?.daysLost ?? 0, "day")} unpaid · behind ${rwf(r.s.weekBehind)}` }));
+        .map((r) => ({ id: r.d.id, label: car(r.d), detail: `${r.d.full_name} · ${r.s.pausedToday ? `paused (${(PAUSE_REASON[r.s.pausedToday.reason ?? ""] ?? "").toLowerCase()}) · ` : ""}${plural(r.s.current?.daysLost ?? 0, "day")} unpaid · behind ${rwf(r.s.weekBehind)}` }));
       return { assignments: assign(one(ctx, "route_operations"), items), open: setOf(items) };
     },
   },

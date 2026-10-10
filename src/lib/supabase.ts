@@ -99,7 +99,31 @@ export interface Vehicle {
   owner?: VehicleOwner | null;
 }
 
+// Days a driver is off (sick, car in the garage...): they cost nothing
+// and aren't chased while the pause stands. See driver_pauses.
+export type PauseReason = 'sick' | 'garage' | 'accident' | 'family' | 'leave' | 'other';
+export interface DriverPause {
+  id: string;
+  driver_id: string;
+  vehicle_id: string | null;
+  group_id: string;
+  reason: PauseReason;
+  note: string | null;
+  start_date: string;
+  end_date: string | null;
+  approval_status: 'pending' | 'approved' | 'rejected';
+  review_note: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  proof_path: string | null;
+  recorded_by: string | null;
+  resumed_by: string | null;
+  resumed_at: string | null;
+  created_at: string;
+}
+
 export interface Driver {
+  pauses?: DriverPause[];
   id: string;
   full_name: string;
   phone: string;

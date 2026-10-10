@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe, PAUSE_REASON_LABEL } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 
@@ -73,7 +73,10 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
             <div key={row.driver.id} className={`card p-3 flex items-center gap-3 ${row.isEnded ? 'opacity-50 blur-[1.5px] hover:blur-none hover:opacity-100 transition-[filter,opacity] duration-200' : ''}`}>
               <div className={`w-1.5 h-8 rounded-full shrink-0 ${row.isEnded ? 'bg-gray-300 dark:bg-white/10' : dotColor}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-medium truncate">{row.driver.full_name}</p>
+                <p className="text-[12px] font-medium truncate">
+                  {row.driver.full_name}
+                  {row.standing.pausedToday && <span className="ml-1.5 text-[9px] font-semibold text-amber-700 dark:text-amber-300">Paused · {PAUSE_REASON_LABEL[(row.standing.pausedToday.reason ?? 'other') as keyof typeof PAUSE_REASON_LABEL]}</span>}
+                </p>
                 <p className="text-[10px] text-gray-400 flex items-center gap-1">
                   <Car size={10} /> {row.driver.vehicle?.plate_number}
                   {row.driver.shift && <span>· {row.driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}

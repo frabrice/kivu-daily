@@ -1,7 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, Phone, Car, Truck } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments } from '../../lib/fleet';
+import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL } from '../../lib/fleet';
+import { isPausedOn } from '../../components/fleet/PauseList';
+
+const kigaliToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
 import { Driver } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
@@ -133,6 +136,10 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                     <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
                       <Phone size={10} /> {d.phone}
                     </p>
+                    {(() => {
+                      const p = (d.pauses ?? []).find((x) => isPausedOn(x, kigaliToday));
+                      return p ? <p className="text-[9px] font-semibold text-amber-700 dark:text-amber-300 mt-1">Paused · {PAUSE_REASON_LABEL[p.reason]}</p> : null;
+                    })()}
                     {d.vehicle ? (
                       <p className="text-[9px] text-brand-600 dark:text-brand-300 flex items-center gap-1 mt-1">
                         <Car size={10} /> {d.vehicle.plate_number}

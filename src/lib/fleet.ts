@@ -23,6 +23,26 @@ export function canSeeDriverDocuments(profile: Profile | null | undefined): bool
   return profile?.department?.slug !== 'call_center';
 }
 
+// Who can pause a driver's days (sick, car in the garage...): the
+// driver-payments follow-up (Janviere), the Fleet Manager (Bertrand) and
+// the MD. The MD or Finance approve or reject afterwards.
+export const PAUSE_REASONS: { key: import('./supabase').PauseReason; label: string }[] = [
+  { key: 'sick', label: 'Sick' },
+  { key: 'garage', label: 'Car in the garage' },
+  { key: 'accident', label: 'Accident' },
+  { key: 'family', label: 'Family emergency' },
+  { key: 'leave', label: 'Approved leave' },
+  { key: 'other', label: 'Other' },
+];
+export const PAUSE_REASON_LABEL = Object.fromEntries(PAUSE_REASONS.map((r) => [r.key, r.label])) as Record<import('./supabase').PauseReason, string>;
+export function canRecordPause(profile: Profile | null | undefined, duties: Record<string, { profile_id: string | null }>): boolean {
+  if (!profile) return false;
+  return profile.role === 'managing_director' || duties.driver_payment_followup?.profile_id === profile.id || duties.fleet_manager?.profile_id === profile.id;
+}
+export function canReviewPause(profile: Profile | null | undefined): boolean {
+  return !!profile && (profile.role === 'managing_director' || profile.department?.slug === 'finance');
+}
+
 // Deposits, fines, what a driver owes: never shown to the Call Center
 // (MD's rule, 8 Oct 2026). The database refuses them the data too.
 export function canSeeDriverPayments(profile: Profile | null | undefined): boolean {
@@ -44,7 +64,7 @@ export function useFleetData() {
 
   const load = useCallback(async () => {
     const [d, v, dep, fin, finePay, contractEvts, docs] = await Promise.all([
-      supabase.from('drivers').select('*, vehicle:vehicles(*)').order('created_at', { ascending: false }),
+      supabase.from('drivers').select('*, vehicle:vehicles(*), pauses:driver_pauses(*)').order('created_at', { ascending: false }),
       supabase.from('vehicles').select('*').order('created_at', { ascending: false }),
       supabase.from('driver_deposits').select('*').order('paid_date', { ascending: false }),
       supabase.from('driver_fines').select('*, driver:drivers(*), vehicle:vehicles(*)').order('fine_date', { ascending: false }),

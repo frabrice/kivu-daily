@@ -47,7 +47,7 @@ export function useFinanceData() {
       supabase.from('payroll_runs').select('*, lines:payroll_lines(*, employee:payroll_employees(*))').order('period', { ascending: false }),
       supabase.from('payroll_employees').select('*').order('full_name'),
       supabase.from('payroll_settings').select('*').eq('id', true).maybeSingle(),
-      supabase.from('drivers').select('*, vehicle:vehicles(*)'),
+      supabase.from('drivers').select('*, vehicle:vehicles(*), pauses:driver_pauses(*)'),
       supabase.from('driver_deposits').select('*'),
       supabase.from('vehicles').select('*, owner:vehicle_owners(*)'),
       supabase.from('vehicle_owners').select('*').order('full_name'),

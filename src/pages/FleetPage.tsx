@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Truck, Car, Wallet, Receipt, Users2, Trophy, Eye, Paintbrush } from 'lucide-react';
+import { Truck, Car, Wallet, Receipt, Users2, Trophy, Eye, Paintbrush, CalendarOff } from 'lucide-react';
 import { useFleetData, computeDepositStanding, canEditFleet } from '../lib/fleet';
 import { useAuth } from '../lib/auth';
 import FleetPipelinePage from './fleet/FleetPipelinePage';
@@ -9,6 +9,7 @@ import FleetFinesPage from './fleet/FleetFinesPage';
 import DepositLeaderboardPage from './fleet/DepositLeaderboardPage';
 import NonInsiderPage from './nonInsider/NonInsiderPage';
 import BrandingDevicesPage from './fleet/BrandingDevicesPage';
+import DriverPausesPage from './fleet/DriverPausesPage';
 
 // Fleet's own employees see these areas as separate sidebar pages
 // (src/pages/fleet/*) instead, since a fully expanded sidebar for every
@@ -16,11 +17,11 @@ import BrandingDevicesPage from './fleet/BrandingDevicesPage';
 // everything. This bundled version is for the MD and IT (full edit
 // rights) and for Call Center, read-only - see canEditFleet() in
 // lib/fleet.ts.
-type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'leaderboard' | 'fines' | 'non_insider' | 'branding';
+type Tab = 'pipeline' | 'vehicles' | 'deposits' | 'leaderboard' | 'fines' | 'non_insider' | 'branding' | 'days_off';
 
 // Money pages stay with Fleet, Finance, IT and the MD - Call Center sees
 // drivers and vehicles only.
-const NOT_FOR_VIEW_ONLY: Tab[] = ['deposits', 'leaderboard', 'fines', 'branding'];
+const NOT_FOR_VIEW_ONLY: Tab[] = ['deposits', 'leaderboard', 'fines', 'branding', 'days_off'];
 
 export default function FleetPage() {
   const [savedTab, setTab] = useState<Tab>(() => {
@@ -59,6 +60,7 @@ export default function FleetPage() {
           <TabButton active={tab === 'leaderboard'} onClick={() => selectTab('leaderboard')} icon={Trophy} label="Leaderboard" />
           <TabButton active={tab === 'fines'} onClick={() => selectTab('fines')} icon={Receipt} label="Fines" />
         </>}
+        {!readOnly && <TabButton active={tab === 'days_off'} onClick={() => selectTab('days_off')} icon={CalendarOff} label="Days off" />}
         <TabButton active={tab === 'non_insider'} onClick={() => selectTab('non_insider')} icon={Users2} label="Non-Insider" />
         {!readOnly && <TabButton active={tab === 'branding'} onClick={() => selectTab('branding')} icon={Paintbrush} label="Branding & Devices" />}
       </div>
@@ -68,6 +70,7 @@ export default function FleetPage() {
       {tab === 'deposits' && !readOnly && <FleetDepositsPage data={data} />}
       {tab === 'leaderboard' && !readOnly && <DepositLeaderboardPage data={data} />}
       {tab === 'fines' && !readOnly && <FleetFinesPage data={data} />}
+      {tab === 'days_off' && !readOnly && <DriverPausesPage data={data} />}
       {tab === 'non_insider' && <NonInsiderPage />}
       {tab === 'branding' && !readOnly && <BrandingDevicesPage />}
     </div>

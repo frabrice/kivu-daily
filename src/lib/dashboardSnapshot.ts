@@ -42,7 +42,7 @@ export function useCompanySnapshot() {
       campaignsRes, contactsRes,
       productsRes, storiesRes,
     ] = await Promise.all([
-      supabase.from('drivers').select('id, stage, vehicle_id, start_date, rest_day, initial_deposit_paid, initial_deposit_date, initial_deposit_amount, contract_status'),
+      supabase.from('drivers').select('id, stage, vehicle_id, start_date, rest_day, initial_deposit_paid, initial_deposit_date, initial_deposit_amount, contract_status, pauses:driver_pauses(start_date, end_date, approval_status, reason)'),
       supabase.from('vehicles').select('id', { count: 'exact', head: true }),
       supabase.from('driver_deposits').select('driver_id, paid_date, amount, created_at'),
       supabase.from('finance_transactions').select('amount, direction').gte('transaction_date', monthStart),

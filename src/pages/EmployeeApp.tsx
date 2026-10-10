@@ -8,7 +8,7 @@ import {
   Image as ImageIcon,
   LayoutDashboard, ArrowLeftRight, Landmark, ClipboardCheck,
   CarFront, ShieldCheck, Mail, Trophy, UserCog, Headphones, PhoneIncoming, Paintbrush,
-  BarChart3, Megaphone,
+  BarChart3, Megaphone, CalendarOff,
 } from 'lucide-react';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
 import NotificationBell from '../components/NotificationBell';
@@ -50,6 +50,7 @@ import IssuesPage from './itHub/IssuesPage';
 import HowToUsePage from './HowToUsePage';
 import FromCallCenterPage from './FromCallCenterPage';
 import OutreachPage from './callCenter/OutreachPage';
+import DriverPausesPage from './fleet/DriverPausesPage';
 import CallAnalyticsPage from './callCenter/CallAnalyticsPage';
 import CallTicketsPage from './callCenter/CallTicketsPage';
 import { takeTicketLink, useMyOpenTicketCount } from '../lib/callTickets';
@@ -148,6 +149,7 @@ export default function EmployeeApp() {
     it_hub_products: 'Products',
     it_hub_issues: 'Issues',
     non_insider: 'Non-Insider',
+    driver_pauses: 'Driver days off',
   };
   const title = TITLES[active];
 
@@ -162,6 +164,7 @@ export default function EmployeeApp() {
       { key: 'fleet_leaderboard' as const, label: 'Leaderboard', icon: Trophy },
       { key: 'fleet_fines' as const, label: 'Fines', icon: Receipt },
       { key: 'fleet_branding' as const, label: 'Branding & Devices', icon: Paintbrush, badge: carFollowups },
+      { key: 'driver_pauses' as const, label: 'Driver days off', icon: CalendarOff },
       { key: 'non_insider' as const, label: 'Non-Insider', icon: CarFront },
     ] : []),
     ...(profile?.department?.slug === 'finance' ? [
@@ -180,6 +183,7 @@ export default function EmployeeApp() {
       { key: 'finance_reconciliation' as const, label: 'Reconciliation', icon: ClipboardCheck },
       { key: 'finance_deposit_confirmations' as const, label: 'Deposit Confirmations', icon: ShieldCheck },
       { key: 'finance_team' as const, label: 'Team', icon: UserCog },
+      { key: 'driver_pauses' as const, label: 'Driver days off', icon: CalendarOff },
       { key: 'call_analytics' as const, label: 'Call Analytics', icon: BarChart3 },
     ] : []),
     ...(profile?.department?.slug === 'call_center' ? [
@@ -199,6 +203,7 @@ export default function EmployeeApp() {
     ...(profile?.department?.slug === 'it' ? [
       { key: 'it_hub_issues' as const, label: 'Issues', icon: AlertTriangle },
       { key: 'it_hub_products' as const, label: 'Products', icon: Package },
+      { key: 'driver_pauses' as const, label: 'Driver days off', icon: CalendarOff },
       { key: 'fleet' as const, label: 'Fleet', icon: Truck },
     ] : []),
     { key: 'analytics', label: 'Analytics', icon: TrendingUp },
@@ -224,6 +229,7 @@ export default function EmployeeApp() {
       {active === 'fleet_fines' && <FleetFinesPage />}
       {active === 'fleet_leaderboard' && <DepositLeaderboardPage />}
       {active === 'fleet_branding' && <BrandingDevicesPage />}
+      {active === 'driver_pauses' && !isCallCenter && <DriverPausesPage />}
       {active === 'non_insider' && <NonInsiderPage />}
       {active === 'fleet' && !isCallCenter && <FleetPage />}
 

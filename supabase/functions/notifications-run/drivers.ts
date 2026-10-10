@@ -12,12 +12,13 @@ export interface DriverRow {
   initial_deposit_paid: boolean; initial_deposit_amount: number | null; initial_deposit_date: string | null;
   contract_status: string; vehicle_id: string | null; shift: string | null; stage: string; created_at: string;
   vehicle: { plate_number: string } | null;
+  pauses: { id: string; group_id: string; reason: string; note: string | null; start_date: string; end_date: string | null; approval_status: string; recorded_by: string | null; created_at: string }[];
 }
 export interface DepositRow { id: string; driver_id: string; paid_date: string; amount: number; created_at: string; status: string; created_by: string | null }
 
 export function loadDrivers(ctx: Ctx) {
   return cached(ctx, "drivers", () => rows<DriverRow>(ctx.db.from("drivers").select(
-    "id, full_name, phone, start_date, rest_day, initial_deposit_paid, initial_deposit_amount, initial_deposit_date, contract_status, vehicle_id, shift, stage, created_at, vehicle:vehicles(plate_number)",
+    "id, full_name, phone, start_date, rest_day, initial_deposit_paid, initial_deposit_amount, initial_deposit_date, contract_status, vehicle_id, shift, stage, created_at, vehicle:vehicles(plate_number), pauses:driver_pauses(id, group_id, reason, note, start_date, end_date, approval_status, recorded_by, created_at)",
   )));
 }
 
@@ -126,6 +127,22 @@ async function paymentsMorning(ctx: Ctx): Promise<Built[]> {
   const driverName = (id: string) => drivers.find((d) => d.id === id)?.full_name ?? "Unknown driver";
 
   const blocks: Block[] = [];
+  const paused = all.filter((r) => r.s.pausedToday);
+  if (paused.length) blocks.push({
+    heading: `Paused today (${paused.length})`,
+    text: "These days don't count: nothing is owed for them and the driver isn't chased while paused.",
+    table: {
+      head: ["Driver", "Why", "Since", "Until", "Approval"],
+      rows: paused.map((r) => {
+        const p = r.s.pausedToday!;
+        const row = r.d.pauses.find((x) => x.start_date === p.start_date && x.approval_status !== "rejected");
+        return [`<b>${esc(r.d.full_name)}</b><br><span style="color:#6b7280;font-size:12px;">${esc(car(r.d))}</span>`, PAUSE_REASON[p.reason ?? ""] ?? "—",
+          day(p.start_date), p.end_date ? day(p.end_date) : "Until back", row?.approval_status === "approved" ? "Approved" : "Waiting for MD / Finance"];
+      }),
+      tones: paused.map((r) => (r.d.pauses.find((x) => x.start_date === r.s.pausedToday!.start_date)?.approval_status === "approved" ? null : "warning" as const)),
+      phoneHide: [2],
+    },
+  });
   if (pending.length) blocks.push({
     heading: `Payments waiting for Finance (${pending.length})`,
     text: "Logged as paid and counted for now. Rodrigue: confirm or reject each one today so this list is exact.",
@@ -184,7 +201,33 @@ async function paymentsMorning(ctx: Ctx): Promise<Built[]> {
   }];
 }
 
+export const PAUSE_REASON: Record<string, string> = {
+  sick: "Sick", garage: "Car in the garage", accident: "Accident", family: "Family emergency", leave: "Approved leave", other: "Other",
+};
+
 export const driverRules: Record<string, RuleDef> = {
+  driver_pause_recorded: {
+    kind: "event",
+    sample: async (ctx) => {
+      const d = (await loadDrivers(ctx)).find((x) => x.pauses.length);
+      return d ? { group_id: d.pauses[0].group_id } : null;
+    },
+    build: async (payload, ctx) => {
+      const rows = (await loadDrivers(ctx)).flatMap((d) => d.pauses.filter((p) => p.group_id === payload.group_id).map((p) => ({ d, p })));
+      if (!rows.length) return null;
+      const { p } = rows[0];
+      const who = rows.map((r) => r.d.full_name).join(" and ");
+      const span = `${day(p.start_date)}${p.end_date ? ` – ${day(p.end_date)}` : " until they're back"}`;
+      const by = personName(ctx, p.recorded_by);
+      return {
+        subject: `Driver paused: ${who} — ${PAUSE_REASON[p.reason] ?? p.reason}, ${span}`,
+        heading: `${esc(who)} paused`,
+        intro: `${esc(by)} paused ${esc(who)} (${PAUSE_REASON[p.reason] ?? p.reason}) from ${span}.${p.note ? ` Note: ${esc(p.note)}` : ""} These days don't count while the pause stands. Approve or reject it in Kivu Daily (Driver days off).`,
+        inApp: `${by.split(" ")[0]} paused ${who} (${(PAUSE_REASON[p.reason] ?? p.reason).toLowerCase()}), ${span} — to approve`,
+      };
+    },
+  },
+
   driver_payments_morning: { kind: "scheduled", days: ALL_DAYS, at: hm(6, 30), build: (ctx) => paymentsMorning(ctx) },
   driver_call_list: { kind: "scheduled", days: [6], at: hm(9), build: (ctx, f) => sundayLists("call", ctx, f) },
   driver_still_unpaid: { kind: "scheduled", days: [7], at: hm(18), build: (ctx, f) => sundayLists("unpaid", ctx, f) },

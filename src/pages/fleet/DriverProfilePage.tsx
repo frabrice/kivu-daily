@@ -9,13 +9,18 @@ import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEve
 import {
   STAGES, effectiveStage, REST_DAYS, DEPOSIT_TIER_STYLE, depositRemainingColor, formatDateLabelSafe,
   computeDepositStanding, depositStandingTier, depositStandingLabel, depositPeriodLabel, paidThroughDate, formatRwf, SUNDAY_RULE_START,
-  fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, canSeeDriverPayments,
+  fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, canSeeDriverPayments, canRecordPause, canReviewPause, PAUSE_REASON_LABEL,
 } from '../../lib/fleet';
 import { useAuth } from '../../lib/auth';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import EndContractDrawer from '../../components/fleet/EndContractDrawer';
 import ReactivateDriverDrawer from '../../components/fleet/ReactivateDriverDrawer';
+import PauseDrawer from '../../components/fleet/PauseDrawer';
+import PauseList, { isPausedOn } from '../../components/fleet/PauseList';
+import { useDuties } from '../../lib/callTickets';
+import { supabase } from '../../lib/supabase';
+import { useEffect } from 'react';
 
 export default function DriverProfilePage({
   driver,
@@ -44,6 +49,16 @@ export default function DriverProfilePage({
   const [loggingDeposit, setLoggingDeposit] = useState(false);
   const { profile } = useAuth();
   const showMoney = canSeeDriverPayments(profile);
+  const duties = useDuties();
+  const [pausing, setPausing] = useState(false);
+  const [names, setNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!showMoney) return;
+    supabase.from('profiles').select('id, full_name').then(({ data }) => setNames(Object.fromEntries(((data as { id: string; full_name: string }[]) ?? []).map((x) => [x.id, x.full_name.trim()]))));
+  }, [showMoney]);
+  const canPause = canRecordPause(profile, duties);
+  const canReviewPauses = canReviewPause(profile);
+  const pausedNow = (driver.pauses ?? []).find((p) => isPausedOn(p, new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' })));
   const [endContractOpen, setEndContractOpen] = useState(false);
   const [reactivateOpen, setReactivateOpen] = useState(false);
 
@@ -415,6 +430,23 @@ export default function DriverProfilePage({
       </div>
 
       </>)}
+
+      {/* Days off (paused days don't count) */}
+      {showMoney && (
+        <div className="card p-4 space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+              Days off{pausedNow && <span className="ml-2 normal-case tracking-normal text-[11px] font-semibold text-amber-700 dark:text-amber-300">Paused now — {PAUSE_REASON_LABEL[pausedNow.reason].toLowerCase()}</span>}
+            </p>
+            {canPause && driver.contract_status !== 'ended' && (
+              <button onClick={() => setPausing(true)} className="btn-ghost text-[11px] border border-gray-200 dark:border-white/10">Pause days</button>
+            )}
+          </div>
+          <p className="text-[11px] text-gray-500">Sick, car in the garage… Paused days cost nothing and the driver isn't chased. The MD or Finance approves each pause.</p>
+          <PauseList pauses={driver.pauses ?? []} drivers={drivers} names={names} canRecord={canPause} canReview={canReviewPauses} showDriver={false} onChanged={reload} />
+        </div>
+      )}
+      {pausing && <PauseDrawer driver={driver} drivers={drivers} onClose={() => setPausing(false)} onSaved={() => { setPausing(false); reload(); }} />}
 
       {/* Contract History */}
       {driverContractEvents.length > 0 && (

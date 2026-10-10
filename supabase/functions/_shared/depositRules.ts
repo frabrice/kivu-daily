@@ -35,12 +35,28 @@ export interface DepositLike {
   created_at: string;
 }
 
+// A pause (sick, car in the garage...): every day from start_date to
+// end_date (inclusive; open-ended while end_date is null) counts exactly
+// like the weekly rest day - free, never owed, never lost. Rejected
+// pauses don't count.
+export interface PauseLike {
+  start_date: string;
+  end_date: string | null;
+  approval_status?: string | null;
+  reason?: string | null;
+}
+
 export interface DepositDriverLike {
   start_date: string | null;
   rest_day: RestDayKey | null;
   initial_deposit_paid: boolean;
   initial_deposit_amount: number | null;
   initial_deposit_date: string | null;
+  pauses?: PauseLike[] | null;
+}
+
+export function pauseOn(pauses: PauseLike[] | null | undefined, d: string): PauseLike | null {
+  return (pauses ?? []).find((p) => p.approval_status !== 'rejected' && p.start_date <= d && (p.end_date === null || d <= p.end_date)) ?? null;
 }
 
 export type DepositPeriodState = 'on_time' | 'late' | 'open';
@@ -66,6 +82,9 @@ export interface DepositStanding {
   current: DepositPeriod | null;
   totalPaid: number;
   paidThrough: string | null;
+  // The pause covering today (if any), and paused working days this week.
+  pausedToday: PauseLike | null;
+  pausedDaysThisWeek: number;
   // The two amounts every dashboard shows (confirmed with the operator):
   // OWES - working days already driven (start of the week through today)
   // that haven't been paid for. Grows by 30,000 each unpaid working day.
@@ -125,23 +144,29 @@ export function daysUntilDate(from: string, to: string): number {
   return Math.round((parseDay(to).getTime() - parseDay(from).getTime()) / DAY_MS);
 }
 
-export function countWorkingDays(from: string, to: string, restDay: RestDayKey | null): number {
+function countDays(from: string, to: string, include: (d: string) => boolean): number {
+  let n = 0;
+  for (let d = from; d <= to; d = shiftDay(d, 1)) if (include(d)) n++;
+  return n;
+}
+
+export function countWorkingDays(from: string, to: string, restDay: RestDayKey | null, pauses?: PauseLike[] | null): number {
   const rest = restDayIso(restDay);
   let n = 0;
-  for (let d = from; d <= to; d = shiftDay(d, 1)) if (isoWeekday(d) !== rest) n++;
+  for (let d = from; d <= to; d = shiftDay(d, 1)) if (isoWeekday(d) !== rest && !pauseOn(pauses, d)) n++;
   return n;
 }
 
 // The last day a given total covers, walking working days from the start
 // date at 30,000 each - a rest day right after the last paid working day
 // counts as covered too, since it costs nothing.
-export function paidThroughDate(startDate: string, restDay: RestDayKey | null, amount: number): string | null {
+export function paidThroughDate(startDate: string, restDay: RestDayKey | null, amount: number, pauses?: PauseLike[] | null): string | null {
   const rest = restDayIso(restDay);
   let remaining = amount;
   let last: string | null = null;
   let d = startDate;
   for (let i = 0; i < 2000; i++) {
-    if (isoWeekday(d) === rest) {
+    if (isoWeekday(d) === rest || pauseOn(pauses, d)) {
       last = d;
     } else {
       if (remaining < DAILY_DEPOSIT_RATE) break;
@@ -177,13 +202,14 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
 
   if (!start || start > today) {
     return {
-      hasStarted: false, ruleInForce, periods: [], current: null, totalPaid, paidThrough: null, owes: 0, weekBehind: 0,
+      hasStarted: false, ruleInForce, periods: [], current: null, totalPaid, paidThrough: null, pausedToday: null, pausedDaysThisWeek: 0, owes: 0, weekBehind: 0,
       isCleared: true, owedNow: 0, nextDueDate: start, nextDueAmount: Math.max(WEEKLY_DEPOSIT_AMOUNT - totalPaid, 0),
       daysLost: 0, score: 0, onTimeWeeks: 0, lateWeeks: 0,
     };
   }
 
-  const costThrough = (d: string) => (d < start ? 0 : countWorkingDays(start, d, rest) * DAILY_DEPOSIT_RATE);
+  const pauses = driver.pauses ?? [];
+  const costThrough = (d: string) => (d < start ? 0 : countWorkingDays(start, d, rest, pauses) * DAILY_DEPOSIT_RATE);
   const paidToDate = payments.reduce((s, p) => (p.date <= today ? s + p.amount : s), 0);
   const clearedOn = (required: number): string | null => {
     let cum = 0;
@@ -210,7 +236,7 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     const cleared = clearedOn(p.required);
     const clearedDate = cleared && cleared <= today ? cleared : null;
     const lostEnd = [clearedDate ?? today, today, shiftDay(p.end, 1)].sort()[0];
-    const daysLost = countWorkingDays(p.start, shiftDay(lostEnd, -1), rest);
+    const daysLost = countWorkingDays(p.start, shiftDay(lostEnd, -1), rest, pauses);
     const state: DepositPeriodState = clearedDate ? (daysLost > 0 ? 'late' : 'on_time') : 'open';
     return { ...p, clearedDate, daysLost, state };
   });
@@ -231,7 +257,9 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     periods,
     current,
     totalPaid,
-    paidThrough: paidThroughDate(start, rest, paidToDate),
+    paidThrough: paidThroughDate(start, rest, paidToDate, pauses),
+    pausedToday: pauseOn(pauses, today),
+    pausedDaysThisWeek: countDays(mondayOf(today), sundayOf(today), (d) => isoWeekday(d) !== restDayIso(rest) && !!pauseOn(pauses, d) && d >= start),
     owes,
     weekBehind,
     isCleared: owedNow === 0,
