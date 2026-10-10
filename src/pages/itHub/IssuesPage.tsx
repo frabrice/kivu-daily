@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Plus, AlertTriangle, User, Package } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useITHubData, STORY_STATUSES, PRIORITY_STYLE } from '../../lib/itHub';
@@ -21,8 +21,21 @@ function IssuesPageWithData() {
 function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
   const { profile } = useAuth();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'it';
-  const { issues, itProfiles, visibleProducts, issuesFeatureId, openIssueCount, loading, reload } = data;
+  const { issues: allIssues, itProfiles, visibleProducts, issuesFeatureId, openIssueCount, loading, reload } = data;
   const [view, setView] = useState<ViewMode>('kanban');
+  const [productFilter, setProductFilter] = useState<string>('all');
+  // Product chips: every product that has issues, plus flagged items with no product.
+  const productChips = useMemo(() => {
+    const map = new Map<string, { key: string; label: string; count: number }>();
+    for (const s of allIssues) {
+      const key = s.product?.id ?? 'none';
+      const chip = map.get(key) ?? { key, label: s.product?.name ?? 'No product', count: 0 };
+      chip.count += 1;
+      map.set(key, chip);
+    }
+    return [...map.values()].sort((a, b) => b.count - a.count);
+  }, [allIssues]);
+  const issues = productFilter === 'all' ? allIssues : allIssues.filter((s) => (s.product?.id ?? 'none') === productFilter);
   const [storyDrawer, setStoryDrawer] = useState<{ story: UserStory | null; startEditing: boolean } | null>(null);
 
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
@@ -35,7 +48,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
             <AlertTriangle size={16} className="text-cyan-600 dark:text-cyan-300" /> Issues
             {openIssueCount > 0 && <span className="text-[8px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{openIssueCount}</span>}
           </h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Friction flagged in from other departments, plus anything IT adds directly.</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Friction flagged in from other departments, anything IT adds directly, and the user stories planned under each product.</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} modes={['kanban', 'cards', 'table']} />
@@ -46,6 +59,17 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
           )}
         </div>
       </div>
+
+      {productChips.length > 1 && (
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter by product">
+          {[{ key: 'all', label: 'All', count: allIssues.length }, ...productChips].map((c) => (
+            <button key={c.key} role="tab" aria-selected={productFilter === c.key} onClick={() => setProductFilter(c.key)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${productFilter === c.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500 hover:border-brand/40'}`}>
+              {c.label} <span className="opacity-60">{c.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {issues.length === 0 && (
         <div className="card p-12 text-center">

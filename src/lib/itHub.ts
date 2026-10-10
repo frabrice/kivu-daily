@@ -52,16 +52,20 @@ export function useITHubData() {
 
   const visibleProducts = useMemo(() => products.filter((p) => p.id !== hiddenProductId), [products, hiddenProductId]);
 
+  // The Issues board shows everything IT has to work on: friction flagged
+  // in from other departments AND the user stories planned under products
+  // (e.g. a roadmap like Partner Promo & EV Reporting). The page can filter
+  // by product.
   const issues = useMemo(() => {
-    return stories
-      .filter((s) => s.source === 'flagged')
+    return [...stories]
       .sort((a, b) => {
         if ((a.status === 'done') !== (b.status === 'done')) return a.status === 'done' ? 1 : -1;
         return b.created_at.localeCompare(a.created_at);
       });
   }, [stories]);
 
-  const openIssueCount = issues.filter((s) => s.status !== 'done').length;
+  // The sidebar badge stays about new friction flagged in, not the roadmap.
+  const openIssueCount = issues.filter((s) => s.source === 'flagged' && s.status !== 'done').length;
 
   return {
     products, milestones, features, stories, itProfiles, loading, reload: load,
