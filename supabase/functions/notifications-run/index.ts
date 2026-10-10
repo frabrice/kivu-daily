@@ -2,7 +2,7 @@ import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { sendWithResend } from "../_shared/email.ts";
 import { renderEmail } from "./render.ts";
 import { isoWeekday } from "../_shared/depositRules.ts";
-import { Built, Ctx, longDay, Profile, Recipient, RuleDef, ScheduledRule } from "./core.ts";
+import { ALL_DAYS, Built, Ctx, hm, longDay, Profile, Recipient, RuleDef, ScheduledRule } from "./core.ts";
 import { driverRules } from "./drivers.ts";
 import { financeRules } from "./finance.ts";
 import { operationsRules } from "./operations.ts";
@@ -12,6 +12,8 @@ import { ticketRules } from "./tickets.ts";
 import { shiftRules } from "./shifts.ts";
 import { moneyRules } from "./money.ts";
 import { outreachRules } from "./outreach.ts";
+import { syncSmartTasks } from "./smartTasks.ts";
+import { BundledPart, composeUrgentNudge, composeYourDay, DigestLine } from "./yourDay.ts";
 
 // Runs every 5 minutes (pg_cron -> pg_net, authenticated by a shared
 // secret). Each run: (1) builds any scheduled email that's due today in
@@ -22,7 +24,13 @@ import { outreachRules } from "./outreach.ts";
 // What each email says lives in the per-area modules; this file only
 // decides when, to whom, and makes sure nothing goes out twice.
 
-const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules, ...outreachRules };
+// your_day / urgent_nudge are composed per person below (they need the
+// other rules, the audience and the digest), so their build is a stub.
+const COMPOSED: Record<string, ScheduledRule> = {
+  your_day: { kind: "scheduled", days: ALL_DAYS, at: hm(7), build: async () => [] },
+  urgent_nudge: { kind: "scheduled", days: ALL_DAYS, at: hm(16), build: async () => [] },
+};
+const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules, ...outreachRules, ...COMPOSED };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +52,9 @@ const QUIET_UNTIL = 6 * 60 + 30;
 // is missed, a morning reminder arriving in the evening is worse than none.
 const CATCH_UP = 180;
 
-interface RuleRow { key: string; audience: string[]; enabled: boolean; in_app: boolean; preference_key: string | null }
+// delivery: instant = its own email; digest = listed in the next morning email;
+// bundled = a section of the morning email; off = not sent.
+interface RuleRow { key: string; audience: string[]; enabled: boolean; in_app: boolean; preference_key: string | null; delivery: "instant" | "digest" | "bundled" | "off" }
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -149,6 +159,35 @@ async function loadPrefs(db: SupabaseClient) {
   return new Map((data ?? []).map((p: Record<string, unknown>) => [String(p.user_id), p as Record<string, boolean>]));
 }
 
+// Morning email inputs: every bundled report that applies today, split by
+// recipient, and each person's undelivered digest lines.
+async function composeInputs(ctx: Ctx, ruleMap: Map<string, RuleRow>, audience: Audience) {
+  const parts = new Map<string, BundledPart[]>();
+  const dow = isoWeekday(ctx.today);
+  for (const [key, def] of Object.entries(RULES)) {
+    const rule = ruleMap.get(key);
+    if (def.kind !== "scheduled" || !rule?.enabled || rule.delivery !== "bundled") continue;
+    if (!def.days.includes(dow) || (def.when && !def.when(ctx.today))) continue;
+    try {
+      for (const b of await def.build(ctx, false)) {
+        for (const r of resolveRecipients(rule, b, audience)) parts.set(r.id, [...(parts.get(r.id) ?? []), { ruleKey: key, built: b }]);
+      }
+    } catch (err) {
+      console.error("your_day: bundled rule failed", key, err);
+    }
+  }
+  const { data: items } = await ctx.db.from("notification_digest_items").select("id, recipient_id, rule_key, line, created_at").is("included_at", null).order("created_at");
+  const digest = new Map<string, DigestLine[]>();
+  for (const it of (items ?? []) as (DigestLine & { recipient_id: string })[]) digest.set(it.recipient_id, [...(digest.get(it.recipient_id) ?? []), it]);
+  return { parts, digest };
+}
+
+async function buildComposed(key: string, ctx: Ctx, ruleMap: Map<string, RuleRow>, audience: Audience) {
+  if (key === "urgent_nudge") return { built: await composeUrgentNudge(ctx), digest: new Map<string, DigestLine[]>() };
+  const { parts, digest } = await composeInputs(ctx, ruleMap, audience);
+  return { built: await composeYourDay(ctx, parts, digest), digest };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 200, headers: corsHeaders });
 
@@ -172,7 +211,7 @@ Deno.serve(async (req: Request) => {
 
     const clock = kigaliNow();
     const ctx = await loadContext(db, clock.today);
-    const { data: ruleRows } = await db.from("notification_rules").select("key, audience, enabled, in_app, preference_key");
+    const { data: ruleRows } = await db.from("notification_rules").select("key, audience, enabled, in_app, preference_key, delivery");
     const ruleMap = new Map((ruleRows ?? []).map((r) => [r.key as string, r as RuleRow]));
 
     // ---- Test: build one rule from live data, send to the MD only ----
@@ -182,7 +221,10 @@ Deno.serve(async (req: Request) => {
       const rule = ruleMap.get(key);
       if (!def || !rule) return json({ error: "Unknown rule" }, 400);
       let built: Built | null = null;
-      if (def.kind === "scheduled") built = (await def.build(ctx, true))[0] ?? null;
+      if (key in COMPOSED) {
+        const mdId = callerMdId ?? ctx.profiles.find((p) => p.role === "managing_director" && p.is_active)?.id;
+        built = (await buildComposed(key, ctx, ruleMap, { ctx, prefs: await loadPrefs(db) })).built.find((b) => b.recipients?.includes(mdId ?? "")) ?? null;
+      } else if (def.kind === "scheduled") built = (await def.build(ctx, true))[0] ?? null;
       else {
         const sample = await def.sample(ctx);
         if (sample) built = await def.build(sample, ctx);
@@ -212,12 +254,14 @@ Deno.serve(async (req: Request) => {
         const def = RULES[key];
         const rule = ruleMap.get(key);
         if (!def || !rule || def.kind !== "scheduled") { out[key] = "not a scheduled rule"; continue; }
-        const built = await def.build(pctx, false);
+        const built = key in COMPOSED ? (await buildComposed(key, pctx, ruleMap, pa)).built : await def.build(pctx, false);
         // { html: true } also returns the rendered email, so the design can be
         // checked without sending anything.
         out[key] = built.length === 0 ? "skipped" : built.map((b) => ({
           subject: b.subject, to: resolveRecipients(rule, b, pa).map((r) => r.name),
-          ...(body.html ? { html: renderEmail(b, "Preview", appUrl, longDay(pctx.today)).html } : {}),
+          // { only: "<name>" } limits the HTML to one recipient's email.
+          ...(body.html && (!body.only || resolveRecipients(rule, b, pa).some((r) => r.name === body.only))
+            ? { html: renderEmail(b, resolveRecipients(rule, b, pa)[0]?.name ?? "Preview", appUrl, longDay(pctx.today)).html } : {}),
         }));
       }
       return json({ today: pctx.today, preview: out });
@@ -237,19 +281,38 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ---- Smart tasks: from live data, every run ----
+    try {
+      const st = await syncSmartTasks(ctx);
+      summary.errors.push(...st.errors.map((e) => `smart_tasks ${e}`));
+      Object.assign(summary, { smart: { created: st.created, updated: st.updated, completed: st.completed } });
+    } catch (err) {
+      summary.errors.push(`smart_tasks: ${err instanceof Error ? err.message : err}`);
+    }
+
     // ---- Scheduled emails ----
     for (const [key, def] of Object.entries(RULES)) {
       if (def.kind !== "scheduled") continue;
       const rule = ruleMap.get(key);
       const s = def as ScheduledRule;
-      if (!rule?.enabled || !s.days.includes(clock.dow) || clock.minutes < s.at || clock.minutes >= s.at + CATCH_UP || clock.minutes >= QUIET_FROM) continue;
+      if (!rule?.enabled || rule.delivery === "bundled" || rule.delivery === "off") continue;
+      if (!s.days.includes(clock.dow) || clock.minutes < s.at || clock.minutes >= s.at + CATCH_UP || clock.minutes >= QUIET_FROM) continue;
       if (s.when && !s.when(clock.today)) continue;
       const { error: claimErr } = await db.from("notification_rule_runs").insert({ rule_key: key, period_key: clock.today });
       if (claimErr) continue; // already ran today
       try {
-        const built = await s.build(ctx, false);
+        let built: Built[];
+        let digest = new Map<string, DigestLine[]>();
+        if (key in COMPOSED) ({ built, digest } = await buildComposed(key, ctx, ruleMap, audience));
+        else built = await s.build(ctx, false);
         if (built.length) summary.scheduled.push(key);
-        for (const b of built) summary.queued += await enqueue(ctx, rule, `${key}:${clock.today}`, b, resolveRecipients(rule, b, audience));
+        for (const b of built) {
+          const to = resolveRecipients(rule, b, audience);
+          summary.queued += await enqueue(ctx, rule, `${key}:${clock.today}`, b, to);
+          // Digest lines shown in this morning email aren't shown again.
+          const ids = to.flatMap((r) => (digest.get(r.id) ?? []).map((d) => d.id));
+          if (ids.length) await db.from("notification_digest_items").update({ included_at: new Date().toISOString() }).in("id", ids);
+        }
       } catch (err) {
         // One broken rule must never stop the others; free the claim so
         // the next run retries it.
@@ -273,10 +336,17 @@ Deno.serve(async (req: Request) => {
       const def = RULES[ev.rule_key];
       const rule = ruleMap.get(ev.rule_key);
       try {
-        if (def?.kind === "event" && rule?.enabled) {
+        if (def?.kind === "event" && rule?.enabled && rule.delivery !== "off") {
           const payload = (ev.payload ?? {}) as Record<string, unknown>;
           const built = await def.build(payload, ctx);
-          if (built) summary.queued += await enqueue(ctx, rule, `${ev.rule_key}:${ev.id}`, built, resolveRecipients(rule, built, audience, payload));
+          if (built && rule.delivery === "digest") {
+            // Not urgent: in-app now, and one line in the next morning email.
+            const to = resolveRecipients(rule, built, audience, payload);
+            if (to.length) {
+              await db.from("notification_digest_items").insert(to.map((r) => ({ recipient_id: r.id, rule_key: ev.rule_key, line: built.inApp, detail: built.subject })));
+              if (rule.in_app) await db.from("notifications").insert(to.map((r) => ({ user_id: r.id, type: ev.rule_key, message: built.inApp, link: null, read: false })));
+            }
+          } else if (built) summary.queued += await enqueue(ctx, rule, `${ev.rule_key}:${ev.id}`, built, resolveRecipients(rule, built, audience, payload));
         }
       } catch (err) {
         summary.errors.push(`${ev.rule_key}: ${err instanceof Error ? err.message : err}`);

@@ -248,6 +248,14 @@ export interface Task {
   // Set when the task was created from a standing duty (recurring_tasks).
   recurring_task_id?: string | null;
   due_time?: string | null;
+  // Smart tasks (created from live data by the notifications engine):
+  // the items they cover, progress, and whether the system completed them.
+  smart_key?: string | null;
+  smart_items?: { id: string; label: string; detail?: string; done: boolean }[] | null;
+  smart_total?: number | null;
+  smart_done?: number | null;
+  auto_completed?: boolean;
+  priority?: 'low' | 'normal' | 'high';
   created_at: string;
 }
 
@@ -773,6 +781,8 @@ export interface NotificationRule {
   // Set for personal emails each person can switch off in Settings.
   preference_key: string | null;
   updated_at: string;
+  // instant = own email; digest = a line in Your day; bundled = a section of Your day; off = not sent
+  delivery: 'instant' | 'digest' | 'bundled' | 'off';
 }
 
 export type NotificationOutboxStatus = 'pending' | 'sending' | 'sent' | 'failed';

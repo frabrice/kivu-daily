@@ -91,7 +91,8 @@ export const companyRules: Record<string, RuleDef> = {
       const yDuties = yTasks.filter((t) => t.recurring_task_id);
       const missed = yDuties.filter((t) => !t.completed);
       const missedBy = new Map<string, string[]>();
-      for (const t of missed) missedBy.set(personName(ctx, t.user_id), [...(missedBy.get(personName(ctx, t.user_id)) ?? []), t.title]);
+      const isActive = (id: string) => ctx.profiles.some((p) => p.id === id && p.is_active);
+      for (const t of missed.filter((x) => isActive(x.user_id))) missedBy.set(personName(ctx, t.user_id), [...(missedBy.get(personName(ctx, t.user_id)) ?? []), t.title]);
       blocks.push({
         heading: `Team yesterday (${day(yesterday)})`,
         stats: yDuties.length ? [

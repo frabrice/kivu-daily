@@ -49,6 +49,11 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
     await supabase.from('notification_rules').update({ enabled: !rule.enabled, updated_at: new Date().toISOString() }).eq('key', rule.key);
   };
 
+  const setDelivery = async (rule: NotificationRule, delivery: NotificationRule['delivery']) => {
+    setRules((prev) => prev.map((r) => (r.key === rule.key ? { ...r, delivery } : r)));
+    await supabase.from('notification_rules').update({ delivery, updated_at: new Date().toISOString() }).eq('key', rule.key);
+  };
+
   const sendTest = async (rule: NotificationRule) => {
     setTesting(rule.key);
     const { data, error } = await supabase.functions.invoke('notifications-run', { body: { mode: 'test', rule_key: rule.key } });
@@ -89,6 +94,7 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Mail size={16} className="text-brand-600 dark:text-brand-300" /> Email notifications</h2>
         <p className="text-[11px] text-gray-400 mt-0.5">Checked every 5 minutes, Kigali time. Emails are held between 20:00 and 06:30 and go out in the morning.</p>
+        <p className="text-[11px] text-gray-500 mt-1">Most reports now arrive as sections of each person's <b>Your day</b> email (07:00), and non-urgent updates as one line in it. Only urgent things are sent on their own. Change any rule with "Delivered as".</p>
       </div>
 
       <section className="card p-4 space-y-3">
@@ -124,6 +130,18 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
                   {r.description && <p className="text-[11px] text-gray-400 mt-0.5">{r.description}</p>}
                   <p className="text-[11px] mt-1.5"><span className="text-gray-400">To:</span> {r.audience.map(audienceLabel).join(', ')}</p>
                   {r.preference_key && <p className="text-[11px] text-gray-400 mt-0.5">Each person can also switch this off for themselves in Settings.</p>}
+                  {!['your_day', 'urgent_nudge'].includes(r.key) && (
+                    <label className="flex items-center gap-2 mt-2 text-[11px]">
+                      <span className="text-gray-400">Delivered as</span>
+                      <select value={r.delivery} onChange={(e) => setDelivery(r, e.target.value as NotificationRule['delivery'])} className="input py-1 text-[11px] w-auto">
+                        <option value="instant">{r.schedule_label.startsWith('Instant') ? 'Its own email, straight away' : 'Its own email'}</option>
+                        {r.schedule_label.startsWith('Instant')
+                          ? <option value="digest">A line in the next Your day email</option>
+                          : <option value="bundled">A section of Your day (07:00)</option>}
+                        <option value="off">Not sent</option>
+                      </select>
+                    </label>
+                  )}
                 </div>
                 <button
                   onClick={() => toggleRule(r)}

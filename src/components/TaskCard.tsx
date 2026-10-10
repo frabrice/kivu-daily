@@ -1,4 +1,4 @@
-import { Check, Trash2, Clock, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Check, Trash2, Clock, CheckCircle2, ChevronRight, Zap } from 'lucide-react';
 import { Task, ReviewStatus } from '../lib/supabase';
 import { formatTime } from '../lib/utils';
 
@@ -81,7 +81,7 @@ export default function TaskCard({ task, onToggle, onDelete, showTime = true, on
         >
           {task.title}
         </p>
-        {task.description && !task.completed && (
+        {task.smart_key ? <SmartDetails task={task} /> : task.description && !task.completed && (
           <p className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">
             {task.description}
           </p>
@@ -98,6 +98,14 @@ export default function TaskCard({ task, onToggle, onDelete, showTime = true, on
                 Carried Over
               </span>
             )}
+            {task.priority === 'high' && !task.completed && (
+              <span className="text-[9px] font-semibold text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10 px-1.5 py-0.5 rounded">Urgent</span>
+            )}
+            {task.smart_key && (
+              <span className="text-[9px] font-medium text-violet-700 bg-violet-50 dark:text-violet-300 dark:bg-violet-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5" title="Created from live data; ticks itself off as the work gets done">
+                <Zap size={9} /> Updates itself{task.due_time ? ` · by ${task.due_time}` : ''}
+              </span>
+            )}
             {task.recurring_task_id && (
               <span className="text-[9px] font-medium text-teal-700 bg-teal-50 dark:text-teal-300 dark:bg-teal-500/10 px-1.5 py-0.5 rounded">
                 Standing duty{task.due_time ? ` · by ${task.due_time}` : ''}
@@ -107,7 +115,7 @@ export default function TaskCard({ task, onToggle, onDelete, showTime = true, on
             {task.completed ? (
               <span className="flex items-center gap-1 text-[10px] text-green-500">
                 <CheckCircle2 size={11} />
-                Done at {formatTime(new Date(task.completed_at!)).slice(0, 5)}
+                {task.auto_completed ? 'Done automatically' : 'Done'} at {formatTime(new Date(task.completed_at!)).slice(0, 5)}
               </span>
             ) : !reviewMode && (
               <span className="flex items-center gap-1 text-[10px] text-gray-400">
@@ -126,13 +134,45 @@ export default function TaskCard({ task, onToggle, onDelete, showTime = true, on
         </div>
       )}
 
-      {onDelete && (
+      {onDelete && !task.smart_key && (
         <button
           onClick={handleDelete}
           className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-gray-400 hover:text-red-500"
         >
           <Trash2 size={16} />
         </button>
+      )}
+    </div>
+  );
+}
+
+// What a smart task covers: progress, then each item (done ones ticked).
+function SmartDetails({ task }: { task: Task }) {
+  const items = task.smart_items ?? [];
+  const total = task.smart_total ?? items.length;
+  const done = task.smart_done ?? items.filter((i) => i.done).length;
+  const intro = (task.description ?? '').split('\n')[0];
+  return (
+    <div className="mt-1 space-y-1.5">
+      {intro && !task.completed && <p className="text-[11px] text-gray-500 dark:text-gray-400">{intro}</p>}
+      {total > 1 && (
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 flex-1 max-w-[180px] rounded-full bg-gray-100 dark:bg-white/10 overflow-hidden" role="progressbar" aria-valuenow={done} aria-valuemax={total}>
+            <div className="h-full rounded-full bg-brand" style={{ width: `${Math.round((done / Math.max(total, 1)) * 100)}%` }} />
+          </div>
+          <span className="text-[10px] text-gray-500 tabular-nums">{done}/{total}</span>
+        </div>
+      )}
+      {items.length > 0 && (
+        <ul className="space-y-0.5">
+          {[...items].sort((a, b) => Number(a.done) - Number(b.done)).slice(0, 12).map((i) => (
+            <li key={i.id} className={`text-[11px] flex gap-1.5 ${i.done ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-200'}`}>
+              <span className={i.done ? 'text-green-500' : 'text-gray-400'}>{i.done ? '✓' : '•'}</span>
+              <span>{i.label}{i.detail && <span className="text-gray-500 dark:text-gray-400"> — {i.detail}</span>}</span>
+            </li>
+          ))}
+          {items.length > 12 && <li className="text-[10px] text-gray-400">+ {items.length - 12} more</li>}
+        </ul>
       )}
     </div>
   );
