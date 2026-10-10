@@ -11,6 +11,7 @@ import {
 import ScriptCardView from '../../components/callTickets/ScriptCardView';
 import Modal from '../../components/Modal';
 import OutreachLog from './OutreachLog';
+import OutreachReport from './OutreachReport';
 
 type View = 'round' | 'callbacks' | Category | 'all';
 type AnswerFilter = '' | 'none' | string;
@@ -33,7 +34,8 @@ export default function OutreachPage() {
   const [blockedBy, setBlockedBy] = useState<string | null>(null);
   const [nextMsg, setNextMsg] = useState('');
   const [newRound, setNewRound] = useState(false);
-  const [tab, setTab] = useState<'call' | 'log'>('call');
+  const isMd = profile?.role === 'managing_director';
+  const [tab, setTab] = useState<'call' | 'log' | 'report'>(isMd ? 'report' : 'call');
   const roundNo = round?.number ?? 1;
 
   const now = Date.now();
@@ -107,13 +109,14 @@ export default function OutreachPage() {
 
   const tabs = (
     <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit" role="tablist" aria-label="Outreach">
-      {([['call', 'Call drivers'], ['log', 'Calls log & report']] as const).map(([k, l]) => (
+      {([['call', 'Call drivers'], ['log', 'Calls log'], ...(isMd ? [['report', 'Full report']] as const : [])] as const).map(([k, l]) => (
         <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
           className={`px-3 py-1.5 rounded-md text-[12px] font-medium ${tab === k ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>{l}</button>
       ))}
     </div>
   );
   if (tab === 'log') return <div className="space-y-4">{tabs}<OutreachLog calls={calls} drivers={drivers} names={names} /></div>;
+  if (tab === 'report' && isMd) return <div className="space-y-4">{tabs}<OutreachReport drivers={drivers} statuses={statuses} calls={calls} round={round} names={names} /></div>;
 
   return (
     <div className="space-y-4">

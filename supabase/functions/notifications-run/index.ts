@@ -11,6 +11,7 @@ import { companyRules } from "./company.ts";
 import { ticketRules } from "./tickets.ts";
 import { shiftRules } from "./shifts.ts";
 import { moneyRules } from "./money.ts";
+import { outreachRules } from "./outreach.ts";
 
 // Runs every 5 minutes (pg_cron -> pg_net, authenticated by a shared
 // secret). Each run: (1) builds any scheduled email that's due today in
@@ -21,7 +22,7 @@ import { moneyRules } from "./money.ts";
 // What each email says lives in the per-area modules; this file only
 // decides when, to whom, and makes sure nothing goes out twice.
 
-const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules };
+const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules, ...outreachRules };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

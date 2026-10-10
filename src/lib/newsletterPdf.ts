@@ -6,7 +6,7 @@ import { Vehicle, VehicleOwner } from './supabase';
 // bloating every page's initial bundle.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let pdfMakeInstance: any = null;
-async function getPdfMake() {
+export async function getPdfMake() {
   if (pdfMakeInstance) return pdfMakeInstance;
   const [pdfMakeModule, pdfFontsModule] = await Promise.all([
     import('pdfmake/build/pdfmake'),
@@ -31,7 +31,7 @@ const LOGO_URL = 'https://res.cloudinary.com/dyqitacqz/image/upload/v1783862214/
 
 let cachedLogoDataUrl: string | null = null;
 
-async function getLogoDataUrl(): Promise<string | null> {
+export async function getLogoDataUrl(): Promise<string | null> {
   if (cachedLogoDataUrl) return cachedLogoDataUrl;
   try {
     const res = await fetch(LOGO_URL);

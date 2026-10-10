@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import HelpButton from '../../components/HelpButton';
 import { Phone, PhoneCall } from 'lucide-react';
 import { useCallCenterData, STAGE_LABEL } from '../../lib/callCenter';
-import { effectiveStage } from '../../lib/fleet';
 import LogCallDrawer from '../../components/callCenter/LogCallDrawer';
 import { Driver } from '../../lib/supabase';
 
@@ -40,7 +39,7 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
     for (const d of drivers.filter((x) => x.stage !== 'inactive' && x.contract_status !== 'ended')) {
       const lastCall = logs.find((l) => l.driver_id === d.id) ?? null;
       const days = lastCall ? Math.floor((Date.now() - new Date(lastCall.created_at).getTime()) / 86400000) : null;
-      const stage = effectiveStage(d);
+      const stage = d.stage; // already the effective stage (call_center_drivers)
       if (lastCall?.outcome?.needs_followup || stage === 'flagged') {
         out.followup.push({ driver: d, reasonLabel: lastCall?.outcome?.needs_followup ? `Follow-up: ${lastCall.outcome.label}` : 'Flagged by Fleet' });
       } else if (stage !== 'active') {
@@ -92,7 +91,7 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
                 <div className={`w-1.5 h-8 rounded-full shrink-0 ${g.dot}`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-medium truncate">{q.driver.full_name}</p>
-                  <p className="text-[10px] text-gray-400">{q.driver.phone} · {STAGE_LABEL[effectiveStage(q.driver)]}</p>
+                  <p className="text-[10px] text-gray-400">{q.driver.phone} · {STAGE_LABEL[q.driver.stage]}</p>
                 </div>
                 <span className={`text-[10px] font-medium shrink-0 ${g.key === 'recent' ? 'text-gray-400' : 'text-orange-600 dark:text-orange-400'}`}>{q.reasonLabel}</span>
                 <Phone size={14} className="text-brand-500 shrink-0" />

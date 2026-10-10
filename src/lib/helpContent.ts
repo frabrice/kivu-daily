@@ -518,7 +518,7 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
       },
     ],
     tips: [
-      `Call Center sees drivers and vehicles read-only (no changes, no driver documents). Deposits, Fines and the Leaderboard aren't shown to them — only Fleet makes changes.`,
+      `The Call Center has no Fleet page. For our drivers they only see name, phone, plate and stage (to call them and link a caller's complaint) — never deposits, fines, contracts or notes.`,
       'Use search to jump straight to a driver by name or phone instead of scanning columns.',
     ],
   },

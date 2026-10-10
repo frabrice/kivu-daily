@@ -161,7 +161,7 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
       },
     ],
     tips: [
-      `Call Center sees drivers and vehicles read-only — Deposits, Fines and the Leaderboard are hidden from them. On Non-Insider cars they can only set branded / allows branding / wants our device.`,
+      `The Call Center has no Fleet page: for our own drivers they see only name, phone, plate and stage — never deposits, fines, contracts or notes. On Non-Insider cars they can only set branded / allows branding / wants our device.`,
       `Call numbers by type, agent punctuality and outreach results are on the Call Analytics page (you and Finance only).`,
     ],
   },

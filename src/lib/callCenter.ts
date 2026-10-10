@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, Driver, CallLog, CallReason, CallOutcome, CallScript } from './supabase';
 
+interface DirectoryRow { id: string; full_name: string; phone: string; stage: string; contract_status: string; plate_number: string | null; created_at: string }
+
 export function useCallCenterData() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [logs, setLogs] = useState<CallLog[]>([]);
@@ -11,13 +13,16 @@ export function useCallCenterData() {
 
   const load = useCallback(async () => {
     const [d, l, r, o, s] = await Promise.all([
-      supabase.from('drivers').select('*'),
+      // Only name, phone, plate, contract status and stage - never the
+      // drivers table (deposits and other details stay with Fleet/Finance).
+      // The stage arrives already worked out (active / ready / ...).
+      supabase.rpc('call_center_drivers'),
       supabase.from('call_logs').select('*, outcome:call_outcomes(*), reason:call_reasons(*), caller:profiles(*)').order('created_at', { ascending: false }),
       supabase.from('call_reasons').select('*').order('sort_order'),
       supabase.from('call_outcomes').select('*').order('sort_order'),
       supabase.from('call_scripts').select('*').order('created_at', { ascending: false }),
     ]);
-    setDrivers((d.data as Driver[]) ?? []);
+    setDrivers(((d.data as DirectoryRow[]) ?? []).map((r) => ({ ...r, vehicle: r.plate_number ? { plate_number: r.plate_number } : null }) as unknown as Driver));
     setLogs((l.data as CallLog[]) ?? []);
     setReasons((r.data as CallReason[]) ?? []);
     setOutcomes((o.data as CallOutcome[]) ?? []);

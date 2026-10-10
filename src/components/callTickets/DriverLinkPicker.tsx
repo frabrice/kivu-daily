@@ -11,7 +11,7 @@ export interface DriverLink {
   plate: string | null;
 }
 
-interface InternalRow { id: string; full_name: string; phone: string | null; vehicle: { plate_number: string } | null }
+interface InternalRow { id: string; full_name: string; phone: string | null; plate_number: string | null }
 interface PlatformRow { id: string; full_name: string; phone: string | null; car: { plate_number: string } | null }
 
 const normPlate = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, '').toUpperCase();
@@ -29,11 +29,11 @@ export default function DriverLinkPicker({ value, onChange, autoMatchPhone }: {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('drivers').select('id, full_name, phone, vehicle:vehicles(plate_number)'),
+      supabase.rpc('call_center_drivers'),
       supabase.from('platform_drivers').select('id, full_name, phone, car:platform_cars(plate_number)'),
     ]).then(([d, p]) => {
       setAll([
-        ...((d.data as unknown as InternalRow[]) ?? []).map((r) => ({ kind: 'internal' as const, id: r.id, name: r.full_name, phone: r.phone, plate: r.vehicle?.plate_number ?? null })),
+        ...((d.data as unknown as InternalRow[]) ?? []).map((r) => ({ kind: 'internal' as const, id: r.id, name: r.full_name, phone: r.phone, plate: r.plate_number ?? null })),
         ...((p.data as unknown as PlatformRow[]) ?? []).map((r) => ({ kind: 'platform' as const, id: r.id, name: r.full_name, phone: r.phone, plate: r.car?.plate_number ?? null })),
       ]);
     });

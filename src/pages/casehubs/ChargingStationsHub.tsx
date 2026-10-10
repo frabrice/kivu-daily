@@ -1,23 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  ArrowLeft, Zap, Users2, Link2, Copy, Check, Trash2, Plus, Table2,
-  TrendingUp, MapPin, ExternalLink, X, Car, Gauge, DollarSign,
-} from 'lucide-react';
-import {
-  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
-} from 'recharts';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, Zap, Users2, Link2, Copy, Check, Trash2, Plus, Table2, TrendingUp, MapPin, ExternalLink, X } from 'lucide-react';
 import { supabase, SurveyCase, SurveyCollector, ChargingStation } from '../../lib/supabase';
-import {
-  GUN_TYPES, GUN_TYPE_LABEL, DOWNTIME_OPTIONS, KIVU_FLEET_GUN_TYPE,
-  fmtRwf, marginPerKwh, hasFleetCompatibleGun, estimateKwhPerSession,
-} from '../../lib/chargingStations';
+import { GUN_TYPE_LABEL, DOWNTIME_OPTIONS, KIVU_FLEET_GUN_TYPE, fmtRwf, marginPerKwh } from '../../lib/chargingStations';
 import DataTable from '../../components/DataTable';
-import KpiTile from '../../components/KpiTile';
 import Modal from '../../components/Modal';
+import StationAnalytics from './StationAnalytics';
 
 type Tab = 'collectors' | 'data' | 'analytics';
 
-const PIE_COLORS = ['#2F8C86', '#f59e0b', '#6366f1', '#ef4444', '#94a3b8'];
 
 export default function ChargingStationsHub({ surveyCase, onBack }: { surveyCase: SurveyCase; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>('data');
@@ -60,7 +50,7 @@ export default function ChargingStationsHub({ surveyCase, onBack }: { surveyCase
         <>
           {tab === 'collectors' && <CollectorsTab surveyCase={surveyCase} collectors={collectors} reload={load} />}
           {tab === 'data' && <DataTab stations={stations} />}
-          {tab === 'analytics' && <AnalyticsTab stations={stations} />}
+          {tab === 'analytics' && <StationAnalytics stations={stations} />}
         </>
       )}
     </div>
@@ -172,7 +162,8 @@ function DataTab({ stations }: { stations: ChargingStation[] }) {
           { header: 'Owner / Brand', render: (s) => s.owner_brand },
           { header: 'Location', render: (s) => s.location_name },
           { header: 'Gun Types', render: (s) => (s.guns ?? []).map((g) => GUN_TYPE_LABEL[g.gun_type]).join(', ') || '—' },
-          { header: 'Cars/Day', render: (s) => String(s.cars_per_day) },
+          { header: 'Cars/Day (reported)', render: (s) => String(s.cars_per_day) },
+          { header: 'Cars/Day (field)', render: (s) => (s.fu_cars_per_day_avg ? `${s.fu_cars_per_day_avg} (${s.fu_cars_per_day_min}–${s.fu_cars_per_day_max})` : '—') },
           { header: 'Margin/kWh', render: (s) => fmtRwf(marginPerKwh(s)) },
           { header: 'Collector', render: (s) => s.submitted_by_email },
         ]}
@@ -218,6 +209,21 @@ function StationDetailModal({ station, onClose }: { station: ChargingStation; on
           <InfoRow label="Collector" value={station.submitted_by_email} />
         </div>
 
+        {station.fu_recorded_at && (
+          <div className="rounded-lg bg-brand/5 border border-brand/20 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300 mb-1.5">Field follow-up — Henry Rugaba Mark</p>
+            <div className="grid grid-cols-2 gap-2">
+              <InfoRow label="Cars per day" value={`${station.fu_cars_per_day_avg} avg (${station.fu_cars_per_day_min}–${station.fu_cars_per_day_max})`} />
+              <InfoRow label="Charging time" value={`${station.fu_charge_minutes_avg} min avg (${station.fu_charge_minutes_min} min – ${(station.fu_charge_minutes_max ?? 0) / 60} h)`} />
+              <InfoRow label="Operator salary" value={`${fmtRwf(Number(station.fu_operator_salary_avg))} avg`} />
+              <InfoRow label="Salary range" value={`${fmtRwf(Number(station.fu_operator_salary_min))} – ${fmtRwf(Number(station.fu_operator_salary_max))}`} />
+              <InfoRow label="Shifts" value={`${station.fu_shifts_per_day} × ${station.fu_shift_hours} h · works 24 h`} />
+              <InfoRow label="Technical issues" value={station.fu_technical_issues ?? '—'} />
+            </div>
+            {station.fu_heat_note && <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-2">Heat: {station.fu_heat_note}</p>}
+          </div>
+        )}
+
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Gun Types</p>
           <div className="space-y-1">
@@ -259,160 +265,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
       <p className="text-[12px] font-medium">{value}</p>
-    </div>
-  );
-}
-
-function AnalyticsTab({ stations }: { stations: ChargingStation[] }) {
-  const n = stations.length;
-  const totalCarsPerDay = stations.reduce((s, st) => s + st.cars_per_day, 0);
-  const avgMargin = n ? stations.reduce((s, st) => s + marginPerKwh(st), 0) / n : 0;
-  const avgCarsPerStation = n ? totalCarsPerDay / n : 0;
-
-  const gunTypeTotals = useMemo(() => {
-    const totals: Record<string, number> = {};
-    for (const t of GUN_TYPES) totals[t.key] = 0;
-    for (const st of stations) for (const g of st.guns ?? []) totals[g.gun_type] = (totals[g.gun_type] ?? 0) + g.gun_count;
-    return totals;
-  }, [stations]);
-  const totalGunCount = Object.values(gunTypeTotals).reduce((s, v) => s + v, 0);
-  const fleetCompatibleGuns = gunTypeTotals[KIVU_FLEET_GUN_TYPE] ?? 0;
-  const fleetCompatiblePct = totalGunCount ? Math.round((fleetCompatibleGuns / totalGunCount) * 100) : 0;
-  const stationsWithFleetGun = stations.filter((s) => hasFleetCompatibleGun(s.guns ?? [])).length;
-
-  const pieData = GUN_TYPES.map((t) => ({ name: t.label, value: gunTypeTotals[t.key] })).filter((d) => d.value > 0);
-  const barData = [...stations]
-    .sort((a, b) => b.cars_per_day - a.cars_per_day)
-    .map((s) => ({ name: `#${s.station_number}`, cars: s.cars_per_day, margin: marginPerKwh(s) }));
-
-  if (n === 0) {
-    return (
-      <div className="card p-12 text-center">
-        <TrendingUp size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-        <p className="text-[12px] text-gray-400">No data yet — analytics will appear once stations are submitted.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiTile icon={Zap} label="Stations Surveyed" value={String(n)} color="amber" />
-        <KpiTile icon={Car} label="Total Cars/Day" value={String(totalCarsPerDay)} color="amber" />
-        <KpiTile icon={DollarSign} label="Avg Margin/kWh" value={fmtRwf(avgMargin)} tone="positive" color="amber" />
-        <KpiTile icon={Gauge} label="Fleet-Compatible Guns" value={`${fleetCompatiblePct}%`} color="amber" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div className="card p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-3">Cars/Day by Station</p>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={barData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip />
-              <Bar dataKey="cars" fill="#2F8C86" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="card p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-3">Gun Type Distribution</p>
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={(entry) => `${entry.name}: ${entry.value}`}>
-                {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-              </Pie>
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <p className="text-[10px] text-gray-400 mt-1">{stationsWithFleetGun} of {n} stations have at least one GB/T gun — Kivu Ride's own fleet connector.</p>
-        </div>
-
-        <div className="card p-4 lg:col-span-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-3">Margin per kWh by Station</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={barData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(v) => fmtRwf(Number(v))} />
-              <Bar dataKey="margin" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <RoiCalculator stations={stations} avgMargin={avgMargin} avgCarsPerStation={avgCarsPerStation} />
-    </div>
-  );
-}
-
-function RoiCalculator({ stations, avgMargin, avgCarsPerStation }: { stations: ChargingStation[]; avgMargin: number; avgCarsPerStation: number }) {
-  const avgKwhPerSession = useMemo(() => {
-    const estimates = stations
-      .map((s) => estimateKwhPerSession(s, s.guns ?? []))
-      .filter((v): v is number => v !== null && isFinite(v) && v > 0);
-    if (estimates.length === 0) return 20;
-    return estimates.reduce((s, v) => s + v, 0) / estimates.length;
-  }, [stations]);
-
-  const [carsPerDay, setCarsPerDay] = useState(String(Math.round(avgCarsPerStation) || 10));
-  const [kwhPerSession, setKwhPerSession] = useState(String(Math.round(avgKwhPerSession) || 20));
-  const [marginInput, setMarginInput] = useState(String(Math.round(avgMargin) || 100));
-  const [brandingInvestment, setBrandingInvestment] = useState('');
-
-  const dailyRevenue = (Number(carsPerDay) || 0) * (Number(kwhPerSession) || 0) * (Number(marginInput) || 0);
-  const monthlyRevenue = dailyRevenue * 30;
-  const annualRevenue = dailyRevenue * 365;
-  const paybackMonths = brandingInvestment && monthlyRevenue > 0 ? Number(brandingInvestment) / monthlyRevenue : null;
-
-  return (
-    <div className="card p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Investor Scenario Calculator</p>
-      <p className="text-[10px] text-gray-400 mb-3">Adjust the assumptions to model what a branding partnership could actually earn — defaults are averages from the surveyed stations.</p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
-        <div>
-          <label className="block text-[10px] font-medium mb-1 text-gray-500">Kivu Cars/Day at Station</label>
-          <input type="number" value={carsPerDay} onChange={(e) => setCarsPerDay(e.target.value)} className="input" />
-        </div>
-        <div>
-          <label className="block text-[10px] font-medium mb-1 text-gray-500">Avg kWh per Charge</label>
-          <input type="number" value={kwhPerSession} onChange={(e) => setKwhPerSession(e.target.value)} className="input" />
-        </div>
-        <div>
-          <label className="block text-[10px] font-medium mb-1 text-gray-500">Margin per kWh (RWF)</label>
-          <input type="number" value={marginInput} onChange={(e) => setMarginInput(e.target.value)} className="input" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-        <ProjectionTile label="Projected Daily Revenue" value={fmtRwf(dailyRevenue)} />
-        <ProjectionTile label="Projected Monthly Revenue" value={fmtRwf(monthlyRevenue)} />
-        <ProjectionTile label="Projected Annual Revenue" value={fmtRwf(annualRevenue)} />
-      </div>
-
-      <div className="border-t border-gray-100 dark:border-white/5 pt-3">
-        <label className="block text-[10px] font-medium mb-1 text-gray-500">Branding Investment (RWF, optional)</label>
-        <div className="flex items-center gap-2">
-          <input type="number" value={brandingInvestment} onChange={(e) => setBrandingInvestment(e.target.value)} placeholder="e.g. 5000000" className="input" />
-          {paybackMonths !== null && (
-            <span className="text-[12px] font-semibold whitespace-nowrap text-positive">{paybackMonths.toFixed(1)} months payback</span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProjectionTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-3">
-      <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-      <p className="text-[15px] font-bold mt-0.5">{value}</p>
     </div>
   );
 }

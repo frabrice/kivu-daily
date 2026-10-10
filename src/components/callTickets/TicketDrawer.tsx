@@ -97,7 +97,9 @@ export default function TicketDrawer({
   const choose = (a: FormAction) => { setAction(action === a ? null : a); setError(''); };
   const who = ticket.driver
     ? `${ticket.driver.full_name}${ticket.driver.vehicle ? ` · ${ticket.driver.vehicle.plate_number}` : ''} (our driver)`
-    : ticket.platform_driver
+    : ticket.driver_label
+      ? `${ticket.driver_label} (our driver)`
+      : ticket.platform_driver
       ? `${ticket.platform_driver.full_name}${ticket.vehicle_plate ? ` · ${ticket.vehicle_plate}` : ''} (Non-Insider)`
       : ticket.vehicle_plate;
   const channelLabel = CHANNELS.find((c) => c.key === ticket.channel)?.label ?? ticket.channel;

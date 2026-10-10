@@ -188,7 +188,7 @@ export default function EmployeeApp() {
       { key: 'call_center_directory' as const, label: 'Directory', icon: Users2 },
       { key: 'call_center_scripts' as const, label: 'Script Book', icon: BookOpen },
       { key: 'call_center_outreach' as const, label: 'Non-Insider Outreach', icon: Megaphone },
-      { key: 'fleet' as const, label: 'Fleet', icon: Truck },
+      // No Fleet page: insider-driver details stay with Fleet/Finance (MD, 10 Oct 2026).
       { key: 'non_insider' as const, label: 'Non-Insider', icon: CarFront },
     ] : []),
     ...(profile?.department?.slug === 'marketing_sales_bd' ? [
@@ -225,7 +225,7 @@ export default function EmployeeApp() {
       {active === 'fleet_leaderboard' && <DepositLeaderboardPage />}
       {active === 'fleet_branding' && <BrandingDevicesPage />}
       {active === 'non_insider' && <NonInsiderPage />}
-      {active === 'fleet' && <FleetPage />}
+      {active === 'fleet' && !isCallCenter && <FleetPage />}
 
       {active === 'finance_dashboard' && <FinanceDashboardPage />}
       {active === 'finance_revenue' && <FinanceRevenuePage />}

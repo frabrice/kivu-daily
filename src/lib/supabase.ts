@@ -728,6 +728,8 @@ export interface CallTicket {
   md_acknowledged_at: string | null;
   md_acknowledged_by: string | null;
   // Only visible to departments that can read drivers (RLS returns null otherwise).
+  // "Name · plate" stored on the ticket, readable by every department.
+  driver_label: string | null;
   driver?: { full_name: string; vehicle: { plate_number: string } | null } | null;
   platform_driver?: { full_name: string; phone: string | null } | null;
 }
@@ -841,6 +843,23 @@ export interface ChargingStation {
   downtime_frequency: DowntimeFrequency | null;
   submitted_by_email: string;
   created_at: string;
+  // Field follow-up (Henry Rugaba Mark, Oct 2026) - kept apart from the
+  // numbers typed into the survey form.
+  fu_cars_per_day_avg: number | null;
+  fu_cars_per_day_min: number | null;
+  fu_cars_per_day_max: number | null;
+  fu_charge_minutes_avg: number | null;
+  fu_charge_minutes_min: number | null;
+  fu_charge_minutes_max: number | null;
+  fu_operator_salary_avg: number | null;
+  fu_operator_salary_min: number | null;
+  fu_operator_salary_max: number | null;
+  fu_shifts_per_day: number | null;
+  fu_shift_hours: number | null;
+  fu_technical_issues: string | null;
+  fu_heat_note: string | null;
+  fu_source: string | null;
+  fu_recorded_at: string | null;
   guns?: ChargingStationGun[];
   photos?: ChargingStationPhoto[];
 }
