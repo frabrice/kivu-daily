@@ -35,10 +35,10 @@ export function dayList(from: string, to: string): string[] {
 
 export function RangeTabs<T extends string | number>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { v: T; label: string }[] }) {
   return (
-    <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit" role="radiogroup" aria-label="Period">
+    <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit" role="radiogroup" aria-label="Period">
       {options.map((o) => (
         <button key={String(o.v)} role="radio" aria-checked={value === o.v} onClick={() => onChange(o.v)}
-          className={`px-3 py-1.5 rounded-md text-[12px] font-medium ${value === o.v ? 'bg-white dark:bg-navy-700 shadow-sm text-brand-600 dark:text-brand-300' : 'text-gray-500'}`}>{o.label}</button>
+          className={`px-3 py-1.5 rounded-md text-small font-medium ${value === o.v ? 'bg-surface-3 shadow-sm text-brand-600 dark:text-brand-300' : 'text-fg-muted'}`}>{o.label}</button>
       ))}
     </div>
   );
@@ -50,10 +50,10 @@ export function Kpi({ icon: Icon, label, value, sub, compare, tone }: {
 }) {
   return (
     <div className="card p-4">
-      <p className="text-[11px] text-gray-500 flex items-center gap-1.5">{Icon && <Icon size={13} />} {label}</p>
-      <p className={`text-[22px] font-bold leading-tight mt-1 tabular-nums ${tone === 'bad' ? 'text-red-600 dark:text-red-400' : ''}`}>{value}</p>
-      {sub && <p className="text-[11px] text-gray-500 mt-0.5">{sub}</p>}
-      {compare && <p className="text-[11px] mt-1 text-gray-600 dark:text-gray-300">{compare}</p>}
+      <p className="text-caption text-fg-muted flex items-center gap-1.5">{Icon && <Icon size={13} />} {label}</p>
+      <p className={`text-h2 font-bold leading-tight mt-1 tabular-nums ${tone === 'bad' ? 'text-red-600 dark:text-red-400' : ''}`}>{value}</p>
+      {sub && <p className="text-caption text-fg-muted mt-0.5">{sub}</p>}
+      {compare && <p className="text-caption mt-1 text-fg-muted ">{compare}</p>}
     </div>
   );
 }
@@ -63,7 +63,7 @@ export function Delta({ now, before, unit = '%', goodWhenUp = true, label = 'vs 
   const change = Math.round(((now - before) / Math.abs(before)) * 100);
   const good = change === 0 ? null : (change > 0) === goodWhenUp;
   return (
-    <span className={good === null ? 'text-gray-500' : good ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
+    <span className={good === null ? 'text-fg-muted' : good ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
       {change > 0 ? '▲' : change < 0 ? '▼' : '='} {Math.abs(change)}{unit} {label}
     </span>
   );
@@ -75,7 +75,7 @@ export function Legend({ series }: { series: Series }) {
   if (series.length < 2) return null;
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1">
-      {series.map((s) => <span key={s.key} className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: s.color }} />{s.label}</span>)}
+      {series.map((s) => <span key={s.key} className="flex items-center gap-1.5 text-caption text-fg-muted "><span className="w-2.5 h-2.5 rounded-sm" style={{ background: s.color }} />{s.label}</span>)}
     </div>
   );
 }
@@ -87,13 +87,13 @@ export function ChartCard({ title, subtitle, children, table, legend, right }: {
     <div className="card p-4 space-y-3 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold">{title}</p>
-          {subtitle && <p className="text-[11px] text-gray-500">{subtitle}</p>}
+          <p className="text-body font-semibold">{title}</p>
+          {subtitle && <p className="text-caption text-fg-muted">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-2">
           {right}
           {table && (
-            <button onClick={() => setAsTable((v) => !v)} className="btn-ghost text-[11px] flex items-center gap-1" aria-pressed={asTable}>
+            <button onClick={() => setAsTable((v) => !v)} className="btn-ghost text-caption flex items-center gap-1" aria-pressed={asTable}>
               {asTable ? <><BarChart3 size={13} /> Chart</> : <><Table2 size={13} /> Table</>}
             </button>
           )}
@@ -107,11 +107,11 @@ export function ChartCard({ title, subtitle, children, table, legend, right }: {
 
 function TipBox({ title, rows }: { title: string; rows: { label: string; color?: string; value: ReactNode }[] }) {
   return (
-    <div className="rounded-lg border border-gray-100 dark:border-white/10 bg-white dark:bg-navy-700 shadow-lg px-3 py-2 text-[11px] min-w-[160px]">
+    <div className="rounded-lg border border-line-muted bg-surface-3 shadow-lg px-3 py-2 text-caption min-w-[160px]">
       <p className="font-semibold mb-1">{title}</p>
       {rows.map((r) => (
-        <p key={r.label} className="flex items-center justify-between gap-3 text-gray-600 dark:text-gray-300">
-          <span className="flex items-center gap-1.5">{r.color && <span className="w-2 h-2 rounded-sm" style={{ background: r.color }} />}{r.label}</span><b className="text-gray-900 dark:text-white tabular-nums">{r.value}</b>
+        <p key={r.label} className="flex items-center justify-between gap-3 text-fg-muted ">
+          <span className="flex items-center gap-1.5">{r.color && <span className="w-2 h-2 rounded-sm" style={{ background: r.color }} />}{r.label}</span><b className="text-fg tabular-nums">{r.value}</b>
         </p>
       ))}
     </div>
@@ -172,16 +172,16 @@ export function DailyLines({ data, series, c, height = 220, format = (n: number)
 export function RankBars({ rows, color, format = (n: number) => String(n), empty = 'Nothing yet.', onRowClick }: {
   rows: { key: string; label: string; n: number; sub?: string }[]; color: string; format?: (n: number) => string; empty?: string; onRowClick?: (key: string) => void;
 }) {
-  if (!rows.length) return <p className="text-[12px] text-gray-400 text-center py-6">{empty}</p>;
+  if (!rows.length) return <p className="text-small text-fg-subtle text-center py-6">{empty}</p>;
   const max = Math.max(1, ...rows.map((r) => Math.abs(r.n)));
   return (
     <div className="space-y-1.5">
       {rows.map((r) => (
         <div key={r.key} onClick={onRowClick ? () => onRowClick(r.key) : undefined} title={`${r.label}: ${format(r.n)}`}
-          className={`grid grid-cols-[minmax(90px,150px)_1fr_auto] items-center gap-2 text-[11px] ${onRowClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.03] rounded' : ''}`}>
-          <span className="truncate text-gray-700 dark:text-gray-200">{r.label}</span>
+          className={`grid grid-cols-[minmax(90px,150px)_1fr_auto] items-center gap-2 text-caption ${onRowClick ? 'cursor-pointer hover:bg-hover rounded' : ''}`}>
+          <span className="truncate text-fg-muted ">{r.label}</span>
           <div className="h-3.5"><div className="h-full rounded-r-[4px]" style={{ width: `${(Math.abs(r.n) / max) * 100}%`, background: color, minWidth: r.n ? 3 : 0 }} /></div>
-          <span className="text-right tabular-nums text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(r.n)}{r.sub && <span className="text-gray-400"> {r.sub}</span>}</span>
+          <span className="text-right tabular-nums text-fg-muted whitespace-nowrap">{format(r.n)}{r.sub && <span className="text-fg-subtle"> {r.sub}</span>}</span>
         </div>
       ))}
     </div>
@@ -191,11 +191,11 @@ export function RankBars({ rows, color, format = (n: number) => String(n), empty
 // Simple data table used as the "Table" side of a ChartCard.
 export function MiniTable({ head, rows }: { head: string[]; rows: (string | number | ReactNode)[][] }) {
   return (
-    <table className="w-full text-[11px]">
-      <thead><tr className="text-gray-500 text-left">{head.map((h, i) => <th key={h} className={`py-1 pr-3 font-medium ${i ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
+    <table className="w-full text-caption">
+      <thead><tr className="text-fg-muted text-left">{head.map((h, i) => <th key={h} className={`py-1 pr-3 font-medium ${i ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i} className="border-t border-gray-100 dark:border-white/5">
+          <tr key={i} className="border-t border-line-muted ">
             {r.map((v, j) => <td key={j} className={`py-1 pr-3 ${j ? 'text-right tabular-nums' : ''}`}>{v}</td>)}
           </tr>
         ))}
@@ -205,5 +205,5 @@ export function MiniTable({ head, rows }: { head: string[]; rows: (string | numb
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="text-[12px] text-gray-400 text-center py-10">{children}</p>;
+  return <p className="text-small text-fg-subtle text-center py-10">{children}</p>;
 }

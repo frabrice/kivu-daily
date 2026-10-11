@@ -54,29 +54,29 @@ export default function SetVehicleStartDateDrawer({
     <Modal open onClose={onClose} title={`Payout Schedule — ${vehicle.plate_number}`} subtitle="Weekly payout and margin are counted from this date" maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Operation Start Date</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Operation Start Date</label>
           <DateInput value={operationStartDate} onChange={setOperationStartDate} />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Daily Payment ({OWNER_PAYOUT_DAYS_PER_WEEK} days/week)</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Daily Payment ({OWNER_PAYOUT_DAYS_PER_WEEK} days/week)</label>
             <input type="number" value={dailyPayout} onChange={(e) => setDailyPayout(e.target.value)} className="input" />
-            <p className="text-[10px] text-gray-400 mt-1">= {fmt(weeklyPayout)}/week</p>
+            <p className="text-micro text-fg-subtle mt-1">= {fmt(weeklyPayout)}/week</p>
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Monthly Management Fee</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Monthly Management Fee</label>
             <input type="number" value={monthlyFee} onChange={(e) => setMonthlyFee(e.target.value)} className="input" />
           </div>
         </div>
         {isFirstTime ? (
-          <p className="text-[10px] text-gray-400">This car has no onboarding fee on file yet — saving loads the 140,000 onboarding fee and first month's management fee as pending, and backfills every weekly payout and monthly fee elapsed since this date.</p>
+          <p className="text-micro text-fg-subtle">This car has no onboarding fee on file yet — saving loads the 140,000 onboarding fee and first month's management fee as pending, and backfills every weekly payout and monthly fee elapsed since this date.</p>
         ) : (
-          <p className="text-[10px] text-gray-400">Changing this date only affects payments not yet generated — it won't rewrite history already on the books.</p>
+          <p className="text-micro text-fg-subtle">Changing this date only affects payments not yet generated — it won't rewrite history already on the books.</p>
         )}
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+        <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
           <button onClick={onClose} className="btn-ghost">Cancel</button>
           <button onClick={save} disabled={saving || !operationStartDate} className="btn-primary disabled:opacity-50">
             {saving ? 'Saving…' : 'Save'}

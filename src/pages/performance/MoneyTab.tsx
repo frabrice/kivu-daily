@@ -92,10 +92,10 @@ export default function MoneyTab({ data, period: p }: { data: PerfData; period: 
           <RankBars rows={spending} color={c.orange} format={rwfShort} empty="No money out this period." />
         </ChartCard>
         <div className="card p-4 space-y-2">
-          <p className="text-[13px] font-semibold">Waiting for approval</p>
-          {pendingByType.length === 0 ? <p className="text-[12px] text-gray-500">Nothing waiting.</p> : (
-            <ul className="space-y-1 text-[12px]">
-              {pendingByType.map(([k, x]) => <li key={k} className="flex justify-between gap-2"><span>{TYPE_META[k as FinanceTransactionType]?.label ?? k} <span className="text-gray-400">· {x.n}</span></span><b className="tabular-nums">{rwf(x.amount)}</b></li>)}
+          <p className="text-body font-semibold">Waiting for approval</p>
+          {pendingByType.length === 0 ? <p className="text-small text-fg-muted">Nothing waiting.</p> : (
+            <ul className="space-y-1 text-small">
+              {pendingByType.map(([k, x]) => <li key={k} className="flex justify-between gap-2"><span>{TYPE_META[k as FinanceTransactionType]?.label ?? k} <span className="text-fg-subtle">· {x.n}</span></span><b className="tabular-nums">{rwf(x.amount)}</b></li>)}
             </ul>
           )}
         </div>

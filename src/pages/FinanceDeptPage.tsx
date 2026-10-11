@@ -55,12 +55,12 @@ export default function FinanceDeptPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap">
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit flex-wrap">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => selectTab(t.key)}
-            className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${tab === t.key ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+            className={`px-3 py-1.5 rounded-md text-small font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${tab === t.key ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
           >
             <t.icon size={14} /> {t.label}
           </button>

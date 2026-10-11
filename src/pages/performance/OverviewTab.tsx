@@ -68,13 +68,13 @@ export default function OverviewTab({ data, period: p, onNavigate, onTab }: { da
   return (
     <div className="space-y-4">
       <div className="card p-4">
-        <p className="text-[13px] font-semibold mb-2">Waiting on you</p>
-        {waiting.every((x) => !x.n) ? <p className="text-[12px] text-gray-500 flex items-center gap-1.5"><BadgeCheck size={14} className="text-emerald-600" /> Nothing is waiting on you right now.</p> : (
+        <p className="text-body font-semibold mb-2">Waiting on you</p>
+        {waiting.every((x) => !x.n) ? <p className="text-small text-fg-muted flex items-center gap-1.5"><BadgeCheck size={14} className="text-emerald-600" /> Nothing is waiting on you right now.</p> : (
           <div className="flex flex-wrap gap-2">
             {waiting.filter((x) => x.n).map((x) => (
-              <button key={x.label} onClick={x.go} className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2 hover:border-brand/50 text-left">
+              <button key={x.label} onClick={x.go} className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 hover:border-brand/50 text-left">
                 <x.icon size={15} className="text-amber-600 dark:text-amber-400" />
-                <span className="text-[12px]"><b className="tabular-nums">{x.n}</b> {x.label}</span>
+                <span className="text-small"><b className="tabular-nums">{x.n}</b> {x.label}</span>
               </button>
             ))}
           </div>
@@ -87,19 +87,19 @@ export default function OverviewTab({ data, period: p, onNavigate, onTab }: { da
         <Kpi icon={BadgeCheck} label="Drivers paid up today" value={`${cleared}/${active.length}`} tone={active.length && cleared < active.length ? 'bad' : undefined} sub={owedNow ? `${rwf(owedNow)} owed for days already driven` : 'Nobody owes for days driven'} />
         <Kpi icon={Car} label="Cars working today" value={`${todayFleet?.working ?? 0}/${carsToday}`} sub={todayFleet?.rest ? `${todayFleet.rest} on their rest day · ${carDays ? `${pct(workingDays, carDays)}% of car-days worked` : ''}` : carDays ? `${pct(workingDays, carDays)}% of car-days worked in the period` : '—'} />
         <Kpi icon={XCircle} label="Driver days lost" value={lostN} tone={lostN ? 'bad' : undefined} sub={`Working days driven without payment · ${pausedN} paused days off`} compare={<Delta now={lostN} before={lostPrevN} goodWhenUp={false} />} />
-        <Kpi icon={ClipboardCheck} label="Team tasks done" value={given ? `${pct(done, given)}%` : '—'} sub={`${done} of ${given} tasks`} compare={givenPrev ? <span className="text-gray-500">{pct(donePrev, givenPrev)}% in the period before</span> : undefined} />
+        <Kpi icon={ClipboardCheck} label="Team tasks done" value={given ? `${pct(done, given)}%` : '—'} sub={`${done} of ${given} tasks`} compare={givenPrev ? <span className="text-fg-muted">{pct(donePrev, givenPrev)}% in the period before</span> : undefined} />
         <Kpi icon={PhoneCall} label="Calls handled" value={callsIn + callsOut} sub={`${callsIn} received · ${callsOut} made · ${contacts ? `${pct(solved, contacts)}% solved on the spot` : 'none logged'}`} />
         <Kpi icon={Megaphone} label="Outreach calls" value={outreach.length} sub={`${outreachYes} Non-Insider driver${outreachYes === 1 ? '' : 's'} said yes to something`} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartCard title="Cars per day" subtitle="What each car did that day, from its drivers' payments and days off" legend={fleetSeries}
-          right={<button onClick={() => onTab('fleet')} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline">Fleet details</button>}
+          right={<button onClick={() => onTab('fleet')} className="text-caption text-brand-600 dark:text-brand-300 hover:underline">Fleet details</button>}
           table={<MiniTable head={['Day', 'Working', 'Not paid up', 'Days off', 'Rest day', 'No driver']} rows={[...fleet].reverse().map((d) => [longDay(d.day), d.working, d.unpaid, d.paused, d.rest, d.no_driver])} />}>
           <DailyBars data={fleet as unknown as Record<string, number | string>[]} series={fleetSeries} c={c} />
         </ChartCard>
         <ChartCard title="Collected from drivers per day" subtitle={`${rwf(money)} in ${p.days} days`}
-          right={<button onClick={() => onTab('money')} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline">Money details</button>}
+          right={<button onClick={() => onTab('money')} className="text-caption text-brand-600 dark:text-brand-300 hover:underline">Money details</button>}
           table={<MiniTable head={['Day', 'Collected']} rows={[...moneyDaily].reverse().filter((d) => d.collected).map((d) => [longDay(d.day), rwf(d.collected)])} />}>
           <DailyBars data={moneyDaily} series={[{ key: 'collected', label: 'Collected', color: c.blue }]} c={c} format={rwfShort} tipTitle={(x) => longDay(x)} />
         </ChartCard>
@@ -107,24 +107,24 @@ export default function OverviewTab({ data, period: p, onNavigate, onTab }: { da
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartCard title="Driver days lost per day" subtitle="Working days a driver drove without having paid for them (paused days don't count)"
-          right={<button onClick={() => onTab('drivers')} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline">Driver details</button>}
+          right={<button onClick={() => onTab('drivers')} className="text-caption text-brand-600 dark:text-brand-300 hover:underline">Driver details</button>}
           table={<MiniTable head={['Day', 'Lost', 'Paused']} rows={[...lost].reverse().map((d) => [longDay(d.day), d.lost, d.paused])} />}>
-          {lostN === 0 ? <p className="text-[12px] text-gray-400 text-center py-10">No days lost in this period.</p> : <DailyBars data={lost} series={[{ key: 'lost', label: 'Days lost', color: c.orange }]} c={c} />}
+          {lostN === 0 ? <p className="text-small text-fg-subtle text-center py-10">No days lost in this period.</p> : <DailyBars data={lost} series={[{ key: 'lost', label: 'Days lost', color: c.orange }]} c={c} />}
         </ChartCard>
         <div className="card p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[13px] font-semibold">Team at a glance</p>
-            <button onClick={() => onTab('team')} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline">Team details</button>
+            <p className="text-body font-semibold">Team at a glance</p>
+            <button onClick={() => onTab('team')} className="text-caption text-brand-600 dark:text-brand-300 hover:underline">Team details</button>
           </div>
-          {people.length === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">No tasks in this period.</p> : (
+          {people.length === 0 ? <p className="text-small text-fg-subtle text-center py-8">No tasks in this period.</p> : (
             <div className="space-y-1.5 max-h-72 overflow-y-auto">
               {people.map((r) => {
                 const rate = pct(r.done, r.given) ?? 0;
                 return (
-                  <div key={r.id} className="grid grid-cols-[minmax(90px,150px)_1fr_auto] items-center gap-2 text-[11px]" title={`${r.name}: ${r.done} of ${r.given} done`}>
-                    <span className="truncate text-gray-700 dark:text-gray-200">{r.name}</span>
-                    <div className="h-3.5 rounded-[4px] bg-gray-100 dark:bg-white/5 overflow-hidden"><div className="h-full rounded-r-[4px]" style={{ width: `${rate}%`, background: c.blue }} /></div>
-                    <span className="tabular-nums text-right whitespace-nowrap">{rate}% <span className="text-gray-400">{r.done}/{r.given}</span>{r.missed ? <span className="text-red-600 dark:text-red-400"> · {r.missed} missed</span> : null}</span>
+                  <div key={r.id} className="grid grid-cols-[minmax(90px,150px)_1fr_auto] items-center gap-2 text-caption" title={`${r.name}: ${r.done} of ${r.given} done`}>
+                    <span className="truncate text-fg-muted ">{r.name}</span>
+                    <div className="h-3.5 rounded-[4px] bg-inset overflow-hidden"><div className="h-full rounded-r-[4px]" style={{ width: `${rate}%`, background: c.blue }} /></div>
+                    <span className="tabular-nums text-right whitespace-nowrap">{rate}% <span className="text-fg-subtle">{r.done}/{r.given}</span>{r.missed ? <span className="text-red-600 dark:text-red-400"> · {r.missed} missed</span> : null}</span>
                   </div>
                 );
               })}
@@ -135,10 +135,10 @@ export default function OverviewTab({ data, period: p, onNavigate, onTab }: { da
 
       {active.some((r) => !r.standing.isCleared) && (
         <div className="card p-4">
-          <p className="text-[13px] font-semibold flex items-center gap-1.5 mb-2"><AlertTriangle size={14} className="text-amber-600" /> Not paid up today ({t})</p>
+          <p className="text-body font-semibold flex items-center gap-1.5 mb-2"><AlertTriangle size={14} className="text-amber-600" /> Not paid up today ({t})</p>
           <div className="flex flex-wrap gap-2">
             {active.filter((r) => !r.standing.isCleared).sort((a, b) => b.standing.owes - a.standing.owes).map((r) => (
-              <span key={r.driver.id} className="text-[11px] rounded-md bg-gray-50 dark:bg-white/[0.04] px-2 py-1">
+              <span key={r.driver.id} className="text-caption rounded-md bg-inset px-2 py-1">
                 <b>{r.driver.full_name}</b> · {r.driver.vehicle?.plate_number ?? '—'} · owes {rwf(r.standing.owes)}{r.standing.pausedToday ? ' · paused today' : ''}
               </span>
             ))}

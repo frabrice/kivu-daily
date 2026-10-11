@@ -30,7 +30,7 @@ export default function ActivityLogPage({ profiles }: { profiles: Profile[] }) {
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
           <h3 className="section-title">Activity Log</h3>
-          <p className="text-[10px] text-gray-400 mt-0.5">Every tracked action, always attributed by name.</p>
+          <p className="text-micro text-fg-subtle mt-0.5">Every tracked action, always attributed by name.</p>
         </div>
         <select
           value={actorId ?? ''}
@@ -52,8 +52,8 @@ export default function ActivityLogPage({ profiles }: { profiles: Profile[] }) {
 
       {!loading && entries.length === 0 && (
         <div className="card p-12 text-center">
-          <Radio size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">
+          <Radio size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">
             {actorId ? 'No activity from this person yet.' : 'No activity yet.'}
           </p>
         </div>
@@ -61,7 +61,7 @@ export default function ActivityLogPage({ profiles }: { profiles: Profile[] }) {
 
       {!loading && groups.map(([label, dayEntries]) => (
         <div key={label} className="card p-4">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">{label}</p>
+          <p className="text-micro font-semibold text-fg-subtle uppercase tracking-wide mb-2">{label}</p>
           <div className="space-y-1">
             {dayEntries.map((entry) => (
               <div key={entry.id} className="flex items-start gap-3 py-2 px-1">
@@ -69,12 +69,12 @@ export default function ActivityLogPage({ profiles }: { profiles: Profile[] }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">
                     <span className="font-medium">{entry.actor?.full_name ?? 'Someone'}</span>{' '}
-                    <span className="text-gray-500 dark:text-gray-400">{entry.action}</span>{' '}
+                    <span className="text-fg-muted ">{entry.action}</span>{' '}
                     {entry.entity_label && (
-                      <span className="text-gray-700 dark:text-gray-200">"{entry.entity_label}"</span>
+                      <span className="text-fg-muted ">"{entry.entity_label}"</span>
                     )}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">{timeAgo(entry.created_at)}</p>
+                  <p className="text-xs text-fg-subtle mt-0.5">{timeAgo(entry.created_at)}</p>
                 </div>
               </div>
             ))}

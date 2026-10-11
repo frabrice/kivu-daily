@@ -52,7 +52,7 @@ export default function FinanceTransfersPage() {
       <div className="flex items-start justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><ArrowLeftRight size={16} className="text-amber-600 dark:text-amber-300" /> Inter-Bank Transfers</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Internal movements between Kivu Ride's own accounts — never counted as revenue or expense.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Internal movements between Kivu Ride's own accounts — never counted as revenue or expense.</p>
         </div>
         {canEdit && (
           <button onClick={() => setDrawer({ tx: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
@@ -69,8 +69,8 @@ export default function FinanceTransfersPage() {
 
       {groups.length === 0 ? (
         <div className="card p-12 text-center">
-          <ArrowLeftRight size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">No inter-bank transfers logged yet.</p>
+          <ArrowLeftRight size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">No inter-bank transfers logged yet.</p>
         </div>
       ) : (
         <DataTable
@@ -86,7 +86,7 @@ export default function FinanceTransfersPage() {
             {
               header: 'Status',
               render: (g) => (
-                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[g.outLeg.status].color}20`, color: STATUS_META[g.outLeg.status].color }}>
+                <span className="text-micro font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[g.outLeg.status].color}20`, color: STATUS_META[g.outLeg.status].color }}>
                   {STATUS_META[g.outLeg.status].label}
                 </span>
               ),

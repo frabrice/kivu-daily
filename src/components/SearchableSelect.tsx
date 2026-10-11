@@ -51,19 +51,19 @@ export default function SearchableSelect({
           <button
             type="button"
             onClick={() => onChange('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-red-500"
             tabIndex={-1}
           >
             <X size={13} />
           </button>
         ) : (
-          <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" />
         )}
       </div>
       {open && !disabled && (
-        <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto card border border-gray-200 dark:border-white/10 shadow-lg py-1">
+        <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto card border border-line shadow-lg py-1">
           {filtered.length === 0 ? (
-            <p className="text-[11px] text-gray-400 px-3 py-2">{emptyLabel}</p>
+            <p className="text-caption text-fg-subtle px-3 py-2">{emptyLabel}</p>
           ) : (
             filtered.map((o) => (
               <button
@@ -71,10 +71,10 @@ export default function SearchableSelect({
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => { onChange(o.id); setQuery(''); setOpen(false); }}
-                className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                className="w-full text-left px-3 py-1.5 text-small hover:bg-hover transition-colors"
               >
                 {o.label}
-                {o.sublabel && <span className="text-gray-400 text-[10px]"> · {o.sublabel}</span>}
+                {o.sublabel && <span className="text-fg-subtle text-micro"> · {o.sublabel}</span>}
               </button>
             ))
           )}

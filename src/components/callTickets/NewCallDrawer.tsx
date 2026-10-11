@@ -152,15 +152,15 @@ export default function NewCallDrawer({
     onSaved((data as { reference: string }).reference, outcome === 'assign' && assignee ? personWithRole(assignee) : null, emergency);
   };
 
-  const label = 'block text-[11px] font-medium mb-1.5 text-gray-500';
-  const sectionTitle = 'text-[11px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5';
+  const label = 'block text-caption font-medium mb-1.5 text-fg-muted';
+  const sectionTitle = 'text-caption font-semibold uppercase tracking-wide text-fg-subtle flex items-center gap-1.5';
 
   return (
     <Modal open onClose={onClose} title={emergency ? 'EMERGENCY call' : 'New call'} subtitle="Greet · classify · verify · act · confirm · record" maxWidth="max-w-2xl">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         <div className="lg:col-span-3 space-y-5">
           {emergency && (
-            <div className="rounded-lg bg-red-600 text-white px-3 py-2 text-[12px] font-semibold flex items-center gap-2" role="alert">
+            <div className="rounded-lg bg-red-600 text-white px-3 py-2 text-small font-semibold flex items-center gap-2" role="alert">
               <AlertTriangle size={15} /> Emergency: public help first (112 / 113 / 912 / 111). The MD and Fleet Manager are alerted the moment you save.
             </div>
           )}
@@ -171,7 +171,7 @@ export default function NewCallDrawer({
             <div className="flex gap-1 flex-wrap" role="radiogroup" aria-label="Channel">
               {CHANNELS.map((c) => (
                 <button key={c.key} type="button" role="radio" aria-checked={channel === c.key} onClick={() => setChannel(c.key)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${channel === c.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500'}`}>{c.label}</button>
+                  className={`px-2.5 py-1 rounded-full text-caption font-medium border ${channel === c.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-line text-fg-muted'}`}>{c.label}</button>
               ))}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -180,15 +180,15 @@ export default function NewCallDrawer({
                 <input id="caller-phone" value={callerPhone} onChange={(e) => setCallerPhone(e.target.value)} className="input" placeholder="078 000 0000" inputMode="tel" autoFocus />
               </div>
               <div>
-                <label className={label} htmlFor="caller-name">Name{quickLog && <span className="text-gray-400 font-normal"> (optional)</span>}</label>
+                <label className={label} htmlFor="caller-name">Name{quickLog && <span className="text-fg-subtle font-normal"> (optional)</span>}</label>
                 <input id="caller-name" value={callerName} onChange={(e) => setCallerName(e.target.value)} className="input" placeholder="Full name" />
               </div>
             </div>
             {history.length > 0 && (
-              <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-500/5 p-2.5 text-[11px] space-y-1">
+              <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-500/5 p-2.5 text-caption space-y-1">
                 <p className="font-semibold flex items-center gap-1 text-amber-800 dark:text-amber-300"><History size={12} /> Contacted us {history.length}× before{openHistory.length ? ` — ${openHistory.length} still open` : ''}</p>
                 {history.slice(0, 3).map((t) => (
-                  <p key={t.id} className="text-gray-600 dark:text-gray-300">
+                  <p key={t.id} className="text-fg-muted ">
                     <span className="font-mono">{t.reference}</span> · {t.situation ?? CATEGORY_LABEL[t.category]} · {STATUS_META[t.status].label} · {dateTimeLabel(t.created_at)}
                   </p>
                 ))}
@@ -204,7 +204,7 @@ export default function NewCallDrawer({
                   </select>
                 </div>
                 <div>
-                  <label className={label} htmlFor="caller-email">Email {serious ? <span className="text-amber-600">— ask for it, this is serious</span> : <span className="text-gray-400 font-normal">(optional)</span>}</label>
+                  <label className={label} htmlFor="caller-email">Email {serious ? <span className="text-amber-600">— ask for it, this is serious</span> : <span className="text-fg-subtle font-normal">(optional)</span>}</label>
                   <input id="caller-email" type="email" value={callerEmail} onChange={(e) => setCallerEmail(e.target.value)} className="input" placeholder="name@example.com" />
                 </div>
               </div>
@@ -217,8 +217,8 @@ export default function NewCallDrawer({
             {card ? (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-brand/30 bg-brand/5">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-gray-400">{card.section_title}</p>
-                  <p className="text-[12px] font-semibold">{card.situation}</p>
+                  <p className="text-micro text-fg-subtle">{card.section_title}</p>
+                  <p className="text-small font-semibold">{card.situation}</p>
                 </div>
                 <button type="button" onClick={() => setCard(null)} className="btn-ghost p-1" aria-label="Change situation"><X size={13} /></button>
               </div>
@@ -226,12 +226,12 @@ export default function NewCallDrawer({
               <>
                 <input value={situationQuery} onChange={(e) => setSituationQuery(e.target.value)} className="input" placeholder='Type a word — "late", "refund", "breakdown", "login"…' aria-label="Find the situation" />
                 {situations.length > 0 && (
-                  <div className="rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-50 dark:divide-white/5 max-h-56 overflow-y-auto">
+                  <div className="rounded-lg border border-line divide-y divide-line-muted max-h-56 overflow-y-auto">
                     {situations.map((c) => (
-                      <button key={c.id} type="button" onClick={() => pickCard(c)} className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/[0.03]">
-                        <span className="text-[12px] font-medium">{c.situation}</span>
-                        <span className="text-[10px] text-gray-400 ml-1.5">{c.section_title}</span>
-                        {c.default_priority === 'emergency' && <span className="text-[9px] font-bold text-white bg-red-600 px-1 rounded ml-1.5">EMERGENCY</span>}
+                      <button key={c.id} type="button" onClick={() => pickCard(c)} className="w-full text-left px-3 py-2 hover:bg-hover ">
+                        <span className="text-small font-medium">{c.situation}</span>
+                        <span className="text-micro text-fg-subtle ml-1.5">{c.section_title}</span>
+                        {c.default_priority === 'emergency' && <span className="text-micro font-bold text-white bg-red-600 px-1 rounded ml-1.5">EMERGENCY</span>}
                       </button>
                     ))}
                   </div>
@@ -240,25 +240,25 @@ export default function NewCallDrawer({
                   <div className="flex gap-1 flex-wrap">
                     {sectionsList.map((s) => (
                       <button key={s.key} type="button" onClick={() => setBrowseSection(browseSection === s.key ? null : s.key)}
-                        className={`px-2 py-0.5 rounded-full text-[11px] border ${browseSection === s.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : s.key === 'emergency' ? 'border-red-300 text-red-600' : 'border-gray-200 dark:border-white/10 text-gray-500'}`}>{s.title}</button>
+                        className={`px-2 py-0.5 rounded-full text-caption border ${browseSection === s.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : s.key === 'emergency' ? 'border-red-300 text-red-600' : 'border-line text-fg-muted'}`}>{s.title}</button>
                     ))}
                   </div>
                 )}
                 {browseSection && !situationQuery && (
-                  <div className="rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-50 dark:divide-white/5 max-h-56 overflow-y-auto">
+                  <div className="rounded-lg border border-line divide-y divide-line-muted max-h-56 overflow-y-auto">
                     {cards.filter((c) => !c.is_quick && c.section_key === browseSection).map((c) => (
-                      <button key={c.id} type="button" onClick={() => pickCard(c)} className="w-full text-left px-3 py-2 text-[12px] hover:bg-gray-50 dark:hover:bg-white/[0.03]">{c.situation}</button>
+                      <button key={c.id} type="button" onClick={() => pickCard(c)} className="w-full text-left px-3 py-2 text-small hover:bg-hover ">{c.situation}</button>
                     ))}
                   </div>
                 )}
               </>
             )}
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-gray-500">Priority</span>
-              <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-white/5 flex-1 max-w-xs" role="radiogroup" aria-label="Priority">
+              <span className="text-caption text-fg-muted">Priority</span>
+              <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg bg-inset flex-1 max-w-xs" role="radiogroup" aria-label="Priority">
                 {(['normal', 'urgent', 'emergency'] as const).map((pr) => (
                   <button key={pr} type="button" role="radio" aria-checked={priority === pr} onClick={() => setPriority(pr)}
-                    className={`py-1 rounded-md text-[11px] font-medium ${priority === pr ? (pr === 'emergency' ? 'bg-red-700 text-white' : pr === 'urgent' ? 'bg-red-500 text-white' : 'bg-white dark:bg-navy-800 shadow-sm') : 'text-gray-500'}`}>
+                    className={`py-1 rounded-md text-caption font-medium ${priority === pr ? (pr === 'emergency' ? 'bg-red-700 text-white' : pr === 'urgent' ? 'bg-red-500 text-white' : 'bg-surface-2 shadow-sm') : 'text-fg-muted'}`}>
                     {pr === 'normal' ? 'Normal' : pr === 'urgent' ? 'Urgent' : 'Emergency'}
                   </button>
                 ))}
@@ -279,7 +279,7 @@ export default function NewCallDrawer({
                     <div className="flex flex-wrap gap-1">
                       {SERVICES.map((s) => (
                         <button key={s} type="button" aria-pressed={services.includes(s)} onClick={() => setServices((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))}
-                          className={`px-2 py-1 rounded-md text-[11px] border ${services.includes(s) ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300' : 'border-gray-200 dark:border-white/10 text-gray-500'}`}>{s}</button>
+                          className={`px-2 py-1 rounded-md text-caption border ${services.includes(s) ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300' : 'border-line text-fg-muted'}`}>{s}</button>
                       ))}
                     </div>
                   </div>
@@ -294,11 +294,11 @@ export default function NewCallDrawer({
                 <DriverLinkPicker value={driverLink} onChange={setDriverLink} autoMatchPhone={callerPhone} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><label className={label} htmlFor="trip-ref">Trip reference <span className="text-gray-400 font-normal">(if any)</span></label><input id="trip-ref" value={tripReference} onChange={(e) => setTripReference(e.target.value)} className="input" /></div>
+                <div><label className={label} htmlFor="trip-ref">Trip reference <span className="text-fg-subtle font-normal">(if any)</span></label><input id="trip-ref" value={tripReference} onChange={(e) => setTripReference(e.target.value)} className="input" /></div>
                 <div><label className={label} htmlFor="actions">What you already did</label><input id="actions" value={actionsTaken} onChange={(e) => setActionsTaken(e.target.value)} className="input" placeholder="e.g. called the driver, no answer" /></div>
               </div>
               {showVerify && (
-                <label className={`flex items-start gap-2 text-[12px] p-2.5 rounded-lg border ${verified ? 'border-emerald-300 bg-emerald-50/60 dark:bg-emerald-500/5' : 'border-gray-200 dark:border-white/10'}`}>
+                <label className={`flex items-start gap-2 text-small p-2.5 rounded-lg border ${verified ? 'border-emerald-300 bg-emerald-50/60 dark:bg-emerald-500/5' : 'border-line '}`}>
                   <input type="checkbox" checked={verified} onChange={(e) => setVerified(e.target.checked)} className="mt-0.5" />
                   <span><ShieldCheck size={12} className="inline mr-1" /><b>Driver verified</b> — registered full name, phone number and plate all match. If they don't, don't discuss the account: log it as a verification case.</span>
                 </label>
@@ -319,9 +319,9 @@ export default function NewCallDrawer({
                 const disabled = emergency && o.key !== 'assign';
                 return (
                   <button key={o.key} type="button" role="radio" aria-checked={outcome === o.key} disabled={disabled} onClick={() => setOutcome(o.key)}
-                    className={`text-left p-2.5 rounded-xl border transition-all disabled:opacity-40 ${outcome === o.key ? 'border-brand bg-brand/5 ring-1 ring-brand/30' : 'border-gray-200 dark:border-white/10 hover:border-brand/40'}`}>
-                    <o.icon size={14} className={outcome === o.key ? 'text-brand-600 dark:text-brand-300' : 'text-gray-400'} />
-                    <p className="text-[11px] font-semibold mt-1">{o.title}</p>
+                    className={`text-left p-2.5 rounded-xl border transition-all disabled:opacity-40 ${outcome === o.key ? 'border-brand bg-brand/5 ring-1 ring-brand/30' : 'border-line hover:border-brand/40'}`}>
+                    <o.icon size={14} className={outcome === o.key ? 'text-brand-600 dark:text-brand-300' : 'text-fg-subtle'} />
+                    <p className="text-caption font-semibold mt-1">{o.title}</p>
                   </button>
                 );
               })}
@@ -334,31 +334,31 @@ export default function NewCallDrawer({
               <div className="flex flex-wrap gap-1.5">
                 {([['booking_dispatched', 'Dispatched & driver confirmed'], ['booking_declined_wait', 'Passenger declined the wait'], ['booking_no_driver', 'No driver available']] as const).map(([k, l]) => (
                   <button key={k} type="button" aria-pressed={bookingOutcome === k} onClick={() => setBookingOutcome(k)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border ${bookingOutcome === k ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500'}`}>{l}</button>
+                    className={`px-2.5 py-1.5 rounded-lg text-caption font-medium border ${bookingOutcome === k ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-line text-fg-muted'}`}>{l}</button>
                 ))}
-                <p className="text-[11px] text-gray-400 w-full">Dispatch itself happens in the operations platform — this just records the call.</p>
+                <p className="text-caption text-fg-subtle w-full">Dispatch itself happens in the operations platform — this just records the call.</p>
               </div>
             )}
-            {outcome === 'abusive' && <p className="text-[11px] text-gray-500">Only after one calm warning (see “Upset or abusive caller” in the Script Book). Unless there was a threat — then log it as an emergency instead.</p>}
+            {outcome === 'abusive' && <p className="text-caption text-fg-muted">Only after one calm warning (see “Upset or abusive caller” in the Script Book). Unless there was a threat — then log it as an emergency instead.</p>}
             {outcome === 'assign' && (
               <div className="space-y-2">
                 <AssigneePicker people={people} value={assigneeId} onChange={setAssigneeId} />
-                <div className="flex items-center gap-2 text-[11px]">
-                  <span className="text-gray-500">Tell the caller they'll hear back</span>
-                  <select value={promiseHours} onChange={(e) => setPromiseHours(Number(e.target.value))} className="input py-1 text-[11px] w-auto" aria-label="Promised update time">
+                <div className="flex items-center gap-2 text-caption">
+                  <span className="text-fg-muted">Tell the caller they'll hear back</span>
+                  <select value={promiseHours} onChange={(e) => setPromiseHours(Number(e.target.value))} className="input py-1 text-caption w-auto" aria-label="Promised update time">
                     {PROMISE_OPTIONS.map((o) => <option key={o.hours} value={o.hours}>{o.label}</option>)}
                   </select>
-                  <span className="text-gray-400">({promisedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })})</span>
+                  <span className="text-fg-subtle">({promisedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })})</span>
                 </div>
               </div>
             )}
           </section>
 
-          {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+          {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-4 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Cancel</button>
-            <button onClick={save} disabled={!canSave || saving} className={`flex items-center gap-1.5 disabled:opacity-50 ${emergency ? 'bg-red-600 hover:bg-red-700 text-white text-[12px] font-semibold px-4 py-2 rounded-lg' : 'btn-primary'}`}>
+            <button onClick={save} disabled={!canSave || saving} className={`flex items-center gap-1.5 disabled:opacity-50 ${emergency ? 'bg-red-600 hover:bg-red-700 text-white text-small font-semibold px-4 py-2 rounded-lg' : 'btn-primary'}`}>
               {outcome === 'assign' ? <Send size={14} /> : <CheckCircle2 size={14} />}
               {saving ? 'Saving…' : outcome === 'assign' ? (assignee ? `Send to ${assignee.full_name.trim()}` : 'Send') : 'Save'}
             </button>
@@ -367,19 +367,19 @@ export default function NewCallDrawer({
 
         {/* Script panel */}
         <aside className="lg:col-span-2">
-          <div className="lg:sticky lg:top-0 rounded-xl border border-gray-100 dark:border-white/10 p-4 bg-gray-50/50 dark:bg-white/[0.02]">
+          <div className="lg:sticky lg:top-0 rounded-xl border border-line-muted p-4 bg-gray-50/50 dark:bg-white/[0.02]">
             {card ? (
               <>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{card.section_title}</p>
-                <p className="text-[13px] font-semibold mb-3">{card.situation}</p>
+                <p className="text-micro font-medium text-fg-subtle uppercase tracking-wide">{card.section_title}</p>
+                <p className="text-body font-semibold mb-3">{card.situation}</p>
                 <ScriptCardView card={card} ownerLabel={card.owner_duty ? duties[card.owner_duty]?.label ?? null : null} compact />
               </>
             ) : (
-              <div className="text-[12px] text-gray-500 space-y-2">
-                <p className="font-semibold text-gray-700 dark:text-gray-200">Open with:</p>
+              <div className="text-small text-fg-muted space-y-2">
+                <p className="font-semibold text-fg-muted ">Open with:</p>
                 <p className="border-l-[3px] border-brand bg-brand/5 rounded-r-md px-3 py-2">“Thank you for contacting Kivu Ride on 6023. My name is [name]. How may I assist you today?”</p>
                 <p>Then pick what the call is about — the script for that situation appears here, and the right person is pre-selected.</p>
-                <p className="text-[11px] text-gray-400">Close with: “Thank you for choosing Kivu Ride. Your reference is [reference]. We will update you within two hours.”</p>
+                <p className="text-caption text-fg-subtle">Close with: “Thank you for choosing Kivu Ride. Your reference is [reference]. We will update you within two hours.”</p>
               </div>
             )}
           </div>

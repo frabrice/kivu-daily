@@ -201,7 +201,7 @@ export const DEPOSIT_TIER_STYLE: Record<DepositTier, { dot: string; text: string
   red: { dot: 'bg-red-500', text: 'text-red-500', badge: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10' },
   yellow: { dot: 'bg-amber-400', text: 'text-amber-600 dark:text-amber-400', badge: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10' },
   green: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', badge: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10' },
-  neutral: { dot: 'bg-gray-200 dark:bg-white/10', text: 'text-gray-400', badge: 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5' },
+  neutral: { dot: 'bg-gray-200 dark:bg-white/10', text: 'text-fg-subtle', badge: 'text-fg-muted bg-inset ' },
 };
 
 // Some displays (the deposits list's side bar, the remaining-balance

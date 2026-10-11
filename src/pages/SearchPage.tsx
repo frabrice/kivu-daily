@@ -36,7 +36,7 @@ export default function SearchPage({ employees, allTasks, onSelect }: Props) {
   return (
     <div className="space-y-4">
       <div className="relative">
-        <SearchIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+        <SearchIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-subtle" />
         <input
           autoFocus
           value={query}
@@ -46,22 +46,22 @@ export default function SearchPage({ employees, allTasks, onSelect }: Props) {
         />
       </div>
 
-      {!query.trim() && <p className="text-sm text-gray-400 text-center py-8">Start typing to search across the company.</p>}
+      {!query.trim() && <p className="text-sm text-fg-subtle text-center py-8">Start typing to search across the company.</p>}
 
       {query.trim() && results.employees.length === 0 && results.tasks.length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-8">No results found.</p>
+        <p className="text-sm text-fg-subtle text-center py-8">No results found.</p>
       )}
 
       {results.employees.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-500 mb-2">Employees ({results.employees.length})</h3>
+          <h3 className="text-sm font-semibold text-fg-muted mb-2">Employees ({results.employees.length})</h3>
           <div className="space-y-2">
             {results.employees.map((e) => (
               <button key={e.id} onClick={() => onSelect(e)} className="card p-3 flex items-center gap-3 w-full text-left hover:shadow-sm transition-all">
                 <Avatar name={e.full_name} url={e.avatar_url} size="md" />
                 <div className="flex-1">
                   <p className="text-sm font-medium">{e.full_name}</p>
-                  <p className="text-xs text-gray-400">{e.department?.name}</p>
+                  <p className="text-xs text-fg-subtle">{e.department?.name}</p>
                 </div>
                 <span className="text-sm font-bold" style={{ color: completionColor(e.todayPct) }}>{Math.round(e.todayPct)}%</span>
               </button>
@@ -72,7 +72,7 @@ export default function SearchPage({ employees, allTasks, onSelect }: Props) {
 
       {results.tasks.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-500 mb-2">Tasks ({results.tasks.length})</h3>
+          <h3 className="text-sm font-semibold text-fg-muted mb-2">Tasks ({results.tasks.length})</h3>
           <div className="space-y-1.5">
             {results.tasks.map((t) => {
               const emp = employees.find((e) => e.id === t.user_id);
@@ -80,8 +80,8 @@ export default function SearchPage({ employees, allTasks, onSelect }: Props) {
                 <div key={t.id} className="card p-3 flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${t.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
                   <div className="flex-1">
-                    <p className={`text-sm ${t.completed ? 'line-through text-gray-400' : ''}`}>{t.title}</p>
-                    <p className="text-xs text-gray-400">{emp?.full_name} · {formatDateLabel(t.date)}</p>
+                    <p className={`text-sm ${t.completed ? 'line-through text-fg-subtle' : ''}`}>{t.title}</p>
+                    <p className="text-xs text-fg-subtle">{emp?.full_name} · {formatDateLabel(t.date)}</p>
                   </div>
                 </div>
               );

@@ -96,7 +96,7 @@ export default function AgentPerformancePage({ agentId, onBack }: { agentId: str
   const vsTeam = (f: (x: Metrics) => number | null, fmt: (n: number) => string) => {
     const a = avg(f);
     const r = rankOf(f);
-    return a === null ? undefined : <>Team average {fmt(a)}{r ? <span className="text-gray-400"> · #{r} of {team.length}</span> : null}</>;
+    return a === null ? undefined : <>Team average {fmt(a)}{r ? <span className="text-fg-subtle"> · #{r} of {team.length}</span> : null}</>;
   };
 
   const myTickets = tickets.filter((t) => inRange(t.created_at));
@@ -148,8 +148,8 @@ export default function AgentPerformancePage({ agentId, onBack }: { agentId: str
         <div className="flex items-start gap-2">
           <button onClick={onBack} className="btn-ghost p-1.5 mt-0.5" aria-label="Back"><ArrowLeft size={16} /></button>
           <div>
-            <h2 className="text-base font-semibold">{profile?.full_name.trim() ?? 'Agent'}{profile && !profile.is_active && <span className="ml-2 text-[11px] font-normal text-gray-400">(left)</span>}</h2>
-            <p className="text-[11px] text-gray-500">
+            <h2 className="text-base font-semibold">{profile?.full_name.trim() ?? 'Agent'}{profile && !profile.is_active && <span className="ml-2 text-caption font-normal text-fg-subtle">(left)</span>}</h2>
+            <p className="text-caption text-fg-muted">
               Call Center agent · {mineAll.length} shift{mineAll.length === 1 ? '' : 's'} since {longDay(firstDay)}
               {mineAll[0] && <> · last shift {longDay(kigaliDay(mineAll[0].started_at))}</>}
             </p>
@@ -179,7 +179,7 @@ export default function AgentPerformancePage({ agentId, onBack }: { agentId: str
         {starts.length === 0 ? <Empty>No shifts in this period.</Empty> : (
           <>
             <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {(Object.keys(TONE_LABEL) as StartTone[]).map((t) => <span key={t} className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: STATUS[t] }} />{TONE_LABEL[t]} <b>{starts.filter((s) => s.tone === t).length}</b></span>)}
+              {(Object.keys(TONE_LABEL) as StartTone[]).map((t) => <span key={t} className="flex items-center gap-1.5 text-caption text-fg-muted "><span className="w-2.5 h-2.5 rounded-sm" style={{ background: STATUS[t] }} />{TONE_LABEL[t]} <b>{starts.filter((s) => s.tone === t).length}</b></span>)}
             </div>
             <div style={{ height: 200 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -190,10 +190,10 @@ export default function AgentPerformancePage({ agentId, onBack }: { agentId: str
                   <Tooltip cursor={{ fill: c.grid }} content={({ active, payload }) => {
                     const s = active && payload?.[0] ? (payload[0].payload as (typeof starts)[number]) : null;
                     return s ? (
-                      <div className="rounded-lg border border-gray-100 dark:border-white/10 bg-white dark:bg-navy-700 shadow-lg px-3 py-2 text-[11px]">
+                      <div className="rounded-lg border border-line-muted bg-surface-3 shadow-lg px-3 py-2 text-caption">
                         <p className="font-semibold">{SLOT_LABEL[s.shift.slot]} · {longDay(kigaliDay(s.shift.started_at))}</p>
-                        <p className="text-gray-600 dark:text-gray-300">Started {kTime(s.shift.started_at)} · {s.late ? `${s.late} min late` : 'on time'}</p>
-                        <p className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300"><span className="w-2 h-2 rounded-sm" style={{ background: STATUS[s.tone] }} />{TONE_LABEL[s.tone]}</p>
+                        <p className="text-fg-muted ">Started {kTime(s.shift.started_at)} · {s.late ? `${s.late} min late` : 'on time'}</p>
+                        <p className="flex items-center gap-1.5 text-fg-muted "><span className="w-2 h-2 rounded-sm" style={{ background: STATUS[s.tone] }} />{TONE_LABEL[s.tone]}</p>
                       </div>
                     ) : null;
                   }} />
@@ -223,14 +223,14 @@ export default function AgentPerformancePage({ agentId, onBack }: { agentId: str
           <RankBars rows={byCategory} color={c.blue} empty="No cases logged in this period." />
         </ChartCard>
         <div className="card p-4 space-y-3 min-w-0">
-          <p className="text-[13px] font-semibold flex items-center gap-1.5"><MessageSquareText size={14} /> What they wrote in their shift reports</p>
+          <p className="text-body font-semibold flex items-center gap-1.5"><MessageSquareText size={14} /> What they wrote in their shift reports</p>
           {writings.length === 0 ? <Empty>No problems, suggestions or feedback written in this period.</Empty> : (
             <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
               {writings.map((s) => (
-                <button key={s.id} onClick={() => setOpen(s)} className="block w-full text-left rounded-lg border border-gray-100 dark:border-white/10 p-2.5 hover:border-brand/40">
-                  <p className="text-[10px] text-gray-400 mb-1">{longDay(kigaliDay(s.started_at))} · {SLOT_LABEL[s.slot].split(' ')[0]}</p>
+                <button key={s.id} onClick={() => setOpen(s)} className="block w-full text-left rounded-lg border border-line-muted p-2.5 hover:border-brand/40">
+                  <p className="text-micro text-fg-subtle mb-1">{longDay(kigaliDay(s.started_at))} · {SLOT_LABEL[s.slot].split(' ')[0]}</p>
                   {([['Problems', s.report.problems], ['Still unresolved', s.report.unresolved_summary], ['Caller feedback', s.report.feedback], ['Suggestions', s.report.suggestions]] as [string, string | undefined][])
-                    .filter(([, v]) => v && v.trim()).map(([l, v]) => <p key={l} className="text-[12px]"><span className="font-semibold text-gray-500">{l}: </span>{v}</p>)}
+                    .filter(([, v]) => v && v.trim()).map(([l, v]) => <p key={l} className="text-small"><span className="font-semibold text-fg-muted">{l}: </span>{v}</p>)}
                 </button>
               ))}
             </div>
@@ -239,17 +239,17 @@ export default function AgentPerformancePage({ agentId, onBack }: { agentId: str
       </div>
 
       <div className="card overflow-x-auto">
-        <p className="text-[13px] font-semibold px-4 pt-4 pb-2 flex items-center gap-1.5"><Clock size={14} /> Every shift</p>
+        <p className="text-body font-semibold px-4 pt-4 pb-2 flex items-center gap-1.5"><Clock size={14} /> Every shift</p>
         {mine.length === 0 ? <Empty>No shifts in this period.</Empty> : (
-          <table className="w-full text-[12px] min-w-[760px]">
-            <thead><tr className="text-[11px] text-gray-400 border-b border-gray-100 dark:border-white/5 text-left">
+          <table className="w-full text-small min-w-[760px]">
+            <thead><tr className="text-caption text-fg-subtle border-b border-line-muted text-left">
               {['Day', 'Shift', 'Started', 'Ended', 'Time', 'Start', 'In / out / missed', 'Logged', 'Outreach', 'Partner'].map((h) => <th key={h} className="px-3 py-2 font-medium">{h}</th>)}
             </tr></thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-white/5">
+            <tbody className="divide-y divide-line-muted ">
               {mine.map((s) => {
                 const tone = startTone(s);
                 return (
-                  <tr key={s.id} onClick={() => setOpen(s)} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.03]">
+                  <tr key={s.id} onClick={() => setOpen(s)} className="cursor-pointer hover:bg-hover ">
                     <td className="px-3 py-2 whitespace-nowrap">{longDay(kigaliDay(s.started_at))}</td>
                     <td className="px-3 py-2">{SLOT_LABEL[s.slot].split(' ')[0]}</td>
                     <td className="px-3 py-2 tabular-nums">{kTime(s.started_at)}</td>
@@ -259,7 +259,7 @@ export default function AgentPerformancePage({ agentId, onBack }: { agentId: str
                     <td className="px-3 py-2 tabular-nums">{s.report.calls_received ?? 0} / {s.report.calls_made ?? 0} / {s.report.calls_missed ?? 0}</td>
                     <td className="px-3 py-2 tabular-nums">{s.stats.contacts_logged ?? 0}</td>
                     <td className="px-3 py-2 tabular-nums">{s.stats.outreach_calls ?? 0}</td>
-                    <td className="px-3 py-2 text-gray-500">{s.partner_id ? name(s.partner_id) : '—'}</td>
+                    <td className="px-3 py-2 text-fg-muted">{s.partner_id ? name(s.partner_id) : '—'}</td>
                   </tr>
                 );
               })}
@@ -287,27 +287,27 @@ function StartsCalendar({ days, shifts, onOpen }: { days: string[]; shifts: Call
     <div className="card p-4 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-[13px] font-semibold">Days and starts</p>
-          <p className="text-[11px] text-gray-500">Worked {worked} of {shown.length} days{days.length > 91 ? ' (last 13 weeks shown)' : ''} · M = morning, A = afternoon, N = night. Click a shift for its report.</p>
+          <p className="text-body font-semibold">Days and starts</p>
+          <p className="text-caption text-fg-muted">Worked {worked} of {shown.length} days{days.length > 91 ? ' (last 13 weeks shown)' : ''} · M = morning, A = afternoon, N = night. Click a shift for its report.</p>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1">
-          {(Object.keys(TONE_LABEL) as StartTone[]).map((t) => <span key={t} className="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: STATUS[t] }} />{TONE_LABEL[t]}</span>)}
+          {(Object.keys(TONE_LABEL) as StartTone[]).map((t) => <span key={t} className="flex items-center gap-1 text-caption text-fg-muted "><span className="w-2.5 h-2.5 rounded-sm" style={{ background: STATUS[t] }} />{TONE_LABEL[t]}</span>)}
         </div>
       </div>
       <div className="grid grid-cols-7 gap-1 max-w-[560px]">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => <span key={d} className="text-[10px] text-gray-400 text-center">{d}</span>)}
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => <span key={d} className="text-micro text-fg-subtle text-center">{d}</span>)}
         {cells.map((d, i) => {
           if (!d) return <span key={`x${i}`} />;
           const list = byDay.get(d) ?? [];
           return (
-            <div key={d} title={`${longDay(d)}${list.length ? '' : ' · no shift'}`} className={`rounded-md border p-1 min-h-[44px] ${list.length ? 'border-gray-200 dark:border-white/10' : 'border-dashed border-gray-100 dark:border-white/5'}`}>
-              <p className="text-[9px] text-gray-400 leading-none">{Number(d.slice(8))}{d.slice(8) === '01' ? ` ${new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { month: 'short' })}` : ''}</p>
+            <div key={d} title={`${longDay(d)}${list.length ? '' : ' · no shift'}`} className={`rounded-md border p-1 min-h-[44px] ${list.length ? 'border-line ' : 'border-dashed border-line-muted '}`}>
+              <p className="text-micro text-fg-subtle leading-none">{Number(d.slice(8))}{d.slice(8) === '01' ? ` ${new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { month: 'short' })}` : ''}</p>
               <div className="flex flex-wrap gap-0.5 mt-1">
                 {list.map((s) => {
                   const tone = startTone(s);
                   return (
                     <button key={s.id} onClick={() => onOpen(s)} title={`${SLOT_LABEL[s.slot]} · started ${kTime(s.started_at)} · ${TONE_LABEL[tone]}`}
-                      className="text-[9px] font-bold leading-none px-1 py-0.5 rounded text-white" style={{ background: STATUS[tone], color: tone === 'warning' ? '#3a2a00' : '#fff' }}>
+                      className="text-micro font-bold leading-none px-1 py-0.5 rounded text-white" style={{ background: STATUS[tone], color: tone === 'warning' ? '#3a2a00' : '#fff' }}>
                       {SLOT_LETTER[s.slot]}
                     </button>
                   );

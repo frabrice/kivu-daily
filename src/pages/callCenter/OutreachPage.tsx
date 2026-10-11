@@ -89,17 +89,17 @@ export default function OutreachPage() {
   const pool = drivers.length - (counts.came ?? 0) - (counts.wrong_number ?? 0);
   const doneInRound = Math.max(0, pool - counts.round);
 
-  if (loading) return <div className="card p-10 text-center text-[12px] text-gray-400">Loading Non-Insider drivers…</div>;
+  if (loading) return <div className="card p-10 text-center text-small text-fg-subtle">Loading Non-Insider drivers…</div>;
 
   const chip = (key: View, label: string, n: number | undefined, title?: string) => (
     <button key={key} role="tab" aria-selected={view === key} title={title} onClick={() => { setView(key); setQ(''); }}
-      className={`px-2 py-1 rounded-md text-[11px] font-medium border text-left ${view === key && !term ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500 hover:border-brand/40'}`}>
+      className={`px-2 py-1 rounded-md text-caption font-medium border text-left ${view === key && !term ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-line text-fg-muted hover:border-brand/40'}`}>
       {label} <span className="opacity-70 tabular-nums">{n ?? 0}</span>
     </button>
   );
   const select = (label: string, value: string, set: (v: string) => void, options: { key: string; label: string }[]) => (
-    <label className="block min-w-0"><span className="block text-[10px] text-gray-500 mb-0.5">{label}</span>
-      <select value={value} onChange={(e) => set(e.target.value)} className="input py-1 text-[11px]">
+    <label className="block min-w-0"><span className="block text-micro text-fg-muted mb-0.5">{label}</span>
+      <select value={value} onChange={(e) => set(e.target.value)} className="input py-1 text-caption">
         <option value="">Any</option>
         {options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
         <option value="none">Not asked yet</option>
@@ -108,10 +108,10 @@ export default function OutreachPage() {
   );
 
   const tabs = (
-    <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit" role="tablist" aria-label="Outreach">
+    <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit" role="tablist" aria-label="Outreach">
       {([['call', 'Call drivers'], ['log', 'Calls log'], ...(isMd ? [['report', 'Full report']] as const : [])] as const).map(([k, l]) => (
         <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
-          className={`px-3 py-1.5 rounded-md text-[12px] font-medium ${tab === k ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>{l}</button>
+          className={`px-3 py-1.5 rounded-md text-small font-medium ${tab === k ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}>{l}</button>
       ))}
     </div>
   );
@@ -127,8 +127,8 @@ export default function OutreachPage() {
         <div className="flex items-center gap-3 min-w-[220px] flex-1">
           <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand-600 dark:text-brand-300 flex items-center justify-center shrink-0"><Target size={18} /></div>
           <div className="flex-1">
-            <p className="text-[12px] font-semibold">Your outreach calls today: {mineToday.length} of {DAILY_GOAL}</p>
-            <div className="h-1.5 rounded-full bg-gray-100 dark:bg-white/10 mt-1.5 overflow-hidden" role="progressbar" aria-valuenow={mineToday.length} aria-valuemax={DAILY_GOAL}>
+            <p className="text-small font-semibold">Your outreach calls today: {mineToday.length} of {DAILY_GOAL}</p>
+            <div className="h-1.5 rounded-full bg-inset mt-1.5 overflow-hidden" role="progressbar" aria-valuenow={mineToday.length} aria-valuemax={DAILY_GOAL}>
               <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (mineToday.length / DAILY_GOAL) * 100)}%` }} />
             </div>
           </div>
@@ -138,7 +138,7 @@ export default function OutreachPage() {
         <Stat n={counts.came ?? 0} label="came to the office" />
       </div>
 
-      <div className="rounded-xl bg-brand/5 border border-brand/20 px-4 py-3 text-[12px] flex flex-wrap gap-x-6 gap-y-1">
+      <div className="rounded-xl bg-brand/5 border border-brand/20 px-4 py-3 text-small flex flex-wrap gap-x-6 gap-y-1">
         <span className="flex items-center gap-1.5 font-semibold"><Megaphone size={14} className="text-brand-600 dark:text-brand-300" /> Three questions</span>
         <span><b>1. Updated app</b> — come to our office, IT installs it and shows the new features.</span>
         <span><b>2. Device</b> — {rwf(DEVICE_PRICE)}, one-time. More clients.</span>
@@ -148,9 +148,9 @@ export default function OutreachPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,350px)_minmax(0,1fr)] gap-4 items-start">
         <div className="card p-3 space-y-3">
           <button onClick={callNext} className="btn-primary w-full flex items-center justify-center gap-1.5"><PhoneForwarded size={14} /> Call next driver</button>
-          {nextMsg && <p className="text-[11px] text-gray-500 bg-gray-50 dark:bg-white/[0.03] rounded-lg p-2">{nextMsg}</p>}
+          {nextMsg && <p className="text-caption text-fg-muted bg-inset rounded-lg p-2">{nextMsg}</p>}
           <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={q} onChange={(e) => setQ(e.target.value)} className="input pl-8" placeholder="Name, phone or plate" aria-label="Search Non-Insider drivers" />
           </div>
           <div role="tablist" aria-label="Outreach lists" className="space-y-1.5">
@@ -168,28 +168,28 @@ export default function OutreachPage() {
             {select('Device', deviceF, setDeviceF, ANSWERS)}
             {select('Branding', brandF, setBrandF, ANSWERS)}
           </div>
-          <p className="text-[10px] text-gray-400">{list.length} driver{list.length === 1 ? '' : 's'}</p>
+          <p className="text-micro text-fg-subtle">{list.length} driver{list.length === 1 ? '' : 's'}</p>
           <div className="max-h-[60vh] overflow-y-auto -mx-1 px-1 space-y-1">
-            {list.length === 0 && <p className="text-[12px] text-gray-400 text-center py-6">{term ? 'No driver matches.' : view === 'round' ? `Round ${roundNo} is done — everyone has been reached.` : 'Nobody here.'}</p>}
+            {list.length === 0 && <p className="text-small text-fg-subtle text-center py-6">{term ? 'No driver matches.' : view === 'round' ? `Round ${roundNo} is done — everyone has been reached.` : 'Nobody here.'}</p>}
             {list.map((d) => {
               const s = statuses[d.id];
               const lockedBy = claimedByOther(s, me) ? names[s!.claimed_by!] ?? 'another agent' : null;
               return (
                 <button key={d.id} onClick={() => open(d.id)}
-                  className={`w-full text-left rounded-lg px-2.5 py-2 border transition-colors ${selectedId === d.id ? 'border-brand bg-brand/5' : 'border-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'} ${lockedBy ? 'opacity-60' : ''}`}>
+                  className={`w-full text-left rounded-lg px-2.5 py-2 border transition-colors ${selectedId === d.id ? 'border-brand bg-brand/5' : 'border-transparent hover:bg-hover '} ${lockedBy ? 'opacity-60' : ''}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[12px] font-medium truncate">{d.full_name}</p>
-                    {lockedBy ? <span className="text-[10px] text-amber-700 dark:text-amber-300 flex items-center gap-0.5 shrink-0"><Lock size={10} /> {lockedBy.split(/\s+/)[0]}</span> : <ChevronRight size={13} className="text-gray-300 shrink-0" />}
+                    <p className="text-small font-medium truncate">{d.full_name}</p>
+                    {lockedBy ? <span className="text-micro text-amber-700 dark:text-amber-300 flex items-center gap-0.5 shrink-0"><Lock size={10} /> {lockedBy.split(/\s+/)[0]}</span> : <ChevronRight size={13} className="text-fg-subtle shrink-0" />}
                   </div>
-                  <p className="text-[11px] text-gray-500 truncate">{d.car?.plate_number ?? 'No car'} · {d.phone}</p>
+                  <p className="text-caption text-fg-muted truncate">{d.car?.plate_number ?? 'No car'} · {d.phone}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     <AnswerChip label="App" value={s?.app_status ? APP_STATUS_SHORT[s.app_status] : null} tone={s?.app_status === 'not_interested' ? 'no' : s?.app_status ? 'yes' : null} />
                     <AnswerChip label="Device" value={s?.device_answer ? ANSWER_LABEL[s.device_answer] : null} tone={s?.device_answer ?? null} />
                     <AnswerChip label="Brand" value={s?.branding_answer ? ANSWER_LABEL[s.branding_answer] : null} tone={s?.branding_answer ?? null} />
-                    {s?.came_to_office_on && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200">✓ Came {shortDate(s.came_to_office_on)}</span>}
+                    {s?.came_to_office_on && <span className="text-micro px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200">✓ Came {shortDate(s.came_to_office_on)}</span>}
                   </div>
                   {s?.last_result && (
-                    <p className="text-[10px] text-gray-400 truncate mt-0.5">
+                    <p className="text-micro text-fg-subtle truncate mt-0.5">
                       R{s.last_round}: {RESULT_LABEL[s.last_result]}{s.last_called_at && ` · ${shortDate(s.last_called_at)}`}
                       {s.last_result === 'callback' && s.callback_at && ` → ${new Date(s.callback_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
                     </p>
@@ -207,8 +207,8 @@ export default function OutreachPage() {
         ) : (
           <div className="card p-6 space-y-4">
             <div>
-              <p className="text-[14px] font-semibold flex items-center gap-2"><PhoneForwarded size={16} className="text-brand-600 dark:text-brand-300" /> Press "Call next driver"</p>
-              <p className="text-[12px] text-gray-500 mt-1">You get the next driver nobody else is calling — call-backs that are due first, then drivers not called yet this round. Log every call, even no answer. Use the categories and filters to find drivers by their answers.</p>
+              <p className="text-ui font-semibold flex items-center gap-2"><PhoneForwarded size={16} className="text-brand-600 dark:text-brand-300" /> Press "Call next driver"</p>
+              <p className="text-small text-fg-muted mt-1">You get the next driver nobody else is calling — call-backs that are due first, then drivers not called yet this round. Log every call, even no answer. Use the categories and filters to find drivers by their answers.</p>
             </div>
             <ScriptSteps script={script} />
           </div>
@@ -221,15 +221,15 @@ export default function OutreachPage() {
 }
 
 function Stat({ n, label }: { n: number | string; label: string }) {
-  return <div><p className="text-[16px] font-bold leading-tight tabular-nums">{n}</p><p className="text-[10px] text-gray-500">{label}</p></div>;
+  return <div><p className="text-title font-bold leading-tight tabular-nums">{n}</p><p className="text-micro text-fg-muted">{label}</p></div>;
 }
 
 function AnswerChip({ label, value, tone }: { label: string; value: string | null; tone: Answer | 'yes' | 'no' | null }) {
-  const cls = !value ? 'bg-gray-50 text-gray-400 dark:bg-white/5'
+  const cls = !value ? 'bg-inset text-fg-subtle '
     : tone === 'yes' ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200'
     : tone === 'thinking' ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'
-    : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300';
-  return <span className={`text-[10px] px-1.5 py-0.5 rounded ${cls}`}>{label}: {value ?? '—'}</span>;
+    : 'bg-inset text-fg-muted  ';
+  return <span className={`text-micro px-1.5 py-0.5 rounded ${cls}`}>{label}: {value ?? '—'}</span>;
 }
 
 function RoundCard({ round, names, done, pool, left, onStartNext, onSaved }: { round: OutreachRound | null; names: Record<string, string>; done: number; pool: number; left: number; onStartNext: () => void; onSaved: () => void }) {
@@ -248,26 +248,26 @@ function RoundCard({ round, names, done, pool, left, onStartNext, onSaved }: { r
     <div className="card p-4 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[14px] font-semibold flex items-center gap-2"><RotateCcw size={15} className="text-brand-600 dark:text-brand-300" /> Call round {round?.number ?? 1}</p>
-          <p className="text-[11px] text-gray-500">Started {round ? shortDate(round.started_at) : '—'}{round?.started_by && names[round.started_by] ? ` by ${names[round.started_by]}` : ''} · {done} of {pool} drivers reached · {left} left</p>
+          <p className="text-ui font-semibold flex items-center gap-2"><RotateCcw size={15} className="text-brand-600 dark:text-brand-300" /> Call round {round?.number ?? 1}</p>
+          <p className="text-caption text-fg-muted">Started {round ? shortDate(round.started_at) : '—'}{round?.started_by && names[round.started_by] ? ` by ${names[round.started_by]}` : ''} · {done} of {pool} drivers reached · {left} left</p>
         </div>
-        <button onClick={onStartNext} className={left === 0 ? 'btn-primary' : 'btn-ghost text-[12px]'}>Start round {(round?.number ?? 1) + 1}</button>
+        <button onClick={onStartNext} className={left === 0 ? 'btn-primary' : 'btn-ghost text-small'}>Start round {(round?.number ?? 1) + 1}</button>
       </div>
-      <div className="h-2 rounded-full bg-gray-100 dark:bg-white/10 overflow-hidden" role="progressbar" aria-valuenow={done} aria-valuemax={pool} aria-label="Round progress">
+      <div className="h-2 rounded-full bg-inset overflow-hidden" role="progressbar" aria-valuenow={done} aria-valuemax={pool} aria-label="Round progress">
         <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
       </div>
       <div className="rounded-lg border-l-[3px] border-brand bg-brand/5 px-3 py-2">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Tell them this round</p>
-          {!editing && <button onClick={() => setEditing(true)} className="text-[11px] text-gray-500 hover:text-brand-600 flex items-center gap-1"><Pencil size={11} /> Edit</button>}
+          <p className="text-micro font-semibold uppercase tracking-wide text-fg-muted">Tell them this round</p>
+          {!editing && <button onClick={() => setEditing(true)} className="text-caption text-fg-muted hover:text-brand-600 flex items-center gap-1"><Pencil size={11} /> Edit</button>}
         </div>
         {editing ? (
           <div className="space-y-1.5 mt-1">
-            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} className="input resize-none text-[12px]" aria-label="Talking points" />
-            {error && <p className="text-[11px] text-red-600">{error}</p>}
-            <div className="flex gap-2 justify-end"><button onClick={() => { setEditing(false); setText(round?.talking_points ?? ''); }} className="btn-ghost text-[11px]">Cancel</button><button onClick={save} className="btn-primary text-[11px]">Save</button></div>
+            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} className="input resize-none text-small" aria-label="Talking points" />
+            {error && <p className="text-caption text-red-600">{error}</p>}
+            <div className="flex gap-2 justify-end"><button onClick={() => { setEditing(false); setText(round?.talking_points ?? ''); }} className="btn-ghost text-caption">Cancel</button><button onClick={save} className="btn-primary text-caption">Save</button></div>
           </div>
-        ) : <p className="text-[13px] mt-0.5">{round?.talking_points || 'Nothing written yet — press Edit.'}</p>}
+        ) : <p className="text-body mt-0.5">{round?.talking_points || 'Nothing written yet — press Edit.'}</p>}
       </div>
     </div>
   );
@@ -287,12 +287,12 @@ function NewRoundModal({ current, left, onClose, onStarted }: { current: number;
   return (
     <Modal open onClose={onClose} title={`Start round ${current + 1}`} subtitle="Everyone who hasn't come to the office yet goes back on the list." maxWidth="max-w-md">
       <div className="space-y-3">
-        {left > 0 && <p className="text-[12px] rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200 px-3 py-2">{left} driver{left === 1 ? ' hasn\'t' : 's haven\'t'} been reached in round {current} yet. Starting now puts them in round {current + 1} with everyone else.</p>}
-        <label className="block"><span className="block text-[11px] font-medium mb-1 text-gray-500">What to tell drivers this round *</span>
+        {left > 0 && <p className="text-small rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200 px-3 py-2">{left} driver{left === 1 ? ' hasn\'t' : 's haven\'t'} been reached in round {current} yet. Starting now puts them in round {current + 1} with everyone else.</p>}
+        <label className="block"><span className="block text-caption font-medium mb-1 text-fg-muted">What to tell drivers this round *</span>
           <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} className="input resize-none" placeholder="e.g. This week we gave our drivers on average 3 passengers a day. Branded drivers get priority — come to the office this week." />
         </label>
-        <p className="text-[11px] text-gray-500">Ask IT or the MD for this week's numbers. Never promise a driver a number of trips.</p>
-        {error && <p className="text-[11px] text-red-600">{error}</p>}
+        <p className="text-caption text-fg-muted">Ask IT or the MD for this week's numbers. Never promise a driver a number of trips.</p>
+        {error && <p className="text-caption text-red-600">{error}</p>}
         <div className="flex justify-end gap-2"><button onClick={onClose} className="btn-ghost">Cancel</button><button onClick={start} disabled={busy || !text.trim()} className="btn-primary disabled:opacity-50">{busy ? 'Starting…' : `Start round ${current + 1}`}</button></div>
       </div>
     </Modal>
@@ -305,13 +305,13 @@ function ScriptSteps({ script }: { script: ScriptCard[] }) {
   if (!script.length) return null;
   return (
     <div className="space-y-1.5">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">The call, step by step</p>
+      <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle">The call, step by step</p>
       {script.map((c, i) => (
-        <div key={c.id} className="rounded-lg border border-gray-100 dark:border-white/10">
+        <div key={c.id} className="rounded-lg border border-line-muted ">
           <button onClick={() => setOpen(open === c.id ? null : c.id)} aria-expanded={open === c.id} className="w-full flex items-center gap-2 px-3 py-2 text-left">
-            <span className="w-5 h-5 rounded-full bg-brand/10 text-brand-700 dark:text-brand-300 text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-            <span className="text-[12px] font-medium flex-1">{c.situation}</span>
-            <ChevronRight size={13} className={`text-gray-400 transition-transform ${open === c.id ? 'rotate-90' : ''}`} />
+            <span className="w-5 h-5 rounded-full bg-brand/10 text-brand-700 dark:text-brand-300 text-micro font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+            <span className="text-small font-medium flex-1">{c.situation}</span>
+            <ChevronRight size={13} className={`text-fg-subtle transition-transform ${open === c.id ? 'rotate-90' : ''}`} />
           </button>
           {open === c.id && <div className="px-3 pb-3"><ScriptCardView card={c} compact /></div>}
         </div>
@@ -323,11 +323,11 @@ function ScriptSteps({ script }: { script: ScriptCard[] }) {
 function Choice<T extends string>({ label, value, onChange, options, required }: { label: string; value: T | null; onChange: (v: T) => void; options: { key: T; label: string }[]; required?: boolean }) {
   return (
     <div>
-      <p className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mb-1">{label}{required && ' *'}</p>
+      <p className="text-caption font-medium text-fg-muted mb-1">{label}{required && ' *'}</p>
       <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={label}>
         {options.map((o) => (
           <button key={o.key} type="button" role="radio" aria-checked={value === o.key} onClick={() => onChange(o.key)}
-            className={`px-2.5 py-1.5 rounded-lg border text-[12px] transition-colors ${value === o.key ? 'border-brand bg-brand/10 text-brand-800 dark:text-brand-200 font-medium' : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-brand/40'}`}>
+            className={`px-2.5 py-1.5 rounded-lg border text-small transition-colors ${value === o.key ? 'border-brand bg-brand/10 text-brand-800 dark:text-brand-200 font-medium' : 'border-line text-fg-muted hover:border-brand/40'}`}>
             {o.label}
           </button>
         ))}
@@ -378,15 +378,15 @@ function DriverCall({ driver, status, history, script, round, names, blockedBy, 
       <div className="card p-4 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[15px] font-semibold truncate">{driver.full_name}</p>
-            <p className="text-[12px] text-gray-500 flex items-center gap-1.5"><CarFront size={13} className="shrink-0" /> <span className="truncate">{car ? `${car.plate_number}${car.make ? ` · ${car.make} ${car.model ?? ''}` : ''}${car.color ? ` · ${car.color}` : ''}` : 'No car linked'}{driver.is_owner ? ' · owner' : ''}</span></p>
-            <p className="text-[11px] text-gray-500 mt-0.5">{CATEGORY_LABEL[categoryOf(status)]}{status?.app_usage ? ` · uses the app ${APP_USAGE_LABEL[status.app_usage].toLowerCase()}` : ''}{status?.usual_area ? ` · works around ${status.usual_area}` : ''}</p>
+            <p className="text-title font-semibold truncate">{driver.full_name}</p>
+            <p className="text-small text-fg-muted flex items-center gap-1.5"><CarFront size={13} className="shrink-0" /> <span className="truncate">{car ? `${car.plate_number}${car.make ? ` · ${car.make} ${car.model ?? ''}` : ''}${car.color ? ` · ${car.color}` : ''}` : 'No car linked'}{driver.is_owner ? ' · owner' : ''}</span></p>
+            <p className="text-caption text-fg-muted mt-0.5">{CATEGORY_LABEL[categoryOf(status)]}{status?.app_usage ? ` · uses the app ${APP_USAGE_LABEL[status.app_usage].toLowerCase()}` : ''}{status?.usual_area ? ` · works around ${status.usual_area}` : ''}</p>
           </div>
           <a href={`tel:${driver.phone}`} className="btn-primary flex items-center gap-1.5 shrink-0"><Phone size={14} /> {driver.phone}</a>
         </div>
 
         {blockedBy && (
-          <p className="text-[12px] rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200 px-3 py-2 flex items-center gap-1.5">
+          <p className="text-small rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200 px-3 py-2 flex items-center gap-1.5">
             <Lock size={13} /> {blockedBy} is calling this driver right now. Pick another driver so you don't both call them.
           </p>
         )}
@@ -395,28 +395,28 @@ function DriverCall({ driver, status, history, script, round, names, blockedBy, 
 
         {!status?.came_to_office_on && (
           <fieldset disabled={!!blockedBy || !!saved} className="space-y-3 disabled:opacity-60">
-            <legend className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Log this call · round {round?.number ?? 1}</legend>
+            <legend className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1">Log this call · round {round?.number ?? 1}</legend>
             <Choice label="Did you reach them?" value={result} onChange={setResult} options={RESULTS} required />
             {result === 'callback' && (
-              <label className="block"><span className="block text-[11px] font-medium mb-1 text-gray-500">Call back on *</span>
+              <label className="block"><span className="block text-caption font-medium mb-1 text-fg-muted">Call back on *</span>
                 <input type="datetime-local" value={callbackAt} onChange={(e) => setCallbackAt(e.target.value)} className="input" />
               </label>
             )}
             {reached && (
-              <div className="space-y-3 rounded-lg bg-gray-50 dark:bg-white/[0.03] p-3">
-                {result === 'callback' && <p className="text-[11px] text-gray-500">Record any answers they already gave — the rest can wait for the call-back.</p>}
+              <div className="space-y-3 rounded-lg bg-inset p-3">
+                {result === 'callback' && <p className="text-caption text-fg-muted">Record any answers they already gave — the rest can wait for the call-back.</p>}
                 <Choice label="1. The updated app" value={app} onChange={setApp} options={APP_STATUS} required={result === 'reached'} />
                 <Choice label="How much do they use the Kivu Ride app?" value={usage} onChange={setUsage} options={APP_USAGE} />
                 <Choice label={`2. Our device — ${rwf(DEVICE_PRICE)}, one-time`} value={device} onChange={setDevice} options={ANSWERS} required={result === 'reached'} />
                 <Choice label={`3. Branding — ${rwf(BRANDING_PRICE)}, one-time, becomes a priority driver`} value={brand} onChange={setBrand} options={ANSWERS} required={result === 'reached'} />
-                <label className="block"><span className="block text-[11px] font-medium mb-1 text-gray-500">Usually works around</span>
+                <label className="block"><span className="block text-caption font-medium mb-1 text-fg-muted">Usually works around</span>
                   <input value={area} onChange={(e) => setArea(e.target.value)} className="input" placeholder="e.g. Kimironko, Nyabugogo" />
                 </label>
               </div>
             )}
             <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="input resize-none" placeholder="What they said — questions, objections, the day they'll come to the office" aria-label="Note" />
-            {error && <p className="text-[11px] text-red-600">{error}</p>}
-            {saved && <p className="text-[11px] text-emerald-600 flex items-center gap-1"><CheckCircle2 size={12} /> {saved}</p>}
+            {error && <p className="text-caption text-red-600">{error}</p>}
+            {saved && <p className="text-caption text-emerald-600 flex items-center gap-1"><CheckCircle2 size={12} /> {saved}</p>}
             <div className="flex gap-2">
               <button type="button" onClick={() => save(false)} disabled={busy} className="btn-ghost flex-1">Save</button>
               <button type="button" onClick={() => save(true)} disabled={busy} className="btn-primary flex-[2]">{busy ? 'Saving…' : 'Save & call next driver'}</button>
@@ -425,15 +425,15 @@ function DriverCall({ driver, status, history, script, round, names, blockedBy, 
         )}
 
         {history.length > 0 && (
-          <div className="space-y-1.5 pt-2 border-t border-gray-100 dark:border-white/5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Earlier calls</p>
+          <div className="space-y-1.5 pt-2 border-t border-line-muted ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle">Earlier calls</p>
             {history.map((h) => (
-              <div key={h.id} className="text-[11px] text-gray-600 dark:text-gray-300">
-                <span className="text-gray-400">R{h.round} · {shortDate(h.created_at)}{h.agent_id && names[h.agent_id] ? ` · ${names[h.agent_id].split(/\s+/)[0]}` : ''}</span> — {RESULT_LABEL[h.result]}
+              <div key={h.id} className="text-caption text-fg-muted ">
+                <span className="text-fg-subtle">R{h.round} · {shortDate(h.created_at)}{h.agent_id && names[h.agent_id] ? ` · ${names[h.agent_id].split(/\s+/)[0]}` : ''}</span> — {RESULT_LABEL[h.result]}
                 {(h.app_status || h.device_answer || h.branding_answer) && (
                   <span>: app {h.app_status ? APP_STATUS_SHORT[h.app_status].toLowerCase() : '—'}, device {h.device_answer ? ANSWER_LABEL[h.device_answer].toLowerCase() : '—'}, branding {h.branding_answer ? ANSWER_LABEL[h.branding_answer].toLowerCase() : '—'}</span>
                 )}
-                {h.note && <span className="text-gray-500"> — “{h.note}”</span>}
+                {h.note && <span className="text-fg-muted"> — “{h.note}”</span>}
               </div>
             ))}
           </div>
@@ -456,18 +456,18 @@ function CameToOffice({ driver, status, names, onSaved }: { driver: PlatformDriv
   if (status?.came_to_office_on) {
     return (
       <div className="rounded-lg bg-emerald-50 dark:bg-emerald-500/10 px-3 py-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[12px] text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5"><CheckCircle2 size={14} /> Came to the office on {shortDate(status.came_to_office_on)}{status.came_recorded_by && names[status.came_recorded_by] ? ` · recorded by ${names[status.came_recorded_by]}` : ''} — out of the call rounds.</p>
-        <button onClick={() => set(null)} className="text-[11px] text-gray-500 hover:underline flex items-center gap-1"><Undo2 size={11} /> Undo</button>
+        <p className="text-small text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5"><CheckCircle2 size={14} /> Came to the office on {shortDate(status.came_to_office_on)}{status.came_recorded_by && names[status.came_recorded_by] ? ` · recorded by ${names[status.came_recorded_by]}` : ''} — out of the call rounds.</p>
+        <button onClick={() => set(null)} className="text-caption text-fg-muted hover:underline flex items-center gap-1"><Undo2 size={11} /> Undo</button>
       </div>
     );
   }
   return (
-    <div className="rounded-lg border border-dashed border-gray-200 dark:border-white/10 px-3 py-2 flex flex-wrap items-center gap-2">
-      <Building2 size={14} className="text-gray-400" />
-      <span className="text-[12px] text-gray-600 dark:text-gray-300 flex-1 min-w-[160px]">IT says they came to the office?</span>
-      <input type="date" value={date} max={todayIso} onChange={(e) => setDate(e.target.value)} className="input py-1 w-auto text-[12px]" aria-label="Date they came" />
-      <button onClick={() => set(date)} className="btn-ghost text-[12px]">Mark as came</button>
-      {error && <p className="text-[11px] text-red-600 w-full">{error}</p>}
+    <div className="rounded-lg border border-dashed border-line px-3 py-2 flex flex-wrap items-center gap-2">
+      <Building2 size={14} className="text-fg-subtle" />
+      <span className="text-small text-fg-muted flex-1 min-w-[160px]">IT says they came to the office?</span>
+      <input type="date" value={date} max={todayIso} onChange={(e) => setDate(e.target.value)} className="input py-1 w-auto text-small" aria-label="Date they came" />
+      <button onClick={() => set(date)} className="btn-ghost text-small">Mark as came</button>
+      {error && <p className="text-caption text-red-600 w-full">{error}</p>}
     </div>
   );
 }

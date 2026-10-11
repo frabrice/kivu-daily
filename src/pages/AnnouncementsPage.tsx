@@ -60,8 +60,8 @@ export default function AnnouncementsPage() {
 
       {!loading && announcements.length === 0 && (
         <div className="card p-10 text-center">
-          <Megaphone size={28} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-sm text-gray-400">No announcements yet.</p>
+          <Megaphone size={28} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-sm text-fg-subtle">No announcements yet.</p>
         </div>
       )}
 
@@ -74,22 +74,22 @@ export default function AnnouncementsPage() {
                   <Avatar name={a.author?.full_name ?? 'MD'} url={a.author?.avatar_url} size="sm" />
                   <div>
                     <p className="text-sm font-medium">{a.author?.full_name ?? 'Managing Director'}</p>
-                    <p className="text-xs text-gray-400">{timeAgo(a.created_at)}</p>
+                    <p className="text-xs text-fg-subtle">{timeAgo(a.created_at)}</p>
                   </div>
                 </div>
                 {isMD && (
                   <div className="flex items-center gap-0.5 shrink-0">
-                    <button onClick={() => setEditAnnouncement(a)} className="text-gray-300 hover:text-brand-500 transition-colors p-1">
+                    <button onClick={() => setEditAnnouncement(a)} className="text-fg-subtle hover:text-brand-500 transition-colors p-1">
                       <Pencil size={14} />
                     </button>
-                    <button onClick={() => remove(a.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1">
+                    <button onClick={() => remove(a.id)} className="text-fg-subtle hover:text-red-500 transition-colors p-1">
                       <Trash2 size={15} />
                     </button>
                   </div>
                 )}
               </div>
               <h3 className="font-semibold text-base mb-1">{a.title}</h3>
-              {a.body && <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{a.body}</p>}
+              {a.body && <p className="text-sm text-fg-muted whitespace-pre-wrap">{a.body}</p>}
             </div>
           ))}
         </div>

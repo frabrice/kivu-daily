@@ -271,7 +271,7 @@ export default function ManagingDirectorApp() {
 
   const title = NAV.find((n) => n.key === active)?.label ?? 'Dashboard';
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading…</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-fg-subtle">Loading…</div>;
 
   return (
     <AppShell active={active} onNavigate={setActive} navItems={NAV} title={title} notifications={<NotificationBell />}>
@@ -291,14 +291,14 @@ export default function ManagingDirectorApp() {
             <div className="absolute -top-24 -right-16 w-64 h-64 bg-brand/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-24 -left-16 w-64 h-64 bg-positive/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative">
-              <p className="text-[10px] font-semibold text-brand-200 uppercase tracking-[0.15em] mb-1.5">{formatDateFull(new Date())}</p>
+              <p className="text-micro font-semibold text-brand-200 uppercase tracking-[0.15em] mb-1.5">{formatDateFull(new Date())}</p>
               <h2 className="text-xl font-bold mb-1.5">{greeting()}, {profile?.full_name?.split(' ')[0]}</h2>
-              <p className="text-[12px] text-white/60">
+              <p className="text-small text-white/60">
                 {activeToday} of {employees.filter((e) => e.role === 'employee').length} employees active today
                 {totalTasks > 0 && <> · <span style={{ color: completionColor(overallPct) }}>{Math.round(overallPct)}%</span> company completion</>}
                 {silentEmployees.length > 0 && <> · {silentEmployees.length} silent</>}
               </p>
-              <button onClick={() => setActive('performance')} className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium bg-white/10 hover:bg-white/20 rounded-lg px-3 py-1.5">
+              <button onClick={() => setActive('performance')} className="mt-3 inline-flex items-center gap-1.5 text-small font-medium bg-white/10 hover:bg-white/20 rounded-lg px-3 py-1.5">
                 <Activity size={13} /> Performance: people, drivers, cars, money <ChevronRight size={13} />
               </button>
             </div>
@@ -375,7 +375,7 @@ export default function ManagingDirectorApp() {
                 <p className="stat-label">Completion</p>
               </div>
               <p className="text-2xl font-bold leading-none" style={{ color: completionColor(overallPct) }}>{Math.round(overallPct)}%</p>
-              <div className="h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden mt-2.5">
+              <div className="h-1.5 bg-inset rounded-full overflow-hidden mt-2.5">
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${overallPct}%`, backgroundColor: completionColor(overallPct) }} />
               </div>
             </div>
@@ -386,7 +386,7 @@ export default function ManagingDirectorApp() {
                 </div>
                 <p className="stat-label">Active Today</p>
               </div>
-              <p className="text-2xl font-bold leading-none">{activeToday}<span className="text-xs font-normal text-gray-400 ml-1">/ {employees.filter((e) => e.role === 'employee').length}</span></p>
+              <p className="text-2xl font-bold leading-none">{activeToday}<span className="text-xs font-normal text-fg-subtle ml-1">/ {employees.filter((e) => e.role === 'employee').length}</span></p>
             </div>
             <div className="card p-4">
               <div className="flex items-center gap-1.5 mb-2">
@@ -432,7 +432,7 @@ export default function ManagingDirectorApp() {
             <div className="card p-4 lg:col-span-2">
               <h3 className="section-title mb-3">Department Performance</h3>
               {departmentPerf.length === 0 ? (
-                <p className="text-[11px] text-gray-400 py-8 text-center">No departments with active staff yet.</p>
+                <p className="text-caption text-fg-subtle py-8 text-center">No departments with active staff yet.</p>
               ) : (
                 <ResponsiveContainer width="100%" height={Math.max(160, departmentPerf.length * 30)}>
                   <BarChart data={departmentPerf} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
@@ -464,8 +464,8 @@ export default function ManagingDirectorApp() {
                 <UserPlus size={15} className="text-blue-600 dark:text-blue-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-[12px] font-medium">Assign a Task</p>
-                <p className="text-[10px] text-gray-400">Push work to anyone</p>
+                <p className="text-small font-medium">Assign a Task</p>
+                <p className="text-micro text-fg-subtle">Push work to anyone</p>
               </div>
             </button>
             <button onClick={() => setAnnounceOpen(true)} className="card p-3.5 flex items-center gap-3 text-left hover:shadow-md transition-all hover:border-brand/30">
@@ -473,8 +473,8 @@ export default function ManagingDirectorApp() {
                 <Megaphone size={15} className="text-amber-600 dark:text-amber-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-[12px] font-medium">Broadcast</p>
-                <p className="text-[10px] text-gray-400">Company-wide announcement</p>
+                <p className="text-small font-medium">Broadcast</p>
+                <p className="text-micro text-fg-subtle">Company-wide announcement</p>
               </div>
             </button>
             <button onClick={() => setMeetingOpen(true)} className="card p-3.5 flex items-center gap-3 text-left hover:shadow-md transition-all hover:border-brand/30">
@@ -482,8 +482,8 @@ export default function ManagingDirectorApp() {
                 <CalendarPlus size={15} className="text-violet-600 dark:text-violet-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-[12px] font-medium">New Meeting Note</p>
-                <p className="text-[10px] text-gray-400">Log minutes, share, or link tasks</p>
+                <p className="text-small font-medium">New Meeting Note</p>
+                <p className="text-micro text-fg-subtle">Log minutes, share, or link tasks</p>
               </div>
             </button>
           </div>
@@ -495,18 +495,18 @@ export default function ManagingDirectorApp() {
                 <AlertCircle size={14} className="text-orange-500" />
                 <h3 className="section-title">Needs Your Attention</h3>
                 {attentionCount > 0 && (
-                  <span className="text-[8px] font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded-full">{attentionCount}</span>
+                  <span className="text-micro font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded-full">{attentionCount}</span>
                 )}
               </div>
 
               {attentionCount === 0 && (
-                <p className="text-[12px] text-gray-400 py-4 text-center">All clear — nothing waiting on you.</p>
+                <p className="text-small text-fg-subtle py-4 text-center">All clear — nothing waiting on you.</p>
               )}
 
               <div className="space-y-3">
                 {pendingReviews.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+                    <p className="text-micro font-medium text-fg-subtle mb-1.5 flex items-center gap-1.5">
                       <ClipboardCheck size={11} /> Awaiting review
                     </p>
                     <div className="space-y-1">
@@ -516,13 +516,13 @@ export default function ManagingDirectorApp() {
                           <button
                             key={t.id}
                             onClick={() => setReviewTask(t)}
-                            className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-white/5 hover:border-brand/30 transition-colors text-left"
+                            className="w-full flex items-center justify-between p-2 rounded-lg border border-line-muted hover:border-brand/30 transition-colors text-left"
                           >
-                            <span className="text-[11px] truncate">
+                            <span className="text-caption truncate">
                               <span className="font-medium">{owner?.full_name ?? 'Unknown'}</span>
-                              <span className="text-gray-400"> · {t.title}</span>
+                              <span className="text-fg-subtle"> · {t.title}</span>
                             </span>
-                            <span className="text-[10px] text-brand-600 dark:text-brand-300 shrink-0 ml-2">Review</span>
+                            <span className="text-micro text-brand-600 dark:text-brand-300 shrink-0 ml-2">Review</span>
                           </button>
                         );
                       })}
@@ -533,18 +533,18 @@ export default function ManagingDirectorApp() {
                 {unreadComments > 0 && (
                   <button
                     onClick={() => setActive('comments')}
-                    className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-white/5 hover:border-brand/30 transition-colors text-left"
+                    className="w-full flex items-center justify-between p-2 rounded-lg border border-line-muted hover:border-brand/30 transition-colors text-left"
                   >
-                    <span className="text-[11px] flex items-center gap-1.5">
-                      <MessageSquare size={12} className="text-gray-400" /> {unreadComments} unread {unreadComments === 1 ? 'reply' : 'replies'}
+                    <span className="text-caption flex items-center gap-1.5">
+                      <MessageSquare size={12} className="text-fg-subtle" /> {unreadComments} unread {unreadComments === 1 ? 'reply' : 'replies'}
                     </span>
-                    <span className="text-[10px] text-brand-600 dark:text-brand-300">Open</span>
+                    <span className="text-micro text-brand-600 dark:text-brand-300">Open</span>
                   </button>
                 )}
 
                 {silentEmployees.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
+                    <p className="text-micro font-medium text-fg-subtle mb-1.5 flex items-center gap-1.5">
                       <MoonStar size={11} /> Silent today ({silentEmployees.length})
                     </p>
                     <div className="flex flex-wrap gap-1.5">
@@ -552,7 +552,7 @@ export default function ManagingDirectorApp() {
                         <button
                           key={e.id}
                           onClick={() => setSelectedEmployee(e)}
-                          className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                          className="text-micro px-2 py-0.5 rounded-full bg-inset hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
                         >
                           {e.full_name.split(' ')[0]}
                         </button>
@@ -569,7 +569,7 @@ export default function ManagingDirectorApp() {
                   <Radio size={14} className="text-brand-500" />
                   <h3 className="section-title">Live Activity</h3>
                 </div>
-                <button onClick={() => setActive('activity_log')} className="text-[10px] text-brand-600 dark:text-brand-300 hover:underline">
+                <button onClick={() => setActive('activity_log')} className="text-micro text-brand-600 dark:text-brand-300 hover:underline">
                   View full log
                 </button>
               </div>
@@ -582,13 +582,13 @@ export default function ManagingDirectorApp() {
             <div className="flex items-center justify-between mb-2.5">
               <h3 className="section-title">Employees</h3>
               <div className="flex items-center gap-1">
-                <ArrowDownUp size={12} className="text-gray-400 mr-0.5" />
+                <ArrowDownUp size={12} className="text-fg-subtle mr-0.5" />
                 {(['completion', 'name', 'tasks'] as SortMode[]).map((m) => (
                   <button
                     key={m}
                     onClick={() => setSortMode(m)}
-                    className={`text-[10px] px-2 py-1 rounded-md transition-colors ${
-                      sortMode === m ? 'bg-brand/10 text-brand-600 dark:text-brand-300 font-medium' : 'text-gray-400 hover:text-gray-600'
+                    className={`text-micro px-2 py-1 rounded-md transition-colors ${
+                      sortMode === m ? 'bg-brand/10 text-brand-600 dark:text-brand-300 font-medium' : 'text-fg-subtle hover:text-fg-muted'
                     }`}
                   >
                     {m === 'completion' ? 'Completion' : m === 'name' ? 'Name' : 'Tasks'}
@@ -600,7 +600,7 @@ export default function ManagingDirectorApp() {
               {sortedEmployees.map((e) => (
                 <EmployeeCard key={e.id} employee={e} onClick={() => setSelectedEmployee(e)} />
               ))}
-              {sortedEmployees.length === 0 && <p className="text-[12px] text-gray-400 col-span-full">No employees found.</p>}
+              {sortedEmployees.length === 0 && <p className="text-small text-fg-subtle col-span-full">No employees found.</p>}
             </div>
           </div>
         </div>
@@ -684,20 +684,20 @@ function DeptSnapshotCard({
           <div className={`w-6 h-6 rounded-lg ${c.bg} flex items-center justify-center shrink-0`}>
             <Icon size={12} className={c.text} />
           </div>
-          <p className="text-[11px] font-semibold">{label}</p>
+          <p className="text-caption font-semibold">{label}</p>
         </div>
-        <ChevronRight size={13} className="text-gray-300 dark:text-white/20" />
+        <ChevronRight size={13} className="text-fg-subtle " />
       </div>
       <div className="space-y-1">
         {stats.map((s) => (
           <div key={s.label} className="flex items-center justify-between">
-            <span className="text-[10px] text-gray-400">{s.label}</span>
-            <span className="text-[11px] font-semibold tabular-nums">{s.value}</span>
+            <span className="text-micro text-fg-subtle">{s.label}</span>
+            <span className="text-caption font-semibold tabular-nums">{s.value}</span>
           </div>
         ))}
       </div>
       {alert && (
-        <span className="text-[9px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-1.5 py-0.5 rounded-full w-fit">
+        <span className="text-micro font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-1.5 py-0.5 rounded-full w-fit">
           {alert}
         </span>
       )}
@@ -719,20 +719,20 @@ function EmployeeCard({ employee: e, onClick }: { employee: EmployeeWithStats; o
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-medium truncate">{e.full_name}</p>
-          <p className="text-[10px] text-gray-400 truncate">{e.department?.name ?? 'No department'}</p>
+          <p className="text-small font-medium truncate">{e.full_name}</p>
+          <p className="text-micro text-fg-subtle truncate">{e.department?.name ?? 'No department'}</p>
         </div>
         <span className="text-base font-bold shrink-0" style={{ color: completionColor(e.todayPct) }}>
           {Math.round(e.todayPct)}%
         </span>
       </div>
 
-      <div className="h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden mb-2.5">
+      <div className="h-1.5 bg-inset rounded-full overflow-hidden mb-2.5">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${e.todayPct}%`, backgroundColor: completionColor(e.todayPct) }} />
       </div>
 
-      <div className="flex items-center justify-between text-[10px]">
-        <span className="text-gray-400">{e.todayTotal} tasks today</span>
+      <div className="flex items-center justify-between text-micro">
+        <span className="text-fg-subtle">{e.todayTotal} tasks today</span>
         <span className="text-positive font-medium">{e.todayCompleted} completed</span>
       </div>
     </button>
@@ -809,34 +809,34 @@ function DepartmentsView({
                 className="flex-1 flex items-center justify-between hover:opacity-80 transition-opacity text-left"
               >
                 <div>
-                  <p className="text-[12px] font-medium">{d.name}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{stats.deptEmployees.length} employees · {stats.activeToday} active today</p>
+                  <p className="text-small font-medium">{d.name}</p>
+                  <p className="text-micro text-fg-subtle mt-0.5">{stats.deptEmployees.length} employees · {stats.activeToday} active today</p>
                 </div>
                 <div className="flex items-center gap-4 mr-3">
                   <div className="text-right">
                     <p className="text-lg font-bold leading-tight" style={{ color: completionColor(stats.pct) }}>{stats.pct}%</p>
-                    <p className="text-[10px] text-gray-400">{stats.completedTasks}/{stats.totalTasks} tasks</p>
+                    <p className="text-micro text-fg-subtle">{stats.completedTasks}/{stats.totalTasks} tasks</p>
                   </div>
                 </div>
               </button>
-              <button onClick={() => setCreatingFor(d.id)} className="btn-ghost flex items-center gap-1.5 text-[11px] shrink-0">
+              <button onClick={() => setCreatingFor(d.id)} className="btn-ghost flex items-center gap-1.5 text-caption shrink-0">
                 <UserPlus size={13} /> Add Employee
               </button>
             </div>
             {isOpen && (
               <div className="p-3.5 pt-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 animate-fade-in">
                 {stats.deptEmployees.map((e) => (
-                  <div key={e.id} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-gray-100 dark:border-white/5 hover:shadow-sm transition-all">
+                  <div key={e.id} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-line-muted hover:shadow-sm transition-all">
                     <button onClick={() => onSelect(e)} className="flex-1 flex items-center gap-2.5 min-w-0 text-left">
                       <Avatar name={e.full_name} url={e.avatar_url} size="sm" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-medium truncate">{e.full_name}</p>
-                        <p className="text-[10px] text-gray-400">{e.todayCompleted}/{e.todayTotal} · {e.streak} day streak</p>
+                        <p className="text-caption font-medium truncate">{e.full_name}</p>
+                        <p className="text-micro text-fg-subtle">{e.todayCompleted}/{e.todayTotal} · {e.streak} day streak</p>
                         {e.force_password_change && (
-                          <p className="text-[9px] font-medium text-orange-600 dark:text-orange-400">Pending setup</p>
+                          <p className="text-micro font-medium text-orange-600 dark:text-orange-400">Pending setup</p>
                         )}
                       </div>
-                      <span className="text-[11px] font-bold shrink-0" style={{ color: completionColor(e.todayPct) }}>{Math.round(e.todayPct)}%</span>
+                      <span className="text-caption font-bold shrink-0" style={{ color: completionColor(e.todayPct) }}>{Math.round(e.todayPct)}%</span>
                     </button>
                     <div className="flex items-center gap-0.5 shrink-0">
                       {e.force_password_change && (
@@ -858,7 +858,7 @@ function DepartmentsView({
                     </div>
                   </div>
                 ))}
-                {stats.deptEmployees.length === 0 && <p className="text-[11px] text-gray-400 col-span-full">No employees in this department.</p>}
+                {stats.deptEmployees.length === 0 && <p className="text-caption text-fg-subtle col-span-full">No employees in this department.</p>}
               </div>
             )}
           </div>
@@ -868,7 +868,7 @@ function DepartmentsView({
       {addDeptOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setAddDeptOpen(false)}>
           <div className="card p-4 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-[12px] font-semibold mb-3">Add Department</h3>
+            <h3 className="text-small font-semibold mb-3">Add Department</h3>
             <div className="flex gap-2">
               <input value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)} placeholder="Department name" className="input" autoFocus />
               <button onClick={addDepartment} disabled={savingDept} className="btn-primary whitespace-nowrap disabled:opacity-50">

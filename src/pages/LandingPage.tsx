@@ -26,20 +26,20 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
   const { theme, toggle } = useTheme();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-navy-950 text-navy-900 dark:text-white">
+    <div className="min-h-screen bg-canvas text-navy-900 dark:text-white">
       {/* Nav */}
       <header className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white border border-gray-200 dark:border-white/10 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+          <div className="w-9 h-9 rounded-xl bg-white border border-line flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
             <img src="/kivu-ride-logo.png" alt="Kivu Ride" className="w-7 h-7 object-contain" />
           </div>
           <div>
             <p className="font-bold text-sm leading-tight">Kivu Daily</p>
-            <p className="text-[10px] text-gray-400 leading-tight">Kivu Ride Ltd</p>
+            <p className="text-micro text-fg-subtle leading-tight">Kivu Ride Ltd</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={toggle} className="p-2 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+          <button onClick={toggle} className="p-2 rounded-xl text-fg-subtle hover:text-fg-muted hover:bg-hover transition-colors">
             {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
           </button>
           <button onClick={onLogin} className="btn-primary flex items-center gap-1.5">
@@ -60,11 +60,11 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight max-w-3xl mx-auto mb-5">
             The virtual office behind every Kivu Ride trip.
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-base max-w-xl mx-auto mb-9">
+          <p className="text-fg-muted text-base max-w-xl mx-auto mb-9">
             Kivu Ride doesn't have a physical office — this is it. One place where every department plans its day,
             the MD sees it all live, and nothing important gets lost in a phone chat.
           </p>
-          <button onClick={onLogin} className="btn-primary px-6 py-3 text-[13px] inline-flex items-center gap-2">
+          <button onClick={onLogin} className="btn-primary px-6 py-3 text-body inline-flex items-center gap-2">
             Log In to Your Workspace <ArrowRight size={16} />
           </button>
         </div>
@@ -79,8 +79,8 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
                 <h.icon size={18} className="text-brand-600 dark:text-brand-300" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold mb-1">{h.title}</p>
-                <p className="text-[12px] text-gray-500 dark:text-gray-400 leading-relaxed">{h.desc}</p>
+                <p className="text-body font-semibold mb-1">{h.title}</p>
+                <p className="text-small text-fg-muted leading-relaxed">{h.desc}</p>
               </div>
             </div>
           ))}
@@ -88,18 +88,18 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
       </section>
 
       {/* Departments strip */}
-      <section className="border-t border-gray-100 dark:border-white/5">
+      <section className="border-t border-line-muted ">
         <div className="max-w-6xl mx-auto px-6 py-14">
-          <p className="text-center text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em] mb-8">
+          <p className="text-center text-micro font-semibold text-fg-subtle uppercase tracking-[0.2em] mb-8">
             Built for every part of the company
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {DEPARTMENTS.map((d) => (
-              <div key={d.label} className="flex flex-col items-center gap-2.5 py-5 px-3 rounded-2xl border border-gray-100 dark:border-white/5">
+              <div key={d.label} className="flex flex-col items-center gap-2.5 py-5 px-3 rounded-2xl border border-line-muted ">
                 <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center">
                   <d.icon size={17} className="text-brand-600 dark:text-brand-300" />
                 </div>
-                <p className="text-[11px] font-medium text-center text-gray-600 dark:text-gray-300">{d.label}</p>
+                <p className="text-caption font-medium text-center text-fg-muted ">{d.label}</p>
               </div>
             ))}
           </div>
@@ -112,18 +112,18 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
           <h2 className="text-2xl sm:text-3xl font-bold leading-snug mb-4">
             Every department, one live view, zero guesswork.
           </h2>
-          <p className="text-white/60 text-[13px] max-w-xl mx-auto mb-8">
+          <p className="text-white/60 text-body max-w-xl mx-auto mb-8">
             Kivu Daily exists so the team can move fast without the Managing Director having to sit with every
             employee to know what's happening. Plan it, track it, see it — together.
           </p>
-          <button onClick={onLogin} className="btn-primary px-6 py-3 text-[13px] inline-flex items-center gap-2">
+          <button onClick={onLogin} className="btn-primary px-6 py-3 text-body inline-flex items-center gap-2">
             Log In to Your Workspace <ArrowRight size={16} />
           </button>
         </div>
       </section>
 
       <footer className="max-w-6xl mx-auto px-6 py-8 text-center">
-        <p className="text-[10px] text-gray-400">© {new Date().getFullYear()} Kivu Ride Ltd. All rights reserved.</p>
+        <p className="text-micro text-fg-subtle">© {new Date().getFullYear()} Kivu Ride Ltd. All rights reserved.</p>
       </footer>
     </div>
   );

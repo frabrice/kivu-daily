@@ -38,12 +38,12 @@ export default function Modal({ open, onClose, children, title, subtitle, maxWid
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] animate-fade-in" onClick={onClose} />
-      <div className={`relative w-full ${width} h-full bg-white dark:bg-navy-900 shadow-2xl flex flex-col animate-slide-in-right`}>
+      <div className={`relative w-full ${width} h-full bg-surface shadow-2xl flex flex-col animate-slide-in-right`}>
         {title && (
-          <div className="flex items-start justify-between px-6 py-5 border-b border-gray-100 dark:border-white/5 shrink-0">
+          <div className="flex items-start justify-between px-6 py-5 border-b border-line-muted shrink-0">
             <div className="min-w-0">
-              <h2 className="text-[14px] font-semibold truncate">{title}</h2>
-              {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+              <h2 className="text-ui font-semibold truncate">{title}</h2>
+              {subtitle && <p className="text-xs text-fg-subtle mt-0.5">{subtitle}</p>}
             </div>
             <button onClick={onClose} className="btn-ghost p-1.5 -mr-1.5 shrink-0">
               <X size={18} />

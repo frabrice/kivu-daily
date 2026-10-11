@@ -38,12 +38,12 @@ function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenter
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><Users2 size={16} className="text-violet-600 dark:text-violet-300" /> Directory</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Every driver, searchable — click to call.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Every driver, searchable — click to call.</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           <div className="relative w-64">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or phone" className="input pl-8" />
           </div>
         </div>
@@ -57,7 +57,7 @@ function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenter
             return (
               <div key={d.id} onClick={() => setCallDriver(d)} className="card p-3.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-[12px] font-medium truncate">{d.full_name}</p>
+                  <p className="text-small font-medium truncate">{d.full_name}</p>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={(e) => { e.stopPropagation(); setHistoryDriver(d); }}
@@ -69,14 +69,14 @@ function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenter
                     <Phone size={13} className="text-brand-500" />
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-400">{d.phone} · {STAGE_LABEL[d.stage]}</p>
-                <p className="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1">
+                <p className="text-micro text-fg-subtle">{d.phone} · {STAGE_LABEL[d.stage]}</p>
+                <p className="text-micro text-fg-subtle mt-1.5 flex items-center gap-1">
                   <Clock3 size={10} /> {callCount === 0 ? 'Never called' : `${callCount} call${callCount === 1 ? '' : 's'} · last ${timeAgo(last!.created_at)}`}
                 </p>
               </div>
             );
           })}
-          {filtered.length === 0 && <p className="text-[12px] text-gray-400 col-span-full text-center py-8">No drivers found.</p>}
+          {filtered.length === 0 && <p className="text-small text-fg-subtle col-span-full text-center py-8">No drivers found.</p>}
         </div>
       )}
 

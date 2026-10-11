@@ -23,8 +23,8 @@ export default function ActivityFeed({ entries, loading, emptyLabel = 'No activi
   if (entries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
-        <Activity size={24} className="text-gray-300 dark:text-white/20 mb-2" />
-        <p className="text-sm text-gray-400">{emptyLabel}</p>
+        <Activity size={24} className="text-fg-subtle mb-2" />
+        <p className="text-sm text-fg-subtle">{emptyLabel}</p>
       </div>
     );
   }
@@ -37,12 +37,12 @@ export default function ActivityFeed({ entries, loading, emptyLabel = 'No activi
           <div className="flex-1 min-w-0">
             <p className="text-sm">
               <span className="font-medium">{entry.actor?.full_name ?? 'Someone'}</span>{' '}
-              <span className="text-gray-500 dark:text-gray-400">{entry.action}</span>{' '}
+              <span className="text-fg-muted ">{entry.action}</span>{' '}
               {entry.entity_label && (
-                <span className="text-gray-700 dark:text-gray-200">"{entry.entity_label}"</span>
+                <span className="text-fg-muted ">"{entry.entity_label}"</span>
               )}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">{timeAgo(entry.created_at)}</p>
+            <p className="text-xs text-fg-subtle mt-0.5">{timeAgo(entry.created_at)}</p>
           </div>
         </div>
       ))}

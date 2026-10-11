@@ -93,18 +93,18 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
 
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Mail size={16} className="text-brand-600 dark:text-brand-300" /> Email notifications</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">Checked every 5 minutes, Kigali time. Emails are held between 20:00 and 06:30 and go out in the morning.</p>
-        <p className="text-[11px] text-gray-500 mt-1">Most reports now arrive as sections of each person's <b>Your day</b> email (07:00), and non-urgent updates as one line in it. Only urgent things are sent on their own. Change any rule with "Delivered as".</p>
+        <p className="text-caption text-fg-subtle mt-0.5">Checked every 5 minutes, Kigali time. Emails are held between 20:00 and 06:30 and go out in the morning.</p>
+        <p className="text-caption text-fg-muted mt-1">Most reports now arrive as sections of each person's <b>Your day</b> email (07:00), and non-urgent updates as one line in it. Only urgent things are sent on their own. Change any rule with "Delivered as".</p>
       </div>
 
       <section className="card p-4 space-y-3">
-        <h3 className="text-[12px] font-semibold flex items-center gap-1.5"><UserCog size={14} /> Who's in charge</h3>
-        <p className="text-[11px] text-gray-400 -mt-2">Changing the person here moves all of that duty's emails to them.</p>
+        <h3 className="text-small font-semibold flex items-center gap-1.5"><UserCog size={14} /> Who's in charge</h3>
+        <p className="text-caption text-fg-subtle -mt-2">Changing the person here moves all of that duty's emails to them.</p>
         {duties.map((d) => (
           <div key={d.key} className="flex flex-col sm:flex-row sm:items-center gap-2">
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-medium">{d.label}</p>
-              {d.description && <p className="text-[11px] text-gray-400">{d.description}</p>}
+              <p className="text-small font-medium">{d.label}</p>
+              {d.description && <p className="text-caption text-fg-subtle">{d.description}</p>}
             </div>
             <select className="input sm:w-56" value={d.profile_id ?? ''} onChange={(e) => assignDuty(d.key, e.target.value)}>
               <option value="">Nobody assigned</option>
@@ -116,7 +116,7 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
 
       {areas.map((area) => (
       <section key={area} className="space-y-2">
-        <h3 className="text-[12px] font-semibold">{area}</h3>
+        <h3 className="text-small font-semibold">{area}</h3>
         {rules.filter((r) => r.area === area).map((r) => {
           const res = testResult[r.key];
           return (
@@ -124,16 +124,16 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-[12px] font-semibold">{r.label}</p>
-                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-white/5 flex items-center gap-1"><Clock size={9} /> {r.schedule_label}</span>
+                    <p className="text-small font-semibold">{r.label}</p>
+                    <span className="text-micro font-medium px-1.5 py-0.5 rounded-full bg-inset text-fg-muted flex items-center gap-1"><Clock size={9} /> {r.schedule_label}</span>
                   </div>
-                  {r.description && <p className="text-[11px] text-gray-400 mt-0.5">{r.description}</p>}
-                  <p className="text-[11px] mt-1.5"><span className="text-gray-400">To:</span> {r.audience.map(audienceLabel).join(', ')}</p>
-                  {r.preference_key && <p className="text-[11px] text-gray-400 mt-0.5">Each person can also switch this off for themselves in Settings.</p>}
+                  {r.description && <p className="text-caption text-fg-subtle mt-0.5">{r.description}</p>}
+                  <p className="text-caption mt-1.5"><span className="text-fg-subtle">To:</span> {r.audience.map(audienceLabel).join(', ')}</p>
+                  {r.preference_key && <p className="text-caption text-fg-subtle mt-0.5">Each person can also switch this off for themselves in Settings.</p>}
                   {!['your_day', 'urgent_nudge'].includes(r.key) && (
-                    <label className="flex items-center gap-2 mt-2 text-[11px]">
-                      <span className="text-gray-400">Delivered as</span>
-                      <select value={r.delivery} onChange={(e) => setDelivery(r, e.target.value as NotificationRule['delivery'])} className="input py-1 text-[11px] w-auto">
+                    <label className="flex items-center gap-2 mt-2 text-caption">
+                      <span className="text-fg-subtle">Delivered as</span>
+                      <select value={r.delivery} onChange={(e) => setDelivery(r, e.target.value as NotificationRule['delivery'])} className="input py-1 text-caption w-auto">
                         <option value="instant">{r.schedule_label.startsWith('Instant') ? 'Its own email, straight away' : 'Its own email'}</option>
                         {r.schedule_label.startsWith('Instant')
                           ? <option value="digest">A line in the next Your day email</option>
@@ -154,11 +154,11 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
                 </button>
               </div>
               <div className="flex items-center gap-2 mt-3 flex-wrap">
-                <button onClick={() => sendTest(r)} disabled={testing !== null} className="btn-ghost flex items-center gap-1.5 text-[11px] disabled:opacity-50">
+                <button onClick={() => sendTest(r)} disabled={testing !== null} className="btn-ghost flex items-center gap-1.5 text-caption disabled:opacity-50">
                   <Send size={12} /> {testing === r.key ? 'Sending…' : 'Send test to me'}
                 </button>
                 {res && (
-                  <span className={`text-[11px] ${res.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>{res.message}</span>
+                  <span className={`text-caption ${res.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>{res.message}</span>
                 )}
               </div>
             </div>
@@ -168,23 +168,23 @@ export default function NotificationsSettingsPage({ onBack }: { onBack: () => vo
       ))}
 
       <section className="card p-4">
-        <h3 className="text-[12px] font-semibold mb-2">Recently sent</h3>
+        <h3 className="text-small font-semibold mb-2">Recently sent</h3>
         {outbox.length === 0 ? (
-          <p className="text-[11px] text-gray-400 py-4 text-center">Nothing sent yet.</p>
+          <p className="text-caption text-fg-subtle py-4 text-center">Nothing sent yet.</p>
         ) : (
-          <div className="divide-y divide-gray-100 dark:divide-white/5">
+          <div className="divide-y divide-line-muted ">
             {outbox.map((o) => (
               <div key={o.id} className="py-2 flex items-start gap-2">
                 {o.status === 'sent' ? <CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" />
                   : o.status === 'failed' ? <XCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
-                  : <Clock size={14} className="text-gray-400 mt-0.5 shrink-0" />}
+                  : <Clock size={14} className="text-fg-subtle mt-0.5 shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] truncate">{o.subject}</p>
-                  <p className="text-[11px] text-gray-400">
+                  <p className="text-small truncate">{o.subject}</p>
+                  <p className="text-caption text-fg-subtle">
                     {ruleLabel(o.rule_key)} · {personName(o.recipient_id) === 'Nobody assigned' ? o.recipient_email : personName(o.recipient_id)} · {timeAgo(o.sent_at ?? o.created_at)}
                     {o.status === 'pending' && ' · waiting to send'}
                   </p>
-                  {o.status === 'failed' && o.error && <p className="text-[11px] text-red-500">{o.error}{o.attempts < 3 ? ' — will retry' : ''}</p>}
+                  {o.status === 'failed' && o.error && <p className="text-caption text-red-500">{o.error}{o.attempts < 3 ? ' — will retry' : ''}</p>}
                 </div>
               </div>
             ))}

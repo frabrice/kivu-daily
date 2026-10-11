@@ -18,7 +18,7 @@ const FORMATS = ['Photo', 'Reel', 'Story', 'Carousel', 'Video'];
 const PLATFORMS = ['Instagram', 'Facebook', 'TikTok', 'X (Twitter)', 'LinkedIn', 'WhatsApp Status'];
 
 const STATUS_META: Record<ContentStatus, { label: string; color: string; bg: string }> = {
-  idea: { label: 'Idea', color: '#6b7280', bg: 'bg-gray-100 dark:bg-white/10 text-gray-500' },
+  idea: { label: 'Idea', color: '#6b7280', bg: 'bg-inset text-fg-muted' },
   drafted: { label: 'Drafted', color: '#f97316', bg: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400' },
   scheduled: { label: 'Scheduled', color: '#2F8C86', bg: 'bg-brand/10 text-brand-700 dark:text-brand-300' },
   posted: { label: 'Posted', color: '#4F7B3E', bg: 'bg-positive/10 text-positive' },
@@ -69,7 +69,7 @@ export default function SocialMediaPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
-        <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+        <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit">
           <TabButton active={mode === 'week'} onClick={() => setMode('week')} icon={CalendarDays} label="Week" />
           <TabButton active={mode === 'list'} onClick={() => setMode('list')} icon={ListFilter} label="List" />
         </div>
@@ -77,7 +77,7 @@ export default function SocialMediaPage() {
           {mode === 'week' && (
             <div className="flex items-center gap-1">
               <button onClick={() => setWeekStart(addDays(weekStart, -7))} className="btn-ghost p-1.5"><ChevronLeft size={15} /></button>
-              <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="text-[11px] text-gray-500 px-2">{weekLabel}</button>
+              <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="text-caption text-fg-muted px-2">{weekLabel}</button>
               <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="btn-ghost p-1.5"><ChevronRight size={15} /></button>
             </div>
           )}
@@ -99,10 +99,10 @@ export default function SocialMediaPage() {
             return (
               <div key={ds} className="space-y-2">
                 <div className="flex items-center justify-between px-0.5">
-                  <p className={`text-[10px] font-semibold uppercase tracking-wide ${isToday ? 'text-brand-600 dark:text-brand-300' : 'text-gray-500'}`}>
+                  <p className={`text-micro font-semibold uppercase tracking-wide ${isToday ? 'text-brand-600 dark:text-brand-300' : 'text-fg-muted'}`}>
                     {DAY_LABELS[i]} {d.getDate()}
                   </p>
-                  <button onClick={() => openNew(ds)} className="text-gray-300 hover:text-brand-500 transition-colors">
+                  <button onClick={() => openNew(ds)} className="text-fg-subtle hover:text-brand-500 transition-colors">
                     <Plus size={13} />
                   </button>
                 </div>
@@ -116,7 +116,7 @@ export default function SocialMediaPage() {
                       <div className="flex items-start justify-between gap-1">
                         <div className="flex items-center gap-1 mb-1 min-w-0">
                           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: STATUS_META[p.status].color }} />
-                          <p className="text-[10px] font-medium truncate">{p.pillar ?? 'Untitled'}</p>
+                          <p className="text-micro font-medium truncate">{p.pillar ?? 'Untitled'}</p>
                         </div>
                         <EntryActions
                           onView={() => setPostDrawer({ post: p, startEditing: false })}
@@ -124,12 +124,12 @@ export default function SocialMediaPage() {
                           canEdit
                         />
                       </div>
-                      {p.format && <p className="text-[9px] text-gray-400">{p.format}</p>}
-                      {p.boosted && <p className="text-[9px] text-orange-500 flex items-center gap-0.5 mt-0.5"><Zap size={9} /> Boosted</p>}
+                      {p.format && <p className="text-micro text-fg-subtle">{p.format}</p>}
+                      {p.boosted && <p className="text-micro text-orange-500 flex items-center gap-0.5 mt-0.5"><Zap size={9} /> Boosted</p>}
                     </div>
                   ))}
                   {dayPosts.length === 0 && (
-                    <div className="h-10 rounded-lg border border-dashed border-gray-200 dark:border-white/10" />
+                    <div className="h-10 rounded-lg border border-dashed border-line " />
                   )}
                 </div>
               </div>
@@ -140,8 +140,8 @@ export default function SocialMediaPage() {
 
       {!loading && mode === 'list' && posts.length === 0 && (
         <div className="card p-10 text-center">
-          <ImageIcon size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">No posts planned yet.</p>
+          <ImageIcon size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">No posts planned yet.</p>
         </div>
       )}
 
@@ -154,15 +154,15 @@ export default function SocialMediaPage() {
               className="w-full card p-3 flex items-center gap-3 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
             >
               <div className="text-center shrink-0 w-11">
-                <p className="text-[9px] text-gray-400 uppercase">{new Date(p.post_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' })}</p>
-                <p className="text-[14px] font-bold leading-none">{new Date(p.post_date + 'T00:00:00').getDate()}</p>
+                <p className="text-micro text-fg-subtle uppercase">{new Date(p.post_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' })}</p>
+                <p className="text-ui font-bold leading-none">{new Date(p.post_date + 'T00:00:00').getDate()}</p>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-medium truncate">{p.pillar ?? 'Untitled'} {p.format ? `· ${p.format}` : ''}</p>
-                <p className="text-[10px] text-gray-400 truncate">{p.platforms.join(', ') || 'No platform set'} {p.audience ? `· ${p.audience}` : ''}</p>
+                <p className="text-small font-medium truncate">{p.pillar ?? 'Untitled'} {p.format ? `· ${p.format}` : ''}</p>
+                <p className="text-micro text-fg-subtle truncate">{p.platforms.join(', ') || 'No platform set'} {p.audience ? `· ${p.audience}` : ''}</p>
               </div>
               {p.boosted && <Zap size={13} className="text-orange-500 shrink-0" />}
-              <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${STATUS_META[p.status].bg}`}>{STATUS_META[p.status].label}</span>
+              <span className={`text-micro font-medium px-1.5 py-0.5 rounded-full shrink-0 ${STATUS_META[p.status].bg}`}>{STATUS_META[p.status].label}</span>
               <EntryActions
                 onView={() => setPostDrawer({ post: p, startEditing: false })}
                 onEdit={() => setPostDrawer({ post: p, startEditing: true })}
@@ -185,7 +185,7 @@ export default function SocialMediaPage() {
             { header: 'Platforms', render: (p) => p.platforms.join(', ') || '—' },
             {
               header: 'Status',
-              render: (p) => <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_META[p.status].bg}`}>{STATUS_META[p.status].label}</span>,
+              render: (p) => <span className={`text-micro font-medium px-1.5 py-0.5 rounded-full ${STATUS_META[p.status].bg}`}>{STATUS_META[p.status].label}</span>,
             },
             {
               header: '',
@@ -217,7 +217,7 @@ export default function SocialMediaPage() {
 
 function TabButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof CalendarDays; label: string }) {
   return (
-    <button onClick={onClick} className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${active ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
+    <button onClick={onClick} className={`px-3 py-1.5 rounded-md text-small font-medium transition-all flex items-center gap-1.5 ${active ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}>
       <Icon size={14} /> {label}
     </button>
   );
@@ -300,11 +300,11 @@ function PostDrawer({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Date</label>
             <DateInput value={postDate} onChange={setPostDate} disabled={!editing} />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Status</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Status</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as ContentStatus)} disabled={!editing} className="input">
               {(Object.keys(STATUS_META) as ContentStatus[]).map((s) => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
             </select>
@@ -312,7 +312,7 @@ function PostDrawer({
         </div>
 
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Platforms</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Platforms</label>
           <div className="flex flex-wrap gap-1.5">
             {PLATFORMS.map((p) => (
               <button
@@ -320,7 +320,7 @@ function PostDrawer({
                 type="button"
                 disabled={!editing}
                 onClick={() => togglePlatform(p)}
-                className={`text-[10px] px-2.5 py-1 rounded-full border transition-colors disabled:opacity-60 ${platforms.includes(p) ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500'}`}
+                className={`text-micro px-2.5 py-1 rounded-full border transition-colors disabled:opacity-60 ${platforms.includes(p) ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-line text-fg-muted'}`}
               >
                 {p}
               </button>
@@ -330,14 +330,14 @@ function PostDrawer({
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><Rocket size={11} /> Pillar</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted flex items-center gap-1"><Rocket size={11} /> Pillar</label>
             <select value={pillar} onChange={(e) => setPillar(e.target.value)} disabled={!editing} className="input">
               <option value="">Select</option>
               {PILLARS.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Format</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Format</label>
             <select value={format} onChange={(e) => setFormat(e.target.value)} disabled={!editing} className="input">
               <option value="">Select</option>
               {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
@@ -347,14 +347,14 @@ function PostDrawer({
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Intent</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Intent</label>
             <select value={intent} onChange={(e) => setIntent(e.target.value)} disabled={!editing} className="input">
               <option value="">Select</option>
               {INTENTS.map((i) => <option key={i} value={i}>{i}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Audience</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Audience</label>
             <select value={audience} onChange={(e) => setAudience(e.target.value)} disabled={!editing} className="input">
               <option value="">Select</option>
               {AUDIENCES.map((a) => <option key={a} value={a}>{a}</option>)}
@@ -363,7 +363,7 @@ function PostDrawer({
         </div>
 
         <div>
-          <label className="flex items-center gap-2 text-[11px] font-medium text-gray-500 mb-1.5">
+          <label className="flex items-center gap-2 text-caption font-medium text-fg-muted mb-1.5">
             <input type="checkbox" checked={boosted} onChange={(e) => setBoosted(e.target.checked)} disabled={!editing} className="rounded" />
             Boosted post
           </label>
@@ -373,21 +373,21 @@ function PostDrawer({
         </div>
 
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Caption</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Caption</label>
           <textarea value={caption} onChange={(e) => setCaption(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="Mwaramutse! Beyond Transport. Into the Future." />
         </div>
 
         {status === 'posted' && (
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Performance notes</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Performance notes</label>
             <textarea value={performanceNotes} onChange={(e) => setPerformanceNotes(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="Reach, engagement, saves…" />
           </div>
         )}
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
-          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
             {post ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
                 <Trash2 size={13} /> Remove
@@ -401,7 +401,7 @@ function PostDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Close</button>
             <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">
               <Pencil size={13} /> Edit

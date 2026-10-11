@@ -88,30 +88,30 @@ export default function RecurringTasksPage({ onBack }: { onBack: () => void }) {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><Repeat size={16} className="text-brand-600 dark:text-brand-300" /> Recurring tasks</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Standing duties that land on each person's task list automatically every morning (05:00). They're reminded at 07:00, 13:00 if late, and 17:30 if still open.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Standing duties that land on each person's task list automatically every morning (05:00). They're reminded at 07:00, 13:00 if late, and 17:30 if still open.</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={generateNow} className="btn-ghost flex items-center gap-1.5 text-[12px]"><Zap size={13} /> Add today's now</button>
+          <button onClick={generateNow} className="btn-ghost flex items-center gap-1.5 text-small"><Zap size={13} /> Add today's now</button>
           <button onClick={() => setEditing('new')} className="btn-primary flex items-center gap-1.5"><Plus size={14} /> Add duty</button>
         </div>
       </div>
-      {message && <p className="text-[12px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg px-3 py-2">{message}</p>}
+      {message && <p className="text-small text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg px-3 py-2">{message}</p>}
 
       {groups.map(([label, list]) => (
         <section key={label} className="card p-4">
-          <h3 className="text-[12px] font-semibold mb-2">{label}</h3>
-          <div className="divide-y divide-gray-100 dark:divide-white/5">
+          <h3 className="text-small font-semibold mb-2">{label}</h3>
+          <div className="divide-y divide-line-muted ">
             {list.map((r) => {
               const st = stats[r.id];
               const rate = st && st.total ? Math.round((st.done / st.total) * 100) : null;
               return (
                 <div key={r.id} className={`py-2.5 flex items-start gap-3 ${r.is_active ? '' : 'opacity-50'}`}>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium">{r.title}</p>
-                    <p className="text-[11px] text-gray-400">{frequencyLabel(r)}{r.due_time ? ` · by ${r.due_time}` : ''}{!r.is_active ? ' · paused' : ''}</p>
+                    <p className="text-small font-medium">{r.title}</p>
+                    <p className="text-caption text-fg-subtle">{frequencyLabel(r)}{r.due_time ? ` · by ${r.due_time}` : ''}{!r.is_active ? ' · paused' : ''}</p>
                   </div>
                   {rate !== null && (
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${rate >= 80 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : rate >= 50 ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'}`}
+                    <span className={`text-micro font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${rate >= 80 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : rate >= 50 ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'}`}
                       title="Done in the last 7 days">{rate}% · 7d</span>
                   )}
                   <button onClick={() => toggle(r)} className="btn-ghost p-1.5" aria-label={r.is_active ? `Pause ${r.title}` : `Resume ${r.title}`}>{r.is_active ? <Pause size={13} /> : <Play size={13} />}</button>
@@ -186,19 +186,19 @@ function RecurringTaskEditor({ task, profiles, departments, duties, onClose, onS
     onSaved();
   };
 
-  const label = 'block text-[11px] font-medium mb-1.5 text-gray-500';
+  const label = 'block text-caption font-medium mb-1.5 text-fg-muted';
   const personOf = (id: string | null) => profiles.find((p) => p.id === id)?.full_name.trim();
   return (
     <Modal open onClose={onClose} title={task ? 'Edit standing duty' : 'New standing duty'} subtitle="It appears on their task list automatically" maxWidth="max-w-lg">
       <div className="space-y-3">
         <div><label className={label} htmlFor="rt-title">Task</label><input id="rt-title" value={title} onChange={(e) => setTitle(e.target.value)} className="input" placeholder="e.g. Confirm every pending driver deposit" /></div>
-        <div><label className={label} htmlFor="rt-desc">How / why <span className="font-normal text-gray-400">(optional)</span></label><textarea id="rt-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="input resize-none" /></div>
+        <div><label className={label} htmlFor="rt-desc">How / why <span className="font-normal text-fg-subtle">(optional)</span></label><textarea id="rt-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="input resize-none" /></div>
         <div>
           <span className={label}>Who does it</span>
-          <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-white/5 mb-2" role="radiogroup" aria-label="Who does it">
+          <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg bg-inset mb-2" role="radiogroup" aria-label="Who does it">
             {(['duty', 'department', 'person'] as const).map((t) => (
               <button key={t} type="button" role="radio" aria-checked={targetType === t} onClick={() => setTargetType(t)}
-                className={`py-1.5 rounded-md text-[11px] font-medium ${targetType === t ? 'bg-white dark:bg-navy-800 shadow-sm' : 'text-gray-500'}`}>
+                className={`py-1.5 rounded-md text-caption font-medium ${targetType === t ? 'bg-surface-2 shadow-sm' : 'text-fg-muted'}`}>
                 {t === 'duty' ? 'Whoever holds a duty' : t === 'department' ? 'A whole department' : 'One person'}
               </button>
             ))}
@@ -233,21 +233,21 @@ function RecurringTaskEditor({ task, profiles, departments, duties, onClose, onS
               <option value="monthly">Once a month</option>
             </select>
           </div>
-          <div><label className={label} htmlFor="rt-time">Done by <span className="font-normal text-gray-400">(optional)</span></label><input id="rt-time" type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} className="input" /></div>
+          <div><label className={label} htmlFor="rt-time">Done by <span className="font-normal text-fg-subtle">(optional)</span></label><input id="rt-time" type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} className="input" /></div>
         </div>
         {frequency === 'weekly' && (
           <div className="flex gap-1 flex-wrap" role="group" aria-label="Days">
             {WEEKDAYS.map((d, i) => (
               <button key={d} type="button" aria-pressed={weekdays.includes(i + 1)} onClick={() => setWeekdays((w) => (w.includes(i + 1) ? w.filter((x) => x !== i + 1) : [...w, i + 1]))}
-                className={`px-2.5 py-1 rounded-full text-[11px] border ${weekdays.includes(i + 1) ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500'}`}>{d}</button>
+                className={`px-2.5 py-1 rounded-full text-caption border ${weekdays.includes(i + 1) ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-line text-fg-muted'}`}>{d}</button>
             ))}
           </div>
         )}
         {frequency === 'monthly' && (
           <div><label className={label} htmlFor="rt-day">Day of the month</label><input id="rt-day" type="number" min={1} max={28} value={monthDay} onChange={(e) => setMonthDay(Math.min(28, Math.max(1, Number(e.target.value) || 1)))} className="input w-24" /></div>
         )}
-        {error && <p className="text-[11px] text-red-600">{error}</p>}
-        <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+        {error && <p className="text-caption text-red-600">{error}</p>}
+        <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
           {task ? <button onClick={remove} disabled={saving} className="btn-ghost text-red-500">Delete</button> : <span />}
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-ghost">Cancel</button>

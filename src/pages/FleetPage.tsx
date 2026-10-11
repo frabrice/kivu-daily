@@ -48,11 +48,11 @@ export default function FleetPage() {
   return (
     <div className="space-y-4">
       {readOnly && (
-        <div className="flex items-center gap-2 text-[11px] px-3 py-2 rounded-lg bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-300 w-fit">
+        <div className="flex items-center gap-2 text-caption px-3 py-2 rounded-lg bg-inset text-fg-muted w-fit">
           <Eye size={13} /> View only — Fleet makes changes here. On Non-Insider cars you can update branding and device answers.
         </div>
       )}
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap">
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit flex-wrap">
         <TabButton active={tab === 'pipeline'} onClick={() => selectTab('pipeline')} icon={Truck} label="Driver Pipeline" />
         <TabButton active={tab === 'vehicles'} onClick={() => selectTab('vehicles')} icon={Car} label="Vehicles" />
         {!readOnly && <>
@@ -79,9 +79,9 @@ export default function FleetPage() {
 
 function TabButton({ active, onClick, icon: Icon, label, badge }: { active: boolean; onClick: () => void; icon: typeof Truck; label: string; badge?: number }) {
   return (
-    <button onClick={onClick} className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${active ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
+    <button onClick={onClick} className={`px-3 py-1.5 rounded-md text-small font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${active ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}>
       <Icon size={14} /> {label}
-      {!!badge && <span className="text-[8px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{badge}</span>}
+      {!!badge && <span className="text-micro font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{badge}</span>}
     </button>
   );
 }

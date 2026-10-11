@@ -95,55 +95,55 @@ export default function PlatformCarDrawer({
     <Modal open onClose={onClose} title={car ? car.plate_number : 'Add Car'} subtitle={car ? timeAgo(car.updated_at) + ' updated' : 'Not part of the managed fleet'} maxWidth="max-w-lg">
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Plate Number</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Plate Number</label>
           <input value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} disabled={!editing} className="input" placeholder="RAD 123 A" autoFocus />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Make</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Make</label>
             <input value={make} onChange={(e) => setMake(e.target.value)} disabled={!editing} className="input" placeholder="Toyota" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Model</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Model</label>
             <input value={model} onChange={(e) => setModel(e.target.value)} disabled={!editing} className="input" placeholder="Corolla" />
           </div>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Color</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Color</label>
           <input value={color} onChange={(e) => setColor(e.target.value)} disabled={!editing} className="input" placeholder="White" />
         </div>
 
-        <div className="p-3 rounded-lg border border-gray-100 dark:border-white/5 space-y-3">
-          <p className="text-[10px] text-gray-400">Filled in during the survey — leave as Unknown until then.</p>
+        <div className="p-3 rounded-lg border border-line-muted space-y-3">
+          <p className="text-micro text-fg-subtle">Filled in during the survey — leave as Unknown until then.</p>
           <TriStateToggle label="Currently branded" value={isBranded} onChange={setIsBranded} disabled={!editing && !interestEditing} />
           <TriStateToggle label="Allows branding" value={allowsBranding} onChange={setAllowsBranding} disabled={!editing && !interestEditing} />
           <TriStateToggle label="Willing to buy the app's device" value={willingToBuyDevice} onChange={setWillingToBuyDevice} disabled={!editing && !interestEditing} />
           {interestEditing && (
-            <p className="text-[10px] text-brand-700 dark:text-brand-300">Saying Yes to branding or the device sends this car to the Fleet Manager to follow up.</p>
+            <p className="text-micro text-brand-700 dark:text-brand-300">Saying Yes to branding or the device sends this car to the Fleet Manager to follow up.</p>
           )}
         </div>
 
         {interestEditing && (
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500" htmlFor="interest-note">Add a note (optional)</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted" htmlFor="interest-note">Add a note (optional)</label>
             <input id="interest-note" value={interestNote} onChange={(e) => setInterestNote(e.target.value)} className="input" placeholder="e.g. Owner happy to brand from next week" />
           </div>
         )}
 
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="Condition, anything worth remembering…" />
         </div>
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {interestEditing ? (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={() => setInterestEditing(false)} className="btn-ghost">Cancel</button>
             <button onClick={saveInterest} disabled={saving} className="btn-primary disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
           </div>
         ) : editing ? (
-          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
             {car ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
                 <Trash2 size={13} /> Remove
@@ -157,7 +157,7 @@ export default function PlatformCarDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Close</button>
             {canEdit ? (
               <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">

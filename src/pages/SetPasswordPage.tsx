@@ -56,7 +56,7 @@ export default function SetPasswordPage() {
         <div className="card p-8 animate-scale-in">
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">New Password</label>
+              <label className="block text-sm font-medium text-fg-muted mb-1.5">New Password</label>
               <input
                 type="password"
                 required
@@ -69,7 +69,7 @@ export default function SetPasswordPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Confirm Password</label>
+              <label className="block text-sm font-medium text-fg-muted mb-1.5">Confirm Password</label>
               <input
                 type="password"
                 required
@@ -90,7 +90,7 @@ export default function SetPasswordPage() {
             </button>
           </form>
 
-          <button onClick={signOut} className="text-xs text-center text-gray-400 mt-6 w-full hover:text-gray-600 dark:hover:text-gray-300">
+          <button onClick={signOut} className="text-xs text-center text-fg-subtle mt-6 w-full hover:text-fg-muted ">
             Sign out
           </button>
         </div>

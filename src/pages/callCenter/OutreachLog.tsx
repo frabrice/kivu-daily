@@ -139,8 +139,8 @@ export default function OutreachLog({ calls, drivers, statuses, names }: {
   };
 
   const sel = (label: string, value: string, set: (v: string) => void, options: { key: string; label: string }[], notAsked = false) => (
-    <label className="block min-w-0"><span className="block text-[10px] text-gray-500 mb-0.5">{label}</span>
-      <select value={value} onChange={(e) => set(e.target.value)} className="input py-1 text-[11px]">
+    <label className="block min-w-0"><span className="block text-micro text-fg-muted mb-0.5">{label}</span>
+      <select value={value} onChange={(e) => set(e.target.value)} className="input py-1 text-caption">
         <option value="">Any</option>
         {options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
         {notAsked && <option value="none">Not asked</option>}
@@ -154,13 +154,13 @@ export default function OutreachLog({ calls, drivers, statuses, names }: {
         <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Period">
           {PERIODS.map((p) => (
             <button key={p.key} role="tab" aria-selected={period === p.key} onClick={() => setPeriod(p.key)}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-medium border ${period === p.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500 hover:border-brand/40'}`}>{p.label}</button>
+              className={`px-2.5 py-1 rounded-md text-caption font-medium border ${period === p.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-line text-fg-muted hover:border-brand/40'}`}>{p.label}</button>
           ))}
           {period === 'custom' && (
             <div className="flex items-center gap-1.5 ml-1">
-              <input type="date" value={from} max={to || today} onChange={(e) => setFrom(e.target.value)} className="input py-1 text-[11px]" aria-label="From" />
-              <span className="text-[11px] text-gray-400">to</span>
-              <input type="date" value={to} min={from} max={today} onChange={(e) => setTo(e.target.value)} className="input py-1 text-[11px]" aria-label="To" />
+              <input type="date" value={from} max={to || today} onChange={(e) => setFrom(e.target.value)} className="input py-1 text-caption" aria-label="From" />
+              <span className="text-caption text-fg-subtle">to</span>
+              <input type="date" value={to} min={from} max={today} onChange={(e) => setTo(e.target.value)} className="input py-1 text-caption" aria-label="To" />
             </div>
           )}
         </div>
@@ -173,8 +173,8 @@ export default function OutreachLog({ calls, drivers, statuses, names }: {
           {sel('Device', device, setDevice, ANSWERS, true)}
           {sel('Branding', branding, setBranding, ANSWERS, true)}
           {sel('Driver now', category, setCategory, CATEGORIES.map((c) => ({ key: c.key, label: c.label })))}
-          <label className="block min-w-0"><span className="block text-[10px] text-gray-500 mb-0.5">Sort</span>
-            <select value={oldestFirst ? 'old' : 'new'} onChange={(e) => setOldestFirst(e.target.value === 'old')} className="input py-1 text-[11px]">
+          <label className="block min-w-0"><span className="block text-micro text-fg-muted mb-0.5">Sort</span>
+            <select value={oldestFirst ? 'old' : 'new'} onChange={(e) => setOldestFirst(e.target.value === 'old')} className="input py-1 text-caption">
               <option value="new">Newest first</option>
               <option value="old">Oldest first</option>
             </select>
@@ -183,60 +183,60 @@ export default function OutreachLog({ calls, drivers, statuses, names }: {
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Driver, phone, plate or note" className="input pl-8 py-1.5 text-[12px]" />
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Driver, phone, plate or note" className="input pl-8 py-1.5 text-small" />
           </div>
-          <label className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><input type="checkbox" checked={onlyYes} onChange={(e) => setOnlyYes(e.target.checked)} /> Said yes to something</label>
-          <label className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><input type="checkbox" checked={onlyNotes} onChange={(e) => setOnlyNotes(e.target.checked)} /> Has a note</label>
-          {active > 0 && <button onClick={clear} className="btn-ghost text-[11px] flex items-center gap-1"><X size={12} /> Clear {active} filter{active === 1 ? '' : 's'}</button>}
+          <label className="flex items-center gap-1.5 text-caption text-fg-muted "><input type="checkbox" checked={onlyYes} onChange={(e) => setOnlyYes(e.target.checked)} /> Said yes to something</label>
+          <label className="flex items-center gap-1.5 text-caption text-fg-muted "><input type="checkbox" checked={onlyNotes} onChange={(e) => setOnlyNotes(e.target.checked)} /> Has a note</label>
+          {active > 0 && <button onClick={clear} className="btn-ghost text-caption flex items-center gap-1"><X size={12} /> Clear {active} filter{active === 1 ? '' : 's'}</button>}
           <div className="ml-auto flex items-center gap-3">
-            <p className="text-[12px] text-gray-500 tabular-nums">{shown.length} of {calls.length} call{calls.length === 1 ? '' : 's'}</p>
-            <button onClick={downloadCsv} disabled={!shown.length} className="btn-ghost text-[11px] flex items-center gap-1 border border-gray-200 dark:border-white/10"><Download size={12} /> CSV</button>
+            <p className="text-small text-fg-muted tabular-nums">{shown.length} of {calls.length} call{calls.length === 1 ? '' : 's'}</p>
+            <button onClick={downloadCsv} disabled={!shown.length} className="btn-ghost text-caption flex items-center gap-1 border border-line "><Download size={12} /> CSV</button>
           </div>
         </div>
 
         {summary.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px] min-w-[560px]">
-              <thead><tr className="text-left text-gray-500 text-[11px]">
+            <table className="w-full text-small min-w-[560px]">
+              <thead><tr className="text-left text-fg-muted text-caption">
                 {['Agent', 'Calls', 'Reached', 'No answer', 'Said yes', 'Device yes', 'Branding yes', 'Coming to office'].map((h, i) => <th key={h} className={`py-1.5 pr-3 font-medium ${i ? 'text-right' : ''}`}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {summary.map((s) => (
-                  <tr key={s.id} onClick={() => setAgent(agent === s.id ? '' : s.id)} className={`border-t border-gray-100 dark:border-white/5 cursor-pointer ${agent === s.id ? 'bg-brand/5' : 'hover:bg-gray-50 dark:hover:bg-white/[0.03]'}`}>
+                  <tr key={s.id} onClick={() => setAgent(agent === s.id ? '' : s.id)} className={`border-t border-line-muted cursor-pointer ${agent === s.id ? 'bg-brand/5' : 'hover:bg-hover '}`}>
                     <td className="py-1.5 pr-3 font-medium">{s.name}</td>
                     {[s.calls, s.reached, s.noAnswer, s.yes, s.device, s.branding, s.coming].map((n, i) => <td key={i} className="py-1.5 pr-3 text-right tabular-nums">{n}</td>)}
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="text-[10px] text-gray-400 mt-1">Click an agent to see only their calls.</p>
+            <p className="text-micro text-fg-subtle mt-1">Click an agent to see only their calls.</p>
           </div>
         )}
       </div>
 
       <div className="card p-4 space-y-3">
-        {shown.length === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">No outreach calls match these filters.</p> : (
+        {shown.length === 0 ? <p className="text-small text-fg-subtle text-center py-8">No outreach calls match these filters.</p> : (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px] min-w-[880px]">
-              <thead><tr className="text-left text-gray-500 text-[11px]">
+            <table className="w-full text-small min-w-[880px]">
+              <thead><tr className="text-left text-fg-muted text-caption">
                 {['When', 'Agent', 'Driver', 'Round', 'Result', 'Updated app', 'Device', 'Branding', 'Driver now', 'Note'].map((h) => <th key={h} className="py-1.5 pr-3 font-medium">{h}</th>)}
               </tr></thead>
               <tbody>
                 {pageRows.map((c) => {
                   const d = driverById.get(c.platform_driver_id);
                   return (
-                    <tr key={c.id} className="border-t border-gray-100 dark:border-white/5 align-top">
+                    <tr key={c.id} className="border-t border-line-muted align-top">
                       <td className="py-1.5 pr-3 tabular-nums whitespace-nowrap">{when(c.created_at)}</td>
                       <td className="py-1.5 pr-3 whitespace-nowrap">{c.agent_id ? names[c.agent_id] ?? '—' : '—'}</td>
-                      <td className="py-1.5 pr-3"><span className="font-medium">{d?.full_name ?? '—'}</span><span className="block text-[10px] text-gray-500">{d?.car?.plate_number ?? ''} {d?.phone ?? ''}</span></td>
+                      <td className="py-1.5 pr-3"><span className="font-medium">{d?.full_name ?? '—'}</span><span className="block text-micro text-fg-muted">{d?.car?.plate_number ?? ''} {d?.phone ?? ''}</span></td>
                       <td className="py-1.5 pr-3">R{c.round}</td>
-                      <td className="py-1.5 pr-3 whitespace-nowrap">{RESULT_LABEL[c.result]}{c.result === 'callback' && c.callback_at ? <span className="block text-[10px] text-gray-500">→ {new Date(c.callback_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span> : null}</td>
+                      <td className="py-1.5 pr-3 whitespace-nowrap">{RESULT_LABEL[c.result]}{c.result === 'callback' && c.callback_at ? <span className="block text-micro text-fg-muted">→ {new Date(c.callback_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span> : null}</td>
                       <td className="py-1.5 pr-3">{c.app_status ? APP_STATUS_SHORT[c.app_status] : '—'}</td>
                       <td className="py-1.5 pr-3">{c.device_answer ? ANSWER_LABEL[c.device_answer] : '—'}</td>
                       <td className="py-1.5 pr-3">{c.branding_answer ? ANSWER_LABEL[c.branding_answer] : '—'}</td>
-                      <td className="py-1.5 pr-3 text-[11px] text-gray-500 whitespace-nowrap">{CATEGORY_LABEL[categoryOf(statuses[c.platform_driver_id])].split(' — ')[0]}</td>
-                      <td className="py-1.5 text-gray-600 dark:text-gray-300 max-w-[260px]">{c.note ?? ''}</td>
+                      <td className="py-1.5 pr-3 text-caption text-fg-muted whitespace-nowrap">{CATEGORY_LABEL[categoryOf(statuses[c.platform_driver_id])].split(' — ')[0]}</td>
+                      <td className="py-1.5 text-fg-muted max-w-[260px]">{c.note ?? ''}</td>
                     </tr>
                   );
                 })}
@@ -247,18 +247,18 @@ export default function OutreachLog({ calls, drivers, statuses, names }: {
 
         {shown.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <p className="text-[11px] text-gray-500 tabular-nums">Showing {safePage * pageSize + 1}–{Math.min(shown.length, (safePage + 1) * pageSize)} of {shown.length}</p>
-            <label className="flex items-center gap-1.5 text-[11px] text-gray-500">Per page
-              <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="input py-0.5 text-[11px] w-auto">
+            <p className="text-caption text-fg-muted tabular-nums">Showing {safePage * pageSize + 1}–{Math.min(shown.length, (safePage + 1) * pageSize)} of {shown.length}</p>
+            <label className="flex items-center gap-1.5 text-caption text-fg-muted">Per page
+              <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="input py-0.5 text-caption w-auto">
                 {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
             </label>
             <div className="ml-auto flex items-center gap-1">
               <button onClick={() => setPage(safePage - 1)} disabled={safePage === 0} className="btn-ghost p-1 disabled:opacity-30" aria-label="Previous page"><ChevronLeft size={14} /></button>
               {pageNumbers(safePage, pages).map((n, i) => n < 0
-                ? <span key={`gap${i}`} className="px-1 text-[11px] text-gray-400">…</span>
+                ? <span key={`gap${i}`} className="px-1 text-caption text-fg-subtle">…</span>
                 : <button key={n} onClick={() => setPage(n)} aria-current={n === safePage ? 'page' : undefined}
-                    className={`min-w-[26px] h-[26px] rounded-md text-[11px] tabular-nums ${n === safePage ? 'bg-brand text-white font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'}`}>{n + 1}</button>)}
+                    className={`min-w-[26px] h-[26px] rounded-md text-caption tabular-nums ${n === safePage ? 'bg-brand text-white font-semibold' : 'text-fg-muted hover:bg-hover '}`}>{n + 1}</button>)}
               <button onClick={() => setPage(safePage + 1)} disabled={safePage >= pages - 1} className="btn-ghost p-1 disabled:opacity-30" aria-label="Next page"><ChevronRight size={14} /></button>
             </div>
           </div>

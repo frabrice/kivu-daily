@@ -38,12 +38,12 @@ export default function Leaderboard({ employees, allTasks, onSelect }: Props) {
       <div className="flex items-center gap-2">
         <Trophy size={20} className="text-amber-500" />
         <h2 className="text-xl font-semibold">Weekly Leaderboard</h2>
-        {!isFriday && <span className="text-xs text-gray-400">(Updates every Friday)</span>}
+        {!isFriday && <span className="text-xs text-fg-subtle">(Updates every Friday)</span>}
       </div>
 
       {ranked.length === 0 ? (
         <div className="card p-8 text-center">
-          <p className="text-gray-400">No activity this week yet. Be the first!</p>
+          <p className="text-fg-subtle">No activity this week yet. Be the first!</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -60,14 +60,14 @@ export default function Leaderboard({ employees, allTasks, onSelect }: Props) {
                 style={isTop3 ? { borderColor: i === 0 ? '#fbbf24' : i === 1 ? '#d1d5db' : '#fb923c' } : undefined}
               >
                 <div className="flex items-center justify-center w-8">
-                  {Icon ? <Icon size={22} className={i === 0 ? 'text-amber-500' : i === 1 ? 'text-gray-400' : 'text-orange-400'} /> : (
-                    <span className="text-lg font-bold text-gray-400">{i + 1}</span>
+                  {Icon ? <Icon size={22} className={i === 0 ? 'text-amber-500' : i === 1 ? 'text-fg-subtle' : 'text-orange-400'} /> : (
+                    <span className="text-lg font-bold text-fg-subtle">{i + 1}</span>
                   )}
                 </div>
                 <Avatar name={e.full_name} url={e.avatar_url} size="md" />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{e.full_name}</p>
-                  <p className="text-xs text-gray-400 flex items-center gap-1 flex-wrap">
+                  <p className="text-xs text-fg-subtle flex items-center gap-1 flex-wrap">
                     <span>{e.department?.name}</span>
                     <span>·</span>
                     <Flame size={11} className="text-orange-400" />

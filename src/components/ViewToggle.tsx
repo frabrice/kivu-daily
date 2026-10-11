@@ -27,7 +27,7 @@ export default function ViewToggle({
   modes?: ViewMode[];
 }) {
   return (
-    <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit shrink-0">
+    <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit shrink-0">
       {modes.map((m) => {
         const Icon = ICONS[m];
         return (
@@ -35,7 +35,7 @@ export default function ViewToggle({
             key={m}
             onClick={() => onChange(m)}
             title={TITLES[m]}
-            className={`p-1.5 rounded-md transition-all ${value === m ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-400'}`}
+            className={`p-1.5 rounded-md transition-all ${value === m ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-subtle'}`}
           >
             <Icon size={14} />
           </button>

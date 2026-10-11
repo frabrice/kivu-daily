@@ -47,12 +47,12 @@ export default function GeneralPage({ tasks, reload }: GeneralPageProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap">
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit flex-wrap">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${tab === t.key ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+            className={`px-3 py-1.5 rounded-md text-small font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${tab === t.key ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
           >
             <t.icon size={14} /> {t.label}
           </button>
@@ -112,7 +112,7 @@ function TodayTab({ tasks, reload }: GeneralPageProps) {
           <h2 className="text-lg font-semibold">
             {greeting()}, {profile?.full_name?.split(' ')[0]}
           </h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">{formatDateFull(now)}</p>
+          <p className="text-caption text-fg-subtle mt-0.5">{formatDateFull(now)}</p>
         </div>
         <p className="text-xl font-light text-brand-500 tabular-nums">{formatTime(now)}</p>
       </div>
@@ -131,7 +131,7 @@ function TodayTab({ tasks, reload }: GeneralPageProps) {
           </div>
           <div>
             <p className="stat-label mb-0.5">Tasks Today</p>
-            <p className="text-xl font-bold leading-none">{todayTasks.length}<span className="text-[10px] font-normal text-gray-400 ml-1">{completedCount} done</span></p>
+            <p className="text-xl font-bold leading-none">{todayTasks.length}<span className="text-micro font-normal text-fg-subtle ml-1">{completedCount} done</span></p>
           </div>
         </div>
         <div className="card p-3.5 flex items-center gap-2.5">
@@ -166,17 +166,17 @@ function TodayTab({ tasks, reload }: GeneralPageProps) {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="section-title">
                   {formatDateLabel(date)}
-                  {isToday && <span className="ml-2 text-[8px] font-bold text-brand-700 dark:text-brand-300 bg-brand/10 px-1.5 py-0.5 rounded-full">LIVE</span>}
+                  {isToday && <span className="ml-2 text-micro font-bold text-brand-700 dark:text-brand-300 bg-brand/10 px-1.5 py-0.5 rounded-full">LIVE</span>}
                 </h3>
                 {dayTasks.length > 0 && (
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-micro text-fg-subtle">
                     {dayTasks.filter((t) => t.completed).length}/{dayTasks.length} · {Math.round(pct)}%
                   </span>
                 )}
               </div>
 
               {carried.length > 0 && isToday && (
-                <p className="text-[10px] font-medium text-orange-500 mb-1.5 px-0.5">Carried Over</p>
+                <p className="text-micro font-medium text-orange-500 mb-1.5 px-0.5">Carried Over</p>
               )}
 
               <div className="space-y-1.5">
@@ -195,7 +195,7 @@ function TodayTab({ tasks, reload }: GeneralPageProps) {
                   ))}
                 {dayTasks.length === 0 && isToday && (
                   <div className="card p-6 text-center">
-                    <p className="text-gray-400 text-[12px]">No tasks yet. Tap + to add your first task.</p>
+                    <p className="text-fg-subtle text-small">No tasks yet. Tap + to add your first task.</p>
                   </div>
                 )}
               </div>

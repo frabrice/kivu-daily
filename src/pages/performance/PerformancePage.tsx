@@ -37,7 +37,7 @@ export default function PerformancePage({ onNavigate }: { onNavigate: (key: NavK
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><Activity size={16} className="text-brand-600 dark:text-brand-300" /> Performance</h2>
-          <p className="text-[11px] text-gray-500 mt-0.5">Every number is rebuilt from what is recorded in Kivu Daily, day by day. Changes compare with the {days} days before.</p>
+          <p className="text-caption text-fg-muted mt-0.5">Every number is rebuilt from what is recorded in Kivu Daily, day by day. Changes compare with the {days} days before.</p>
         </div>
         <div className="flex items-center gap-2">
           {tab !== 'calls' && <RangeTabs value={days} onChange={setDays} options={RANGES} />}
@@ -45,16 +45,16 @@ export default function PerformancePage({ onNavigate }: { onNavigate: (key: NavK
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit max-w-full" role="tablist">
+      <div className="flex flex-wrap gap-0.5 p-0.5 bg-inset rounded-lg w-fit max-w-full" role="tablist">
         {TABS.map((t) => (
           <button key={t.key} role="tab" aria-selected={tab === t.key} onClick={() => pick(t.key)}
-            className={`px-3 py-1.5 rounded-md text-[12px] font-medium flex items-center gap-1.5 ${tab === t.key ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
+            className={`px-3 py-1.5 rounded-md text-small font-medium flex items-center gap-1.5 ${tab === t.key ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}>
             <t.icon size={14} /> {t.label}
           </button>
         ))}
       </div>
 
-      {tab === 'calls' ? <CallAnalyticsPage /> : error ? <div className="card p-6 text-[12px] text-red-600">{error}</div> : !data ? (
+      {tab === 'calls' ? <CallAnalyticsPage /> : error ? <div className="card p-6 text-small text-red-600">{error}</div> : !data ? (
         <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>
       ) : (
         <>

@@ -69,14 +69,14 @@ export default function DriversTab({ data, period: p }: { data: PerfData; period
       <div className="card p-4 space-y-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <p className="text-[13px] font-semibold">Every driver</p>
-            <p className="text-[11px] text-gray-500">Paid = the day was covered by what they had paid by then. Click a column to sort.</p>
+            <p className="text-body font-semibold">Every driver</p>
+            <p className="text-caption text-fg-muted">Paid = the day was covered by what they had paid by then. Click a column to sort.</p>
           </div>
-          <label className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><input type="checkbox" checked={showEnded} onChange={(e) => setShowEnded(e.target.checked)} /> Show ended contracts</label>
+          <label className="flex items-center gap-1.5 text-caption text-fg-muted "><input type="checkbox" checked={showEnded} onChange={(e) => setShowEnded(e.target.checked)} /> Show ended contracts</label>
         </div>
         <div className="overflow-x-auto -mx-4 px-4">
-          <table className="w-full text-[11px] min-w-[920px]">
-            <thead><tr className="text-left text-gray-500">
+          <table className="w-full text-caption min-w-[920px]">
+            <thead><tr className="text-left text-fg-muted">
               {th('name', 'Driver', false)}<th className="py-1.5 pr-3 font-medium">Car</th>{th('reliability', 'Paid on time')}<th className="py-1.5 pr-3 font-medium text-right">Days paid</th>
               {th('lost', 'Days lost')}{th('paused', 'Days off')}{th('collected', 'Paid in')}<th className="py-1.5 pr-3 font-medium text-right">Fines unpaid</th>{th('owes', 'Owes now')}<th className="py-1.5 font-medium text-right">Today</th>
             </tr></thead>
@@ -85,18 +85,18 @@ export default function DriversTab({ data, period: p }: { data: PerfData; period
                 const rel = pct(r.paid, r.paid + r.unpaid);
                 const reasons = Object.entries(r.pausedBy).map(([k, n]) => `${PAUSE_REASON_LABEL[k as PauseReason]} ${n}`).join(', ');
                 return (
-                  <tr key={r.driver.id} className={`border-t border-gray-100 dark:border-white/5 ${r.end ? 'opacity-60' : ''}`}>
+                  <tr key={r.driver.id} className={`border-t border-line-muted ${r.end ? 'opacity-60' : ''}`}>
                     <td className="py-2 pr-3 font-medium whitespace-nowrap">{r.driver.full_name}</td>
-                    <td className="py-2 pr-3 whitespace-nowrap text-gray-500">{r.driver.vehicle?.plate_number ?? '—'}{r.driver.shift ? ` · ${r.driver.shift === 'day' ? 'Day' : 'Night'}` : ''}</td>
+                    <td className="py-2 pr-3 whitespace-nowrap text-fg-muted">{r.driver.vehicle?.plate_number ?? '—'}{r.driver.shift ? ` · ${r.driver.shift === 'day' ? 'Day' : 'Night'}` : ''}</td>
                     <td className={`py-2 pr-3 text-right tabular-nums ${rel !== null && rel < 80 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}`}>{rel === null ? '—' : `${rel}%`}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{r.paid}</td>
-                    <td className={`py-2 pr-3 text-right tabular-nums ${r.unpaid ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>{r.unpaid || '—'}</td>
-                    <td className="py-2 pr-3 text-right tabular-nums" title={reasons}>{r.paused || '—'}{reasons && <span className="block text-[10px] text-gray-400">{reasons}</span>}</td>
+                    <td className={`py-2 pr-3 text-right tabular-nums ${r.unpaid ? 'text-red-600 dark:text-red-400' : 'text-fg-subtle'}`}>{r.unpaid || '—'}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums" title={reasons}>{r.paused || '—'}{reasons && <span className="block text-micro text-fg-subtle">{reasons}</span>}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{r.collected ? rwf(r.collected) : '—'}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{r.finesUnpaid ? rwf(r.finesUnpaid) : '—'}</td>
-                    <td className={`py-2 pr-3 text-right tabular-nums ${r.standing.owes ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400'}`}>{r.end ? '—' : r.standing.owes ? rwf(r.standing.owes) : '—'}</td>
+                    <td className={`py-2 pr-3 text-right tabular-nums ${r.standing.owes ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-fg-subtle'}`}>{r.end ? '—' : r.standing.owes ? rwf(r.standing.owes) : '—'}</td>
                     <td className="py-2 text-right whitespace-nowrap">
-                      {r.end ? <span className="text-gray-400">Ended {r.end}</span>
+                      {r.end ? <span className="text-fg-subtle">Ended {r.end}</span>
                         : r.standing.pausedToday ? <span className="text-amber-700 dark:text-amber-300">Paused</span>
                         : r.standing.isCleared ? <span className="text-emerald-700 dark:text-emerald-400">Paid up</span>
                         : <span className="text-red-600 dark:text-red-400">Not paid up</span>}
@@ -107,7 +107,7 @@ export default function DriversTab({ data, period: p }: { data: PerfData; period
             </tbody>
           </table>
         </div>
-        {rows.length === 0 && <p className="text-[12px] text-gray-400 text-center py-6">No drivers on contract in this period.</p>}
+        {rows.length === 0 && <p className="text-small text-fg-subtle text-center py-6">No drivers on contract in this period.</p>}
       </div>
     </div>
   );

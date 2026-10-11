@@ -80,16 +80,16 @@ export default function OnboardVehicleOwnerDrawer({
   return (
     <Modal open onClose={onClose} title={`Onboard Vehicle Owner — ${vehicle.plate_number}`} subtitle="Links the owner, sets the payout schedule, and loads the onboarding fees for confirmation" maxWidth="max-w-md">
       <div className="space-y-3">
-        <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+        <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit">
           <button
             onClick={() => setMode('existing')}
-            className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${mode === 'existing' ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+            className={`px-3 py-1.5 rounded-md text-small font-medium transition-all ${mode === 'existing' ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
           >
             Existing Owner
           </button>
           <button
             onClick={() => setMode('new')}
-            className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${mode === 'new' ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+            className={`px-3 py-1.5 rounded-md text-small font-medium transition-all ${mode === 'new' ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
           >
             New Owner
           </button>
@@ -97,7 +97,7 @@ export default function OnboardVehicleOwnerDrawer({
 
         {mode === 'existing' ? (
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Owner</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Owner</label>
             <SearchableSelect
               options={owners.map((o) => ({ id: o.id, label: o.full_name, sublabel: o.phone }))}
               value={ownerId}
@@ -109,31 +109,31 @@ export default function OnboardVehicleOwnerDrawer({
         ) : (
           <>
             <div>
-              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Full Name</label>
+              <label className="block text-caption font-medium mb-1.5 text-fg-muted">Full Name</label>
               <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input" placeholder="e.g. Jean Bosco Habimana" autoFocus />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Phone</label>
+                <label className="block text-caption font-medium mb-1.5 text-fg-muted">Phone</label>
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input" placeholder="078xxxxxxx" />
               </div>
               <div>
-                <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Email</label>
+                <label className="block text-caption font-medium mb-1.5 text-fg-muted">Email</label>
                 <input value={email} onChange={(e) => setEmail(e.target.value)} className="input" placeholder="Optional" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Bank Name</label>
+                <label className="block text-caption font-medium mb-1.5 text-fg-muted">Bank Name</label>
                 <input value={bankName} onChange={(e) => setBankName(e.target.value)} className="input" placeholder="e.g. Bank of Kigali" />
               </div>
               <div>
-                <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Account Number</label>
+                <label className="block text-caption font-medium mb-1.5 text-fg-muted">Account Number</label>
                 <input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} className="input" placeholder="Account number" />
               </div>
             </div>
             <div>
-              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Payment Day</label>
+              <label className="block text-caption font-medium mb-1.5 text-fg-muted">Payment Day</label>
               <select value={paymentDay} onChange={(e) => setPaymentDay(e.target.value as PaymentDay | '')} className="input">
                 <option value="">Not set</option>
                 {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as PaymentDay[]).map((d) => (
@@ -145,34 +145,34 @@ export default function OnboardVehicleOwnerDrawer({
         )}
 
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Operation Start Date</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Operation Start Date</label>
           <DateInput value={operationStartDate} onChange={setOperationStartDate} />
-          <p className="text-[10px] text-gray-400 mt-1">Weekly payout and margin are counted from this date.</p>
+          <p className="text-micro text-fg-subtle mt-1">Weekly payout and margin are counted from this date.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Daily Payment ({OWNER_PAYOUT_DAYS_PER_WEEK} days/week)</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Daily Payment ({OWNER_PAYOUT_DAYS_PER_WEEK} days/week)</label>
             <input type="number" value={dailyPayout} onChange={(e) => setDailyPayout(e.target.value)} className="input" />
-            <p className="text-[10px] text-gray-400 mt-1">= {fmt(weeklyPayout)}/week</p>
+            <p className="text-micro text-fg-subtle mt-1">= {fmt(weeklyPayout)}/week</p>
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Monthly Management Fee</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Monthly Management Fee</label>
             <input type="number" value={monthlyFee} onChange={(e) => setMonthlyFee(e.target.value)} className="input" />
           </div>
         </div>
-        <p className="text-[10px] text-gray-400">Standard contract is 40,000 RWF/day (240,000/week) to the owner and 30,000 RWF/month management fee — only change these if this car/car type's contract is different (e.g. a car paying 45,000/day = 270,000/week).</p>
+        <p className="text-micro text-fg-subtle">Standard contract is 40,000 RWF/day (240,000/week) to the owner and 30,000 RWF/month management fee — only change these if this car/car type's contract is different (e.g. a car paying 45,000/day = 270,000/week).</p>
 
-        <div className="card p-3.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-1 text-[11px] text-gray-500">
+        <div className="card p-3.5 bg-inset border border-line space-y-1 text-caption text-fg-muted">
           <p>On save, this loads two pending confirmations for Finance:</p>
           <p>• Onboarding fee — <span className="font-medium">{fmt(ONBOARDING_FEE)}</span> (Bank of Kigali)</p>
           <p>• First month's management fee — <span className="font-medium">{fmt(Number(monthlyFee) || MONTHLY_MANAGEMENT_FEE_DEFAULT)}</span> (Equity)</p>
           <p>Confirming the onboarding fee then loads the device, branding and uniform costs for approval.</p>
         </div>
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+        <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
           <button onClick={onClose} className="btn-ghost">Cancel</button>
           <button onClick={save} disabled={saving || !canSave} className="btn-primary disabled:opacity-50">
             {saving ? 'Onboarding…' : 'Onboard Owner'}

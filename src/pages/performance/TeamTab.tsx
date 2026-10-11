@@ -59,21 +59,21 @@ export default function TeamTab({ data, period: p }: { data: PerfData; period: P
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartCard title="Team completion per day" subtitle="Share of each day's tasks that got done"
           table={<MiniTable head={['Day', 'Given', 'Done', 'Rate']} rows={[...daily].reverse().filter((d) => d.given).map((d) => [longDay(d.day), d.given, d.done, `${d.rate}%`])} />}>
-          {given === 0 ? <p className="text-[12px] text-gray-400 text-center py-10">No tasks in this period.</p> : <DailyLines data={daily} series={[{ key: 'rate', label: 'Done', color: c.blue }]} c={c} domain={[0, 100]} format={(n) => `${n}%`} />}
+          {given === 0 ? <p className="text-small text-fg-subtle text-center py-10">No tasks in this period.</p> : <DailyLines data={daily} series={[{ key: 'rate', label: 'Done', color: c.blue }]} c={c} domain={[0, 100]} format={(n) => `${n}%`} />}
         </ChartCard>
         <ChartCard title="Tasks per day" subtitle="Done and not done" legend={[{ key: 'done', label: 'Done', color: c.blue }, { key: 'not_done', label: 'Not done', color: c.orange }]}>
-          {given === 0 ? <p className="text-[12px] text-gray-400 text-center py-10">No tasks in this period.</p> : <DailyBars data={stack} series={[{ key: 'done', label: 'Done', color: c.blue }, { key: 'not_done', label: 'Not done', color: c.orange }]} c={c} />}
+          {given === 0 ? <p className="text-small text-fg-subtle text-center py-10">No tasks in this period.</p> : <DailyBars data={stack} series={[{ key: 'done', label: 'Done', color: c.blue }, { key: 'not_done', label: 'Not done', color: c.orange }]} c={c} />}
         </ChartCard>
       </div>
 
       <div className="card p-4 space-y-2">
         <div>
-          <p className="text-[13px] font-semibold">Everyone</p>
-          <p className="text-[11px] text-gray-500">Click a column to sort, a name to see their tasks. Cases = Call Center cases handed to them; first reply is the target of 2 hours.</p>
+          <p className="text-body font-semibold">Everyone</p>
+          <p className="text-caption text-fg-muted">Click a column to sort, a name to see their tasks. Cases = Call Center cases handed to them; first reply is the target of 2 hours.</p>
         </div>
         <div className="overflow-x-auto -mx-4 px-4">
-          <table className="w-full text-[11px] min-w-[900px]">
-            <thead><tr className="text-left text-gray-500">
+          <table className="w-full text-caption min-w-[900px]">
+            <thead><tr className="text-left text-fg-muted">
               {th(null, 'Person', false)}{th(null, 'Department', false)}{th('given', 'Tasks')}{th('rate', 'Done')}{th('onTime', 'On time')}<th className="py-1.5 pr-3 font-medium text-right">Late</th>{th('missed', 'Missed')}
               <th className="py-1.5 pr-3 font-medium text-right">Carried over</th>{th('smart', 'Smart items')}<th className="py-1.5 pr-3 font-medium text-right">Cases</th>{th('reply', 'First reply')}
             </tr></thead>
@@ -86,12 +86,12 @@ export default function TeamTab({ data, period: p }: { data: PerfData; period: P
                   <FragmentRow key={r.id} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} cols={11}
                     cells={[
                       <span className="font-medium text-brand-600 dark:text-brand-300">{r.name}</span>,
-                      <span className="text-gray-500">{r.dept}</span>,
+                      <span className="text-fg-muted">{r.dept}</span>,
                       r.given,
                       <span className={rate < 60 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}>{rate}%</span>,
                       `${pct(r.onTime, r.given)}%`,
                       r.late || '—',
-                      <span className={r.missed ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400'}>{r.missed || '—'}</span>,
+                      <span className={r.missed ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-fg-subtle'}>{r.missed || '—'}</span>,
                       r.carried || '—',
                       r.smartItems ? `${r.smartDone}/${r.smartItems}` : '—',
                       cs ? `${cs.n}${cs.replied ? ` · ${pct(cs.within2h, cs.replied)}% in 2h` : ''}` : '—',
@@ -104,7 +104,7 @@ export default function TeamTab({ data, period: p }: { data: PerfData; period: P
             </tbody>
           </table>
         </div>
-        {rows.length === 0 && <p className="text-[12px] text-gray-400 text-center py-6">No tasks in this period.</p>}
+        {rows.length === 0 && <p className="text-small text-fg-subtle text-center py-6">No tasks in this period.</p>}
       </div>
     </div>
   );
@@ -113,7 +113,7 @@ export default function TeamTab({ data, period: p }: { data: PerfData; period: P
 function FragmentRow({ cells, open, onToggle, cols, children }: { cells: React.ReactNode[]; open: boolean; onToggle: () => void; cols: number; children: React.ReactNode }) {
   return (
     <>
-      <tr onClick={onToggle} className={`border-t border-gray-100 dark:border-white/5 cursor-pointer ${open ? 'bg-brand/5' : 'hover:bg-gray-50 dark:hover:bg-white/[0.03]'}`}>
+      <tr onClick={onToggle} className={`border-t border-line-muted cursor-pointer ${open ? 'bg-brand/5' : 'hover:bg-hover '}`}>
         {cells.map((v, i) => <td key={i} className={`py-2 pr-3 ${i > 1 ? 'text-right tabular-nums' : ''} whitespace-nowrap`}>{v}</td>)}
       </tr>
       {open && <tr><td colSpan={cols} className="pb-3">{children}</td></tr>}
@@ -125,19 +125,19 @@ function PersonTasks({ data, period: p, id }: { data: PerfData; period: Period; 
   const list = data.tasks.filter((t) => t.user_id === id && within(t.date, p.from, p.to)).sort((a, b) => b.date.localeCompare(a.date));
   const today = kDay(new Date().toISOString());
   return (
-    <div className="rounded-lg border border-gray-100 dark:border-white/10 p-2 max-h-72 overflow-y-auto">
-      <table className="w-full text-[11px]">
+    <div className="rounded-lg border border-line-muted p-2 max-h-72 overflow-y-auto">
+      <table className="w-full text-caption">
         <tbody>
           {list.map((t) => {
             const late = t.completed && t.completed_at && kDay(t.completed_at) > t.date;
             return (
-              <tr key={t.id} className="border-t first:border-t-0 border-gray-50 dark:border-white/5">
-                <td className="py-1 pr-3 whitespace-nowrap text-gray-500">{longDay(t.date)}{t.due_time ? ` · ${t.due_time.slice(0, 5)}` : ''}</td>
-                <td className="py-1 pr-3">{t.title}{t.smart_key && <span className="ml-1.5 text-[9px] font-semibold text-violet-700 dark:text-violet-300"><Zap size={9} className="inline -mt-0.5" /> {t.smart_done ?? 0}/{t.smart_total ?? 0}</span>}</td>
+              <tr key={t.id} className="border-t first:border-t-0 border-line-muted ">
+                <td className="py-1 pr-3 whitespace-nowrap text-fg-muted">{longDay(t.date)}{t.due_time ? ` · ${t.due_time.slice(0, 5)}` : ''}</td>
+                <td className="py-1 pr-3">{t.title}{t.smart_key && <span className="ml-1.5 text-micro font-semibold text-violet-700 dark:text-violet-300"><Zap size={9} className="inline -mt-0.5" /> {t.smart_done ?? 0}/{t.smart_total ?? 0}</span>}</td>
                 <td className="py-1 text-right whitespace-nowrap">
                   {t.completed
                     ? <span className={late ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}>{t.auto_completed ? 'Done by itself' : late ? `Done late (${longDay(kDay(t.completed_at!))})` : 'Done'}</span>
-                    : t.date < today ? <span className="text-red-600 dark:text-red-400">Missed</span> : <span className="text-gray-500 flex items-center gap-1 justify-end"><Clock size={10} /> Open</span>}
+                    : t.date < today ? <span className="text-red-600 dark:text-red-400">Missed</span> : <span className="text-fg-muted flex items-center gap-1 justify-end"><Clock size={10} /> Open</span>}
                 </td>
               </tr>
             );

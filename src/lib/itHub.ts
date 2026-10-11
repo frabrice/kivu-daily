@@ -87,7 +87,7 @@ export const STORY_STATUSES: { key: UserStory['status']; label: string; color: s
 ];
 
 export const PRIORITY_STYLE: Record<UserStory['priority'], string> = {
-  low: 'bg-gray-100 dark:bg-white/10 text-gray-500',
+  low: 'bg-inset text-fg-muted',
   medium: 'bg-brand/10 text-brand-700 dark:text-brand-300',
   high: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400',
 };

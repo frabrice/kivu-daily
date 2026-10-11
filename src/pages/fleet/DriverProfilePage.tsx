@@ -104,7 +104,7 @@ export default function DriverProfilePage({
         </button>
         <div className="flex items-center gap-2">
           {canEdit && (
-            <button onClick={() => setFlagOpen(true)} className="btn-ghost text-gray-500 flex items-center gap-1.5">
+            <button onClick={() => setFlagOpen(true)} className="btn-ghost text-fg-muted flex items-center gap-1.5">
               <Flag size={13} /> Flag to IT
             </button>
           )}
@@ -129,16 +129,16 @@ export default function DriverProfilePage({
 
       {isEnded && (
         <div className="card p-4 border border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400 flex items-center gap-1.5 mb-1">
+          <p className="text-caption font-semibold uppercase tracking-wide text-red-600 dark:text-red-400 flex items-center gap-1.5 mb-1">
             <UserX size={12} /> Contract Ended
           </p>
           {lastEndedEvent ? (
-            <p className="text-[12px] text-gray-600 dark:text-gray-300">
+            <p className="text-small text-fg-muted ">
               On <span className="font-medium">{formatDateLabelSafe(lastEndedEvent.event_date)}</span> · {lastEndedEvent.reason}
-              {lastEndedEvent.details && <span className="text-gray-400"> — {lastEndedEvent.details}</span>}
+              {lastEndedEvent.details && <span className="text-fg-subtle"> — {lastEndedEvent.details}</span>}
             </p>
           ) : (
-            <p className="text-[12px] text-gray-600 dark:text-gray-300">No details on file.</p>
+            <p className="text-small text-fg-muted ">No details on file.</p>
           )}
         </div>
       )}
@@ -147,36 +147,36 @@ export default function DriverProfilePage({
         <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
           <div>
             <h2 className="text-lg font-semibold">{driver.full_name}</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">{driver.phone}</p>
+            <p className="text-caption text-fg-subtle mt-0.5">{driver.phone}</p>
             {replacedDriver && (
-              <p className="text-[10px] text-indigo-500 dark:text-indigo-300 mt-1">Replacing {replacedDriver.full_name}</p>
+              <p className="text-micro text-indigo-500 dark:text-indigo-300 mt-1">Replacing {replacedDriver.full_name}</p>
             )}
             {replacedByDriver && (
-              <p className="text-[10px] text-indigo-500 dark:text-indigo-300 mt-1">Replaced by {replacedByDriver.full_name}</p>
+              <p className="text-micro text-indigo-500 dark:text-indigo-300 mt-1">Replaced by {replacedByDriver.full_name}</p>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             {stageMeta && (
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: `${stageMeta.color}20`, color: stageMeta.color }}>
+              <span className="text-micro font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: `${stageMeta.color}20`, color: stageMeta.color }}>
                 {stageMeta.label}
               </span>
             )}
             {driver.vehicle ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-micro font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
                 <Car size={10} /> {driver.vehicle.plate_number}
                 {driver.shift && <span>· {driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-micro font-medium text-fg-muted bg-inset px-2 py-0.5 rounded-full">
                 <Car size={10} /> No vehicle assigned
               </span>
             )}
             {restDayLabel ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-micro font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-full">
                 <BedDouble size={10} /> Rests on {restDayLabel}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-micro font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full">
                 <BedDouble size={10} /> No rest day set
               </span>
             )}
@@ -184,28 +184,28 @@ export default function DriverProfilePage({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Phone size={10} /> Phone</p>
-            <p className="text-[12px] font-medium">{driver.phone}</p>
+          <div className="card p-2.5 bg-inset ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1 flex items-center gap-1"><Phone size={10} /> Phone</p>
+            <p className="text-small font-medium">{driver.phone}</p>
           </div>
-          <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Mail size={10} /> Email</p>
-            <p className="text-[12px] font-medium truncate">{driver.email || <span className="text-gray-400 font-normal">Not provided</span>}</p>
+          <div className="card p-2.5 bg-inset ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1 flex items-center gap-1"><Mail size={10} /> Email</p>
+            <p className="text-small font-medium truncate">{driver.email || <span className="text-fg-subtle font-normal">Not provided</span>}</p>
           </div>
-          <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><CalendarDays size={10} /> Start Date</p>
-            <p className="text-[12px] font-medium">
-              {driver.start_date ? formatDateLabelSafe(driver.start_date) : <span className="text-gray-400 font-normal">Not set</span>}
+          <div className="card p-2.5 bg-inset ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1 flex items-center gap-1"><CalendarDays size={10} /> Start Date</p>
+            <p className="text-small font-medium">
+              {driver.start_date ? formatDateLabelSafe(driver.start_date) : <span className="text-fg-subtle font-normal">Not set</span>}
             </p>
-            {driver.start_date && showMoney && <p className="text-[10px] text-brand-600 dark:text-brand-300 mt-0.5">Pays every Sunday</p>}
+            {driver.start_date && showMoney && <p className="text-micro text-brand-600 dark:text-brand-300 mt-0.5">Pays every Sunday</p>}
           </div>
           {showMoney && (
-          <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Clock size={10} /> Initial Deposit</p>
-            <p className="text-[12px] font-medium">
+          <div className="card p-2.5 bg-inset ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1 flex items-center gap-1"><Clock size={10} /> Initial Deposit</p>
+            <p className="text-small font-medium">
               {driver.initial_deposit_paid
                 ? `${driver.initial_deposit_amount ? driver.initial_deposit_amount.toLocaleString() + ' RWF' : 'Paid'}${driver.initial_deposit_date ? ' · ' + formatDateLabelSafe(driver.initial_deposit_date) : ''}`
-                : <span className="text-gray-400 font-normal">Not paid</span>}
+                : <span className="text-fg-subtle font-normal">Not paid</span>}
             </p>
           </div>
           )}
@@ -213,8 +213,8 @@ export default function DriverProfilePage({
 
         {driver.notes && (
           <div className="mt-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Notes</p>
-            <p className="text-[12px] leading-relaxed whitespace-pre-wrap">{driver.notes}</p>
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1.5">Notes</p>
+            <p className="text-small leading-relaxed whitespace-pre-wrap">{driver.notes}</p>
           </div>
         )}
       </div>
@@ -230,7 +230,7 @@ export default function DriverProfilePage({
           <p className="text-2xl font-bold leading-none">
             {onTimeRate === null ? '—' : `${onTimeRate}%`}
           </p>
-          <p className="text-[10px] text-gray-400 mt-1.5">
+          <p className="text-micro text-fg-subtle mt-1.5">
             {scoredWeeks === 0
               ? `Counted from ${formatDateLabelSafe(SUNDAY_RULE_START)}`
               : `${standing.onTimeWeeks} on time · ${standing.lateWeeks} late · ${standing.score} points`}
@@ -242,7 +242,7 @@ export default function DriverProfilePage({
             <p className="stat-label">Total Deposited</p>
           </div>
           <p className="text-2xl font-bold leading-none">{standing.totalPaid.toLocaleString()}</p>
-          <p className="text-[10px] text-gray-400 mt-1.5">RWF across {totalDepositCount} deposit{totalDepositCount === 1 ? '' : 's'}{driver.initial_deposit_paid ? ' (incl. initial)' : ''}</p>
+          <p className="text-micro text-fg-subtle mt-1.5">RWF across {totalDepositCount} deposit{totalDepositCount === 1 ? '' : 's'}{driver.initial_deposit_paid ? ' (incl. initial)' : ''}</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center gap-1.5 mb-2">
@@ -250,7 +250,7 @@ export default function DriverProfilePage({
             <p className="stat-label">Outstanding Fines</p>
           </div>
           <p className="text-2xl font-bold leading-none">{outstandingFines.toLocaleString()}</p>
-          <p className="text-[10px] text-gray-400 mt-1.5">RWF of {totalFined.toLocaleString()} total across {driverFines.length} fine{driverFines.length === 1 ? '' : 's'}</p>
+          <p className="text-micro text-fg-subtle mt-1.5">RWF of {totalFined.toLocaleString()} total across {driverFines.length} fine{driverFines.length === 1 ? '' : 's'}</p>
         </div>
       </div>
 
@@ -261,9 +261,9 @@ export default function DriverProfilePage({
           is paid for; lost days are working days spent uncleared. */}
       {!isEnded && showMoney && (
         <div className="card p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><CalendarDays size={13} /> Weekly Deposits</p>
+          <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2.5 flex items-center gap-1.5"><CalendarDays size={13} /> Weekly Deposits</p>
           {standing.periods.length === 0 ? (
-            <p className="text-[11px] text-gray-400">
+            <p className="text-caption text-fg-subtle">
               {!driver.start_date
                 ? 'No start date set yet.'
                 : `Weekly tracking starts ${formatDateLabelSafe(SUNDAY_RULE_START)} — first payment due Sunday ${standing.nextDueDate ? formatDateLabelSafe(standing.nextDueDate) : ''}.`}
@@ -273,11 +273,11 @@ export default function DriverProfilePage({
               {[...standing.periods].reverse().map((p) => {
                 const style = p.state === 'open' ? DEPOSIT_TIER_STYLE.red : p.state === 'late' ? DEPOSIT_TIER_STYLE.yellow : DEPOSIT_TIER_STYLE.green;
                 return (
-                  <div key={p.start} className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
-                    <span className="text-gray-500 dark:text-gray-400">
+                  <div key={p.start} className="flex items-center justify-between gap-2 text-caption py-1.5 border-b border-line-muted last:border-0">
+                    <span className="text-fg-muted ">
                       {p.isStartSegment ? 'First days' : 'Week of'} {formatDateLabelSafe(p.start)} – {formatDateLabelSafe(p.end)}
                     </span>
-                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${style.badge}`}>
+                    <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${style.badge}`}>
                       {depositPeriodLabel(p)}{p.clearedDate ? ` · ${formatDateLabelSafe(p.clearedDate)}` : ''}
                     </span>
                   </div>
@@ -297,81 +297,81 @@ export default function DriverProfilePage({
       <div className="card p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><Wallet size={13} /> Deposits</p>
+            <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle flex items-center gap-1.5"><Wallet size={13} /> Deposits</p>
             {!isEnded && driver.start_date && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-micro font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
                 Pays every Sunday
               </span>
             )}
           </div>
           <div className="flex items-center gap-2">
             {isEnded ? (
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-500/10">
+              <span className="inline-flex items-center gap-1.5 text-micro font-bold px-2 py-0.5 rounded-full text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-500/10">
                 CONTRACT TERMINATED
               </span>
             ) : (
-              <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${tierStyle.badge}`}>
+              <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${tierStyle.badge}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${tierStyle.dot}`} /> {depositStandingLabel(standing)}
               </span>
             )}
             {canEdit && !isEnded && (
-              <button onClick={() => setLoggingDeposit(true)} className="btn-primary text-[11px] px-2.5 py-1.5">Log Deposit</button>
+              <button onClick={() => setLoggingDeposit(true)} className="btn-primary text-caption px-2.5 py-1.5">Log Deposit</button>
             )}
           </div>
         </div>
         {!isEnded && standing.hasStarted && (
           <div className="space-y-1 mb-2.5">
             {standing.owes > 0 && (
-              <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+              <p className="text-caption font-semibold text-red-600 dark:text-red-400">
                 Owes {formatRwf(standing.owes)} for days already worked
               </p>
             )}
             {standing.weekBehind > 0 && (
-              <p className={`text-[11px] font-medium ${depositRemainingColor(tier)}`}>
+              <p className={`text-caption font-medium ${depositRemainingColor(tier)}`}>
                 Behind {formatRwf(standing.weekBehind)} on this week{standing.ruleInForce ? ' — needs to be paid in full to be cleared to drive' : ''}
               </p>
             )}
             {standing.nextDueDate && (
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+              <p className="text-caption text-fg-muted ">
                 {standing.nextDueAmount > 0
-                  ? <>Due by Sunday <span className="font-medium text-gray-700 dark:text-gray-200">{formatDateLabelSafe(standing.nextDueDate)}</span>: <span className="font-medium text-gray-700 dark:text-gray-200">{formatRwf(standing.nextDueAmount)}</span>{!standing.ruleInForce && ' (switch-over)'}</>
+                  ? <>Due by Sunday <span className="font-medium text-fg-muted ">{formatDateLabelSafe(standing.nextDueDate)}</span>: <span className="font-medium text-fg-muted ">{formatRwf(standing.nextDueAmount)}</span>{!standing.ruleInForce && ' (switch-over)'}</>
                   : <>Already paid for the week after Sunday {formatDateLabelSafe(standing.nextDueDate)}</>}
               </p>
             )}
             {standing.paidThrough && (
-              <p className="text-[10px] text-gray-400">Paid through {formatDateLabelSafe(standing.paidThrough)}</p>
+              <p className="text-micro text-fg-subtle">Paid through {formatDateLabelSafe(standing.paidThrough)}</p>
             )}
           </div>
         )}
         {totalDepositCount === 0 ? (
-          <p className="text-[11px] text-gray-400">No deposits logged yet.</p>
+          <p className="text-caption text-fg-subtle">No deposits logged yet.</p>
         ) : (
           <div className="space-y-1.5">
             {driverDeposits.map((dep) => {
               const through = paidThroughAfter.get(dep.id);
               const statusLabel = through ? `Through ${formatDateLabelSafe(through)}` : 'Partial';
-              const statusClass = 'text-gray-500 dark:text-gray-400';
+              const statusClass = 'text-fg-muted ';
               return (
-                <div key={dep.id} className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
+                <div key={dep.id} className="flex items-center justify-between gap-2 text-caption py-1.5 border-b border-line-muted last:border-0">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-gray-500 dark:text-gray-400 shrink-0">{formatDateLabelSafe(dep.paid_date)}</span>
-                    <span className="inline-flex items-center gap-1 text-gray-400 shrink-0">
+                    <span className="text-fg-muted shrink-0">{formatDateLabelSafe(dep.paid_date)}</span>
+                    <span className="inline-flex items-center gap-1 text-fg-subtle shrink-0">
                       {dep.payment_method === 'momo' ? <Smartphone size={10} /> : <Landmark size={10} />}
                       {dep.payment_method === 'momo' ? 'MoMo' : dep.bank_name}
                     </span>
                     {dep.status === 'pending' ? (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                      <span className="inline-flex items-center gap-1 text-micro font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">
                         <ShieldAlert size={9} /> Pending
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                      <span className="inline-flex items-center gap-1 text-micro font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">
                         <ShieldCheck size={9} /> Confirmed
                       </span>
                     )}
                   </div>
                   <div className="text-right shrink-0">
                     <p className="font-medium">{dep.amount.toLocaleString()} RWF</p>
-                    <p className={`text-[10px] ${statusClass}`}>{statusLabel}</p>
+                    <p className={`text-micro ${statusClass}`}>{statusLabel}</p>
                   </div>
                 </div>
               );
@@ -379,18 +379,18 @@ export default function DriverProfilePage({
             {driver.initial_deposit_paid && driver.initial_deposit_date && (() => {
               const initialThrough = paidThroughAfter.get('initial');
               const initialStatusLabel = initialThrough ? `Through ${formatDateLabelSafe(initialThrough)}` : 'Partial';
-              const initialStatusClass = 'text-gray-500 dark:text-gray-400';
+              const initialStatusClass = 'text-fg-muted ';
               return (
-                <div className="flex items-center justify-between gap-2 text-[11px] py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
+                <div className="flex items-center justify-between gap-2 text-caption py-1.5 border-b border-line-muted last:border-0">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-gray-500 dark:text-gray-400 shrink-0">{formatDateLabelSafe(driver.initial_deposit_date)}</span>
-                    <span className="inline-flex items-center gap-1 text-[9px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full shrink-0">
+                    <span className="text-fg-muted shrink-0">{formatDateLabelSafe(driver.initial_deposit_date)}</span>
+                    <span className="inline-flex items-center gap-1 text-micro font-medium text-fg-muted bg-inset px-1.5 py-0.5 rounded-full shrink-0">
                       Initial deposit
                     </span>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="font-medium">{(driver.initial_deposit_amount ?? 0).toLocaleString()} RWF</p>
-                    <p className={`text-[10px] ${initialStatusClass}`}>{initialStatusLabel}</p>
+                    <p className={`text-micro ${initialStatusClass}`}>{initialStatusLabel}</p>
                   </div>
                 </div>
               );
@@ -401,9 +401,9 @@ export default function DriverProfilePage({
 
       {/* Fines */}
       <div className="card p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><Receipt size={13} /> Fines</p>
+        <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2.5 flex items-center gap-1.5"><Receipt size={13} /> Fines</p>
         {driverFines.length === 0 ? (
-          <p className="text-[11px] text-gray-400">No fine.</p>
+          <p className="text-caption text-fg-subtle">No fine.</p>
         ) : (
           <div className="space-y-2">
             {driverFines.map((f) => {
@@ -411,15 +411,15 @@ export default function DriverProfilePage({
               const status = fineStatus(f.amount, amountPaid);
               const statusStyle = FINE_STATUS_STYLE[status];
               return (
-                <div key={f.id} className="py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
-                  <div className="flex items-center justify-between gap-2 text-[11px]">
+                <div key={f.id} className="py-1.5 border-b border-line-muted last:border-0">
+                  <div className="flex items-center justify-between gap-2 text-caption">
                     <div className="min-w-0">
-                      <p className="text-gray-500 dark:text-gray-400">{formatDateLabelSafe(f.fine_date)}</p>
-                      {f.reason && <p className="text-gray-400 truncate">{f.reason}</p>}
+                      <p className="text-fg-muted ">{formatDateLabelSafe(f.fine_date)}</p>
+                      {f.reason && <p className="text-fg-subtle truncate">{f.reason}</p>}
                     </div>
                     <span className="font-medium shrink-0">{f.amount.toLocaleString()} RWF</span>
                   </div>
-                  <span className={`inline-flex items-center gap-1.5 text-[9px] font-medium px-2 py-0.5 rounded-full mt-1 ${statusStyle.badge}`}>
+                  <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full mt-1 ${statusStyle.badge}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} /> {fineStatusLabel(status, f.amount, amountPaid)}
                   </span>
                 </div>
@@ -435,14 +435,14 @@ export default function DriverProfilePage({
       {showMoney && (
         <div className="card p-4 space-y-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-              Days off{pausedNow && <span className="ml-2 normal-case tracking-normal text-[11px] font-semibold text-amber-700 dark:text-amber-300">Paused now — {PAUSE_REASON_LABEL[pausedNow.reason].toLowerCase()}</span>}
+            <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle">
+              Days off{pausedNow && <span className="ml-2 normal-case tracking-normal text-caption font-semibold text-amber-700 dark:text-amber-300">Paused now — {PAUSE_REASON_LABEL[pausedNow.reason].toLowerCase()}</span>}
             </p>
             {canPause && driver.contract_status !== 'ended' && (
-              <button onClick={() => setPausing(true)} className="btn-ghost text-[11px] border border-gray-200 dark:border-white/10">Pause days</button>
+              <button onClick={() => setPausing(true)} className="btn-ghost text-caption border border-line ">Pause days</button>
             )}
           </div>
-          <p className="text-[11px] text-gray-500">Sick, car in the garage… Paused days cost nothing and the driver isn't chased. The MD or Finance approves each pause.</p>
+          <p className="text-caption text-fg-muted">Sick, car in the garage… Paused days cost nothing and the driver isn't chased. The MD or Finance approves each pause.</p>
           <PauseList pauses={driver.pauses ?? []} drivers={drivers} names={names} canRecord={canPause} canReview={canReviewPauses} showDriver={false} onChanged={reload} />
         </div>
       )}
@@ -451,19 +451,19 @@ export default function DriverProfilePage({
       {/* Contract History */}
       {driverContractEvents.length > 0 && (
         <div className="card p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><History size={13} /> Contract History</p>
+          <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2.5 flex items-center gap-1.5"><History size={13} /> Contract History</p>
           <div className="space-y-2">
             {driverContractEvents.map((e) => (
-              <div key={e.id} className="py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
-                <div className="flex items-center justify-between gap-2 text-[11px]">
-                  <span className={`inline-flex items-center gap-1.5 text-[9px] font-medium px-2 py-0.5 rounded-full ${e.event_type === 'ended' ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'}`}>
+              <div key={e.id} className="py-1.5 border-b border-line-muted last:border-0">
+                <div className="flex items-center justify-between gap-2 text-caption">
+                  <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${e.event_type === 'ended' ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'}`}>
                     {e.event_type === 'ended' ? <UserX size={10} /> : <UserCheck size={10} />}
                     {e.event_type === 'ended' ? 'Ended' : 'Reactivated'}
                   </span>
-                  <span className="text-gray-400 shrink-0">{formatDateLabelSafe(e.event_date)}</span>
+                  <span className="text-fg-subtle shrink-0">{formatDateLabelSafe(e.event_date)}</span>
                 </div>
-                <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-1">{e.reason}</p>
-                {e.details && <p className="text-[11px] text-gray-400 mt-0.5">{e.details}</p>}
+                <p className="text-caption text-fg-muted mt-1">{e.reason}</p>
+                {e.details && <p className="text-caption text-fg-subtle mt-0.5">{e.details}</p>}
               </div>
             ))}
           </div>

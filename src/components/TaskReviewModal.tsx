@@ -122,10 +122,10 @@ export default function TaskReviewModal({ open, onClose, task, onReviewed }: Tas
   return (
     <Modal open={open} onClose={onClose} title="Review Task" maxWidth="max-w-lg">
       <div className="space-y-4">
-        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5">
-          <p className="font-medium text-gray-800 dark:text-gray-100">{task.title}</p>
+        <div className="p-3 rounded-xl bg-inset ">
+          <p className="font-medium text-fg ">{task.title}</p>
           {task.description && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{task.description}</p>
+            <p className="text-sm text-fg-muted mt-1">{task.description}</p>
           )}
           {task.is_carried_over && (
             <span className="inline-block text-xs font-medium text-orange-500 bg-orange-50 dark:bg-orange-500/10 px-2 py-0.5 rounded mt-2">
@@ -138,7 +138,7 @@ export default function TaskReviewModal({ open, onClose, task, onReviewed }: Tas
           <div>
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              className="flex items-center gap-2 text-sm text-fg-muted hover:text-fg-muted transition-colors"
             >
               <History size={16} />
               <span>Task History ({history.length})</span>
@@ -147,9 +147,9 @@ export default function TaskReviewModal({ open, onClose, task, onReviewed }: Tas
             {showHistory && (
               <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
                 {history.map((h, idx) => (
-                  <div key={`${h.date}-${idx}`} className="p-2.5 rounded-lg bg-gray-100 dark:bg-white/5 text-sm">
+                  <div key={`${h.date}-${idx}`} className="p-2.5 rounded-lg bg-inset text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">{formatDateLabel(h.date)}</span>
+                      <span className="text-fg-muted ">{formatDateLabel(h.date)}</span>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded ${
                         h.review_status === 'completed' ? 'bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400' :
                         h.review_status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400' :
@@ -158,7 +158,7 @@ export default function TaskReviewModal({ open, onClose, task, onReviewed }: Tas
                         {h.review_status === 'completed' ? 'Completed' : h.review_status === 'in_progress' ? 'In Progress' : 'Not Done'}
                       </span>
                     </div>
-                    {h.review_note && <p className="text-gray-500 dark:text-gray-400 mt-1 text-xs">{h.review_note}</p>}
+                    {h.review_note && <p className="text-fg-muted mt-1 text-xs">{h.review_note}</p>}
                   </div>
                 ))}
               </div>
@@ -167,7 +167,7 @@ export default function TaskReviewModal({ open, onClose, task, onReviewed }: Tas
         )}
 
         <div>
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Select Status</p>
+          <p className="text-sm font-medium text-fg-muted mb-2">Select Status</p>
           <div className="space-y-2">
             {statusOptions.map((opt) => {
               const Icon = opt.icon;
@@ -186,13 +186,13 @@ export default function TaskReviewModal({ open, onClose, task, onReviewed }: Tas
                   className={`w-full p-3 rounded-xl border-2 flex items-center gap-3 transition-all ${
                     isSelected
                       ? `${opt.bgColor} ${opt.borderColor}`
-                      : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
+                      : 'border-line hover:border-line '
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isSelected ? opt.bgColor : 'bg-gray-100 dark:bg-white/5'}`}>
-                    <Icon size={18} className={isSelected ? opt.color : 'text-gray-400'} />
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isSelected ? opt.bgColor : 'bg-inset '}`}>
+                    <Icon size={18} className={isSelected ? opt.color : 'text-fg-subtle'} />
                   </div>
-                  <span className={`font-medium ${isSelected ? opt.color : 'text-gray-700 dark:text-gray-200'}`}>
+                  <span className={`font-medium ${isSelected ? opt.color : 'text-fg-muted '}`}>
                     {opt.label}
                   </span>
                   {isSelected && (
@@ -218,7 +218,7 @@ export default function TaskReviewModal({ open, onClose, task, onReviewed }: Tas
         {(showNoteInput || status === 'in_progress' || status === 'not_done') && status && (
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <p className="text-sm font-medium text-fg-muted ">
                 {status === 'completed' ? 'Note (optional)' : status === 'in_progress' ? 'Progress Description' : 'Explanation'}
               </p>
               {(status === 'in_progress' || status === 'not_done') && (

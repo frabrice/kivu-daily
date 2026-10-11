@@ -43,18 +43,18 @@ export default function LogFinePaymentDrawer({
     <Modal open onClose={onClose} title="Log Fine Payment" subtitle={`${fine.driver?.full_name ?? 'Driver'} · ${fine.amount.toLocaleString()} RWF fine`} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Amount (RWF)</label>
           <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="input" autoFocus />
-          <p className="text-[10px] text-gray-400 mt-1">{remaining.toLocaleString()} RWF still owed on this fine.</p>
+          <p className="text-micro text-fg-subtle mt-1">{remaining.toLocaleString()} RWF still owed on this fine.</p>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date Paid</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Date Paid</label>
           <DateInput value={paidDate} onChange={setPaidDate} />
         </div>
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+        <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
           <button onClick={onClose} className="btn-ghost">Cancel</button>
           <button onClick={save} disabled={saving || !Number(amount) || !paidDate} className="btn-primary disabled:opacity-50">
             {saving ? 'Saving…' : 'Log Payment'}

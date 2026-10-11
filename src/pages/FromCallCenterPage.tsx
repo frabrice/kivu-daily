@@ -62,7 +62,7 @@ export default function FromCallCenterPage({ initialTicketId }: { initialTicketI
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Headphones size={16} className="text-brand-600 dark:text-brand-300" /> From Call Center</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">Callers' issues the Call Center assigned to you. Resolve them and the Call Center calls the caller back.</p>
+        <p className="text-caption text-fg-subtle mt-0.5">Callers' issues the Call Center assigned to you. Resolve them and the Call Center calls the caller back.</p>
       </div>
         <HelpButton navKey="from_call_center" title="From Call Center" />
       </div>
@@ -74,7 +74,7 @@ export default function FromCallCenterPage({ initialTicketId }: { initialTicketI
         <KpiTile icon={CheckCircle2} label="Resolved this week" value={String(resolvedThisWeek)} tone="positive" />
       </div>
 
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap" role="tablist">
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit flex-wrap" role="tablist">
         <TabButton active={tab === 'open'} onClick={() => setTab('open')} icon={Inbox} label="New" badge={openT.length} hot />
         <TabButton active={tab === 'in_progress'} onClick={() => setTab('in_progress')} icon={PlayCircle} label="In progress" badge={progressT.length} />
         <TabButton active={tab === 'waiting'} onClick={() => setTab('waiting')} icon={Hourglass} label="Pending" badge={waitingT.length} />
@@ -90,22 +90,22 @@ export default function FromCallCenterPage({ initialTicketId }: { initialTicketI
         <div className="space-y-4">
           {byPerson.length > 0 && (
             <div className="card overflow-hidden">
-              <table className="w-full text-[12px]">
+              <table className="w-full text-small">
                 <thead>
-                  <tr className="text-left text-[11px] text-gray-400 border-b border-gray-100 dark:border-white/5">
+                  <tr className="text-left text-caption text-fg-subtle border-b border-line-muted ">
                     <th className="px-4 py-2 font-medium">Person</th>
                     <th className="px-4 py-2 font-medium">Open</th>
                     <th className="px-4 py-2 font-medium">Overdue</th>
                     <th className="px-4 py-2 font-medium">Oldest waiting</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-white/5">
+                <tbody className="divide-y divide-line-muted ">
                   {byPerson.map((r) => (
                     <tr key={r.id}>
                       <td className="px-4 py-2 font-medium">{personName(r.id)}</td>
                       <td className="px-4 py-2">{r.list.length}</td>
-                      <td className={`px-4 py-2 ${r.overdue ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400'}`}>{r.overdue || '—'}</td>
-                      <td className="px-4 py-2 text-gray-500">{ageLabel(r.oldest)}</td>
+                      <td className={`px-4 py-2 ${r.overdue ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-fg-subtle'}`}>{r.overdue || '—'}</td>
+                      <td className="px-4 py-2 text-fg-muted">{ageLabel(r.oldest)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -125,9 +125,9 @@ export default function FromCallCenterPage({ initialTicketId }: { initialTicketI
 
 function TabButton({ active, onClick, icon: Icon, label, badge, hot }: { active: boolean; onClick: () => void; icon: typeof Inbox; label: string; badge?: number; hot?: boolean }) {
   return (
-    <button role="tab" aria-selected={active} onClick={onClick} className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${active ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
+    <button role="tab" aria-selected={active} onClick={onClick} className={`px-3 py-1.5 rounded-md text-small font-medium transition-all flex items-center gap-1.5 ${active ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}>
       <Icon size={14} /> {label}
-      {(badge ?? 0) > 0 && <span className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full ${hot ? 'bg-orange-500' : 'bg-gray-400'}`}>{badge}</span>}
+      {(badge ?? 0) > 0 && <span className={`text-micro font-bold text-white px-1.5 py-0.5 rounded-full ${hot ? 'bg-orange-500' : 'bg-gray-400'}`}>{badge}</span>}
     </button>
   );
 }

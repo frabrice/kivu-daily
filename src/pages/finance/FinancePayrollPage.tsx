@@ -35,7 +35,7 @@ export default function FinancePayrollPage() {
       <div className="flex items-start justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><Users2 size={16} className="text-amber-600 dark:text-amber-300" /> Internal Payroll</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Funded Equity → I&M, paid from I&M. Every employee is paid on the same shared date each month.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Funded Equity → I&M, paid from I&M. Every employee is paid on the same shared date each month.</p>
         </div>
         {canEdit && tab === 'employees' && (
           <button onClick={() => setEmployeeDrawer({ employee: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
@@ -49,11 +49,11 @@ export default function FinancePayrollPage() {
         )}
       </div>
 
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
-        <button onClick={() => setTab('employees')} className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${tab === 'employees' ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit">
+        <button onClick={() => setTab('employees')} className={`px-3 py-1.5 rounded-md text-small font-medium transition-all ${tab === 'employees' ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}>
           Employees
         </button>
-        <button onClick={() => setTab('runs')} className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${tab === 'runs' ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
+        <button onClick={() => setTab('runs')} className={`px-3 py-1.5 rounded-md text-small font-medium transition-all ${tab === 'runs' ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}>
           Payroll Runs
         </button>
       </div>
@@ -148,18 +148,18 @@ function EmployeesTab({
 
       <div className="card p-3.5 flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-[12px] font-medium">Shared Payment Date: day {paymentDay} of every month</p>
-          <p className="text-[10px] text-gray-400 mt-0.5">Next payment {formatDateLabelSafe(dateStr(nextPayment))} — {daysLeft} day{daysLeft === 1 ? '' : 's'} away.</p>
+          <p className="text-small font-medium">Shared Payment Date: day {paymentDay} of every month</p>
+          <p className="text-micro text-fg-subtle mt-0.5">Next payment {formatDateLabelSafe(dateStr(nextPayment))} — {daysLeft} day{daysLeft === 1 ? '' : 's'} away.</p>
         </div>
         {canEdit && (
           editingDay ? (
             <div className="flex items-center gap-1.5">
               <input type="number" min={1} max={28} value={dayInput} onChange={(e) => setDayInput(e.target.value)} className="input w-20" />
-              <button onClick={savePaymentDay} disabled={savingDay} className="btn-primary text-[11px] px-2.5 py-1.5 disabled:opacity-50">{savingDay ? 'Saving…' : 'Save'}</button>
-              <button onClick={() => { setEditingDay(false); setDayInput(String(paymentDay)); }} className="btn-ghost text-[11px] px-2.5 py-1.5">Cancel</button>
+              <button onClick={savePaymentDay} disabled={savingDay} className="btn-primary text-caption px-2.5 py-1.5 disabled:opacity-50">{savingDay ? 'Saving…' : 'Save'}</button>
+              <button onClick={() => { setEditingDay(false); setDayInput(String(paymentDay)); }} className="btn-ghost text-caption px-2.5 py-1.5">Cancel</button>
             </div>
           ) : (
-            <button onClick={() => setEditingDay(true)} className="btn-ghost flex items-center gap-1.5 text-[11px]"><Pencil size={12} /> Change Date</button>
+            <button onClick={() => setEditingDay(true)} className="btn-ghost flex items-center gap-1.5 text-caption"><Pencil size={12} /> Change Date</button>
           )
         )}
       </div>
@@ -180,16 +180,16 @@ function EmployeesTab({
               <button onClick={(ev) => { ev.stopPropagation(); viewId(e); }} className="inline-flex items-center gap-1 text-brand-600 dark:text-brand-300 hover:underline">
                 <CheckCircle2 size={11} /> <ExternalLink size={10} />
               </button>
-            ) : <span className="text-gray-400">Not uploaded</span>,
+            ) : <span className="text-fg-subtle">Not uploaded</span>,
           },
           {
             header: 'Status',
             render: (e) => e.pending_removal ? (
-              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
+              <span className="text-micro font-medium px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
                 Pending Removal
               </span>
             ) : (
-              <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${e.status === 'active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-gray-100 text-gray-500 dark:bg-white/5'}`}>
+              <span className={`text-micro font-medium px-1.5 py-0.5 rounded-full ${e.status === 'active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-inset text-fg-muted '}`}>
                 {e.status === 'active' ? 'Active' : 'Inactive'}
               </span>
             ),
@@ -210,18 +210,18 @@ function RunsTab({
     <div className="space-y-2">
       {payrollRuns.length === 0 ? (
         <div className="card p-12 text-center">
-          <Users2 size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">No payroll runs yet.</p>
+          <Users2 size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">No payroll runs yet.</p>
         </div>
       ) : (
         payrollRuns.map((r) => (
           <div key={r.id} onClick={() => onOpen(r)} className="card p-3.5 flex items-center gap-3 cursor-pointer hover:shadow-md hover:border-brand/30 transition-all">
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-medium">{r.period}</p>
-              <p className="text-[10px] text-gray-400">{r.lines?.length ?? 0} employee{(r.lines?.length ?? 0) === 1 ? '' : 's'}</p>
+              <p className="text-small font-medium">{r.period}</p>
+              <p className="text-micro text-fg-subtle">{r.lines?.length ?? 0} employee{(r.lines?.length ?? 0) === 1 ? '' : 's'}</p>
             </div>
-            <p className="text-[12px] font-semibold">{fmt(r.total_amount)}</p>
-            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 capitalize">{r.status}</span>
+            <p className="text-small font-semibold">{fmt(r.total_amount)}</p>
+            <span className="text-micro font-medium px-1.5 py-0.5 rounded-full bg-inset text-fg-muted capitalize">{r.status}</span>
             <EntryActions onView={() => onOpen(r)} onEdit={() => onOpen(r)} canEdit />
           </div>
         ))
@@ -331,12 +331,12 @@ function PayrollDrawer({
     <Modal open onClose={onClose} title={run ? `Payroll — ${run.period}` : 'New Payroll Run'} subtitle="Funded Equity → I&M, paid from I&M" maxWidth="max-w-lg">
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Period</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Period</label>
           <input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} disabled={!editing || !!run} className="input" />
         </div>
 
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Employees</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Employees</label>
           <div className="space-y-1.5">
             {lines.map((l, i) => (
               <div key={i} className="flex items-center gap-1.5">
@@ -347,30 +347,30 @@ function PayrollDrawer({
                 <input type="number" value={l.gross_amount} onChange={(e) => updateLine(i, { gross_amount: e.target.value })} disabled={!editing} placeholder="Gross" className="input w-28" />
                 <input type="number" value={l.deductions} onChange={(e) => updateLine(i, { deductions: e.target.value })} disabled={!editing} placeholder="Deductions" className="input w-28" />
                 {editing && (
-                  <button type="button" onClick={() => removeLine(i)} className="shrink-0 text-gray-300 hover:text-red-500">
+                  <button type="button" onClick={() => removeLine(i)} className="shrink-0 text-fg-subtle hover:text-red-500">
                     <Trash2 size={14} />
                   </button>
                 )}
               </div>
             ))}
             {editing && (
-              <button type="button" onClick={addLine} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 pt-0.5">
+              <button type="button" onClick={addLine} className="text-caption text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 pt-0.5">
                 <Plus size={12} /> Add employee
               </button>
             )}
           </div>
         </div>
 
-        <div className="p-2.5 rounded-lg bg-gray-50 dark:bg-white/5 flex items-center justify-between">
-          <span className="text-[11px] text-gray-500">Total net payroll</span>
-          <span className="text-[13px] font-semibold">{fmt(total)}</span>
+        <div className="p-2.5 rounded-lg bg-inset flex items-center justify-between">
+          <span className="text-caption text-fg-muted">Total net payroll</span>
+          <span className="text-body font-semibold">{fmt(total)}</span>
         </div>
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
-        <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+        <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
           {run?.status === 'paid' ? (
-            <p className="text-[11px] text-positive font-medium flex items-center gap-1.5"><ShieldCheck size={14} /> Paid</p>
+            <p className="text-caption text-positive font-medium flex items-center gap-1.5"><ShieldCheck size={14} /> Paid</p>
           ) : editing ? (
             <div className="flex gap-2 ml-auto">
               <button onClick={onClose} className="btn-ghost">Cancel</button>

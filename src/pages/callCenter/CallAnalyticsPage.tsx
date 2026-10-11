@@ -86,8 +86,8 @@ export default function CallAnalyticsPage() {
   ] as const, [c]);
 
   if (agentPage) return <AgentPerformancePage agentId={agentPage} onBack={() => setAgentPage(null)} />;
-  if (error) return <div className="card p-6 text-[12px] text-red-600">{error}</div>;
-  if (!data) return <div className="card p-10 text-center text-[12px] text-gray-400">Loading call analytics…</div>;
+  if (error) return <div className="card p-6 text-small text-red-600">{error}</div>;
+  if (!data) return <div className="card p-10 text-center text-small text-fg-subtle">Loading call analytics…</div>;
 
   const sum = (k: keyof Day, list = data.daily) => list.reduce((t, d) => t + Number(d[k] ?? 0), 0);
   const totalIn = IN_SERIES.reduce((t, s) => t + sum(s.key), 0);
@@ -104,11 +104,11 @@ export default function CallAnalyticsPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[12px] text-gray-500">From {longDay(data.since)} to today · numbers from agents' shift reports and what they logged in Kivu Daily.</p>
-        <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg" role="radiogroup" aria-label="Period">
+        <p className="text-small text-fg-muted">From {longDay(data.since)} to today · numbers from agents' shift reports and what they logged in Kivu Daily.</p>
+        <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg" role="radiogroup" aria-label="Period">
           {RANGES.map((r) => (
             <button key={r.d} role="radio" aria-checked={days === r.d} onClick={() => setDays(r.d)}
-              className={`px-3 py-1.5 rounded-md text-[12px] font-medium ${days === r.d ? 'bg-white dark:bg-navy-700 shadow-sm text-brand-600 dark:text-brand-300' : 'text-gray-500'}`}>{r.label}</button>
+              className={`px-3 py-1.5 rounded-md text-small font-medium ${days === r.d ? 'bg-surface-3 shadow-sm text-brand-600 dark:text-brand-300' : 'text-fg-muted'}`}>{r.label}</button>
           ))}
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function CallAnalyticsPage() {
 
       <StackedDaily title="Calls received per day" subtitle="Who called us" data={data.daily} series={IN_SERIES} c={c} />
       <StackedDaily title="Calls made per day" subtitle="Who we called" data={data.daily} series={OUT_SERIES} c={c} />
-      {legacy && <p className="text-[11px] text-gray-400 -mt-2">Shift reports before 5 Oct 2026 only had totals, so those calls show as "Other".</p>}
+      {legacy && <p className="text-caption text-fg-subtle -mt-2">Shift reports before 5 Oct 2026 only had totals, so those calls show as "Other".</p>}
 
       <AgentsSection agents={data.agents} c={c} onOpen={setAgentPage} />
 
@@ -145,10 +145,10 @@ function Kpi({ icon: Icon, label, value, sub, delta }: { icon: typeof Clock; lab
   const change = delta ? Math.round(((delta.now - delta.before) / delta.before) * 100) : null;
   return (
     <div className="card p-4">
-      <p className="text-[11px] text-gray-500 flex items-center gap-1.5"><Icon size={13} /> {label}</p>
-      <p className="text-[24px] font-bold leading-tight mt-1">{value}</p>
-      <p className="text-[11px] text-gray-500 mt-0.5">{sub}</p>
-      {change !== null && <p className="text-[11px] mt-1 text-gray-600 dark:text-gray-300">{change >= 0 ? '▲' : '▼'} {Math.abs(change)}% last 7 days vs the 7 before</p>}
+      <p className="text-caption text-fg-muted flex items-center gap-1.5"><Icon size={13} /> {label}</p>
+      <p className="text-h1 font-bold leading-tight mt-1">{value}</p>
+      <p className="text-caption text-fg-muted mt-0.5">{sub}</p>
+      {change !== null && <p className="text-caption mt-1 text-fg-muted ">{change >= 0 ? '▲' : '▼'} {Math.abs(change)}% last 7 days vs the 7 before</p>}
     </div>
   );
 }
@@ -160,13 +160,13 @@ function ChartTooltip({ active, payload, label, series }: { active?: boolean; pa
   if (!active || !payload?.length) return null;
   const total = payload.reduce((t, p) => t + Number(p.value ?? 0), 0);
   return (
-    <div className="rounded-lg border border-gray-100 dark:border-white/10 bg-white dark:bg-navy-700 shadow-lg px-3 py-2 text-[11px] min-w-[170px]">
+    <div className="rounded-lg border border-line-muted bg-surface-3 shadow-lg px-3 py-2 text-caption min-w-[170px]">
       <p className="font-semibold mb-1">{label ? longDay(label) : ''} · {total} total</p>
       {[...series].reverse().map((s) => {
         const v = payload.find((p) => p.dataKey === s.key)?.value ?? 0;
         return (
-          <p key={s.key} className="flex items-center justify-between gap-3 text-gray-600 dark:text-gray-300">
-            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: s.color }} />{s.label}</span><b className="text-gray-900 dark:text-white">{v}</b>
+          <p key={s.key} className="flex items-center justify-between gap-3 text-fg-muted ">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: s.color }} />{s.label}</span><b className="text-fg ">{v}</b>
           </p>
         );
       })}
@@ -177,7 +177,7 @@ function ChartTooltip({ active, payload, label, series }: { active?: boolean; pa
 function Legend({ series }: { series: Series }) {
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1">
-      {series.map((s) => <span key={s.key} className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: s.color }} />{s.label}</span>)}
+      {series.map((s) => <span key={s.key} className="flex items-center gap-1.5 text-caption text-fg-muted "><span className="w-2.5 h-2.5 rounded-sm" style={{ background: s.color }} />{s.label}</span>)}
     </div>
   );
 }
@@ -190,21 +190,21 @@ function StackedDaily({ title, subtitle, data, series, c }: { title: string; sub
     <div className="card p-4 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-[13px] font-semibold">{title}</p>
-          <p className="text-[11px] text-gray-500">{subtitle} · {grand} in this period{grand ? ` — ${totals.filter((s) => s.n).map((s) => `${s.label.toLowerCase()} ${pct(s.n, grand)}%`).join(', ')}` : ''}</p>
+          <p className="text-body font-semibold">{title}</p>
+          <p className="text-caption text-fg-muted">{subtitle} · {grand} in this period{grand ? ` — ${totals.filter((s) => s.n).map((s) => `${s.label.toLowerCase()} ${pct(s.n, grand)}%`).join(', ')}` : ''}</p>
         </div>
-        <button onClick={() => setAsTable((v) => !v)} className="btn-ghost text-[11px] flex items-center gap-1" aria-pressed={asTable}>
+        <button onClick={() => setAsTable((v) => !v)} className="btn-ghost text-caption flex items-center gap-1" aria-pressed={asTable}>
           {asTable ? <><BarChart3 size={13} /> Chart</> : <><Table2 size={13} /> Table</>}
         </button>
       </div>
       <Legend series={series} />
       {asTable ? (
         <div className="overflow-x-auto max-h-72">
-          <table className="w-full text-[11px]">
-            <thead><tr className="text-gray-500 text-left"><th className="py-1 pr-3 font-medium">Day</th>{series.map((s) => <th key={s.key} className="py-1 pr-3 font-medium text-right">{s.label}</th>)}<th className="py-1 font-medium text-right">Total</th></tr></thead>
+          <table className="w-full text-caption">
+            <thead><tr className="text-fg-muted text-left"><th className="py-1 pr-3 font-medium">Day</th>{series.map((s) => <th key={s.key} className="py-1 pr-3 font-medium text-right">{s.label}</th>)}<th className="py-1 font-medium text-right">Total</th></tr></thead>
             <tbody>
               {[...data].reverse().map((d) => (
-                <tr key={d.day} className="border-t border-gray-100 dark:border-white/5">
+                <tr key={d.day} className="border-t border-line-muted ">
                   <td className="py-1 pr-3">{longDay(d.day)}</td>
                   {series.map((s) => <td key={s.key} className="py-1 pr-3 text-right tabular-nums">{Number(d[s.key])}</td>)}
                   <td className="py-1 text-right font-semibold tabular-nums">{series.reduce((t, s) => t + Number(d[s.key]), 0)}</td>
@@ -214,7 +214,7 @@ function StackedDaily({ title, subtitle, data, series, c }: { title: string; sub
           </table>
         </div>
       ) : grand === 0 ? (
-        <p className="text-[12px] text-gray-400 text-center py-10">No calls reported in this period yet — numbers appear as agents end their shifts.</p>
+        <p className="text-small text-fg-subtle text-center py-10">No calls reported in this period yet — numbers appear as agents end their shifts.</p>
       ) : (
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -239,7 +239,7 @@ function StackedDaily({ title, subtitle, data, series, c }: { title: string; sub
 function AgentsSection({ agents, c, onOpen }: { agents: Agent[]; c: typeof PALETTE.light; onOpen: (id: string) => void }) {
   const rows = agents.filter((a) => a.shifts > 0 || a.contacts_logged > 0 || a.outreach_calls > 0);
   if (!rows.length) {
-    return <div className="card p-4"><p className="text-[13px] font-semibold">Agent performance</p><p className="text-[12px] text-gray-400 py-6 text-center">No shifts in this period yet.</p></div>;
+    return <div className="card p-4"><p className="text-body font-semibold">Agent performance</p><p className="text-small text-fg-subtle py-6 text-center">No shifts in this period yet.</p></div>;
   }
   const hrs = (a: Agent) => a.minutes / 60;
   const best = (f: (a: Agent) => number, min = 1) => {
@@ -256,8 +256,8 @@ function AgentsSection({ agents, c, onOpen }: { agents: Agent[]; c: typeof PALET
   return (
     <div className="card p-4 space-y-4">
       <div>
-        <p className="text-[13px] font-semibold">Agent performance</p>
-        <p className="text-[11px] text-gray-500">On time = started within 10 minutes of the shift start. Calls are what each agent reported at the end of their shifts. Click an agent for their full page.</p>
+        <p className="text-body font-semibold">Agent performance</p>
+        <p className="text-caption text-fg-muted">On time = started within 10 minutes of the shift start. Calls are what each agent reported at the end of their shifts. Click an agent for their full page.</p>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <Highlight label="Most on time" who={onTime?.name} value={onTime ? `${Math.round(onTime.v)}% of shifts` : 'Needs 2+ shifts'} />
@@ -275,9 +275,9 @@ function AgentsSection({ agents, c, onOpen }: { agents: Agent[]; c: typeof PALET
               <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10, fill: c.axis }} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11, fill: c.axis }} axisLine={false} tickLine={false} />
               <Tooltip cursor={{ fill: c.grid }} content={({ active, payload, label }) => active && payload?.length ? (
-                <div className="rounded-lg border border-gray-100 dark:border-white/10 bg-white dark:bg-navy-700 shadow-lg px-3 py-2 text-[11px]">
+                <div className="rounded-lg border border-line-muted bg-surface-3 shadow-lg px-3 py-2 text-caption">
                   <p className="font-semibold mb-1">{label}</p>
-                  {series.map((s) => <p key={s.key} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300"><span className="w-2 h-2 rounded-sm" style={{ background: s.color }} />{s.label}: <b className="text-gray-900 dark:text-white">{payload.find((p) => p.dataKey === s.key)?.value ?? 0}</b></p>)}
+                  {series.map((s) => <p key={s.key} className="flex items-center gap-1.5 text-fg-muted "><span className="w-2 h-2 rounded-sm" style={{ background: s.color }} />{s.label}: <b className="text-fg ">{payload.find((p) => p.dataKey === s.key)?.value ?? 0}</b></p>)}
                 </div>
               ) : null} />
               {series.map((s) => <Bar key={s.key} dataKey={s.key} fill={s.color} radius={[0, 4, 4, 0]} isAnimationActive={false} />)}
@@ -287,9 +287,9 @@ function AgentsSection({ agents, c, onOpen }: { agents: Agent[]; c: typeof PALET
       </div>
 
       <div className="overflow-x-auto -mx-4 px-4">
-        <table className="w-full text-[11px] min-w-[860px]">
+        <table className="w-full text-caption min-w-[860px]">
           <thead>
-            <tr className="text-left text-gray-500">
+            <tr className="text-left text-fg-muted">
               {['Agent', 'Shifts', 'On time', 'Avg late', 'Hours', 'Received', 'Made', 'Made / hour', 'Missed', 'Logged', 'Solved on spot', 'Cases closed', 'Outreach', 'Not ended', 'Happy callers'].map((h, i) => (
                 <th key={h} className={`py-1.5 pr-3 font-medium ${i ? 'text-right' : ''}`}>{h}</th>
               ))}
@@ -299,10 +299,10 @@ function AgentsSection({ agents, c, onOpen }: { agents: Agent[]; c: typeof PALET
             {rows.map((a) => {
               const ot = pct(a.on_time, a.shifts);
               return (
-                <tr key={a.id} onClick={() => onOpen(a.id)} className="border-t border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.03]">
-                  <td className="py-2 pr-3 font-medium whitespace-nowrap text-brand-600 dark:text-brand-300">{a.name}{!a.is_active && <span className="text-gray-400 font-normal"> (left)</span>}</td>
+                <tr key={a.id} onClick={() => onOpen(a.id)} className="border-t border-line-muted cursor-pointer hover:bg-hover ">
+                  <td className="py-2 pr-3 font-medium whitespace-nowrap text-brand-600 dark:text-brand-300">{a.name}{!a.is_active && <span className="text-fg-subtle font-normal"> (left)</span>}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{a.shifts}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums whitespace-nowrap">{a.shifts ? <>{a.on_time}/{a.shifts} <span className={ot !== null && ot < 80 ? 'text-red-600 font-semibold' : 'text-gray-500'}>({ot}%)</span></> : '—'}</td>
+                  <td className="py-2 pr-3 text-right tabular-nums whitespace-nowrap">{a.shifts ? <>{a.on_time}/{a.shifts} <span className={ot !== null && ot < 80 ? 'text-red-600 font-semibold' : 'text-fg-muted'}>({ot}%)</span></> : '—'}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{a.avg_late == null ? '—' : `${a.avg_late} min`}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{durationLabel(a.minutes)}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{a.calls_in}</td>
@@ -312,7 +312,7 @@ function AgentsSection({ agents, c, onOpen }: { agents: Agent[]; c: typeof PALET
                   <td className="py-2 pr-3 text-right tabular-nums">{a.contacts_logged}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{a.contacts_logged ? `${pct(a.solved_on_call, a.contacts_logged)}%` : '—'}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{a.cases_closed}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums whitespace-nowrap">{a.outreach_calls}{a.outreach_calls ? <span className="text-gray-500"> · {a.outreach_interested} yes</span> : ''}</td>
+                  <td className="py-2 pr-3 text-right tabular-nums whitespace-nowrap">{a.outreach_calls}{a.outreach_calls ? <span className="text-fg-muted"> · {a.outreach_interested} yes</span> : ''}</td>
                   <td className={`py-2 pr-3 text-right tabular-nums ${a.not_ended ? 'text-red-600 font-semibold' : ''}`}>{a.not_ended}</td>
                   <td className="py-2 text-right tabular-nums">{a.rated ? `${pct(a.happy, a.rated)}% of ${a.rated}` : '—'}</td>
                 </tr>
@@ -327,10 +327,10 @@ function AgentsSection({ agents, c, onOpen }: { agents: Agent[]; c: typeof PALET
 
 function Highlight({ label, who, value }: { label: string; who?: string; value: string }) {
   return (
-    <div className="rounded-lg bg-gray-50 dark:bg-white/[0.03] p-3">
-      <p className="text-[10px] text-gray-500 flex items-center gap-1"><Award size={11} /> {label}</p>
-      <p className="text-[13px] font-semibold mt-0.5">{who ?? '—'}</p>
-      <p className="text-[11px] text-gray-500">{value}</p>
+    <div className="rounded-lg bg-inset p-3">
+      <p className="text-micro text-fg-muted flex items-center gap-1"><Award size={11} /> {label}</p>
+      <p className="text-body font-semibold mt-0.5">{who ?? '—'}</p>
+      <p className="text-caption text-fg-muted">{value}</p>
     </div>
   );
 }
@@ -343,25 +343,25 @@ function TopicsCard({ data, c }: { data: Analytics; c: typeof PALETTE.light }) {
   return (
     <div className="card p-4 space-y-3">
       <div>
-        <p className="text-[13px] font-semibold">What calls are about</p>
-        <p className="text-[11px] text-gray-500">{total} contacts logged, by Script Book section</p>
+        <p className="text-body font-semibold">What calls are about</p>
+        <p className="text-caption text-fg-muted">{total} contacts logged, by Script Book section</p>
       </div>
-      {rows.length === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">No contacts logged in this period.</p> : (
+      {rows.length === 0 ? <p className="text-small text-fg-subtle text-center py-8">No contacts logged in this period.</p> : (
         <div className="space-y-1.5">
           {rows.map((r) => (
-            <div key={r.label} className="grid grid-cols-[130px_1fr_56px] items-center gap-2 text-[11px] group" title={`${r.label}: ${r.n}`}>
-              <span className="truncate text-gray-600 dark:text-gray-300">{r.label}</span>
+            <div key={r.label} className="grid grid-cols-[130px_1fr_56px] items-center gap-2 text-caption group" title={`${r.label}: ${r.n}`}>
+              <span className="truncate text-fg-muted ">{r.label}</span>
               <div className="h-3.5 rounded-r bg-transparent"><div className="h-full rounded-r-[4px]" style={{ width: `${(r.n / max) * 100}%`, background: c.blue, minWidth: 3 }} /></div>
-              <span className="text-right tabular-nums text-gray-700 dark:text-gray-200">{r.n} <span className="text-gray-400">{pct(r.n, total)}%</span></span>
+              <span className="text-right tabular-nums text-fg-muted ">{r.n} <span className="text-fg-subtle">{pct(r.n, total)}%</span></span>
             </div>
           ))}
         </div>
       )}
       {data.by_situation.length > 0 && (
-        <div className="pt-2 border-t border-gray-100 dark:border-white/5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Top situations</p>
-          <ol className="text-[11px] space-y-0.5 text-gray-600 dark:text-gray-300">
-            {data.by_situation.slice(0, 5).map((s, i) => <li key={s.situation}>{i + 1}. {s.situation} <span className="text-gray-400">· {s.n}</span></li>)}
+        <div className="pt-2 border-t border-line-muted ">
+          <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1">Top situations</p>
+          <ol className="text-caption space-y-0.5 text-fg-muted ">
+            {data.by_situation.slice(0, 5).map((s, i) => <li key={s.situation}>{i + 1}. {s.situation} <span className="text-fg-subtle">· {s.n}</span></li>)}
           </ol>
         </div>
       )}
@@ -380,18 +380,18 @@ function Heatmap({ cells, dark }: { cells: Analytics['heatmap']; dark: boolean }
   return (
     <div className="card p-4 space-y-3">
       <div>
-        <p className="text-[13px] font-semibold">Busiest hours</p>
-        <p className="text-[11px] text-gray-500">Contacts logged by day and hour (Kigali time){busiest ? ` · busiest: ${DOW[busiest.dow - 1]} ${String(busiest.hour).padStart(2, '0')}:00` : ''}</p>
+        <p className="text-body font-semibold">Busiest hours</p>
+        <p className="text-caption text-fg-muted">Contacts logged by day and hour (Kigali time){busiest ? ` · busiest: ${DOW[busiest.dow - 1]} ${String(busiest.hour).padStart(2, '0')}:00` : ''}</p>
       </div>
-      {max === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">No contacts logged in this period.</p> : (
+      {max === 0 ? <p className="text-small text-fg-subtle text-center py-8">No contacts logged in this period.</p> : (
         <>
           <div className="overflow-x-auto">
             <div className="grid gap-[2px] min-w-[480px]" style={{ gridTemplateColumns: '32px repeat(24, minmax(0, 1fr))' }} onMouseLeave={() => setHover(null)}>
               <span />
-              {hours.map((h) => <span key={h} className="text-[9px] text-gray-400 text-center">{h % 3 === 0 ? String(h).padStart(2, '0') : ''}</span>)}
+              {hours.map((h) => <span key={h} className="text-micro text-fg-subtle text-center">{h % 3 === 0 ? String(h).padStart(2, '0') : ''}</span>)}
               {DOW.map((d, di) => (
                 <div key={d} className="contents">
-                  <span className="text-[10px] text-gray-500 self-center">{d}</span>
+                  <span className="text-micro text-fg-muted self-center">{d}</span>
                   {hours.map((h) => {
                     const n = grid.get(`${di + 1}-${h}`) ?? 0;
                     return (
@@ -403,8 +403,8 @@ function Heatmap({ cells, dark }: { cells: Analytics['heatmap']; dark: boolean }
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-gray-500">
-            <span>{hover ? <><b className="text-gray-800 dark:text-gray-100">{DOW[hover.dow - 1]} {String(hover.hour).padStart(2, '0')}:00–{String((hover.hour + 1) % 24).padStart(2, '0')}:00</b> · {hover.n} contacts</> : 'Hover a square for the number'}</span>
+          <div className="flex items-center justify-between text-caption text-fg-muted">
+            <span>{hover ? <><b className="text-fg ">{DOW[hover.dow - 1]} {String(hover.hour).padStart(2, '0')}:00–{String((hover.hour + 1) % 24).padStart(2, '0')}:00</b> · {hover.n} contacts</> : 'Hover a square for the number'}</span>
             <span className="flex items-center gap-1">0 {BLUE_RAMP.map((b) => <span key={b} className="w-3 h-2.5 rounded-sm" style={{ background: b }} />)} {max}</span>
           </div>
         </>
@@ -424,21 +424,21 @@ function QualityCard({ q }: { q: Analytics['quality'] }) {
   const met = pct(q.response_met, q.cases);
   return (
     <div className="card p-4 space-y-4">
-      <p className="text-[13px] font-semibold">Quality</p>
+      <p className="text-body font-semibold">Quality</p>
       <div className="grid grid-cols-3 gap-2">
-        <div><p className="text-[20px] font-bold leading-tight">{pct(q.solved_on_call, q.contacts) ?? '—'}{q.contacts ? '%' : ''}</p><p className="text-[11px] text-gray-500">solved on the spot</p></div>
-        <div><p className="text-[20px] font-bold leading-tight">{met ?? '—'}{q.cases ? '%' : ''}</p><p className="text-[11px] text-gray-500">cases answered within 2 h ({q.response_met}/{q.cases})</p></div>
-        <div><p className="text-[20px] font-bold leading-tight">{q.emergencies}</p><p className="text-[11px] text-gray-500">emergencies</p></div>
+        <div><p className="text-h2 font-bold leading-tight">{pct(q.solved_on_call, q.contacts) ?? '—'}{q.contacts ? '%' : ''}</p><p className="text-caption text-fg-muted">solved on the spot</p></div>
+        <div><p className="text-h2 font-bold leading-tight">{met ?? '—'}{q.cases ? '%' : ''}</p><p className="text-caption text-fg-muted">cases answered within 2 h ({q.response_met}/{q.cases})</p></div>
+        <div><p className="text-h2 font-bold leading-tight">{q.emergencies}</p><p className="text-caption text-fg-muted">emergencies</p></div>
       </div>
       <div className="space-y-2">
-        <p className="text-[11px] text-gray-500">Caller satisfaction when cases were closed · {rated} rated</p>
-        {rated === 0 ? <p className="text-[12px] text-gray-400">No ratings yet.</p> : (
+        <p className="text-caption text-fg-muted">Caller satisfaction when cases were closed · {rated} rated</p>
+        {rated === 0 ? <p className="text-small text-fg-subtle">No ratings yet.</p> : (
           <>
             <div className="flex h-3 rounded-[4px] overflow-hidden gap-[2px]">
               {parts.filter((p) => p.n).map((p) => <div key={p.key} title={`${p.label}: ${p.n}`} style={{ width: `${(p.n / rated) * 100}%`, background: p.color }} />)}
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {parts.map((p) => <span key={p.key} className="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300"><p.icon size={12} style={{ color: p.color }} /> {p.label} <b>{p.n}</b> <span className="text-gray-400">({pct(p.n, rated)}%)</span></span>)}
+              {parts.map((p) => <span key={p.key} className="flex items-center gap-1 text-caption text-fg-muted "><p.icon size={12} style={{ color: p.color }} /> {p.label} <b>{p.n}</b> <span className="text-fg-subtle">({pct(p.n, rated)}%)</span></span>)}
             </div>
           </>
         )}
@@ -461,21 +461,21 @@ function OutreachFunnel({ o, dark }: { o: Analytics['outreach']; dark: boolean }
   return (
     <div className="card p-4 space-y-3">
       <div>
-        <p className="text-[13px] font-semibold flex items-center gap-1.5"><Megaphone size={14} /> Non-Insider outreach</p>
-        <p className="text-[11px] text-gray-500">Since the campaign started · round {o.round}, {o.round_left} drivers left to reach · {o.calls_in_period} outreach calls in this period</p>
+        <p className="text-body font-semibold flex items-center gap-1.5"><Megaphone size={14} /> Non-Insider outreach</p>
+        <p className="text-caption text-fg-muted">Since the campaign started · round {o.round}, {o.round_left} drivers left to reach · {o.calls_in_period} outreach calls in this period</p>
       </div>
       <div className="space-y-1.5">
         {stages.map((s, i) => (
-          <div key={s.label} className="grid grid-cols-[130px_1fr_70px] items-center gap-2 text-[11px]">
-            <span className="text-gray-600 dark:text-gray-300">{s.label}</span>
+          <div key={s.label} className="grid grid-cols-[130px_1fr_70px] items-center gap-2 text-caption">
+            <span className="text-fg-muted ">{s.label}</span>
             <div className="h-4"><div className="h-full rounded-r-[4px]" style={{ width: `${(s.n / max) * 100}%`, background: ramp[i], minWidth: s.n ? 3 : 0 }} /></div>
-            <span className="text-right tabular-nums">{s.n}{i > 0 && stages[i - 1].n ? <span className="text-gray-400"> {pct(s.n, stages[i - 1].n)}%</span> : ''}</span>
+            <span className="text-right tabular-nums">{s.n}{i > 0 && stages[i - 1].n ? <span className="text-fg-subtle"> {pct(s.n, stages[i - 1].n)}%</span> : ''}</span>
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-gray-500 pt-2 border-t border-gray-100 dark:border-white/5">
-        Said yes: <b className="text-gray-800 dark:text-gray-100">{o.device_yes}</b> to the device · <b className="text-gray-800 dark:text-gray-100">{o.branding_yes}</b> to branding · <b className="text-gray-800 dark:text-gray-100">{o.has_latest}</b> already have the updated app<br />
-        Fleet results: <b className="text-gray-800 dark:text-gray-100">{o.branded}</b> Non-Insider cars branded · <b className="text-gray-800 dark:text-gray-100">{o.device_installed}</b> devices installed
+      <p className="text-caption text-fg-muted pt-2 border-t border-line-muted ">
+        Said yes: <b className="text-fg ">{o.device_yes}</b> to the device · <b className="text-fg ">{o.branding_yes}</b> to branding · <b className="text-fg ">{o.has_latest}</b> already have the updated app<br />
+        Fleet results: <b className="text-fg ">{o.branded}</b> Non-Insider cars branded · <b className="text-fg ">{o.device_installed}</b> devices installed
       </p>
     </div>
   );

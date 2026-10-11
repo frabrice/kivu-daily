@@ -84,7 +84,7 @@ export default function PersonalAnalytics({ tasks, profileName }: Props) {
             <div key={s.label} className="card p-4">
               <Icon size={18} className={s.color} />
               <p className="text-2xl font-bold mt-2">{s.value}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{s.label}</p>
+              <p className="text-xs text-fg-muted mt-0.5">{s.label}</p>
             </div>
           );
         })}

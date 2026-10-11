@@ -112,7 +112,7 @@ export default function FinanceVehicleOwnersPage() {
       <div className="flex items-start justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><Car size={16} className="text-amber-600 dark:text-amber-300" /> Vehicle Owners</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Who owns each managed car, and their weekly payout (I&M) plus Kivu's management margin (Equity).</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Who owns each managed car, and their weekly payout (I&M) plus Kivu's management margin (Equity).</p>
         </div>
         {canEdit && (
           <button onClick={() => setOwnerDrawer({ owner: null, startEditing: true })} className="btn-ghost flex items-center gap-1.5 whitespace-nowrap">
@@ -121,16 +121,16 @@ export default function FinanceVehicleOwnersPage() {
         )}
       </div>
 
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit">
         <button
           onClick={() => setTab('owners')}
-          className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${tab === 'owners' ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+          className={`px-3 py-1.5 rounded-md text-small font-medium transition-all ${tab === 'owners' ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
         >
           Owners
         </button>
         <button
           onClick={() => setTab('payments')}
-          className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${tab === 'payments' ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+          className={`px-3 py-1.5 rounded-md text-small font-medium transition-all ${tab === 'payments' ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
         >
           Payments
         </button>
@@ -201,13 +201,13 @@ function OwnersTab({
 
       {unassignedVehicles.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Needs an Owner</p>
+          <p className="text-caption font-semibold text-fg-muted ">Needs an Owner</p>
           <div className="space-y-1.5">
             {unassignedVehicles.map((v) => (
               <div key={v.id} className="card p-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-medium">{v.plate_number}</p>
-                  <p className="text-[10px] text-gray-400">{v.make} {v.model}</p>
+                  <p className="text-small font-medium">{v.plate_number}</p>
+                  <p className="text-micro text-fg-subtle">{v.make} {v.model}</p>
                 </div>
                 {canEdit && (
                   <button onClick={() => onOnboardVehicle(v)} className="btn-primary shrink-0 whitespace-nowrap">
@@ -221,7 +221,7 @@ function OwnersTab({
       )}
 
       <div className="space-y-1.5">
-        <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Owners Directory</p>
+        <p className="text-caption font-semibold text-fg-muted ">Owners Directory</p>
         <DataTable
           rows={owners}
           keyFn={(o) => o.id}
@@ -235,7 +235,7 @@ function OwnersTab({
               header: 'Bank Account',
               render: (o) => (
                 <span className="flex items-center gap-1">
-                  {o.bank_name && <Landmark size={11} className="text-gray-400 shrink-0" />}
+                  {o.bank_name && <Landmark size={11} className="text-fg-subtle shrink-0" />}
                   {o.bank_name ? `${o.bank_name}${o.account_number ? ` · ${o.account_number}` : ''}` : '—'}
                 </span>
               ),
@@ -251,7 +251,7 @@ function OwnersTab({
                     {owned.map((v) => (
                       <div key={v.id}>
                         {v.plate_number}
-                        {v.operation_start_date && <span className="text-gray-400"> · since {formatDateLabelSafe(v.operation_start_date)}</span>}
+                        {v.operation_start_date && <span className="text-fg-subtle"> · since {formatDateLabelSafe(v.operation_start_date)}</span>}
                       </div>
                     ))}
                   </div>
@@ -354,12 +354,12 @@ function PaymentsTab({
         <KpiTile icon={TrendingUp} label="This Week's Margin" value={fmt(marginThisWeek)} tone="positive" color="amber" />
       </div>
 
-      {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+      {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
       {actionable.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Needs Your Action</p>
-          <p className="text-[10px] text-gray-400 -mt-1">Auto-loaded onboarding fees and setup costs — confirm the fee once it's actually landed, approve costs once they're actually paid.</p>
+          <p className="text-caption font-semibold text-fg-muted ">Needs Your Action</p>
+          <p className="text-micro text-fg-subtle -mt-1">Auto-loaded onboarding fees and setup costs — confirm the fee once it's actually landed, approve costs once they're actually paid.</p>
           <DataTable
             rows={actionable}
             keyFn={(t) => t.id}
@@ -381,7 +381,7 @@ function PaymentsTab({
                 className: 'text-right',
                 render: (t) => (
                   canEdit ? (
-                    <button onClick={() => actOn(t)} disabled={actingId === t.id} className="btn-primary text-[11px] px-2.5 py-1.5 disabled:opacity-50">
+                    <button onClick={() => actOn(t)} disabled={actingId === t.id} className="btn-primary text-caption px-2.5 py-1.5 disabled:opacity-50">
                       {actingId === t.id ? 'Working…' : t.type === 'onboarding_fee' ? 'Confirm' : 'Approve'}
                     </button>
                   ) : null
@@ -393,16 +393,16 @@ function PaymentsTab({
       )}
 
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+        <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit">
           <button
             onClick={() => setWeekFilter(null)}
-            className={`px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all ${!weekFilter ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+            className={`px-2.5 py-1.5 rounded-md text-caption font-medium transition-all ${!weekFilter ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
           >
             All Time
           </button>
           <button
             onClick={() => setWeekFilter(weekFilter ?? thisWeekStart)}
-            className={`px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all ${weekFilter ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+            className={`px-2.5 py-1.5 rounded-md text-caption font-medium transition-all ${weekFilter ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
           >
             By Week
           </button>
@@ -411,10 +411,10 @@ function PaymentsTab({
         {weekFilter && (
           <div className="flex items-center gap-1">
             <button onClick={() => shiftWeek(-1)} className="btn-ghost p-1.5"><ChevronLeft size={14} /></button>
-            <span className="text-[11px] font-medium whitespace-nowrap px-1">{weekLabel(weekFilter)}</span>
+            <span className="text-caption font-medium whitespace-nowrap px-1">{weekLabel(weekFilter)}</span>
             <button onClick={() => shiftWeek(1)} className="btn-ghost p-1.5"><ChevronRight size={14} /></button>
             {weekFilter !== thisWeekStart && (
-              <button onClick={() => setWeekFilter(thisWeekStart)} className="text-[10px] text-brand-600 dark:text-brand-300 underline underline-offset-2 ml-1">This week</button>
+              <button onClick={() => setWeekFilter(thisWeekStart)} className="text-micro text-brand-600 dark:text-brand-300 underline underline-offset-2 ml-1">This week</button>
             )}
           </div>
         )}
@@ -434,16 +434,16 @@ function PaymentsTab({
 
       {filteredRows.length === 0 && (
         <div className="card p-12 text-center">
-          <Wallet size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">{rows.length === 0 ? 'No owner payments logged yet.' : 'No payments match this filter.'}</p>
+          <Wallet size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">{rows.length === 0 ? 'No owner payments logged yet.' : 'No payments match this filter.'}</p>
         </div>
       )}
 
       {weeks.map((week) => (
         <div key={week.weekStart} className="space-y-1.5">
           <div className="flex items-center justify-between gap-2 px-0.5">
-            <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">{weekLabel(week.weekStart)}</p>
-            <p className="text-[11px] text-gray-400">{week.txs.length} payment{week.txs.length === 1 ? '' : 's'} · <span className="font-medium">{fmt(week.total)}</span></p>
+            <p className="text-caption font-semibold text-fg-muted ">{weekLabel(week.weekStart)}</p>
+            <p className="text-caption text-fg-subtle">{week.txs.length} payment{week.txs.length === 1 ? '' : 's'} · <span className="font-medium">{fmt(week.total)}</span></p>
           </div>
           <DataTable
             rows={week.txs}
@@ -456,7 +456,7 @@ function PaymentsTab({
               {
                 header: 'Status',
                 render: (t) => (
-                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
+                  <span className="text-micro font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
                     {STATUS_META[t.status].label}
                   </span>
                 ),
@@ -466,7 +466,7 @@ function PaymentsTab({
                 className: 'text-right',
                 render: (t) => (
                   canEdit && t.status === 'pending' ? (
-                    <button onClick={() => payOwner(t.id)} disabled={payingId === t.id} className="btn-primary text-[11px] px-2.5 py-1.5 disabled:opacity-50">
+                    <button onClick={() => payOwner(t.id)} disabled={payingId === t.id} className="btn-primary text-caption px-2.5 py-1.5 disabled:opacity-50">
                       {payingId === t.id ? 'Confirming…' : 'Confirm Paid'}
                     </button>
                   ) : null

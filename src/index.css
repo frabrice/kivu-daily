@@ -2,11 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Kivu OS design tokens. Colours are "R G B" channels so Tailwind can add
+   opacity (bg-accent/10). Light and dark are two full palettes - dark has
+   four distinct layers (canvas < surface < surface-2 < surface-3) and
+   borders you can actually see. */
 @layer base {
   :root {
     --navy: #17263a;
     --brand: #2f8c86;
     --positive: #4f7b3e;
+
+    --c-canvas: 246 248 250;      /* #F6F8FA page */
+    --c-surface-1: 255 255 255;   /* sidebars, list rows */
+    --c-surface-2: 255 255 255;   /* cards */
+    --c-surface-3: 255 255 255;   /* popovers, peeks */
+    --c-inset: 242 245 248;       /* wells, inputs, tracks */
+    --c-hover: 234 238 242;       /* row / item hover */
+    --c-line: 208 215 222;        /* #D0D7DE default border */
+    --c-line-muted: 229 233 238;  /* dividers */
+    --c-line-strong: 175 184 193;
+    --c-fg: 31 35 40;             /* #1F2328 */
+    --c-fg-muted: 89 99 110;      /* #59636E */
+    --c-fg-subtle: 110 119 129;   /* #6E7781 */
+    --c-fg-onaccent: 255 255 255;
+    --c-accent: 38 122 116;       /* brand teal, a step darker (#267A74) so white text passes 4.5:1 */
+    --c-accent-fg: 30 112 107;    /* teal text on light */
+    --c-link: 9 105 218;          /* #0969DA */
+    --c-success: 26 127 55;
+    --c-attention: 154 103 0;
+    --c-danger: 209 36 47;
+    --c-done: 130 80 223;
+
+    --shadow-raised: 0 1px 0 rgb(31 35 40 / 0.04);
+    --shadow-overlay: 0 8px 24px rgb(66 74 83 / 0.14), 0 1px 3px rgb(31 35 40 / 0.08);
+    --chart-surface: #ffffff;
+    --chart-grid: #eef1f4;
+    --chart-axis: #6e7781;
+  }
+
+  .dark {
+    --c-canvas: 11 18 32;         /* #0B1220 */
+    --c-surface-1: 15 24 41;      /* #0F1829 sidebars */
+    --c-surface-2: 21 34 58;      /* #15223A cards */
+    --c-surface-3: 27 42 69;      /* #1B2A45 popovers */
+    --c-inset: 13 21 37;          /* #0D1525 */
+    --c-hover: 30 46 74;          /* #1E2E4A */
+    --c-line: 39 56 84;           /* #273854 */
+    --c-line-muted: 29 43 66;     /* #1D2B42 */
+    --c-line-strong: 61 82 115;
+    --c-fg: 230 237 245;          /* #E6EDF5 */
+    --c-fg-muted: 157 174 196;    /* #9DAEC4 */
+    --c-fg-subtle: 121 139 163;   /* #798BA3 */
+    --c-fg-onaccent: 4 38 35;
+    --c-accent: 60 185 174;       /* #3CB9AE */
+    --c-accent-fg: 92 207 196;
+    --c-link: 88 166 255;         /* #58A6FF */
+    --c-success: 63 185 80;
+    --c-attention: 210 153 34;
+    --c-danger: 248 81 73;
+    --c-done: 163 113 247;
+
+    --shadow-raised: 0 0 0 1px rgb(0 0 0 / 0.0);
+    --shadow-overlay: 0 12px 32px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(var(--c-line));
+    --chart-surface: #15223a;
+    --chart-grid: rgba(255, 255, 255, 0.06);
+    --chart-axis: #798ba3;
   }
 
   html {
@@ -16,108 +76,136 @@
 
   body {
     font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-    @apply bg-gray-50 text-gray-900;
+    font-feature-settings: 'cv11', 'ss01';
+    @apply bg-canvas text-fg;
   }
 
-  .dark body {
-    @apply bg-navy-950 text-gray-100;
+  /* Numbers line up in tables and stats. */
+  .tabular-nums, td, .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-accent));
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 
   /* Without this, a <select>'s open dropdown list renders using the
      browser's light-mode form-control colors even while the closed box
-     is styled dark via Tailwind - white text on a white popup. This is
-     the one dark-mode-select styling browsers actually honor. */
+     is styled dark. */
   select {
     color-scheme: light;
   }
   .dark select {
     color-scheme: dark;
   }
-
-  /* color-scheme alone isn't enough on every browser/OS combo - some
-     still paint the open option list with a light background while the
-     select's own dark:text-* class makes the text light too, so every
-     unhovered row reads as near-invisible white-on-white (only the
-     browser's own hover highlight is legible). Setting the option list's
-     colors directly is the fallback that actually holds regardless. */
   .dark select option {
-    background-color: #1d2f43;
-    color: #f3f4f6;
+    background-color: rgb(var(--c-surface-3));
+    color: rgb(var(--c-fg));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 }
 
 @layer components {
   .card {
-    @apply bg-white dark:bg-navy-800 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm;
+    @apply bg-surface-2 rounded-card border border-line shadow-raised;
+  }
+  .card-muted {
+    @apply bg-inset rounded-card border border-line-muted;
   }
 
   .btn-primary {
-    @apply bg-brand hover:bg-brand-600 text-white text-[13px] font-medium rounded-lg px-3.5 py-2 transition-all duration-150 active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-1.5 bg-accent hover:brightness-110 text-fg-onaccent text-body font-medium rounded-md px-3 h-8 border border-black/10 transition-all duration-150 active:scale-[0.98] disabled:opacity-50;
   }
-
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 bg-surface-2 hover:bg-hover text-fg text-body font-medium rounded-md px-3 h-8 border border-line transition-colors disabled:opacity-50;
+  }
   .btn-ghost {
-    @apply text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 text-[13px] rounded-lg px-2.5 py-1.5 transition-colors;
+    @apply text-fg-muted hover:text-fg hover:bg-hover text-body rounded-md px-2.5 py-1.5 transition-colors;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 bg-surface-2 hover:bg-danger hover:text-white text-danger text-body font-medium rounded-md px-3 h-8 border border-line transition-colors;
   }
 
   .input {
-    @apply w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-[13px] text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition-all;
+    @apply w-full bg-inset border border-line rounded-md px-3 py-1.5 text-body text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all;
   }
 
   .nav-item {
-    @apply flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer;
+    @apply flex items-center gap-2.5 px-2 py-1.5 rounded-md text-fg-muted hover:bg-hover hover:text-fg transition-colors cursor-pointer;
   }
-
   .nav-item-active {
-    @apply bg-brand/10 text-brand-700 dark:bg-brand/15 dark:text-brand-300 font-medium hover:bg-brand/10 dark:hover:bg-brand/15 hover:text-brand-700 dark:hover:text-brand-300;
+    @apply bg-hover text-fg font-medium;
   }
 
   .stat-label {
-    @apply text-[11px] font-medium text-gray-400 uppercase tracking-wide;
+    @apply text-caption font-medium text-fg-subtle uppercase tracking-wide;
+  }
+  .section-title {
+    @apply text-body font-semibold text-fg;
   }
 
-  .section-title {
-    @apply text-[13px] font-semibold text-gray-700 dark:text-gray-200;
+  /* GitHub-style pill labels and counters */
+  .label {
+    @apply inline-flex items-center gap-1 h-5 px-2 rounded-full border text-caption font-medium whitespace-nowrap;
+  }
+  .counter {
+    @apply inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-line-muted text-fg-muted text-micro font-semibold tabular-nums;
+  }
+  .kbd {
+    @apply inline-flex items-center h-[18px] px-1.5 rounded border border-line bg-inset text-fg-subtle text-micro font-mono;
+  }
+  .link {
+    @apply text-link hover:underline underline-offset-2;
   }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-white/10 rounded-full;
+  background: rgb(var(--c-line));
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-white/20;
+  background: rgb(var(--c-line-strong));
+  background-clip: padding-box;
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.25s ease-out;
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.97); }
   to { opacity: 1; transform: scale(1); }
 }
 .animate-scale-in {
-  animation: scaleIn 0.2s ease-out;
+  animation: scaleIn 0.15s ease-out;
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-slide-up {
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp 0.25s ease-out;
 }
 
 @keyframes checkPop {
@@ -134,13 +222,9 @@
   100% { background-position: 200% 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background: linear-gradient(90deg, rgb(var(--c-inset)) 25%, rgb(var(--c-hover)) 50%, rgb(var(--c-inset)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-}
-.dark .skeleton {
-  background: linear-gradient(90deg, #1d2f43 25%, #243b52 50%, #1d2f43 75%);
-  background-size: 200% 100%;
 }
 
 @keyframes slideInRight {
@@ -148,5 +232,13 @@
   to { opacity: 1; transform: translateX(0); }
 }
 .animate-slide-in-right {
-  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-left {
+  animation: slideInLeft 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }

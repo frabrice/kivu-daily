@@ -26,19 +26,19 @@ export default function AssigneePicker({
   }, [people, q, excludeId]);
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 dark:border-white/5 bg-gray-50/60 dark:bg-white/[0.02]">
-        <Search size={13} className="text-gray-400 shrink-0" />
+    <div className="rounded-xl border border-line overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-line-muted bg-gray-50/60 dark:bg-white/[0.02]">
+        <Search size={13} className="text-fg-subtle shrink-0" />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by name or what they're in charge of"
-          className="flex-1 bg-transparent text-[12px] outline-none"
+          className="flex-1 bg-transparent text-small outline-none"
           aria-label="Search people"
         />
       </div>
-      <div className="max-h-64 overflow-y-auto divide-y divide-gray-50 dark:divide-white/5" role="listbox" aria-label="Assign to">
-        {list.length === 0 && <p className="text-[11px] text-gray-400 text-center py-6">Nobody matches "{q}".</p>}
+      <div className="max-h-64 overflow-y-auto divide-y divide-line-muted " role="listbox" aria-label="Assign to">
+        {list.length === 0 && <p className="text-caption text-fg-subtle text-center py-6">Nobody matches "{q}".</p>}
         {list.map((p) => {
           const selected = p.id === value;
           const label = p.responsibility_label || (p.role === 'managing_director' ? 'Managing Director' : p.department?.name);
@@ -49,17 +49,17 @@ export default function AssigneePicker({
               role="option"
               aria-selected={selected}
               onClick={() => onChange(p.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${selected ? 'bg-brand/10' : 'hover:bg-gray-50 dark:hover:bg-white/[0.03]'}`}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${selected ? 'bg-brand/10' : 'hover:bg-hover '}`}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 ${selected ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-caption font-semibold shrink-0 ${selected ? 'bg-brand text-white' : 'bg-inset text-fg-muted '}`}>
                 {p.full_name.trim().charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] truncate">
+                <p className="text-small truncate">
                   <span className="font-medium">{p.full_name.trim()}</span>
-                  {label && <span className="text-gray-500 dark:text-gray-400"> ({label})</span>}
+                  {label && <span className="text-fg-muted "> ({label})</span>}
                 </p>
-                {p.department?.name && p.department.name !== label && <p className="text-[10px] text-gray-400 truncate">{p.department.name}</p>}
+                {p.department?.name && p.department.name !== label && <p className="text-micro text-fg-subtle truncate">{p.department.name}</p>}
               </div>
               {selected && <Check size={15} className="text-brand-600 dark:text-brand-300 shrink-0" />}
             </button>

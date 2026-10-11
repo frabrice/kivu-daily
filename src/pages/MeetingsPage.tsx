@@ -52,7 +52,7 @@ export default function MeetingsPage() {
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold">Meeting Notes</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{meetings.length} note{meetings.length === 1 ? '' : 's'}</p>
+          <p className="text-xs text-fg-subtle mt-0.5">{meetings.length} note{meetings.length === 1 ? '' : 's'}</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
@@ -71,8 +71,8 @@ export default function MeetingsPage() {
 
       {!loading && meetings.length === 0 && (
         <div className="card p-12 text-center">
-          <Calendar size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">No meeting notes yet — start one after your next call.</p>
+          <Calendar size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">No meeting notes yet — start one after your next call.</p>
         </div>
       )}
 
@@ -89,15 +89,15 @@ export default function MeetingsPage() {
                 <Avatar name={m.author?.full_name ?? 'User'} url={m.author?.avatar_url} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-1.5">
-                    <p className="text-[12px] font-medium truncate">{m.title}</p>
+                    <p className="text-small font-medium truncate">{m.title}</p>
                     <EntryActions
                       onView={() => setSelected(m)}
                       onEdit={() => setEditMeeting(m)}
                       canEdit={canEditMeeting(m)}
                     />
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{m.author?.full_name} · {formatDateLabel(m.date)}</p>
-                  <span className="inline-flex items-center gap-1 text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full mt-1.5">
+                  <p className="text-micro text-fg-subtle mt-0.5">{m.author?.full_name} · {formatDateLabel(m.date)}</p>
+                  <span className="inline-flex items-center gap-1 text-micro font-medium text-fg-subtle bg-inset px-1.5 py-0.5 rounded-full mt-1.5">
                     <Meta.icon size={10} /> {Meta.label}
                   </span>
                 </div>
@@ -121,7 +121,7 @@ export default function MeetingsPage() {
               render: (m) => {
                 const Meta = VISIBILITY_META[m.visibility];
                 return (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-micro font-medium text-fg-subtle bg-inset px-1.5 py-0.5 rounded-full">
                     <Meta.icon size={10} /> {Meta.label}
                   </span>
                 );
@@ -202,7 +202,7 @@ function MeetingDetailDrawer({ meeting, canEdit, onClose, onEdit }: { meeting: M
   return (
     <Modal open onClose={onClose} title={meeting.title} subtitle={`${meeting.author?.full_name ?? ''} · ${formatDateLabel(meeting.date)}`} maxWidth="max-w-lg">
       <div className="flex items-center justify-between mb-4">
-        <span className="inline-flex items-center gap-1 text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-full">
+        <span className="inline-flex items-center gap-1 text-micro font-medium text-fg-subtle bg-inset px-2 py-1 rounded-full">
           <Meta.icon size={11} /> {Meta.label}
         </span>
         {canEdit && (
@@ -212,8 +212,8 @@ function MeetingDetailDrawer({ meeting, canEdit, onClose, onEdit }: { meeting: M
         )}
       </div>
 
-      <p className="text-[12px] leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap mb-6">
-        {meeting.notes || <span className="text-gray-400">No notes written.</span>}
+      <p className="text-small leading-relaxed text-fg-muted whitespace-pre-wrap mb-6">
+        {meeting.notes || <span className="text-fg-subtle">No notes written.</span>}
       </p>
 
       {!addingTask && !saved && (
@@ -222,10 +222,10 @@ function MeetingDetailDrawer({ meeting, canEdit, onClose, onEdit }: { meeting: M
         </button>
       )}
 
-      {saved && <p className="text-[12px] text-positive font-medium">Task created.</p>}
+      {saved && <p className="text-small text-positive font-medium">Task created.</p>}
 
       {addingTask && (
-        <div className="p-3 rounded-lg border border-gray-200 dark:border-white/10 space-y-2">
+        <div className="p-3 rounded-lg border border-line space-y-2">
           <input
             autoFocus
             value={taskTitle}

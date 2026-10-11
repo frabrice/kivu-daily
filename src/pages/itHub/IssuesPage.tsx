@@ -46,9 +46,9 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2">
             <AlertTriangle size={16} className="text-cyan-600 dark:text-cyan-300" /> Issues
-            {openIssueCount > 0 && <span className="text-[8px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{openIssueCount}</span>}
+            {openIssueCount > 0 && <span className="text-micro font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{openIssueCount}</span>}
           </h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Friction flagged in from other departments, anything IT adds directly, and the user stories planned under each product.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Friction flagged in from other departments, anything IT adds directly, and the user stories planned under each product.</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} modes={['kanban', 'cards', 'table']} />
@@ -64,7 +64,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
         <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter by product">
           {[{ key: 'all', label: 'All', count: allIssues.length }, ...productChips].map((c) => (
             <button key={c.key} role="tab" aria-selected={productFilter === c.key} onClick={() => setProductFilter(c.key)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${productFilter === c.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500 hover:border-brand/40'}`}>
+              className={`px-2.5 py-1 rounded-full text-caption font-medium border transition-colors ${productFilter === c.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-line text-fg-muted hover:border-brand/40'}`}>
               {c.label} <span className="opacity-60">{c.count}</span>
             </button>
           ))}
@@ -73,8 +73,8 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
 
       {issues.length === 0 && (
         <div className="card p-12 text-center">
-          <AlertTriangle size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">No issues yet. Flagged friction from other departments lands here.</p>
+          <AlertTriangle size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">No issues yet. Flagged friction from other departments lands here.</p>
         </div>
       )}
 
@@ -86,8 +86,8 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
               <div key={status.key} className="space-y-2">
                 <div className="flex items-center gap-1.5 px-0.5">
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: status.color }} />
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{status.label}</p>
-                  <span className="text-[9px] text-gray-400">{columnIssues.length}</span>
+                  <p className="text-micro font-semibold uppercase tracking-wide text-fg-muted">{status.label}</p>
+                  <span className="text-micro text-fg-subtle">{columnIssues.length}</span>
                 </div>
                 <div className="space-y-1.5 min-h-[40px]">
                   {columnIssues.map((s) => {
@@ -99,7 +99,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
                         className="card p-2.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
                       >
                         <div className="flex items-start justify-between gap-1.5">
-                          <p className="text-[11px] font-medium line-clamp-2">{s.title || `As a ${s.persona}, ${s.need}`}</p>
+                          <p className="text-caption font-medium line-clamp-2">{s.title || `As a ${s.persona}, ${s.need}`}</p>
                           <EntryActions
                             onView={() => setStoryDrawer({ story: s, startEditing: false })}
                             onEdit={() => setStoryDrawer({ story: s, startEditing: true })}
@@ -107,14 +107,14 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
                           />
                         </div>
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                          <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
+                          <span className={`text-micro font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
                           {s.product && (
-                            <span className="inline-flex items-center gap-1 text-[8px] font-medium text-cyan-600 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-500/10 px-1.5 py-0.5 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-micro font-medium text-cyan-600 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-500/10 px-1.5 py-0.5 rounded-full">
                               <Package size={9} /> {s.product.name}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center justify-between text-[9px] text-gray-400 mt-1.5">
+                        <div className="flex items-center justify-between text-micro text-fg-subtle mt-1.5">
                           <span className="flex items-center gap-1">
                             <User size={10} /> {s.assignee?.full_name?.split(' ')[0] ?? 'Unassigned'}
                           </span>
@@ -126,8 +126,8 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
                     );
                   })}
                   {columnIssues.length === 0 && (
-                    <div className="h-12 rounded-lg border border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center">
-                      <p className="text-[9px] text-gray-300 dark:text-white/20">Empty</p>
+                    <div className="h-12 rounded-lg border border-dashed border-line flex items-center justify-center">
+                      <p className="text-micro text-fg-subtle ">Empty</p>
                     </div>
                   )}
                 </div>
@@ -150,13 +150,13 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
               render: (s) => {
                 const status = STORY_STATUSES.find((st) => st.key === s.status)!;
                 return (
-                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
+                  <span className="text-micro font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
                     {status.label}
                   </span>
                 );
               },
             },
-            { header: 'Priority', render: (s) => <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span> },
+            { header: 'Priority', render: (s) => <span className={`text-micro font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span> },
             { header: 'Assignee', render: (s) => s.assignee?.full_name ?? 'Unassigned' },
             {
               header: '',
@@ -179,21 +179,21 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
                 className="card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
               >
                 <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                  <p className="text-[11px] font-medium line-clamp-2">{s.title || `As a ${s.persona}, ${s.need}`}</p>
+                  <p className="text-caption font-medium line-clamp-2">{s.title || `As a ${s.persona}, ${s.need}`}</p>
                   <EntryActions onView={() => setStoryDrawer({ story: s, startEditing: false })} onEdit={() => setStoryDrawer({ story: s, startEditing: true })} canEdit={canEdit} />
                 </div>
                 <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
+                  <span className="text-micro font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${status.color}20`, color: status.color }}>
                     {status.label}
                   </span>
-                  <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
+                  <span className={`text-micro font-medium px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[s.priority]}`}>{s.priority}</span>
                   {s.product && (
-                    <span className="inline-flex items-center gap-1 text-[8px] font-medium text-cyan-600 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-500/10 px-1.5 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-micro font-medium text-cyan-600 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-500/10 px-1.5 py-0.5 rounded-full">
                       <Package size={9} /> {s.product.name}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-between text-[9px] text-gray-400">
+                <div className="flex items-center justify-between text-micro text-fg-subtle">
                   <span className="flex items-center gap-1">
                     <User size={10} /> {s.assignee?.full_name?.split(' ')[0] ?? 'Unassigned'}
                   </span>

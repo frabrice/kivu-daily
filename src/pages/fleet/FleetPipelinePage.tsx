@@ -93,12 +93,12 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><Truck size={16} className="text-blue-600 dark:text-blue-300" /> Driver Pipeline</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Every driver from application through active service.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Every driver from application through active service.</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or phone" className="input pl-8 w-52" />
           </div>
           {canEdit && (
@@ -115,8 +115,8 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
             <div key={stage.key} className="space-y-2">
               <div className="flex items-center gap-1.5 px-0.5">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: stage.color }} />
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{stage.label}</p>
-                <span className="text-[9px] text-gray-400">{byStage[stage.key].length}</span>
+                <p className="text-micro font-semibold uppercase tracking-wide text-fg-muted">{stage.label}</p>
+                <span className="text-micro text-fg-subtle">{byStage[stage.key].length}</span>
               </div>
               <div className="space-y-1.5 min-h-[40px]">
                 {byStage[stage.key].map((d) => (
@@ -126,35 +126,35 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                     className="w-full card p-2.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
                   >
                     <div className="flex items-start justify-between gap-1.5">
-                      <p className="text-[11px] font-medium truncate">{d.full_name}</p>
+                      <p className="text-caption font-medium truncate">{d.full_name}</p>
                       <EntryActions
                         onView={() => setViewingDriverId(d.id)}
                         onEdit={() => setDriverDrawer({ driver: d, startEditing: true })}
                         canEdit={canEdit}
                       />
                     </div>
-                    <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                    <p className="text-micro text-fg-subtle flex items-center gap-1 mt-0.5">
                       <Phone size={10} /> {d.phone}
                     </p>
                     {(() => {
                       const p = (d.pauses ?? []).find((x) => isPausedOn(x, kigaliToday));
-                      return p ? <p className="text-[9px] font-semibold text-amber-700 dark:text-amber-300 mt-1">Paused · {PAUSE_REASON_LABEL[p.reason]}</p> : null;
+                      return p ? <p className="text-micro font-semibold text-amber-700 dark:text-amber-300 mt-1">Paused · {PAUSE_REASON_LABEL[p.reason]}</p> : null;
                     })()}
                     {d.vehicle ? (
-                      <p className="text-[9px] text-brand-600 dark:text-brand-300 flex items-center gap-1 mt-1">
+                      <p className="text-micro text-brand-600 dark:text-brand-300 flex items-center gap-1 mt-1">
                         <Car size={10} /> {d.vehicle.plate_number}
-                        {d.shift && <span className="text-gray-400">· {d.shift === 'day' ? 'Day' : 'Night'}</span>}
+                        {d.shift && <span className="text-fg-subtle">· {d.shift === 'day' ? 'Day' : 'Night'}</span>}
                       </p>
                     ) : (
-                      <p className="text-[9px] text-gray-300 dark:text-white/20 mt-1">
+                      <p className="text-micro text-fg-subtle mt-1">
                         {d.initial_deposit_paid && canSeeDriverPayments(profile) ? 'Deposit paid · no vehicle' : 'No vehicle'}
                       </p>
                     )}
                   </div>
                 ))}
                 {byStage[stage.key].length === 0 && (
-                  <div className="h-12 rounded-lg border border-dashed border-gray-200 dark:border-white/10 flex items-center justify-center">
-                    <p className="text-[9px] text-gray-300 dark:text-white/20">Empty</p>
+                  <div className="h-12 rounded-lg border border-dashed border-line flex items-center justify-center">
+                    <p className="text-micro text-fg-subtle ">Empty</p>
                   </div>
                 )}
               </div>
@@ -177,7 +177,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
               render: (d) => {
                 const s = STAGES.find((st) => st.key === effectiveStage(d))!;
                 return (
-                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${s.color}20`, color: s.color }}>
+                  <span className="text-micro font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${s.color}20`, color: s.color }}>
                     {s.label}
                   </span>
                 );
@@ -202,8 +202,8 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
 
       {drivers.length === 0 && (
         <div className="card p-12 text-center">
-          <Truck size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">No drivers yet.</p>
+          <Truck size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">No drivers yet.</p>
         </div>
       )}
 

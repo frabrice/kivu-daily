@@ -126,35 +126,35 @@ export default function DriverDrawer({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Full Name</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Full Name</label>
             <input value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!editing} className="input" placeholder="Jean Baptiste" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Phone</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Phone</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!editing} className="input" placeholder="+250 7XX XXX XXX" />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Email</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!editing} className="input" placeholder="jean@example.com" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><CalendarDays size={11} /> Start Date</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted flex items-center gap-1"><CalendarDays size={11} /> Start Date</label>
             <DateInput value={startDate} onChange={setStartDate} disabled={!editing} />
           </div>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Stage</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Stage</label>
           <select value={stage} onChange={(e) => setStage(e.target.value as DriverStage)} disabled={!editing} className="input">
             {MANUAL_STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
-          <p className="text-[9px] text-gray-400 mt-1">Active isn't picked here — it happens automatically once this driver has a vehicle and a paid deposit.</p>
+          <p className="text-micro text-fg-subtle mt-1">Active isn't picked here — it happens automatically once this driver has a vehicle and a paid deposit.</p>
         </div>
 
         {!driver && (
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Replacing (optional)</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Replacing (optional)</label>
             <SearchableSelect
               options={replacementOptions}
               value={replacedDriverId}
@@ -163,25 +163,25 @@ export default function DriverDrawer({
               emptyLabel="No matching drivers"
               disabled={!editing}
             />
-            <p className="text-[9px] text-gray-400 mt-1">If this driver is replacing someone whose contract ended, pick them here. They'll no longer show up here once picked.</p>
+            <p className="text-micro text-fg-subtle mt-1">If this driver is replacing someone whose contract ended, pick them here. They'll no longer show up here once picked.</p>
           </div>
         )}
 
         <div className={`p-2.5 rounded-lg border space-y-2 ${restDay ? 'border-indigo-300 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-500/5' : 'border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/5'}`}>
-          <label className="block text-[11px] font-medium mb-1.5 flex items-center gap-1"><BedDouble size={11} /> Weekly Rest Day <span className="text-red-500">*</span></label>
+          <label className="block text-caption font-medium mb-1.5 flex items-center gap-1"><BedDouble size={11} /> Weekly Rest Day <span className="text-red-500">*</span></label>
           <select value={restDay} onChange={(e) => setRestDay(e.target.value as DriverRestDay)} disabled={!editing} className="input">
             <option value="">Select a day…</option>
             {REST_DAYS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
           </select>
-          <p className="text-[9px] text-gray-400">Every driver must have one fixed day off each week.</p>
+          <p className="text-micro text-fg-subtle">Every driver must have one fixed day off each week.</p>
         </div>
 
         {!driver && startDate && restDay && (() => {
           const first = firstSundayPayment(startDate, restDay);
           return (
             <div className="p-2.5 rounded-lg border border-brand/30 bg-brand/5">
-              <p className="text-[11px] font-medium mb-1">Payment schedule</p>
-              <p className="text-[10px] text-gray-600 dark:text-gray-300 leading-relaxed">
+              <p className="text-caption font-medium mb-1">Payment schedule</p>
+              <p className="text-micro text-fg-muted leading-relaxed">
                 {formatRwf(WEEKLY_DEPOSIT_AMOUNT)} on {formatDateLabelSafe(startDate)} before the first shift
                 {' → '}{formatRwf(first.amount)} by Sunday {formatDateLabelSafe(first.date)}
                 {' → '}{formatRwf(WEEKLY_DEPOSIT_AMOUNT)} every Sunday after.
@@ -190,7 +190,7 @@ export default function DriverDrawer({
           );
         })()}
 
-        <div className={`p-2.5 rounded-lg border space-y-2 ${initialDepositPaid ? 'border-brand/30 bg-brand/5' : 'border-gray-200 dark:border-white/10'}`}>
+        <div className={`p-2.5 rounded-lg border space-y-2 ${initialDepositPaid ? 'border-brand/30 bg-brand/5' : 'border-line '}`}>
           <label className="flex items-center gap-2.5">
             <input
               type="checkbox"
@@ -202,25 +202,25 @@ export default function DriverDrawer({
               disabled={!editing}
               className="w-4 h-4 accent-brand"
             />
-            <span className="text-[11px] font-medium">Initial deposit paid</span>
+            <span className="text-caption font-medium">Initial deposit paid</span>
           </label>
           {initialDepositPaid && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[10px] font-medium mb-1 text-gray-500 flex items-center gap-1"><CalendarDays size={10} /> Date Paid</label>
+                <label className="block text-micro font-medium mb-1 text-fg-muted flex items-center gap-1"><CalendarDays size={10} /> Date Paid</label>
                 <DateInput value={initialDepositDate} onChange={setInitialDepositDate} disabled={!editing} />
               </div>
               <div>
-                <label className="block text-[10px] font-medium mb-1 text-gray-500">Amount (RWF)</label>
+                <label className="block text-micro font-medium mb-1 text-fg-muted">Amount (RWF)</label>
                 <input type="number" value={initialDepositAmount} onChange={(e) => setInitialDepositAmount(e.target.value)} disabled={!editing} className="input" />
               </div>
-              <p className="text-[9px] text-gray-400 col-span-2">This is the 180,000 paid upfront on the start day. Weekly payments are due every Sunday from then on; payroll counts from Start Date.</p>
+              <p className="text-micro text-fg-subtle col-span-2">This is the 180,000 paid upfront on the start day. Weekly payments are due every Sunday from then on; payroll counts from Start Date.</p>
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Assigned Vehicle</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Assigned Vehicle</label>
           <select value={vehicleId} onChange={(e) => { setVehicleId(e.target.value); setShift(''); }} disabled={!editing} className="input">
             <option value="">No vehicle assigned</option>
             {vehicles.map((v) => {
@@ -236,20 +236,20 @@ export default function DriverDrawer({
             })}
           </select>
           {editing && (
-            <button type="button" onClick={() => setAddVehicleOpen(true)} className="text-[10px] text-brand-600 dark:text-brand-300 hover:underline mt-1.5">
+            <button type="button" onClick={() => setAddVehicleOpen(true)} className="text-micro text-brand-600 dark:text-brand-300 hover:underline mt-1.5">
               + Add a new vehicle
             </button>
           )}
 
           {selectedVehicle && (
-            <div className="mt-2 p-2.5 rounded-lg bg-gray-50 dark:bg-white/5 space-y-2">
+            <div className="mt-2 p-2.5 rounded-lg bg-inset space-y-2">
               {(selectedVehicle.make || selectedVehicle.model || selectedVehicle.color) && (
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                <p className="text-micro text-fg-muted ">
                   {[selectedVehicle.make, selectedVehicle.model, selectedVehicle.color].filter(Boolean).join(' · ')}
                 </p>
               )}
               <div>
-                <p className="text-[10px] font-medium text-gray-500 mb-1">Shift</p>
+                <p className="text-micro font-medium text-fg-muted mb-1">Shift</p>
                 <div className="grid grid-cols-2 gap-2">
                   {(['day', 'night'] as DriverShift[]).map((s) => {
                     const taken = shiftTakenBy(s);
@@ -259,13 +259,13 @@ export default function DriverDrawer({
                         type="button"
                         disabled={!editing || !!taken}
                         onClick={() => setShift(s)}
-                        className={`p-2 rounded-lg border text-left text-[11px] flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed ${
-                          shift === s ? 'border-brand bg-brand/10' : 'border-gray-200 dark:border-white/10'
+                        className={`p-2 rounded-lg border text-left text-caption flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed ${
+                          shift === s ? 'border-brand bg-brand/10' : 'border-line '
                         }`}
                       >
                         {s === 'day' ? <Sun size={12} /> : <Moon size={12} />}
                         {s === 'day' ? 'Day' : 'Night'}
-                        {taken && <span className="text-[9px] text-gray-400">· {taken.full_name}</span>}
+                        {taken && <span className="text-micro text-fg-subtle">· {taken.full_name}</span>}
                       </button>
                     );
                   })}
@@ -276,13 +276,13 @@ export default function DriverDrawer({
         </div>
 
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="Onboarding progress, issues, follow-ups…" />
         </div>
 
         {driver && (
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><FileText size={11} /> Onboarding Documents</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted flex items-center gap-1"><FileText size={11} /> Onboarding Documents</label>
             <DriverDocumentsSection
               driverId={driver.id}
               documents={driverDocuments.filter((doc) => doc.driver_id === driver.id)}
@@ -292,16 +292,16 @@ export default function DriverDrawer({
           </div>
         )}
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
-          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
             {driver ? (
               <div className="flex gap-2">
                 <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
                   <Trash2 size={13} /> Remove
                 </button>
-                <button onClick={() => setFlagOpen(true)} disabled={saving} className="btn-ghost text-gray-500 flex items-center gap-1.5">
+                <button onClick={() => setFlagOpen(true)} disabled={saving} className="btn-ghost text-fg-muted flex items-center gap-1.5">
                   <Flag size={13} /> Flag to IT
                 </button>
               </div>
@@ -314,7 +314,7 @@ export default function DriverDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Close</button>
             {canEdit && (
               <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">

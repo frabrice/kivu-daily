@@ -46,7 +46,7 @@ export default function PauseDrawer({ driver, drivers, onClose, onSaved }: { dri
     onSaved();
   };
 
-  const label = 'block text-[11px] font-medium mb-1 text-gray-500';
+  const label = 'block text-caption font-medium mb-1 text-fg-muted';
   return (
     <Modal open onClose={onClose} title={`Pause ${driver.full_name.trim()}`} subtitle="Days off don't cost anything and the driver isn't chased while paused. The MD or Finance approves it afterwards." maxWidth="max-w-md">
       <div className="space-y-4">
@@ -55,7 +55,7 @@ export default function PauseDrawer({ driver, drivers, onClose, onSaved }: { dri
           <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Reason">
             {PAUSE_REASONS.map((r) => (
               <button key={r.key} type="button" role="radio" aria-checked={reason === r.key} onClick={() => setReason(r.key)}
-                className={`px-2.5 py-2 rounded-lg border text-[12px] text-left ${reason === r.key ? 'border-brand bg-brand/10 text-brand-800 dark:text-brand-200 font-medium' : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:border-brand/40'}`}>
+                className={`px-2.5 py-2 rounded-lg border text-small text-left ${reason === r.key ? 'border-brand bg-brand/10 text-brand-800 dark:text-brand-200 font-medium' : 'border-line text-fg-muted hover:border-brand/40'}`}>
                 {r.label}
               </button>
             ))}
@@ -63,7 +63,7 @@ export default function PauseDrawer({ driver, drivers, onClose, onSaved }: { dri
         </div>
 
         {garage && (
-          <label className="flex items-start gap-2 text-[12px] rounded-lg bg-gray-50 dark:bg-white/[0.03] p-2.5">
+          <label className="flex items-start gap-2 text-small rounded-lg bg-inset p-2.5">
             <input type="checkbox" checked={wholeCar} onChange={(e) => setWholeCar(e.target.checked)} className="mt-0.5" />
             <span>Pause every driver on {driver.vehicle?.plate_number ?? 'this car'}{carMates.length ? ` (also ${carMates.map((d) => d.full_name.trim()).join(', ')})` : ''}</span>
           </label>
@@ -76,26 +76,26 @@ export default function PauseDrawer({ driver, drivers, onClose, onSaved }: { dri
           <div>
             <span className={label}>Until</span>
             <div className="flex gap-1 mb-1.5">
-              <button type="button" onClick={() => setOpenEnded(true)} aria-pressed={openEnded} className={`px-2 py-1 rounded-md text-[11px] border ${openEnded ? 'border-brand bg-brand/10' : 'border-gray-200 dark:border-white/10 text-gray-500'}`}>They're back</button>
-              <button type="button" onClick={() => setOpenEnded(false)} aria-pressed={!openEnded} className={`px-2 py-1 rounded-md text-[11px] border ${!openEnded ? 'border-brand bg-brand/10' : 'border-gray-200 dark:border-white/10 text-gray-500'}`}>A date</button>
+              <button type="button" onClick={() => setOpenEnded(true)} aria-pressed={openEnded} className={`px-2 py-1 rounded-md text-caption border ${openEnded ? 'border-brand bg-brand/10' : 'border-line text-fg-muted'}`}>They're back</button>
+              <button type="button" onClick={() => setOpenEnded(false)} aria-pressed={!openEnded} className={`px-2 py-1 rounded-md text-caption border ${!openEnded ? 'border-brand bg-brand/10' : 'border-line text-fg-muted'}`}>A date</button>
             </div>
             {!openEnded && <input type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} className="input" aria-label="Last day off" />}
           </div>
         </div>
-        <p className="text-[11px] text-gray-500 -mt-2">{openEnded ? 'Days stop counting until someone presses Resume.' : 'Last day off, included. They count again from the next working day.'} Up to 14 days back.</p>
+        <p className="text-caption text-fg-muted -mt-2">{openEnded ? 'Days stop counting until someone presses Resume.' : 'Last day off, included. They count again from the next working day.'} Up to 14 days back.</p>
 
         <label className="block"><span className={label}>Note{reason === 'other' ? ' *' : ''}</span>
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="input resize-none" placeholder="What happened — e.g. malaria, at the clinic; brakes, garage in Gikondo, back Friday" />
         </label>
 
-        <label className="flex items-center gap-2 text-[12px] cursor-pointer">
-          <Upload size={14} className="text-gray-400" />
-          <span className="text-gray-600 dark:text-gray-300">{file ? file.name : 'Proof (optional) — medical note, garage paper…'}</span>
+        <label className="flex items-center gap-2 text-small cursor-pointer">
+          <Upload size={14} className="text-fg-subtle" />
+          <span className="text-fg-muted ">{file ? file.name : 'Proof (optional) — medical note, garage paper…'}</span>
           <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </label>
 
-        {error && <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
-        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+        {error && <p className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
+        <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
           <button onClick={onClose} className="btn-ghost">Cancel</button>
           <button onClick={save} disabled={busy} className="btn-primary flex items-center gap-1.5 disabled:opacity-50"><PauseCircle size={14} /> {busy ? 'Saving…' : 'Pause days'}</button>
         </div>

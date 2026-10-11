@@ -80,23 +80,23 @@ export default function FineDrawer({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Amount (RWF)</label>
             <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={!editing} className="input" placeholder="20000" autoFocus />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Date</label>
             <DateInput value={fineDate} onChange={setFineDate} disabled={!editing} />
           </div>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Driver</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Driver</label>
           <select value={driverId} onChange={(e) => setDriverId(e.target.value)} disabled={!editing} className="input">
             <option value="">Select a driver</option>
             {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Car Fined</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Car Fined</label>
           <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} disabled={!editing} className="input">
             <option value="">Select a car</option>
             {vehicles.map((v) => (
@@ -107,30 +107,30 @@ export default function FineDrawer({
           </select>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Reason (optional)</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Reason (optional)</label>
           <textarea value={reason} onChange={(e) => setReason(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="e.g. speeding, illegal parking…" />
         </div>
 
         {fine && (
           <div className={`card p-3 border ${statusStyle.border}`}>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><Banknote size={12} /> Payment Status</p>
-              <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${statusStyle.badge}`}>
+              <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle flex items-center gap-1.5"><Banknote size={12} /> Payment Status</p>
+              <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${statusStyle.badge}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} /> {fineStatusLabel(status, fine.amount, amountPaid)}
               </span>
             </div>
             {status !== 'paid' && (
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{remaining.toLocaleString()} RWF</span> still owed
+              <p className="text-caption text-fg-muted mb-2">
+                <span className="font-medium text-fg-muted ">{remaining.toLocaleString()} RWF</span> still owed
               </p>
             )}
             {fineHistory.length === 0 ? (
-              <p className="text-[11px] text-gray-400 mb-2">No payments logged yet.</p>
+              <p className="text-caption text-fg-subtle mb-2">No payments logged yet.</p>
             ) : (
               <div className="space-y-1 mb-2">
                 {fineHistory.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between text-[11px] py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
-                    <span className="text-gray-500 dark:text-gray-400">{formatDateLabelSafe(p.paid_date)}</span>
+                  <div key={p.id} className="flex items-center justify-between text-caption py-1 border-b border-line-muted last:border-0">
+                    <span className="text-fg-muted ">{formatDateLabelSafe(p.paid_date)}</span>
                     <span className="font-medium">{p.amount.toLocaleString()} RWF</span>
                   </div>
                 ))}
@@ -144,10 +144,10 @@ export default function FineDrawer({
           </div>
         )}
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
-          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
             {fine ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
                 <Trash2 size={13} /> Remove
@@ -161,7 +161,7 @@ export default function FineDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Close</button>
             {canEdit && (
               <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">

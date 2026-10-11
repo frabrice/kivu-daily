@@ -63,15 +63,15 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><PhoneCall size={16} className="text-violet-600 dark:text-violet-300" /> Call Queue</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">Drivers to call, grouped by why. Click a driver to log the call.</p>
+        <p className="text-caption text-fg-subtle mt-0.5">Drivers to call, grouped by why. Click a driver to log the call.</p>
       </div>
         <HelpButton navKey="call_center_queue" title="the Call Queue" />
       </div>
 
       {total === 0 && (
         <div className="card p-10 text-center">
-          <Phone size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">No drivers yet — Fleet adds them in the Driver Pipeline.</p>
+          <Phone size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">No drivers yet — Fleet adds them in the Driver Pipeline.</p>
         </div>
       )}
 
@@ -82,18 +82,18 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
           <section key={g.key} className="space-y-1.5">
             <div className="flex items-baseline gap-2">
               <span className={`w-2 h-2 rounded-full shrink-0 ${g.dot}`} />
-              <h3 className="text-[12px] font-semibold">{g.title} <span className="text-gray-400 font-normal">({list.length})</span></h3>
-              <p className="text-[11px] text-gray-400 truncate">{g.hint}</p>
+              <h3 className="text-small font-semibold">{g.title} <span className="text-fg-subtle font-normal">({list.length})</span></h3>
+              <p className="text-caption text-fg-subtle truncate">{g.hint}</p>
             </div>
             {list.map((q) => (
               <button key={q.driver.id} onClick={() => setCallDriver(q.driver)}
                 className="w-full card p-3 flex items-center gap-3 text-left hover:shadow-md hover:border-brand/30 transition-all">
                 <div className={`w-1.5 h-8 rounded-full shrink-0 ${g.dot}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-medium truncate">{q.driver.full_name}</p>
-                  <p className="text-[10px] text-gray-400">{q.driver.phone} · {STAGE_LABEL[q.driver.stage]}</p>
+                  <p className="text-small font-medium truncate">{q.driver.full_name}</p>
+                  <p className="text-micro text-fg-subtle">{q.driver.phone} · {STAGE_LABEL[q.driver.stage]}</p>
                 </div>
-                <span className={`text-[10px] font-medium shrink-0 ${g.key === 'recent' ? 'text-gray-400' : 'text-orange-600 dark:text-orange-400'}`}>{q.reasonLabel}</span>
+                <span className={`text-micro font-medium shrink-0 ${g.key === 'recent' ? 'text-fg-subtle' : 'text-orange-600 dark:text-orange-400'}`}>{q.reasonLabel}</span>
                 <Phone size={14} className="text-brand-500 shrink-0" />
               </button>
             ))}
@@ -102,7 +102,7 @@ function CallQueuePageView({ data }: { data: ReturnType<typeof useCallCenterData
       })}
 
       {grouped.recent.length > 0 && (
-        <button onClick={() => setShowRecent((v) => !v)} className="btn-ghost text-[11px]">
+        <button onClick={() => setShowRecent((v) => !v)} className="btn-ghost text-caption">
           {showRecent ? 'Hide' : 'Show'} {grouped.recent.length} called recently
         </button>
       )}

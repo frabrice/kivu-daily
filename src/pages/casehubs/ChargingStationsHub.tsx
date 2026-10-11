@@ -35,10 +35,10 @@ export default function ChargingStationsHub({ surveyCase, onBack }: { surveyCase
 
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Zap size={16} className="text-amber-600 dark:text-amber-300" /> {surveyCase.name}</h2>
-        {surveyCase.description && <p className="text-[11px] text-gray-400 mt-0.5 max-w-2xl">{surveyCase.description}</p>}
+        {surveyCase.description && <p className="text-caption text-fg-subtle mt-0.5 max-w-2xl">{surveyCase.description}</p>}
       </div>
 
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit">
         <TabButton active={tab === 'collectors'} onClick={() => setTab('collectors')} icon={Users2} label="Collectors & Link" />
         <TabButton active={tab === 'data'} onClick={() => setTab('data')} icon={Table2} label="Data" />
         <TabButton active={tab === 'analytics'} onClick={() => setTab('analytics')} icon={TrendingUp} label="Analytics" />
@@ -61,7 +61,7 @@ function TabButton({ active, onClick, icon: Icon, label }: { active: boolean; on
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${active ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+      className={`px-3 py-1.5 rounded-md text-small font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${active ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
     >
       <Icon size={14} /> {label}
     </button>
@@ -103,39 +103,39 @@ function CollectorsTab({ surveyCase, collectors, reload }: { surveyCase: SurveyC
   return (
     <div className="space-y-4">
       <div className="card p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5"><Link2 size={13} /> Shareable Link</p>
+        <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2 flex items-center gap-1.5"><Link2 size={13} /> Shareable Link</p>
         <div className="flex items-center gap-2">
-          <input readOnly value={link} className="input font-mono text-[11px]" />
+          <input readOnly value={link} className="input font-mono text-caption" />
           <button onClick={copyLink} className="btn-primary shrink-0 flex items-center gap-1.5 whitespace-nowrap">
             {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
-        <p className="text-[10px] text-gray-400 mt-1.5">Anyone with this link enters their email below to unlock the data-entry form. No password.</p>
+        <p className="text-micro text-fg-subtle mt-1.5">Anyone with this link enters their email below to unlock the data-entry form. No password.</p>
       </div>
 
       <div className="card p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Add a Collector</p>
+        <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2">Add a Collector</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="collector email" className="input" />
           <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name (optional)" className="input" />
         </div>
-        {error && <p className="text-[11px] text-red-500 mt-2">{error}</p>}
+        {error && <p className="text-caption text-red-500 mt-2">{error}</p>}
         <button onClick={addCollector} disabled={saving || !email.trim()} className="btn-primary mt-2.5 flex items-center gap-1.5 disabled:opacity-50">
           <Plus size={14} /> {saving ? 'Adding…' : 'Add Collector'}
         </button>
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Authorized Collectors ({collectors.length})</p>
+        <p className="text-caption font-semibold text-fg-muted ">Authorized Collectors ({collectors.length})</p>
         {collectors.length === 0 ? (
-          <div className="card p-8 text-center"><p className="text-[12px] text-gray-400">No collectors added yet.</p></div>
+          <div className="card p-8 text-center"><p className="text-small text-fg-subtle">No collectors added yet.</p></div>
         ) : (
           <div className="space-y-1.5">
             {collectors.map((c) => (
               <div key={c.id} className="card p-3 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-medium truncate">{c.full_name || c.email}</p>
-                  {c.full_name && <p className="text-[10px] text-gray-400 truncate">{c.email}</p>}
+                  <p className="text-small font-medium truncate">{c.full_name || c.email}</p>
+                  {c.full_name && <p className="text-micro text-fg-subtle truncate">{c.email}</p>}
                 </div>
                 <button onClick={() => removeCollector(c.id)} className="btn-ghost p-1.5 text-red-500 shrink-0"><Trash2 size={13} /></button>
               </div>
@@ -190,9 +190,9 @@ function StationDetailModal({ station, onClose }: { station: ChargingStation; on
 
   return (
     <Modal open onClose={onClose} title={`Station ${station.station_number} — ${station.owner_brand}`} subtitle={station.location_name} maxWidth="max-w-lg">
-      <div className="space-y-3 text-[12px]">
+      <div className="space-y-3 text-small">
         {station.reverse_geocoded_address && (
-          <div className="flex items-start gap-1.5 text-gray-500"><MapPin size={13} className="shrink-0 mt-0.5" /> {station.reverse_geocoded_address}</div>
+          <div className="flex items-start gap-1.5 text-fg-muted"><MapPin size={13} className="shrink-0 mt-0.5" /> {station.reverse_geocoded_address}</div>
         )}
         <div className="grid grid-cols-2 gap-2">
           <InfoRow label="Chargers" value={String(station.num_chargers)} />
@@ -211,7 +211,7 @@ function StationDetailModal({ station, onClose }: { station: ChargingStation; on
 
         {station.fu_recorded_at && (
           <div className="rounded-lg bg-brand/5 border border-brand/20 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300 mb-1.5">Field follow-up — Henry Rugaba Mark</p>
+            <p className="text-micro font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300 mb-1.5">Field follow-up — Henry Rugaba Mark</p>
             <div className="grid grid-cols-2 gap-2">
               <InfoRow label="Cars per day" value={`${station.fu_cars_per_day_avg} avg (${station.fu_cars_per_day_min}–${station.fu_cars_per_day_max})`} />
               <InfoRow label="Charging time" value={`${station.fu_charge_minutes_avg} min avg (${station.fu_charge_minutes_min} min – ${(station.fu_charge_minutes_max ?? 0) / 60} h)`} />
@@ -220,17 +220,17 @@ function StationDetailModal({ station, onClose }: { station: ChargingStation; on
               <InfoRow label="Shifts" value={`${station.fu_shifts_per_day} × ${station.fu_shift_hours} h · works 24 h`} />
               <InfoRow label="Technical issues" value={station.fu_technical_issues ?? '—'} />
             </div>
-            {station.fu_heat_note && <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-2">Heat: {station.fu_heat_note}</p>}
+            {station.fu_heat_note && <p className="text-caption text-fg-muted mt-2">Heat: {station.fu_heat_note}</p>}
           </div>
         )}
 
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Gun Types</p>
+          <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1.5">Gun Types</p>
           <div className="space-y-1">
             {(station.guns ?? []).map((g) => (
-              <div key={g.id} className="flex justify-between text-[11px] py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
+              <div key={g.id} className="flex justify-between text-caption py-1 border-b border-line-muted last:border-0">
                 <span>{GUN_TYPE_LABEL[g.gun_type]}{g.gun_type === KIVU_FLEET_GUN_TYPE && <span className="text-positive ml-1">(fleet-compatible)</span>}</span>
-                <span className="text-gray-500">{g.gun_count} guns{g.power_kw ? ` · ${g.power_kw}kW` : ''}</span>
+                <span className="text-fg-muted">{g.gun_count} guns{g.power_kw ? ` · ${g.power_kw}kW` : ''}</span>
               </div>
             ))}
           </div>
@@ -238,10 +238,10 @@ function StationDetailModal({ station, onClose }: { station: ChargingStation; on
 
         {(station.photos ?? []).length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Photos</p>
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1.5">Photos</p>
             <div className="grid grid-cols-3 gap-2">
               {(station.photos ?? []).map((p) => (
-                <a key={p.id} href={photoUrls[p.id]} target="_blank" rel="noreferrer" className="aspect-square rounded-lg overflow-hidden border border-gray-100 dark:border-white/10 relative group">
+                <a key={p.id} href={photoUrls[p.id]} target="_blank" rel="noreferrer" className="aspect-square rounded-lg overflow-hidden border border-line-muted relative group">
                   {photoUrls[p.id] && <img src={photoUrls[p.id]} alt="" className="w-full h-full object-cover" />}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-colors">
                     <ExternalLink size={14} className="text-white opacity-0 group-hover:opacity-100" />
@@ -252,7 +252,7 @@ function StationDetailModal({ station, onClose }: { station: ChargingStation; on
           </div>
         )}
 
-        <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-white/5">
+        <div className="flex justify-end pt-2 border-t border-line-muted ">
           <button onClick={onClose} className="btn-ghost flex items-center gap-1.5"><X size={13} /> Close</button>
         </div>
       </div>
@@ -263,8 +263,8 @@ function StationDetailModal({ station, onClose }: { station: ChargingStation; on
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-      <p className="text-[12px] font-medium">{value}</p>
+      <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle">{label}</p>
+      <p className="text-small font-medium">{value}</p>
     </div>
   );
 }

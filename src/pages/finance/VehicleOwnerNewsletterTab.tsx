@@ -60,17 +60,17 @@ export default function VehicleOwnerNewsletterTab() {
 
       {newsletters.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-[12px] text-gray-400">No newsletters yet.</p>
+          <p className="text-small text-fg-subtle">No newsletters yet.</p>
         </div>
       ) : (
         <div className="space-y-1.5">
           {newsletters.map((n) => (
             <button key={n.id} onClick={() => setEditing(n)} className="w-full card p-3.5 flex items-center gap-3 hover:shadow-md hover:border-brand/30 transition-all text-left">
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-medium truncate">{n.subject}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                <p className="text-small font-medium truncate">{n.subject}</p>
+                <p className="text-micro text-fg-subtle mt-0.5">{new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
               </div>
-              <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${n.status === 'sent' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-gray-100 text-gray-500 dark:bg-white/5'}`}>
+              <span className={`text-micro font-medium px-1.5 py-0.5 rounded-full shrink-0 ${n.status === 'sent' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-inset text-fg-muted '}`}>
                 {n.status === 'sent' ? 'Sent' : 'Draft'}
               </span>
             </button>
@@ -273,35 +273,35 @@ function ComposeNewsletter({ newsletter, onBack }: { newsletter: Newsletter | nu
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <button onClick={onBack} className="btn-ghost flex items-center gap-1.5"><ArrowLeft size={14} /> Back to Newsletters</button>
         {isSent && (
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-500/10">
+          <span className="inline-flex items-center gap-1.5 text-micro font-bold px-2 py-1 rounded-full text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-500/10">
             <CheckCircle2 size={12} /> SENT
           </span>
         )}
       </div>
 
-      {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+      {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
       <div className="card p-4 space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Subject</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Subject</label>
           <input value={subject} onChange={(e) => setSubject(e.target.value)} disabled={isSent} className="input" placeholder="e.g. Your Kivu Ride Weekly Update — Sep 22-28" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Newsletter HTML</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Newsletter HTML</label>
             <textarea
               value={htmlBody}
               onChange={(e) => setHtmlBody(e.target.value)}
               disabled={isSent}
               rows={16}
-              className="input font-mono text-[11px] resize-none"
+              className="input font-mono text-caption resize-none"
               placeholder="Paste or write the newsletter's HTML here…"
             />
-            <p className="text-[10px] text-gray-400 mt-1">"Attached is the weekly report." is added automatically at the end — no need to type it.</p>
+            <p className="text-micro text-fg-subtle mt-1">"Attached is the weekly report." is added automatically at the end — no need to type it.</p>
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Live Preview</label>
-            <div className="border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden bg-white" style={{ height: '390px' }}>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Live Preview</label>
+            <div className="border border-line rounded-lg overflow-hidden bg-white" style={{ height: '390px' }}>
               <iframe title="Newsletter preview" srcDoc={htmlBody || '<p style="font-family:sans-serif;color:#9ca3af;padding:16px;">Nothing to preview yet.</p>'} className="w-full h-full" sandbox="" />
             </div>
           </div>
@@ -309,18 +309,18 @@ function ComposeNewsletter({ newsletter, onBack }: { newsletter: Newsletter | nu
       </div>
 
       <div className="space-y-2">
-        <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Per-Owner Report Data</p>
+        <p className="text-caption font-semibold text-fg-muted ">Per-Owner Report Data</p>
         {ownersWithVehicles.length === 0 && (
-          <div className="card p-8 text-center"><p className="text-[12px] text-gray-400">No vehicle owners with cars on file yet.</p></div>
+          <div className="card p-8 text-center"><p className="text-small text-fg-subtle">No vehicle owners with cars on file yet.</p></div>
         )}
         {ownersWithVehicles.map(({ owner, vehicles: ov }) => (
           <div key={owner.id} className="card p-3.5">
             <div className="flex items-center justify-between mb-2.5">
               <div>
-                <p className="text-[12px] font-semibold">{owner.full_name}</p>
-                <p className="text-[10px] text-gray-400">{owner.email || 'No email on file'}</p>
+                <p className="text-small font-semibold">{owner.full_name}</p>
+                <p className="text-micro text-fg-subtle">{owner.email || 'No email on file'}</p>
               </div>
-              <button onClick={() => previewPdf(owner, ov)} disabled={previewingOwnerId === owner.id} className="btn-ghost text-[11px] flex items-center gap-1.5 disabled:opacity-50">
+              <button onClick={() => previewPdf(owner, ov)} disabled={previewingOwnerId === owner.id} className="btn-ghost text-caption flex items-center gap-1.5 disabled:opacity-50">
                 {previewingOwnerId === owner.id ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />} Preview PDF
               </button>
             </div>
@@ -329,10 +329,10 @@ function ComposeNewsletter({ newsletter, onBack }: { newsletter: Newsletter | nu
                 const r = rows[v.id] ?? emptyRow();
                 const payout = thisWeekPayout(v.id, transactions);
                 return (
-                  <div key={v.id} className="bg-gray-50 dark:bg-white/5 rounded-lg p-2.5">
-                    <p className="text-[11px] font-medium mb-2 flex items-center gap-2">
+                  <div key={v.id} className="bg-inset rounded-lg p-2.5">
+                    <p className="text-caption font-medium mb-2 flex items-center gap-2">
                       {v.plate_number}
-                      <span className="text-[9px] font-normal text-gray-400">This week's payout: {payout !== null ? `${payout.toLocaleString()} RWF` : '—'}</span>
+                      <span className="text-micro font-normal text-fg-subtle">This week's payout: {payout !== null ? `${payout.toLocaleString()} RWF` : '—'}</span>
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <MiniField label="Current Mileage (km)" value={r.currentMileage} onChange={(val) => updateRow(v.id, { currentMileage: val })} disabled={isSent} />
@@ -341,8 +341,8 @@ function ComposeNewsletter({ newsletter, onBack }: { newsletter: Newsletter | nu
                       <MiniField label="Total Earnings So Far (RWF)" value={r.totalEarningsSoFar} onChange={(val) => updateRow(v.id, { totalEarningsSoFar: val })} disabled={isSent} />
                     </div>
                     <div className="mt-2">
-                      <label className="block text-[9px] font-medium mb-1 text-gray-500">Personal Note (optional)</label>
-                      <input value={r.personalNote} onChange={(e) => updateRow(v.id, { personalNote: e.target.value })} disabled={isSent} className="input text-[11px]" placeholder="e.g. Great week — steady demand!" />
+                      <label className="block text-micro font-medium mb-1 text-fg-muted">Personal Note (optional)</label>
+                      <input value={r.personalNote} onChange={(e) => updateRow(v.id, { personalNote: e.target.value })} disabled={isSent} className="input text-caption" placeholder="e.g. Great week — steady demand!" />
                     </div>
                   </div>
                 );
@@ -353,7 +353,7 @@ function ComposeNewsletter({ newsletter, onBack }: { newsletter: Newsletter | nu
       </div>
 
       {!isSent && (
-        <div className="flex flex-wrap gap-2 justify-end pt-3 border-t border-gray-100 dark:border-white/5">
+        <div className="flex flex-wrap gap-2 justify-end pt-3 border-t border-line-muted ">
           <button onClick={saveDraft} disabled={saving || !canSave} className="btn-ghost flex items-center gap-1.5 disabled:opacity-50">
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Draft
           </button>
@@ -368,10 +368,10 @@ function ComposeNewsletter({ newsletter, onBack }: { newsletter: Newsletter | nu
 
       {confirmSendAll && (
         <Modal open onClose={() => setConfirmSendAll(false)} title="Send to All Owners?" maxWidth="max-w-sm">
-          <p className="text-[12px] text-gray-600 dark:text-gray-300">
+          <p className="text-small text-fg-muted ">
             This will email {ownersWithVehicles.length} vehicle owner{ownersWithVehicles.length === 1 ? '' : 's'} their personalized newsletter and PDF report right now. This can't be undone.
           </p>
-          <div className="flex justify-end gap-2 pt-4 mt-2 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-4 mt-2 border-t border-line-muted ">
             <button onClick={() => setConfirmSendAll(false)} className="btn-ghost">Cancel</button>
             <button onClick={sendToAllOwners} className="btn-primary">Yes, Send Now</button>
           </div>
@@ -380,12 +380,12 @@ function ComposeNewsletter({ newsletter, onBack }: { newsletter: Newsletter | nu
 
       {sendProgress && (
         <div className="card p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5"><FileDown size={13} /> Send Progress</p>
+          <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2 flex items-center gap-1.5"><FileDown size={13} /> Send Progress</p>
           <div className="space-y-1">
             {sendProgress.map((p, i) => (
-              <div key={i} className="flex items-center justify-between text-[12px] py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
+              <div key={i} className="flex items-center justify-between text-small py-1 border-b border-line-muted last:border-0">
                 <span>{p.owner}</span>
-                {p.status === 'sending' && <Loader2 size={13} className="animate-spin text-gray-400" />}
+                {p.status === 'sending' && <Loader2 size={13} className="animate-spin text-fg-subtle" />}
                 {p.status === 'sent' && <CheckCircle2 size={13} className="text-positive" />}
                 {p.status === 'failed' && <XCircle size={13} className="text-red-500" />}
               </div>
@@ -400,8 +400,8 @@ function ComposeNewsletter({ newsletter, onBack }: { newsletter: Newsletter | nu
 function MiniField({ label, value, onChange, disabled }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
     <div>
-      <label className="block text-[9px] font-medium mb-1 text-gray-500">{label}</label>
-      <input type="number" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} className="input text-[11px]" />
+      <label className="block text-micro font-medium mb-1 text-fg-muted">{label}</label>
+      <input type="number" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} className="input text-caption" />
     </div>
   );
 }

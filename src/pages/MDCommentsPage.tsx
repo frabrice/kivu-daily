@@ -200,13 +200,13 @@ export default function MDCommentsPage() {
 
       {/* Search */}
       <div className="relative">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-subtle" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search conversations..."
-          className="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-amber-500 focus:ring-0 focus:outline-none bg-white dark:bg-gray-800 text-sm"
+          className="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-line focus:border-amber-500 focus:ring-0 focus:outline-none bg-surface-2 text-sm"
         />
       </div>
 
@@ -217,11 +217,11 @@ export default function MDCommentsPage() {
             <button
               key={emp.id}
               onClick={() => setSearchQuery(emp.name)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-sm text-gray-700 dark:text-gray-300 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-inset hover:bg-amber-100 dark:hover:bg-amber-900/30 text-sm text-fg-muted hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
             >
               <User size={12} />
               <span>{emp.name}</span>
-              <span className="text-xs text-gray-400 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">{emp.count}</span>
+              <span className="text-xs text-fg-subtle bg-gray-200 dark:bg-surface-3 px-1.5 py-0.5 rounded-full">{emp.count}</span>
             </button>
           ))}
         </div>
@@ -229,13 +229,13 @@ export default function MDCommentsPage() {
 
       {filteredGroups.length === 0 && (
         <div className="card p-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
-            <MessageSquare size={32} className="text-gray-400" />
+          <div className="w-16 h-16 rounded-2xl bg-inset flex items-center justify-center mx-auto mb-4">
+            <MessageSquare size={32} className="text-fg-subtle" />
           </div>
-          <p className="text-gray-500 font-medium mb-1">
+          <p className="text-fg-muted font-medium mb-1">
             {searchQuery ? 'No matching conversations' : 'No conversations yet'}
           </p>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-fg-subtle">
             {searchQuery ? 'Try a different search term' : 'When you provide feedback to employees, it will appear here.'}
           </p>
         </div>
@@ -246,9 +246,9 @@ export default function MDCommentsPage() {
           {/* Date Separator */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent"></div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-inset ">
               <Calendar size={14} className="text-amber-500" />
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{formatDateLabel(date)}</span>
+              <span className="text-sm font-semibold text-fg-muted ">{formatDateLabel(date)}</span>
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent"></div>
           </div>
@@ -263,8 +263,8 @@ export default function MDCommentsPage() {
                     <User size={14} className="text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <span className="text-xs text-gray-500">Conversation with</span>
-                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    <span className="text-xs text-fg-muted">Conversation with</span>
+                    <p className="text-sm font-semibold text-fg ">
                       {c.target_user?.full_name ?? 'Unknown'}
                     </p>
                   </div>
@@ -330,19 +330,19 @@ function MDCommentThread({
         <div className={`flex-1 max-w-[85%] ${isOwnComment ? 'items-end' : 'items-start'} flex flex-col`}>
           {/* Author & Time */}
           <div className={`flex items-center gap-2 mb-1 ${isOwnComment ? 'flex-row-reverse' : ''}`}>
-            <span className={`text-sm font-semibold ${isOwnComment ? 'text-amber-600' : 'text-gray-800 dark:text-gray-200'}`}>
+            <span className={`text-sm font-semibold ${isOwnComment ? 'text-amber-600' : 'text-fg '}`}>
               {comment.author?.full_name}
             </span>
             {isOwnComment && (
               <span className="text-xs text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">You (MD)</span>
             )}
             {!isOwnComment && comment.target_user && (
-              <span className="text-xs text-gray-400 flex items-center gap-1">
+              <span className="text-xs text-fg-subtle flex items-center gap-1">
                 <span>→</span>
                 <span className="font-medium">{comment.target_user.full_name}</span>
               </span>
             )}
-            <span className="text-xs text-gray-400 flex items-center gap-1">
+            <span className="text-xs text-fg-subtle flex items-center gap-1">
               <Clock size={10} />
               {new Date(comment.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
@@ -352,13 +352,13 @@ function MDCommentThread({
           <div className={`relative rounded-2xl px-4 py-3 shadow-sm ${
             isOwnComment
               ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-tr-sm'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm'
+              : 'bg-inset text-fg rounded-tl-sm'
           }`}>
             {/* Arrow pointer */}
             <div className={`absolute top-3 w-3 h-3 ${
               isOwnComment
                 ? 'right-0 translate-x-1/2 rotate-45 bg-orange-500'
-                : 'left-0 -translate-x-1/2 rotate-45 bg-gray-100 dark:bg-gray-800'
+                : 'left-0 -translate-x-1/2 rotate-45 bg-inset '
             }`}></div>
 
             <p className="text-sm leading-relaxed relative z-10">{comment.content}</p>
@@ -369,7 +369,7 @@ function MDCommentThread({
             <div className={`flex ${isOwnComment ? 'justify-start' : 'justify-end'} mt-2`}>
               <button
                 onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-amber-500 dark:hover:text-amber-400 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="flex items-center gap-1.5 text-xs text-fg-muted hover:text-amber-500 dark:hover:text-amber-400 transition-colors px-2 py-1 rounded-lg hover:bg-hover "
               >
                 <Reply size={12} />
                 {replyingTo === comment.id ? 'Cancel' : 'Reply'}
@@ -385,7 +385,7 @@ function MDCommentThread({
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Write your reply..."
-                className="flex-1 text-sm px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-amber-500 focus:ring-0 focus:outline-none bg-white dark:bg-gray-800"
+                className="flex-1 text-sm px-4 py-2.5 rounded-xl border-2 border-line focus:border-amber-500 focus:ring-0 focus:outline-none bg-surface-2 "
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !sendingReply) {
                     handleReply(comment.id, comment.author_id);
@@ -417,9 +417,9 @@ function MDCommentThread({
 
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-2 text-xs text-gray-500 hover:text-amber-500 dark:hover:text-amber-400 transition-colors mb-3 ml-6 group"
+            className="flex items-center gap-2 text-xs text-fg-muted hover:text-amber-500 dark:hover:text-amber-400 transition-colors mb-3 ml-6 group"
           >
-            <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900/30 transition-colors">
+            <div className="w-6 h-6 rounded-full bg-inset flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900/30 transition-colors">
               {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </div>
             <span className="font-medium">

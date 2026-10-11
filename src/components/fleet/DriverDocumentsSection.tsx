@@ -53,25 +53,25 @@ export default function DriverDocumentsSection({
   };
 
   if (!canSeeDriverDocuments(profile)) {
-    return <p className="text-[11px] text-gray-400">Driver documents are visible to Fleet only.</p>;
+    return <p className="text-caption text-fg-subtle">Driver documents are visible to Fleet only.</p>;
   }
 
   return (
     <div className="space-y-1.5">
-      {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+      {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
       {DRIVER_DOCUMENT_TYPES.map((t) => {
         const doc = docFor(t.key);
         const isUploading = uploadingType === t.key;
         return (
-          <div key={t.key} className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 dark:border-white/10">
+          <div key={t.key} className="flex items-center gap-2 p-2 rounded-lg border border-line-muted ">
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-medium">{t.label}</p>
+              <p className="text-caption font-medium">{t.label}</p>
               {doc ? (
-                <button type="button" onClick={() => view(doc)} className="text-[10px] text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 mt-0.5 truncate">
+                <button type="button" onClick={() => view(doc)} className="text-micro text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 mt-0.5 truncate">
                   <ExternalLink size={10} className="shrink-0" /> <span className="truncate">{doc.file_name}</span>
                 </button>
               ) : (
-                <p className="text-[10px] text-gray-400 mt-0.5">Not uploaded</p>
+                <p className="text-micro text-fg-subtle mt-0.5">Not uploaded</p>
               )}
             </div>
             {doc && <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />}

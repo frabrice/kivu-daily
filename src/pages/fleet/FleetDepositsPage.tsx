@@ -55,12 +55,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2">
             <Wallet size={16} className="text-blue-600 dark:text-blue-300" /> Deposits
-            {overdueCount > 0 && <span className="text-[8px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{overdueCount}</span>}
+            {overdueCount > 0 && <span className="text-micro font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{overdueCount}</span>}
           </h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Every driver pays 180,000 by Sunday for the Monday–Sunday week ahead. Unpaid on Monday means not cleared to drive.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Every driver pays 180,000 by Sunday for the Monday–Sunday week ahead. Unpaid on Monday means not cleared to drive.</p>
         </div>
         <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name" className="input pl-8 w-52" />
         </div>
       </div>
@@ -73,34 +73,34 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
             <div key={row.driver.id} className={`card p-3 flex items-center gap-3 ${row.isEnded ? 'opacity-50 blur-[1.5px] hover:blur-none hover:opacity-100 transition-[filter,opacity] duration-200' : ''}`}>
               <div className={`w-1.5 h-8 rounded-full shrink-0 ${row.isEnded ? 'bg-gray-300 dark:bg-white/10' : dotColor}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-medium truncate">
+                <p className="text-small font-medium truncate">
                   {row.driver.full_name}
-                  {row.standing.pausedToday && <span className="ml-1.5 text-[9px] font-semibold text-amber-700 dark:text-amber-300">Paused · {PAUSE_REASON_LABEL[(row.standing.pausedToday.reason ?? 'other') as keyof typeof PAUSE_REASON_LABEL]}</span>}
+                  {row.standing.pausedToday && <span className="ml-1.5 text-micro font-semibold text-amber-700 dark:text-amber-300">Paused · {PAUSE_REASON_LABEL[(row.standing.pausedToday.reason ?? 'other') as keyof typeof PAUSE_REASON_LABEL]}</span>}
                 </p>
-                <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                <p className="text-micro text-fg-subtle flex items-center gap-1">
                   <Car size={10} /> {row.driver.vehicle?.plate_number}
                   {row.driver.shift && <span>· {row.driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
                 </p>
                 {!row.isEnded && depositOwesLabel(row.standing) && (
-                  <p className="text-[10px] font-semibold mt-0.5 text-red-600 dark:text-red-400">{depositOwesLabel(row.standing)} for days already worked</p>
+                  <p className="text-micro font-semibold mt-0.5 text-red-600 dark:text-red-400">{depositOwesLabel(row.standing)} for days already worked</p>
                 )}
                 {!row.isEnded && !depositOwesLabel(row.standing) && row.standing.weekBehind === 0 && row.standing.nextDueAmount > 0 && (
-                  <p className={`text-[10px] font-medium mt-0.5 ${depositRemainingColor(row.tier)}`}>
+                  <p className={`text-micro font-medium mt-0.5 ${depositRemainingColor(row.tier)}`}>
                     {formatRwf(row.standing.nextDueAmount)} due Sunday {row.standing.nextDueDate ? formatDateLabelSafe(row.standing.nextDueDate) : ''}
                   </p>
                 )}
               </div>
               {row.lastDeposit?.status === 'pending' && (
-                <span className="text-[9px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                <span className="text-micro font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">
                   Pending
                 </span>
               )}
               {row.isEnded ? (
-                <span className="text-[10px] font-bold shrink-0 px-2 py-0.5 rounded-full text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-500/10">
+                <span className="text-micro font-bold shrink-0 px-2 py-0.5 rounded-full text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-500/10">
                   CONTRACT TERMINATED
                 </span>
               ) : (
-                <span className={`text-[10px] font-medium shrink-0 px-2 py-0.5 rounded-full ${style.badge}`}>
+                <span className={`text-micro font-medium shrink-0 px-2 py-0.5 rounded-full ${style.badge}`}>
                   {row.label}
                 </span>
               )}
@@ -114,8 +114,8 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
         })}
         {depositQueue.length === 0 && (
           <div className="card p-10 text-center">
-            <Wallet size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-            <p className="text-[12px] text-gray-400">No drivers with a vehicle assigned yet.</p>
+            <Wallet size={26} className="text-fg-subtle mx-auto mb-2" />
+            <p className="text-small text-fg-subtle">No drivers with a vehicle assigned yet.</p>
           </div>
         )}
       </div>

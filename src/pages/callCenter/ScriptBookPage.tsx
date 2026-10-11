@@ -44,7 +44,7 @@ export default function ScriptBookPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><BookOpen size={16} className="text-brand-600 dark:text-brand-300" /> Script Book</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Find the situation, see what to say and do, and who owns it. Kivu Ride Call Center Script Book v1.0.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Find the situation, see what to say and do, and who owns it. Kivu Ride Call Center Script Book v1.0.</p>
         </div>
         <div className="flex gap-2">
           <HelpButton navKey="call_center_scripts" title="the Script Book" />
@@ -53,18 +53,18 @@ export default function ScriptBookPage() {
       </div>
 
       <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} className="input pl-9 text-[13px]" placeholder='Type a word — "late", "refund", "breakdown", "lost", "login"…' aria-label="Search the Script Book" autoFocus />
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} className="input pl-9 text-body" placeholder='Type a word — "late", "refund", "breakdown", "lost", "login"…' aria-label="Search the Script Book" autoFocus />
       </div>
 
       {quick.length > 0 && (
         <div>
-          <p className="text-[11px] font-semibold text-gray-500 mb-2 flex items-center gap-1"><Pin size={11} /> Quick reference</p>
+          <p className="text-caption font-semibold text-fg-muted mb-2 flex items-center gap-1"><Pin size={11} /> Quick reference</p>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
             {quick.map((c) => (
               <button key={c.id} onClick={() => setOpenId(c.id)} className={`card p-3 text-left hover:border-brand/30 transition-all ${c.default_priority === 'emergency' ? 'border-red-300 dark:border-red-500/40' : ''}`}>
-                <p className={`text-[12px] font-semibold ${c.default_priority === 'emergency' ? 'text-red-600 dark:text-red-400' : ''}`}>{c.situation}</p>
-                <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5">{c.say ?? c.steps[0] ?? ''}</p>
+                <p className={`text-small font-semibold ${c.default_priority === 'emergency' ? 'text-red-600 dark:text-red-400' : ''}`}>{c.situation}</p>
+                <p className="text-caption text-fg-muted line-clamp-2 mt-0.5">{c.say ?? c.steps[0] ?? ''}</p>
               </button>
             ))}
           </div>
@@ -77,21 +77,21 @@ export default function ScriptBookPage() {
       </div>
 
       {shown.length === 0 ? (
-        <div className="card p-10 text-center text-[12px] text-gray-400">Nothing matches "{q}". Try another word, or say: “Let me confirm the correct information for you.”</div>
+        <div className="card p-10 text-center text-small text-fg-subtle">Nothing matches "{q}". Try another word, or say: “Let me confirm the correct information for you.”</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {shown.map((c) => (
             <div key={c.id} className={`card p-4 ${c.default_priority === 'emergency' ? 'border-red-300 dark:border-red-500/40' : ''} ${!c.approved ? 'opacity-60' : ''}`}>
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{c.section_title}</p>
-                  <p className="text-[13px] font-semibold">{c.situation}</p>
+                  <p className="text-micro font-medium text-fg-subtle uppercase tracking-wide">{c.section_title}</p>
+                  <p className="text-body font-semibold">{c.situation}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {c.default_priority !== 'normal' && (
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-white ${c.default_priority === 'emergency' ? 'bg-red-700' : 'bg-red-500'}`}>{c.default_priority.toUpperCase()}</span>
+                    <span className={`text-micro font-bold px-1.5 py-0.5 rounded text-white ${c.default_priority === 'emergency' ? 'bg-red-700' : 'bg-red-500'}`}>{c.default_priority.toUpperCase()}</span>
                   )}
-                  {!c.approved && <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-white/5">Draft</span>}
+                  {!c.approved && <span className="text-micro font-medium px-1.5 py-0.5 rounded bg-inset text-fg-muted ">Draft</span>}
                   {isMD && <button onClick={() => setEditing(c)} className="btn-ghost p-1" aria-label={`Edit ${c.situation}`}><Pencil size={12} /></button>}
                 </div>
               </div>
@@ -126,7 +126,7 @@ export default function ScriptBookPage() {
 function SectionChip({ active, onClick, label, emergency }: { active: boolean; onClick: () => void; label: string; emergency?: boolean }) {
   return (
     <button role="tab" aria-selected={active} onClick={onClick}
-      className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all ${active ? (emergency ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300' : 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300') : 'border-gray-200 dark:border-white/10 text-gray-500 hover:border-brand/40'}`}>
+      className={`px-2.5 py-1 rounded-full text-caption font-medium border transition-all ${active ? (emergency ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300' : 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300') : 'border-line text-fg-muted hover:border-brand/40'}`}>
       {label}
     </button>
   );
@@ -182,7 +182,7 @@ function ScriptCardEditor({ card, sections, duties, onClose, onSaved }: {
     onSaved();
   };
 
-  const label = 'block text-[11px] font-medium mb-1.5 text-gray-500';
+  const label = 'block text-caption font-medium mb-1.5 text-fg-muted';
   return (
     <Modal open onClose={onClose} title={card ? `Edit: ${card.situation}` : 'New Script Book card'} subtitle="Agents see changes straight away" maxWidth="max-w-lg">
       <div className="space-y-3">
@@ -211,9 +211,9 @@ function ScriptCardEditor({ card, sections, duties, onClose, onSaved }: {
             {routeDuties.map(([k, d]) => <option key={k} value={k}>{d.label}</option>)}
           </select>
         </div>
-        <label className="flex items-center gap-2 text-[12px]"><input type="checkbox" checked={approved} onChange={(e) => setApproved(e.target.checked)} /> Approved — agents can see it</label>
-        {error && <p className="text-[11px] text-red-600">{error}</p>}
-        <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+        <label className="flex items-center gap-2 text-small"><input type="checkbox" checked={approved} onChange={(e) => setApproved(e.target.checked)} /> Approved — agents can see it</label>
+        {error && <p className="text-caption text-red-600">{error}</p>}
+        <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
           {card ? <button onClick={remove} disabled={saving} className="btn-ghost text-red-500">Delete</button> : <span />}
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-ghost">Cancel</button>

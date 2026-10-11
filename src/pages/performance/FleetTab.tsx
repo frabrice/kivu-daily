@@ -59,37 +59,37 @@ export default function FleetTab({ data, period: p }: { data: PerfData; period: 
           <RankBars rows={[...cars].filter((x) => x.total).sort((a, b) => (b.util ?? 0) - (a.util ?? 0)).map((x) => ({ key: x.v.id, label: x.v.plate_number, n: Math.round((x.util ?? 0) * 100), sub: `${x.count.working}/${x.total} days` }))} color={c.blue} format={(n) => `${n}%`} empty="No cars in this period." />
         </ChartCard>
         <div className="card p-4 space-y-2">
-          <p className="text-[13px] font-semibold flex items-center gap-1.5"><FileWarning size={14} /> RURA licences</p>
-          {licences.length === 0 ? <p className="text-[12px] text-gray-500">No licence expires in the next 30 days.{noLicence ? ` ${noLicence} car${noLicence === 1 ? ' has' : 's have'} no expiry date recorded.` : ''}</p> : (
+          <p className="text-body font-semibold flex items-center gap-1.5"><FileWarning size={14} /> RURA licences</p>
+          {licences.length === 0 ? <p className="text-small text-fg-muted">No licence expires in the next 30 days.{noLicence ? ` ${noLicence} car${noLicence === 1 ? ' has' : 's have'} no expiry date recorded.` : ''}</p> : (
             <>
-              <ul className="space-y-1 text-[12px]">
+              <ul className="space-y-1 text-small">
                 {licences.map((v) => {
                   const expired = (v.rura_license_expiry_date ?? '') < t;
                   return <li key={v.id} className="flex justify-between gap-2"><span className="font-medium">{v.plate_number}</span><span className={expired ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-amber-700 dark:text-amber-400'}>{expired ? 'Expired' : 'Expires'} {longDay(v.rura_license_expiry_date!)}</span></li>;
                 })}
               </ul>
-              {noLicence > 0 && <p className="text-[11px] text-gray-500">{noLicence} car{noLicence === 1 ? ' has' : 's have'} no expiry date recorded.</p>}
+              {noLicence > 0 && <p className="text-caption text-fg-muted">{noLicence} car{noLicence === 1 ? ' has' : 's have'} no expiry date recorded.</p>}
             </>
           )}
         </div>
       </div>
 
       <div className="card p-4 space-y-2">
-        <p className="text-[13px] font-semibold">Every car</p>
+        <p className="text-body font-semibold">Every car</p>
         <div className="overflow-x-auto -mx-4 px-4">
-          <table className="w-full text-[11px] min-w-[860px]">
-            <thead><tr className="text-left text-gray-500">
+          <table className="w-full text-caption min-w-[860px]">
+            <thead><tr className="text-left text-fg-muted">
               {['Car', 'Drivers today', 'Worked', 'Not paid up', 'Days off', 'No driver', 'Garage / accident', 'Owner payout / week'].map((h, i) => <th key={h} className={`py-1.5 pr-3 font-medium ${i > 1 ? 'text-right' : ''}`}>{h}</th>)}
             </tr></thead>
             <tbody>
               {[...cars].sort((a, b) => (a.util ?? 2) - (b.util ?? 2)).map((x) => (
-                <tr key={x.v.id} className="border-t border-gray-100 dark:border-white/5">
-                  <td className="py-2 pr-3 whitespace-nowrap"><span className="font-medium">{x.v.plate_number}</span><span className="block text-[10px] text-gray-400">{[x.v.make, x.v.model].filter(Boolean).join(' ')}</span></td>
+                <tr key={x.v.id} className="border-t border-line-muted ">
+                  <td className="py-2 pr-3 whitespace-nowrap"><span className="font-medium">{x.v.plate_number}</span><span className="block text-micro text-fg-subtle">{[x.v.make, x.v.model].filter(Boolean).join(' ')}</span></td>
                   <td className="py-2 pr-3">{x.onNow.length ? x.onNow.map((d) => `${d.full_name.split(/\s+/)[0]}${d.shift ? ` (${d.shift})` : ''}`).join(', ') : <span className="text-red-600 dark:text-red-400">None</span>}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums">{x.count.working}{x.util !== null && <span className="text-gray-400"> · {Math.round(x.util * 100)}%</span>}</td>
-                  <td className={`py-2 pr-3 text-right tabular-nums ${x.count.unpaid ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>{x.count.unpaid || '—'}</td>
+                  <td className="py-2 pr-3 text-right tabular-nums">{x.count.working}{x.util !== null && <span className="text-fg-subtle"> · {Math.round(x.util * 100)}%</span>}</td>
+                  <td className={`py-2 pr-3 text-right tabular-nums ${x.count.unpaid ? 'text-red-600 dark:text-red-400' : 'text-fg-subtle'}`}>{x.count.unpaid || '—'}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{x.count.paused || '—'}</td>
-                  <td className={`py-2 pr-3 text-right tabular-nums ${x.count.no_driver ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>{x.count.no_driver || '—'}</td>
+                  <td className={`py-2 pr-3 text-right tabular-nums ${x.count.no_driver ? 'text-red-600 dark:text-red-400' : 'text-fg-subtle'}`}>{x.count.no_driver || '—'}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{x.garage || '—'}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{x.v.weekly_owner_payout_amount ? Number(x.v.weekly_owner_payout_amount).toLocaleString('en-US') : '—'}</td>
                 </tr>
@@ -97,7 +97,7 @@ export default function FleetTab({ data, period: p }: { data: PerfData; period: 
             </tbody>
           </table>
         </div>
-        <p className="text-[10px] text-gray-400">Based on which car each driver is on now; a driver who moved cars counts on their current car.</p>
+        <p className="text-micro text-fg-subtle">Based on which car each driver is on now; a driver who moved cars counts on their current car.</p>
       </div>
     </div>
   );

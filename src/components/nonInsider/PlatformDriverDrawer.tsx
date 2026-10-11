@@ -148,23 +148,23 @@ export default function PlatformDriverDrawer({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Full Name</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Full Name</label>
             <input value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!editing} className="input" placeholder="Jean Baptiste" autoFocus />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Phone</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Phone</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!editing} className="input" placeholder="+250 7XX XXX XXX" />
           </div>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Email</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!editing} className="input" placeholder="jean@example.com" />
         </div>
 
         <TriStateToggle label="Is the driver the car owner?" value={isOwner} onChange={setIsOwner} disabled={!editing} />
 
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><CarFront size={11} /> Assigned Car</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted flex items-center gap-1"><CarFront size={11} /> Assigned Car</label>
           <select value={carId} onChange={(e) => handleCarChange(e.target.value)} disabled={!editing} className="input">
             <option value="">No car assigned</option>
             {cars.map((c) => (
@@ -174,49 +174,49 @@ export default function PlatformDriverDrawer({
             ))}
           </select>
           {editing && (
-            <button type="button" onClick={() => setAddCarOpen(true)} className="text-[10px] text-brand-600 dark:text-brand-300 hover:underline mt-1.5">
+            <button type="button" onClick={() => setAddCarOpen(true)} className="text-micro text-brand-600 dark:text-brand-300 hover:underline mt-1.5">
               + Add a new car
             </button>
           )}
-          <p className="text-[10px] text-gray-400 mt-1.5">
+          <p className="text-micro text-fg-subtle mt-1.5">
             Changing or clearing this doesn't touch the driver's login - it's how a swapped or repossessed car gets reflected here without re-onboarding anyone.
           </p>
 
           {selectedCar && (
-            <div className="mt-2 rounded-lg border border-gray-200 dark:border-white/10 overflow-hidden">
+            <div className="mt-2 rounded-lg border border-line overflow-hidden">
               <button
                 type="button"
                 onClick={() => setCarPanelOpen((o) => !o)}
-                className="w-full flex items-center justify-between gap-2 p-2.5 bg-gray-50 dark:bg-white/5 text-left"
+                className="w-full flex items-center justify-between gap-2 p-2.5 bg-inset text-left"
               >
-                <span className="text-[11px] font-medium truncate">
+                <span className="text-caption font-medium truncate">
                   {selectedCar.plate_number}
                   {(selectedCar.make || selectedCar.model) && (
-                    <span className="text-gray-400 font-normal"> · {[selectedCar.make, selectedCar.model].filter(Boolean).join(' ')}</span>
+                    <span className="text-fg-subtle font-normal"> · {[selectedCar.make, selectedCar.model].filter(Boolean).join(' ')}</span>
                   )}
                 </span>
-                <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${carPanelOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`text-fg-subtle shrink-0 transition-transform ${carPanelOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {carPanelOpen && (
-                <div className="p-3 space-y-3 border-t border-gray-200 dark:border-white/10">
+                <div className="p-3 space-y-3 border-t border-line ">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-medium mb-1 text-gray-500">Plate Number</label>
+                      <label className="block text-micro font-medium mb-1 text-fg-muted">Plate Number</label>
                       <input value={carPlate} onChange={(e) => setCarPlate(e.target.value)} disabled={!editing} className="input" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-medium mb-1 text-gray-500">Color</label>
+                      <label className="block text-micro font-medium mb-1 text-fg-muted">Color</label>
                       <input value={carColor} onChange={(e) => setCarColor(e.target.value)} disabled={!editing} className="input" placeholder="White" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-medium mb-1 text-gray-500">Make</label>
+                      <label className="block text-micro font-medium mb-1 text-fg-muted">Make</label>
                       <input value={carMake} onChange={(e) => setCarMake(e.target.value)} disabled={!editing} className="input" placeholder="Toyota" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-medium mb-1 text-gray-500">Model</label>
+                      <label className="block text-micro font-medium mb-1 text-fg-muted">Model</label>
                       <input value={carModel} onChange={(e) => setCarModel(e.target.value)} disabled={!editing} className="input" placeholder="Corolla" />
                     </div>
                   </div>
@@ -226,7 +226,7 @@ export default function PlatformDriverDrawer({
                   <TriStateToggle label="Willing to buy the app's device" value={carWillingDevice} onChange={setCarWillingDevice} disabled={!editing} />
 
                   <div>
-                    <label className="block text-[10px] font-medium mb-1 text-gray-500">Vehicle Notes</label>
+                    <label className="block text-micro font-medium mb-1 text-fg-muted">Vehicle Notes</label>
                     <textarea value={carNotes} onChange={(e) => setCarNotes(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="Condition, anything worth remembering…" />
                   </div>
                 </div>
@@ -236,16 +236,16 @@ export default function PlatformDriverDrawer({
         </div>
 
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="How they were onboarded, survey findings…" />
         </div>
 
         {driver && !editing && <DriverCasesList platformDriverId={driver.id} />}
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
-          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
             {driver ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
                 <Trash2 size={13} /> Remove
@@ -259,7 +259,7 @@ export default function PlatformDriverDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Close</button>
             {canEdit && (
               <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">

@@ -123,7 +123,7 @@ export default function SettingsPage() {
           <User size={18} className="text-[#007BFF]" />
           <h3 className="font-semibold">Profile</h3>
         </div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Full Name</label>
+        <label className="block text-sm font-medium text-fg-muted mb-1.5">Full Name</label>
         <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input mb-3" />
         <div className="flex items-center gap-3">
           <button onClick={saveProfile} disabled={saving} className="btn-primary disabled:opacity-50">
@@ -143,7 +143,7 @@ export default function SettingsPage() {
         <button onClick={changePw} disabled={!newPw || newPw.length < 6} className="btn-primary disabled:opacity-50">
           Update Password
         </button>
-        {pwMsg && <p className="text-sm mt-2 text-gray-500">{pwMsg}</p>}
+        {pwMsg && <p className="text-sm mt-2 text-fg-muted">{pwMsg}</p>}
       </div>
 
       {/* Theme */}
@@ -155,13 +155,13 @@ export default function SettingsPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setTheme('light')}
-            className={`flex-1 py-3 rounded-xl border transition-all ${theme === 'light' ? 'border-[#007BFF] bg-[#007BFF]/5 text-[#007BFF]' : 'border-gray-200 dark:border-white/10'}`}
+            className={`flex-1 py-3 rounded-xl border transition-all ${theme === 'light' ? 'border-[#007BFF] bg-[#007BFF]/5 text-[#007BFF]' : 'border-line '}`}
           >
             Light
           </button>
           <button
             onClick={() => setTheme('dark')}
-            className={`flex-1 py-3 rounded-xl border transition-all ${theme === 'dark' ? 'border-[#007BFF] bg-[#007BFF]/5 text-[#007BFF]' : 'border-gray-200 dark:border-white/10'}`}
+            className={`flex-1 py-3 rounded-xl border transition-all ${theme === 'dark' ? 'border-[#007BFF] bg-[#007BFF]/5 text-[#007BFF]' : 'border-line '}`}
           >
             Dark
           </button>
@@ -182,10 +182,10 @@ export default function SettingsPage() {
             >
               Enable all
             </button>
-            <span className="text-gray-300">|</span>
+            <span className="text-fg-subtle">|</span>
             <button
               onClick={() => toggleAllEmails(false)}
-              className="text-xs text-gray-500 hover:underline"
+              className="text-xs text-fg-muted hover:underline"
             >
               Disable all
             </button>
@@ -193,18 +193,18 @@ export default function SettingsPage() {
         </div>
 
         {loadingPrefs ? (
-          <p className="text-sm text-gray-400">Loading preferences...</p>
+          <p className="text-sm text-fg-subtle">Loading preferences...</p>
         ) : (
           <div className="space-y-4">
             {EMAIL_SWITCHES.map(({ key, label, when, icon: Icon, tint }, i) => (
-              <div key={key} className={`flex items-center justify-between py-3 ${i < EMAIL_SWITCHES.length - 1 ? 'border-b border-gray-100 dark:border-white/5' : ''}`}>
+              <div key={key} className={`flex items-center justify-between py-3 ${i < EMAIL_SWITCHES.length - 1 ? 'border-b border-line-muted ' : ''}`}>
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${tint}`}>
                     <Icon size={16} />
                   </div>
                   <div>
                     <p className="text-sm font-medium">{label}</p>
-                    <p className="text-xs text-gray-500">{when}</p>
+                    <p className="text-xs text-fg-muted">{when}</p>
                   </div>
                 </div>
                 <button
@@ -213,7 +213,7 @@ export default function SettingsPage() {
                   aria-checked={emailPrefs[key]}
                   aria-label={label}
                   className={`w-12 h-6 rounded-full transition-all relative ${
-                    emailPrefs[key] ? 'bg-[#007BFF]' : 'bg-gray-200 dark:bg-gray-700'
+                    emailPrefs[key] ? 'bg-[#007BFF]' : 'bg-gray-200 dark:bg-surface-3'
                   }`}
                 >
                   <span
@@ -224,7 +224,7 @@ export default function SettingsPage() {
                 </button>
               </div>
             ))}
-            <p className="text-xs text-gray-400 pt-1">
+            <p className="text-xs text-fg-subtle pt-1">
               {profile?.role === 'managing_director'
                 ? 'These are sent to employees. Your own briefings and reports are managed in MD Panel → Email notifications.'
                 : "Emails about duties you're in charge of (driver payments, Finance approvals, call queues) can't be turned off here — they're part of the job."}
@@ -233,7 +233,7 @@ export default function SettingsPage() {
         )}
 
         {savingPrefs && (
-          <p className="text-xs text-gray-400 mt-3 text-right">Saving...</p>
+          <p className="text-xs text-fg-subtle mt-3 text-right">Saving...</p>
         )}
       </div>
     </div>

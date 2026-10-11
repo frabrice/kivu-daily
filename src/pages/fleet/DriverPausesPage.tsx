@@ -66,11 +66,11 @@ function View({ data }: { data: ReturnType<typeof useFleetData> }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><CalendarOff size={16} className="text-amber-600 dark:text-amber-300" /> Driver days off</h2>
-          <p className="text-[11px] text-gray-500 mt-0.5 max-w-2xl">Paused days (sick, car in the garage…) cost nothing and the driver isn't chased while paused. Janviere and Bertrand record pauses; the MD or Finance approves them.</p>
+          <p className="text-caption text-fg-muted mt-0.5 max-w-2xl">Paused days (sick, car in the garage…) cost nothing and the driver isn't chased while paused. Janviere and Bertrand record pauses; the MD or Finance approves them.</p>
         </div>
         {canRecord && (
           <div className="flex gap-2">
-            <select value={pickId} onChange={(e) => setPickId(e.target.value)} className="input py-1.5 text-[12px] w-56" aria-label="Driver to pause">
+            <select value={pickId} onChange={(e) => setPickId(e.target.value)} className="input py-1.5 text-small w-56" aria-label="Driver to pause">
               <option value="">Choose a driver…</option>
               {active.map((d) => <option key={d.id} value={d.id}>{d.full_name.trim()}{d.vehicle?.plate_number ? ` · ${d.vehicle.plate_number}` : ''}</option>)}
             </select>
@@ -81,29 +81,29 @@ function View({ data }: { data: ReturnType<typeof useFleetData> }) {
 
       {pending.length > 0 && (
         <section className="card p-4 space-y-2">
-          <p className="text-[13px] font-semibold">Waiting for approval ({pending.length})</p>
-          <p className="text-[11px] text-gray-500">{canReview ? 'Approve, or reject with a reason — a rejected pause\'s days count again.' : 'The MD or Finance approves these.'}</p>
+          <p className="text-body font-semibold">Waiting for approval ({pending.length})</p>
+          <p className="text-caption text-fg-muted">{canReview ? 'Approve, or reject with a reason — a rejected pause\'s days count again.' : 'The MD or Finance approves these.'}</p>
           <PauseList pauses={pending} drivers={drivers} names={names} canRecord={canRecord} canReview={canReview} showDriver onChanged={reload} />
         </section>
       )}
 
       <section className="card p-4 space-y-2">
-        <p className="text-[13px] font-semibold">Paused today ({now.length})</p>
+        <p className="text-body font-semibold">Paused today ({now.length})</p>
         <PauseList pauses={now} drivers={drivers} names={names} canRecord={canRecord} canReview={canReview} showDriver onChanged={reload} />
       </section>
 
       <section className="card p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="text-[13px] font-semibold">Days off in {new Date(`${month}-01T12:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</p>
-            <p className="text-[11px] text-gray-500">{totalDays} working days paused · {rwf(totalDays * DAILY_DEPOSIT_RATE)} not charged (30,000 a day). Owner payments and salaries are unchanged.</p>
+            <p className="text-body font-semibold">Days off in {new Date(`${month}-01T12:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</p>
+            <p className="text-caption text-fg-muted">{totalDays} working days paused · {rwf(totalDays * DAILY_DEPOSIT_RATE)} not charged (30,000 a day). Owner payments and salaries are unchanged.</p>
           </div>
-          <input type="month" value={month} max={today.slice(0, 7)} onChange={(e) => setMonth(e.target.value || today.slice(0, 7))} className="input py-1 text-[12px] w-auto" aria-label="Month" />
+          <input type="month" value={month} max={today.slice(0, 7)} onChange={(e) => setMonth(e.target.value || today.slice(0, 7))} className="input py-1 text-small w-auto" aria-label="Month" />
         </div>
-        {summary.length === 0 ? <p className="text-[12px] text-gray-400">No days off this month.</p> : (
+        {summary.length === 0 ? <p className="text-small text-fg-subtle">No days off this month.</p> : (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px] min-w-[640px]">
-              <thead><tr className="text-left text-gray-500 text-[11px]">
+            <table className="w-full text-small min-w-[640px]">
+              <thead><tr className="text-left text-fg-muted text-caption">
                 <th className="py-1.5 pr-3 font-medium">Driver</th>
                 {PAUSE_REASONS.map((r) => <th key={r.key} className="py-1.5 pr-3 font-medium text-right">{r.label}</th>)}
                 <th className="py-1.5 pr-3 font-medium text-right">Days</th>
@@ -111,8 +111,8 @@ function View({ data }: { data: ReturnType<typeof useFleetData> }) {
               </tr></thead>
               <tbody>
                 {summary.map((r) => (
-                  <tr key={r.driver.id} className="border-t border-gray-100 dark:border-white/5">
-                    <td className="py-1.5 pr-3 font-medium">{r.driver.full_name}<span className="block text-[10px] text-gray-500 font-normal">{r.driver.vehicle?.plate_number ?? ''}</span></td>
+                  <tr key={r.driver.id} className="border-t border-line-muted ">
+                    <td className="py-1.5 pr-3 font-medium">{r.driver.full_name}<span className="block text-micro text-fg-muted font-normal">{r.driver.vehicle?.plate_number ?? ''}</span></td>
                     {PAUSE_REASONS.map((x) => <td key={x.key} className="py-1.5 pr-3 text-right tabular-nums">{r.byReason[x.key] ?? '—'}</td>)}
                     <td className="py-1.5 pr-3 text-right tabular-nums font-semibold">{r.days}</td>
                     <td className="py-1.5 text-right tabular-nums">{rwf(r.days * DAILY_DEPOSIT_RATE)}</td>
@@ -125,7 +125,7 @@ function View({ data }: { data: ReturnType<typeof useFleetData> }) {
       </section>
 
       <section className="card p-4 space-y-2">
-        <p className="text-[13px] font-semibold">All pauses</p>
+        <p className="text-body font-semibold">All pauses</p>
         <PauseList pauses={pauses.filter((p) => !isPausedOn(p, today) && p.approval_status !== 'pending')} drivers={drivers} names={names} canRecord={canRecord} canReview={canReview} showDriver onChanged={reload} />
       </section>
 

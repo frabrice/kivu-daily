@@ -16,13 +16,13 @@ export default function NewslettersPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Mail size={16} className="text-amber-600 dark:text-amber-300" /> Newsletters</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">Weekly updates, branded and personal, sent straight from here.</p>
+        <p className="text-caption text-fg-subtle mt-0.5">Weekly updates, branded and personal, sent straight from here.</p>
       </div>
 
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit">
         <button
           onClick={() => setTab('vehicle_owners')}
-          className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${tab === 'vehicle_owners' ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+          className={`px-3 py-1.5 rounded-md text-small font-medium transition-all flex items-center gap-1.5 ${tab === 'vehicle_owners' ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
         >
           <Car size={14} /> Vehicle Owners
         </button>

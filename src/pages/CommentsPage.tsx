@@ -153,11 +153,11 @@ export default function CommentsPage() {
 
       {groupedByDate.length === 0 && (
         <div className="card p-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
-            <MessageSquare size={32} className="text-gray-400" />
+          <div className="w-16 h-16 rounded-2xl bg-inset flex items-center justify-center mx-auto mb-4">
+            <MessageSquare size={32} className="text-fg-subtle" />
           </div>
-          <p className="text-gray-500 font-medium mb-1">No conversations yet</p>
-          <p className="text-sm text-gray-400">When the MD leaves feedback, it will appear here.</p>
+          <p className="text-fg-muted font-medium mb-1">No conversations yet</p>
+          <p className="text-sm text-fg-subtle">When the MD leaves feedback, it will appear here.</p>
         </div>
       )}
 
@@ -166,9 +166,9 @@ export default function CommentsPage() {
           {/* Date Separator */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent"></div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-inset ">
               <Calendar size={14} className="text-brand-500" />
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{formatDateLabel(date)}</span>
+              <span className="text-sm font-semibold text-fg-muted ">{formatDateLabel(date)}</span>
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent"></div>
           </div>
@@ -232,7 +232,7 @@ function CommentThread({
           <div className="relative">
             <Avatar name={comment.author?.full_name ?? 'User'} url={comment.author?.avatar_url} size={depth > 0 ? 'sm' : 'md'} />
             {isMD && !isOwnComment && (
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white bg-amber-500">
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-micro font-bold text-white bg-amber-500">
                 MD
               </div>
             )}
@@ -243,13 +243,13 @@ function CommentThread({
         <div className={`flex-1 max-w-[85%] ${isOwnComment ? 'items-end' : 'items-start'} flex flex-col`}>
           {/* Author & Time */}
           <div className={`flex items-center gap-2 mb-1 ${isOwnComment ? 'flex-row-reverse' : ''}`}>
-            <span className={`text-sm font-semibold ${isOwnComment ? 'text-brand-600 dark:text-brand-300' : 'text-gray-800 dark:text-gray-200'}`}>
+            <span className={`text-sm font-semibold ${isOwnComment ? 'text-brand-600 dark:text-brand-300' : 'text-fg '}`}>
               {comment.author?.full_name}
             </span>
             {isOwnComment && (
-              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">You</span>
+              <span className="text-xs text-fg-subtle bg-inset px-2 py-0.5 rounded-full">You</span>
             )}
-            <span className="text-xs text-gray-400 flex items-center gap-1">
+            <span className="text-xs text-fg-subtle flex items-center gap-1">
               <Clock size={10} />
               {new Date(comment.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
@@ -260,8 +260,8 @@ function CommentThread({
             isOwnComment
               ? 'bg-brand text-white rounded-tr-sm'
               : isMD
-                ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-200 dark:border-amber-700/50 text-gray-800 dark:text-gray-200 rounded-tl-sm'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm'
+                ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-200 dark:border-amber-700/50 text-fg rounded-tl-sm'
+                : 'bg-inset text-fg rounded-tl-sm'
           }`}>
             {/* Arrow pointer */}
             <div className={`absolute top-3 w-3 h-3 ${
@@ -269,7 +269,7 @@ function CommentThread({
                 ? 'right-0 translate-x-1/2 rotate-45 bg-brand'
                 : isMD
                   ? 'left-0 -translate-x-1/2 rotate-45 bg-amber-50 dark:bg-amber-900/20 border-l-2 border-b-2 border-amber-200 dark:border-amber-700/50'
-                  : 'left-0 -translate-x-1/2 rotate-45 bg-gray-100 dark:bg-gray-800'
+                  : 'left-0 -translate-x-1/2 rotate-45 bg-inset '
             }`}></div>
 
             <p className="text-sm leading-relaxed relative z-10">{comment.content}</p>
@@ -280,7 +280,7 @@ function CommentThread({
             <div className={`flex ${isOwnComment ? 'justify-start' : 'justify-end'} mt-2`}>
               <button
                 onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-600 dark:hover:text-brand-300 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="flex items-center gap-1.5 text-xs text-fg-muted hover:text-brand-600 dark:hover:text-brand-300 transition-colors px-2 py-1 rounded-lg hover:bg-hover "
               >
                 <Reply size={12} />
                 {replyingTo === comment.id ? 'Cancel' : 'Reply'}
@@ -296,7 +296,7 @@ function CommentThread({
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Write your reply..."
-                className="flex-1 text-sm px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 focus:border-brand focus:ring-0 focus:outline-none bg-white dark:bg-gray-800"
+                className="flex-1 text-sm px-4 py-2.5 rounded-xl border-2 border-line focus:border-brand focus:ring-0 focus:outline-none bg-surface-2 "
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !sendingReply) {
                     handleReply(comment.id);
@@ -328,9 +328,9 @@ function CommentThread({
 
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-2 text-xs text-gray-500 hover:text-brand-600 dark:hover:text-brand-300 transition-colors mb-3 ml-6 group"
+            className="flex items-center gap-2 text-xs text-fg-muted hover:text-brand-600 dark:hover:text-brand-300 transition-colors mb-3 ml-6 group"
           >
-            <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center group-hover:bg-brand/10 transition-colors">
+            <div className="w-6 h-6 rounded-full bg-inset flex items-center justify-center group-hover:bg-brand/10 transition-colors">
               {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </div>
             <span className="font-medium">

@@ -45,12 +45,12 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
       <div className="flex items-center justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><Receipt size={16} className="text-blue-600 dark:text-blue-300" /> Fines</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Traffic and disciplinary fines logged against a driver and the car involved.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Traffic and disciplinary fines logged against a driver and the car involved.</p>
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or plate" className="input pl-8 w-52" />
           </div>
           {canEdit && (
@@ -74,27 +74,27 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
                 className={`card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all border ${statusStyle.border}`}
               >
                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <p className="text-[12px] font-semibold">{f.amount.toLocaleString()} RWF</p>
+                  <p className="text-small font-semibold">{f.amount.toLocaleString()} RWF</p>
                   <EntryActions
                     onView={() => setFineDrawer({ fine: f, startEditing: false })}
                     onEdit={() => setFineDrawer({ fine: f, startEditing: true })}
                     canEdit={canEdit}
                   />
                 </div>
-                <p className="text-[11px] text-gray-600 dark:text-gray-300">{f.driver?.full_name ?? 'Unknown driver'}</p>
-                <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                <p className="text-caption text-fg-muted ">{f.driver?.full_name ?? 'Unknown driver'}</p>
+                <p className="text-micro text-fg-subtle flex items-center gap-1 mt-0.5">
                   <Car size={10} /> {f.vehicle?.plate_number ?? 'No vehicle on file'}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1.5">{formatDateLabelSafe(f.fine_date)}</p>
-                {f.reason && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2">{f.reason}</p>}
-                <div className="flex items-center justify-between gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-white/5">
-                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${statusStyle.badge}`}>
+                <p className="text-micro text-fg-subtle mt-1.5">{formatDateLabelSafe(f.fine_date)}</p>
+                {f.reason && <p className="text-caption text-fg-muted mt-1.5 line-clamp-2">{f.reason}</p>}
+                <div className="flex items-center justify-between gap-2 mt-2.5 pt-2.5 border-t border-line-muted ">
+                  <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${statusStyle.badge}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} /> {fineStatusLabel(status, f.amount, amountPaid)}
                   </span>
                   {canEdit && status !== 'paid' && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setLoggingPaymentFor(f); }}
-                      className="btn-ghost text-brand-600 dark:text-brand-300 text-[10px] px-2 py-1"
+                      className="btn-ghost text-brand-600 dark:text-brand-300 text-micro px-2 py-1"
                     >
                       Log Payment
                     </button>
@@ -105,8 +105,8 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
           })}
           {filteredFines.length === 0 && (
             <div className="card p-10 text-center col-span-full">
-              <Receipt size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-              <p className="text-[12px] text-gray-400">No fines logged yet.</p>
+              <Receipt size={26} className="text-fg-subtle mx-auto mb-2" />
+              <p className="text-small text-fg-subtle">No fines logged yet.</p>
             </div>
           )}
         </div>
@@ -130,7 +130,7 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
                 const status = fineStatus(f.amount, amountPaid);
                 const statusStyle = FINE_STATUS_STYLE[status];
                 return (
-                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${statusStyle.badge}`}>
+                  <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${statusStyle.badge}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} /> {fineStatusLabel(status, f.amount, amountPaid)}
                   </span>
                 );

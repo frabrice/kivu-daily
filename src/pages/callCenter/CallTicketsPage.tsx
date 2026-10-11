@@ -55,7 +55,7 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><PhoneIncoming size={16} className="text-brand-600 dark:text-brand-300" /> Calls & Tickets</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Log every call. Solve it on the spot, or send it to the person in charge.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Log every call. Solve it on the spot, or send it to the person in charge.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <HelpButton navKey="call_center_tickets" title="Calls & Tickets" />
@@ -65,13 +65,13 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
       </div>
 
       {welcome && (
-        <div className="rounded-xl border border-brand/20 bg-brand/5 p-4 text-[12px] space-y-1.5">
-          <p className="font-semibold text-[13px]">Welcome to the Kivu Ride desk</p>
+        <div className="rounded-xl border border-brand/20 bg-brand/5 p-4 text-small space-y-1.5">
+          <p className="font-semibold text-body">Welcome to the Kivu Ride desk</p>
           <p>Every contact goes here: press <b>New call</b>, type the caller's phone number first, then type a word for what it's about — the Script Book card appears beside the form and the right person is pre-selected.</p>
           <p>Solve it on the call, or send it on and give the caller the reference. Emergencies: public help first (112 / 113 / 912 / 111), then set Priority to Emergency.</p>
           <div className="flex gap-2 pt-1">
-            <button onClick={dismissWelcome} className="btn-primary text-[12px]">Got it</button>
-            <span className="text-[11px] text-gray-500 self-center">Full guide: <b>How this works</b> (top right) or How to Use.</span>
+            <button onClick={dismissWelcome} className="btn-primary text-small">Got it</button>
+            <span className="text-caption text-fg-muted self-center">Full guide: <b>How this works</b> (top right) or How to Use.</span>
           </div>
         </div>
       )}
@@ -79,15 +79,15 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
       {handover && <HandoverBanner handover={handover} personName={(id) => personName(id)} onAcknowledged={reloadHandover} />}
 
       {emergencies.length > 0 && (
-        <button onClick={() => setSelectedId(emergencies[0].id)} className="w-full text-left rounded-lg bg-red-700 text-white px-3 py-2 text-[12px] flex items-center gap-2">
+        <button onClick={() => setSelectedId(emergencies[0].id)} className="w-full text-left rounded-lg bg-red-700 text-white px-3 py-2 text-small flex items-center gap-2">
           <ShieldAlert size={15} /> {emergencies.length === 1 ? `Emergency ${emergencies[0].reference} is open` : `${emergencies.length} emergencies are open`} — the MD has been alerted. Keep the record updated.
         </button>
       )}
 
       {toast && (
-        <div className="flex items-center gap-2 text-[12px] px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" role="status">
+        <div className="flex items-center gap-2 text-small px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" role="status">
           <CheckCircle2 size={14} /> {toast}
-          <button onClick={() => setToast('')} className="ml-auto text-[11px] underline">Dismiss</button>
+          <button onClick={() => setToast('')} className="ml-auto text-caption underline">Dismiss</button>
         </div>
       )}
 
@@ -98,7 +98,7 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
         <KpiTile icon={AlertTriangle} label="Overdue" value={String(overdue)} tone={overdue ? 'negative' : undefined} />
       </div>
 
-      <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit" role="tablist">
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit" role="tablist">
         <TabButton active={tab === 'callback'} onClick={() => setTab('callback')} icon={PhoneForwarded} label="Call back" badge={callback.length} urgent />
         <TabButton active={tab === 'open'} onClick={() => setTab('open')} icon={Inbox} label="Open" badge={open.length} />
         <TabButton active={tab === 'all'} onClick={() => setTab('all')} icon={PhoneCall} label="All calls" />
@@ -106,7 +106,7 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
 
       {tab === 'callback' && (
         <>
-          <p className="text-[11px] text-gray-500">These are resolved. Call each caller, tell them the outcome, then <b>Close</b> it — or <b>Reopen</b> if it isn't fixed.</p>
+          <p className="text-caption text-fg-muted">These are resolved. Call each caller, tell them the outcome, then <b>Close</b> it — or <b>Reopen</b> if it isn't fixed.</p>
           <TicketList tickets={callback} personName={personName} onOpen={(t) => setSelectedId(t.id)} empty="Nobody to call back right now." />
         </>
       )}
@@ -114,7 +114,7 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
       {tab === 'all' && (
         <>
           <div className="relative max-w-sm">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={q} onChange={(e) => setQ(e.target.value)} className="input pl-8" placeholder="Search reference, name, phone or details" aria-label="Search calls" />
           </div>
           <TicketList tickets={all} personName={personName} onOpen={(t) => setSelectedId(t.id)} empty={q ? 'No calls match.' : 'No calls logged yet.'} />
@@ -144,9 +144,9 @@ export default function CallTicketsPage({ initialTicketId }: { initialTicketId?:
 
 function TabButton({ active, onClick, icon: Icon, label, badge, urgent }: { active: boolean; onClick: () => void; icon: typeof Inbox; label: string; badge?: number; urgent?: boolean }) {
   return (
-    <button role="tab" aria-selected={active} onClick={onClick} className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 ${active ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}>
+    <button role="tab" aria-selected={active} onClick={onClick} className={`px-3 py-1.5 rounded-md text-small font-medium transition-all flex items-center gap-1.5 ${active ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}>
       <Icon size={14} /> {label}
-      {(badge ?? 0) > 0 && <span className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full ${urgent ? 'bg-orange-500' : 'bg-gray-400'}`}>{badge}</span>}
+      {(badge ?? 0) > 0 && <span className={`text-micro font-bold text-white px-1.5 py-0.5 rounded-full ${urgent ? 'bg-orange-500' : 'bg-gray-400'}`}>{badge}</span>}
     </button>
   );
 }

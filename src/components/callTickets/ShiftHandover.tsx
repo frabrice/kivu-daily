@@ -39,20 +39,20 @@ export function HandoverBanner({ handover, personName, onAcknowledged }: { hando
       <div className="flex items-start gap-2">
         <ArrowRightLeft size={15} className="text-violet-600 dark:text-violet-300 shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-semibold">Shift handover from {personName(handover.author_id)} · {dateTimeLabel(handover.created_at)}</p>
-          {handover.note && <p className="text-[12px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap mt-0.5">{handover.note}</p>}
+          <p className="text-small font-semibold">Shift handover from {personName(handover.author_id)} · {dateTimeLabel(handover.created_at)}</p>
+          {handover.note && <p className="text-small text-fg-muted whitespace-pre-wrap mt-0.5">{handover.note}</p>}
         </div>
-        <button onClick={ack} disabled={busy} className="btn-primary text-[11px] flex items-center gap-1 shrink-0 disabled:opacity-50"><CheckCircle2 size={12} /> Got it</button>
+        <button onClick={ack} disabled={busy} className="btn-primary text-caption flex items-center gap-1 shrink-0 disabled:opacity-50"><CheckCircle2 size={12} /> Got it</button>
       </div>
       {withAction.length > 0 && (
         <ul className="space-y-1 pl-6">
           {withAction.map((i) => (
-            <li key={i.ticket_id} className="text-[11px]"><span className="font-mono text-gray-500">{i.reference}</span> · {i.caller} — <b>{i.next_action}</b></li>
+            <li key={i.ticket_id} className="text-caption"><span className="font-mono text-fg-muted">{i.reference}</span> · {i.caller} — <b>{i.next_action}</b></li>
           ))}
         </ul>
       )}
-      <p className="text-[10px] text-gray-400 pl-6">{handover.items.length} open case{handover.items.length === 1 ? '' : 's'} at handover.</p>
-      {error && <p className="text-[11px] text-red-600 pl-6">{error}</p>}
+      <p className="text-micro text-fg-subtle pl-6">{handover.items.length} open case{handover.items.length === 1 ? '' : 's'} at handover.</p>
+      {error && <p className="text-caption text-red-600 pl-6">{error}</p>}
     </div>
   );
 }

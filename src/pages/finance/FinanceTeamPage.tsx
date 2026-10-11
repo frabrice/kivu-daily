@@ -86,10 +86,10 @@ export default function FinanceTeamPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Users2 size={16} className="text-amber-600 dark:text-amber-300" /> Team</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">Add, edit or terminate an employee in any department.</p>
+        <p className="text-caption text-fg-subtle mt-0.5">Add, edit or terminate an employee in any department.</p>
       </div>
 
-      {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+      {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
       <div className="space-y-2.5">
         {departments.map((d) => {
@@ -98,21 +98,21 @@ export default function FinanceTeamPage() {
             <div key={d.id} className="card p-3.5">
               <div className="flex items-center justify-between mb-2.5">
                 <div>
-                  <p className="text-[12px] font-medium">{d.name}</p>
-                  <p className="text-[10px] text-gray-400">{deptEmployees.length} employee{deptEmployees.length === 1 ? '' : 's'}</p>
+                  <p className="text-small font-medium">{d.name}</p>
+                  <p className="text-micro text-fg-subtle">{deptEmployees.length} employee{deptEmployees.length === 1 ? '' : 's'}</p>
                 </div>
-                <button onClick={() => setCreatingFor(d.id)} className="btn-ghost flex items-center gap-1.5 text-[11px]">
+                <button onClick={() => setCreatingFor(d.id)} className="btn-ghost flex items-center gap-1.5 text-caption">
                   <UserPlus size={13} /> Add Employee
                 </button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {deptEmployees.map((e) => (
-                  <div key={e.id} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-gray-100 dark:border-white/5">
+                  <div key={e.id} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-line-muted ">
                     <Avatar name={e.full_name} url={e.avatar_url} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-medium truncate">{e.full_name}</p>
+                      <p className="text-caption font-medium truncate">{e.full_name}</p>
                       {e.force_password_change && (
-                        <p className="text-[9px] font-medium text-orange-600 dark:text-orange-400">Pending setup</p>
+                        <p className="text-micro font-medium text-orange-600 dark:text-orange-400">Pending setup</p>
                       )}
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
@@ -135,7 +135,7 @@ export default function FinanceTeamPage() {
                     </div>
                   </div>
                 ))}
-                {deptEmployees.length === 0 && <p className="text-[11px] text-gray-400 col-span-full">No employees in this department.</p>}
+                {deptEmployees.length === 0 && <p className="text-caption text-fg-subtle col-span-full">No employees in this department.</p>}
               </div>
             </div>
           );
@@ -144,16 +144,16 @@ export default function FinanceTeamPage() {
 
       {terminatedProfiles.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Terminated</p>
-          <div className="card divide-y divide-gray-50 dark:divide-white/5">
+          <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle">Terminated</p>
+          <div className="card divide-y divide-line-muted ">
             {terminatedProfiles.map((p) => (
               <div key={p.id} className="flex items-center gap-2.5 p-2.5">
                 <Avatar name={p.full_name} url={p.avatar_url} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-medium truncate">{p.full_name}</p>
-                  <p className="text-[10px] text-gray-400">{p.department?.name ?? '—'}</p>
+                  <p className="text-caption font-medium truncate">{p.full_name}</p>
+                  <p className="text-micro text-fg-subtle">{p.department?.name ?? '—'}</p>
                 </div>
-                <p className="text-[10px] text-red-500 shrink-0">
+                <p className="text-micro text-red-500 shrink-0">
                   Terminated {p.terminated_at ? formatDateLabelSafe(p.terminated_at) : '—'}
                 </p>
               </div>

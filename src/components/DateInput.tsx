@@ -60,8 +60,8 @@ export default function DateInput({
         disabled={disabled}
         className="input flex items-center justify-between gap-1.5 text-left disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        <span className={value ? '' : 'text-gray-400'}>{value ? formatDMY(value) : placeholder}</span>
-        <CalendarDays size={13} className="text-gray-400 shrink-0" />
+        <span className={value ? '' : 'text-fg-subtle'}>{value ? formatDMY(value) : placeholder}</span>
+        <CalendarDays size={13} className="text-fg-subtle shrink-0" />
       </button>
       <input
         ref={ref}

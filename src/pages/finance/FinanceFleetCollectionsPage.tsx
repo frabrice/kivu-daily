@@ -136,7 +136,7 @@ export default function FinanceFleetCollectionsPage() {
       <div className="flex items-start justify-between flex-wrap gap-2.5">
         <div>
           <h2 className="text-base font-semibold flex items-center gap-2"><Wallet size={16} className="text-amber-600 dark:text-amber-300" /> Fleet Collections</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">The two shift drivers' weekly remittance per car, collected into Bank of Kigali — funds each owner's payout and Kivu's management margin, not a refundable deposit.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">The two shift drivers' weekly remittance per car, collected into Bank of Kigali — funds each owner's payout and Kivu's management margin, not a refundable deposit.</p>
         </div>
         {canEdit && (
           <button onClick={() => setDrawer({ tx: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
@@ -153,16 +153,16 @@ export default function FinanceFleetCollectionsPage() {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit">
+        <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit">
           <button
             onClick={() => setWeekFilter(null)}
-            className={`px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all ${!weekFilter ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+            className={`px-2.5 py-1.5 rounded-md text-caption font-medium transition-all ${!weekFilter ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
           >
             All Time
           </button>
           <button
             onClick={() => setWeekFilter(weekFilter ?? thisWeekStart)}
-            className={`px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all ${weekFilter ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+            className={`px-2.5 py-1.5 rounded-md text-caption font-medium transition-all ${weekFilter ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
           >
             By Week
           </button>
@@ -171,10 +171,10 @@ export default function FinanceFleetCollectionsPage() {
         {weekFilter && (
           <div className="flex items-center gap-1">
             <button onClick={() => shiftWeek(-1)} className="btn-ghost p-1.5"><ChevronLeft size={14} /></button>
-            <span className="text-[11px] font-medium whitespace-nowrap px-1">{weekLabel(weekFilter)}</span>
+            <span className="text-caption font-medium whitespace-nowrap px-1">{weekLabel(weekFilter)}</span>
             <button onClick={() => shiftWeek(1)} className="btn-ghost p-1.5"><ChevronRight size={14} /></button>
             {weekFilter !== thisWeekStart && (
-              <button onClick={() => setWeekFilter(thisWeekStart)} className="text-[10px] text-brand-600 dark:text-brand-300 underline underline-offset-2 ml-1">This week</button>
+              <button onClick={() => setWeekFilter(thisWeekStart)} className="text-micro text-brand-600 dark:text-brand-300 underline underline-offset-2 ml-1">This week</button>
             )}
           </div>
         )}
@@ -193,30 +193,30 @@ export default function FinanceFleetCollectionsPage() {
           {STATUS_FILTERS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
         </select>
 
-        <span className="text-[10px] text-gray-400 ml-auto flex items-center gap-1"><Users2 size={11} /> {driverCount} drivers ever collected from</span>
+        <span className="text-micro text-fg-subtle ml-auto flex items-center gap-1"><Users2 size={11} /> {driverCount} drivers ever collected from</span>
       </div>
 
       {selectedDriver && driverSummary && (
         <div className="card p-3.5 flex items-center gap-3 flex-wrap bg-brand/5 border border-brand/20">
           <div className="flex-1 min-w-[160px]">
-            <p className="text-[12px] font-medium">{selectedDriver.full_name}</p>
-            <p className="text-[10px] text-gray-400">{selectedDriver.vehicle?.plate_number ?? 'No vehicle assigned'}</p>
+            <p className="text-small font-medium">{selectedDriver.full_name}</p>
+            <p className="text-micro text-fg-subtle">{selectedDriver.vehicle?.plate_number ?? 'No vehicle assigned'}</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-[10px] text-gray-400">Total Collected</p>
-            <p className="text-[12px] font-semibold text-positive">{fmt(driverSummary.total)}</p>
+            <p className="text-micro text-fg-subtle">Total Collected</p>
+            <p className="text-small font-semibold text-positive">{fmt(driverSummary.total)}</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-[10px] text-gray-400">Payments Logged</p>
-            <p className="text-[12px] font-semibold">{driverSummary.count}</p>
+            <p className="text-micro text-fg-subtle">Payments Logged</p>
+            <p className="text-small font-semibold">{driverSummary.count}</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-[10px] text-gray-400">First Payment</p>
-            <p className="text-[12px] font-semibold">{driverSummary.firstDate ? formatDateLabel(driverSummary.firstDate) : '—'}</p>
+            <p className="text-micro text-fg-subtle">First Payment</p>
+            <p className="text-small font-semibold">{driverSummary.firstDate ? formatDateLabel(driverSummary.firstDate) : '—'}</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-[10px] text-gray-400">Most Recent</p>
-            <p className="text-[12px] font-semibold">{driverSummary.lastDate ? formatDateLabel(driverSummary.lastDate) : '—'}</p>
+            <p className="text-micro text-fg-subtle">Most Recent</p>
+            <p className="text-small font-semibold">{driverSummary.lastDate ? formatDateLabel(driverSummary.lastDate) : '—'}</p>
           </div>
           <button onClick={() => setDriverFilter('')} className="btn-ghost p-1.5 shrink-0" title="Clear driver filter">
             <X size={14} />
@@ -230,28 +230,28 @@ export default function FinanceFleetCollectionsPage() {
         return (
           <div className="card p-3.5 space-y-1.5">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">Weekly Deposits — {selectedDriver.full_name}</p>
-              <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${style.badge}`}>
+              <p className="text-caption font-semibold text-fg-muted ">Weekly Deposits — {selectedDriver.full_name}</p>
+              <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${style.badge}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} /> {depositStandingLabel(s)}
               </span>
             </div>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400">
+            <p className="text-micro text-fg-muted ">
               {s.owes > 0 && <span className="text-red-500 font-semibold">Owes {formatRwf(s.owes)} for days worked · </span>}
               {s.weekBehind > 0 && <span className="text-amber-600 dark:text-amber-400 font-medium">Behind {formatRwf(s.weekBehind)} on the week · </span>}
               {s.nextDueDate && (s.nextDueAmount > 0 ? `${formatRwf(s.nextDueAmount)} due by Sunday ${formatDateLabelSafe(s.nextDueDate)}` : `Paid for the week after Sunday ${formatDateLabelSafe(s.nextDueDate)}`)}
               {s.paidThrough && ` · paid through ${formatDateLabelSafe(s.paidThrough)}`}
             </p>
             {s.periods.length === 0 ? (
-              <p className="text-[10px] text-gray-400">Weekly tracking starts {formatDateLabelSafe(SUNDAY_RULE_START)}.</p>
+              <p className="text-micro text-fg-subtle">Weekly tracking starts {formatDateLabelSafe(SUNDAY_RULE_START)}.</p>
             ) : (
               [...s.periods].reverse().map((p) => {
                 const pStyle = p.state === 'open' ? DEPOSIT_TIER_STYLE.red : p.state === 'late' ? DEPOSIT_TIER_STYLE.yellow : DEPOSIT_TIER_STYLE.green;
                 return (
-                  <div key={p.start} className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-gray-50 dark:border-white/5 last:border-0">
-                    <span className="text-gray-500 dark:text-gray-400">
+                  <div key={p.start} className="flex items-center justify-between gap-2 text-caption py-1 border-b border-line-muted last:border-0">
+                    <span className="text-fg-muted ">
                       {p.isStartSegment ? 'First days' : 'Week of'} {formatDateLabelSafe(p.start)} – {formatDateLabelSafe(p.end)}
                     </span>
-                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${pStyle.badge}`}>
+                    <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${pStyle.badge}`}>
                       {depositPeriodLabel(p)}{p.clearedDate ? ` · ${formatDateLabelSafe(p.clearedDate)}` : ''}
                     </span>
                   </div>
@@ -264,8 +264,8 @@ export default function FinanceFleetCollectionsPage() {
 
       {filteredRows.length === 0 && (
         <div className="card p-12 text-center">
-          <Wallet size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-          <p className="text-[12px] text-gray-400">
+          <Wallet size={26} className="text-fg-subtle mx-auto mb-2" />
+          <p className="text-small text-fg-subtle">
             {rows.length === 0 ? 'No fleet collections logged yet.' : selectedDriver ? `${selectedDriver.full_name} has no collections matching this filter.` : 'No collections match this filter.'}
           </p>
         </div>
@@ -274,8 +274,8 @@ export default function FinanceFleetCollectionsPage() {
       {weeks.map((week) => (
         <div key={week.weekStart} className="space-y-1.5">
           <div className="flex items-center justify-between gap-2 px-0.5">
-            <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">{weekLabel(week.weekStart)}</p>
-            <p className="text-[11px] text-gray-400">{week.txs.length} collection{week.txs.length === 1 ? '' : 's'} · <span className="font-medium text-positive">{fmt(week.total)}</span></p>
+            <p className="text-caption font-semibold text-fg-muted ">{weekLabel(week.weekStart)}</p>
+            <p className="text-caption text-fg-subtle">{week.txs.length} collection{week.txs.length === 1 ? '' : 's'} · <span className="font-medium text-positive">{fmt(week.total)}</span></p>
           </div>
           <DataTable
             rows={week.txs}
@@ -284,7 +284,7 @@ export default function FinanceFleetCollectionsPage() {
             columns={[
               { header: 'Date', render: (t) => t.transaction_date },
               { header: 'Driver', render: (t) => t.linked_driver?.full_name ?? t.counterparty ?? '—' },
-              { header: 'Reference', render: (t) => <span className="font-mono text-[10px]">{t.reference}</span> },
+              { header: 'Reference', render: (t) => <span className="font-mono text-micro">{t.reference}</span> },
               {
                 header: 'Amount',
                 render: (t) => <span className="text-positive font-medium">+{fmt(t.amount)}</span>,
@@ -292,12 +292,12 @@ export default function FinanceFleetCollectionsPage() {
               {
                 header: 'Status',
                 render: (t) => (
-                  <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
+                  <span className="text-micro font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
                     {STATUS_META[t.status].label}
                   </span>
                 ),
               },
-              { header: '', render: (t) => (t.system_generated ? <span className="text-[9px] text-brand-600 dark:text-brand-300">Auto-posted</span> : null) },
+              { header: '', render: (t) => (t.system_generated ? <span className="text-micro text-brand-600 dark:text-brand-300">Auto-posted</span> : null) },
               {
                 header: '',
                 className: 'text-right',

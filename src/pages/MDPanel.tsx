@@ -51,10 +51,10 @@ export default function MDPanel() {
           <Mail size={18} className="text-brand-600 dark:text-brand-300" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-semibold">Email notifications</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Who's in charge of each follow-up, which emails are on, test sends, and what's gone out.</p>
+          <p className="text-small font-semibold">Email notifications</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Who's in charge of each follow-up, which emails are on, test sends, and what's gone out.</p>
         </div>
-        <ChevronRight size={16} className="text-gray-300 shrink-0" />
+        <ChevronRight size={16} className="text-fg-subtle shrink-0" />
       </button>
 
       <button
@@ -65,20 +65,20 @@ export default function MDPanel() {
           <Repeat size={18} className="text-brand-600 dark:text-brand-300" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-semibold">Recurring tasks</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Standing duties that land on everyone's task list automatically, with how often each gets done.</p>
+          <p className="text-small font-semibold">Recurring tasks</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Standing duties that land on everyone's task list automatically, with how often each gets done.</p>
         </div>
-        <ChevronRight size={16} className="text-gray-300 shrink-0" />
+        <ChevronRight size={16} className="text-fg-subtle shrink-0" />
       </button>
 
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><ClipboardList size={16} className="text-amber-600 dark:text-amber-300" /> Research Cases</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">Surveys, data collection, and the analytics built to make the call on each one.</p>
+        <p className="text-caption text-fg-subtle mt-0.5">Surveys, data collection, and the analytics built to make the call on each one.</p>
       </div>
 
       {cases.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-[12px] text-gray-400">No cases yet.</p>
+          <p className="text-small text-fg-subtle">No cases yet.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -94,13 +94,13 @@ export default function MDPanel() {
                   <Icon size={18} className="text-brand-600 dark:text-brand-300" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-semibold">Case {i + 1}: {c.name}</p>
-                  {c.description && <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{c.description}</p>}
+                  <p className="text-small font-semibold">Case {i + 1}: {c.name}</p>
+                  {c.description && <p className="text-caption text-fg-subtle mt-0.5 line-clamp-2">{c.description}</p>}
                 </div>
-                <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${c.status === 'active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-gray-100 text-gray-500 dark:bg-white/5'}`}>
+                <span className={`text-micro font-medium px-1.5 py-0.5 rounded-full shrink-0 ${c.status === 'active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-inset text-fg-muted '}`}>
                   {c.status === 'active' ? 'Active' : 'Archived'}
                 </span>
-                <ChevronRight size={16} className="text-gray-300 shrink-0" />
+                <ChevronRight size={16} className="text-fg-subtle shrink-0" />
               </button>
             );
           })}

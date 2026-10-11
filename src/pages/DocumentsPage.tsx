@@ -117,12 +117,12 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-4">
       {scopes.length > 1 && (
-        <div className="flex gap-0.5 p-0.5 bg-gray-100 dark:bg-white/5 rounded-lg w-fit flex-wrap">
+        <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit flex-wrap">
           {scopes.map((s) => (
             <button
               key={s.id}
               onClick={() => openScope(s.id)}
-              className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${scopeId === s.id ? 'bg-white dark:bg-navy-800 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-gray-500'}`}
+              className={`px-3 py-1.5 rounded-md text-small font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${scopeId === s.id ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}
             >
               <Building2 size={13} /> {s.label}
             </button>
@@ -146,8 +146,8 @@ export default function DocumentsPage() {
               <FileText size={16} className="text-brand-600 dark:text-brand-300" />
             </div>
             <div>
-              <p className="text-[12px] font-medium">All Documents</p>
-              <p className="text-[10px] text-gray-400">{scopeDocuments.length} file{scopeDocuments.length === 1 ? '' : 's'}</p>
+              <p className="text-small font-medium">All Documents</p>
+              <p className="text-micro text-fg-subtle">{scopeDocuments.length} file{scopeDocuments.length === 1 ? '' : 's'}</p>
             </div>
           </button>
           {scopeCategories.map((c) => (
@@ -160,20 +160,20 @@ export default function DocumentsPage() {
                 <Folder size={16} className="text-amber-600 dark:text-amber-300" />
               </div>
               <div>
-                <p className="text-[12px] font-medium truncate">{c.name}</p>
-                <p className="text-[10px] text-gray-400">{categoryDocCount(c.id)} file{categoryDocCount(c.id) === 1 ? '' : 's'}</p>
+                <p className="text-small font-medium truncate">{c.name}</p>
+                <p className="text-micro text-fg-subtle">{categoryDocCount(c.id)} file{categoryDocCount(c.id) === 1 ? '' : 's'}</p>
               </div>
             </button>
           ))}
           {canCreateCategory && (
             <button
               onClick={() => setNewCategoryOpen(true)}
-              className="p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-white/10 hover:border-brand/40 transition-all flex flex-col gap-2.5 text-left"
+              className="p-4 rounded-xl border-2 border-dashed border-line hover:border-brand/40 transition-all flex flex-col gap-2.5 text-left"
             >
-              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-white/5 flex items-center justify-center">
-                <FolderPlus size={16} className="text-gray-400" />
+              <div className="w-9 h-9 rounded-lg bg-inset flex items-center justify-center">
+                <FolderPlus size={16} className="text-fg-subtle" />
               </div>
-              <p className="text-[12px] font-medium text-gray-500">New Category</p>
+              <p className="text-small font-medium text-fg-muted">New Category</p>
             </button>
           )}
         </div>
@@ -183,7 +183,7 @@ export default function DocumentsPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2.5">
             <div>
-              <button onClick={() => setActiveCategoryId(null)} className="text-[11px] text-gray-400 hover:text-brand-600 dark:hover:text-brand-300 flex items-center gap-1 mb-1">
+              <button onClick={() => setActiveCategoryId(null)} className="text-caption text-fg-subtle hover:text-brand-600 dark:hover:text-brand-300 flex items-center gap-1 mb-1">
                 <ArrowLeft size={11} /> {currentScopeLabel}
               </button>
               <h2 className="text-base font-semibold flex items-center gap-2">
@@ -201,8 +201,8 @@ export default function DocumentsPage() {
 
           {visibleDocuments.length === 0 && (
             <div className="card p-10 text-center">
-              <FileText size={28} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">No documents here yet.</p>
+              <FileText size={28} className="text-fg-subtle mx-auto mb-2" />
+              <p className="text-sm text-fg-subtle">No documents here yet.</p>
             </div>
           )}
 
@@ -219,7 +219,7 @@ export default function DocumentsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{d.title}</p>
-                    <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-2 text-xs text-fg-subtle mt-0.5 flex-wrap">
                       {activeCategoryId === 'all' && d.document_category && (
                         <>
                           <span className="flex items-center gap-1"><Folder size={11} /> {d.document_category.name}</span>
@@ -243,7 +243,7 @@ export default function DocumentsPage() {
                       canEdit={canEdit(d)}
                     />
                     {canEdit(d) && (
-                      <button onClick={() => remove(d)} className="text-gray-300 hover:text-red-500 transition-colors p-1.5">
+                      <button onClick={() => remove(d)} className="text-fg-subtle hover:text-red-500 transition-colors p-1.5">
                         <Trash2 size={15} />
                       </button>
                     )}
@@ -362,7 +362,7 @@ function NewCategoryModal({
     <Modal open={open} onClose={close} title="New Category" subtitle={scopeLabel} maxWidth="max-w-sm">
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Category name</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Category name</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -372,7 +372,7 @@ function NewCategoryModal({
             autoFocus
           />
         </div>
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={close} className="btn-ghost">Cancel</button>
           <button onClick={save} disabled={saving || !name.trim()} className="btn-primary disabled:opacity-50">
@@ -425,40 +425,40 @@ function DocumentDrawer({
     <Modal open onClose={onClose} title={editing ? 'Edit Document' : doc.title} subtitle={`Uploaded by ${doc.uploader?.full_name ?? 'Unknown'} · ${timeAgo(doc.created_at)}`} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Title</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Title</label>
           <input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!editing} className="input" autoFocus />
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Category</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Category</label>
           {editing ? (
             <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input">
               <option value="">No category</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           ) : (
-            <p className="text-[12px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+            <p className="text-small text-fg-muted flex items-center gap-1.5">
               <Folder size={13} /> {doc.document_category?.name ?? 'No category'}
             </p>
           )}
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Visible to</label>
-          <p className="text-[12px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Visible to</label>
+          <p className="text-small text-fg-muted flex items-center gap-1.5">
             <Building2 size={13} /> {doc.department?.name ?? 'Unknown'}
           </p>
         </div>
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={() => setEditing(false)} className="btn-ghost">Cancel</button>
             <button onClick={save} disabled={saving || !title.trim()} className="btn-primary disabled:opacity-50">
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             {downloadUrl && (
               <a href={downloadUrl} target="_blank" rel="noreferrer" className="btn-ghost flex items-center gap-1.5">
                 <Download size={13} /> Download

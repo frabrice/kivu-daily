@@ -138,7 +138,7 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Back button */}
-      <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+      <button onClick={onBack} className="flex items-center gap-2 text-sm text-fg-muted hover:text-fg transition-colors">
         <ArrowLeft size={18} />
         Back to Dashboard
       </button>
@@ -149,17 +149,17 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
           <Avatar name={employee.full_name} url={employee.avatar_url} size="xl" />
           <div className="flex-1">
             <h1 className="text-2xl font-bold">{employee.full_name}</h1>
-            <p className="text-sm text-gray-500">{employee.department?.name ?? 'No department'}</p>
+            <p className="text-sm text-fg-muted">{employee.department?.name ?? 'No department'}</p>
             <div className="flex items-center gap-4 mt-2">
               <span className="flex items-center gap-1 text-xs text-orange-500 font-medium">
                 <Flame size={14} />
                 {streak} day streak
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-fg-subtle">
                 {userTasks.filter((t) => t.completed).length} total tasks completed
               </span>
               {!employee.is_active && (
-                <span className="text-[9px] font-medium text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded">
+                <span className="text-micro font-medium text-fg-subtle bg-inset px-1.5 py-0.5 rounded">
                   Inactive
                 </span>
               )}
@@ -167,7 +167,7 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
           </div>
           <div className="text-right">
             <p className="text-4xl font-bold" style={{ color: completionColor(employee.todayPct) }}>{Math.round(employee.todayPct)}%</p>
-            <p className="text-xs text-gray-400">Today's Completion</p>
+            <p className="text-xs text-fg-subtle">Today's Completion</p>
           </div>
         </div>
       </div>
@@ -190,15 +190,15 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
           <h3 className="text-sm font-semibold mb-3">Quick Stats</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-400">Tasks Today</span>
+              <span className="text-sm text-fg-subtle">Tasks Today</span>
               <span className="text-lg font-bold">{employee.todayTotal}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-400">Completed Today</span>
+              <span className="text-sm text-fg-subtle">Completed Today</span>
               <span className="text-lg font-bold text-green-500">{employee.todayCompleted}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-400">Current Streak</span>
+              <span className="text-sm text-fg-subtle">Current Streak</span>
               <span className="text-lg font-bold text-orange-500">{streak} days</span>
             </div>
           </div>
@@ -206,14 +206,14 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
       </div>
 
       {/* Date navigation */}
-      <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-gray-50 dark:bg-white/5 max-w-md">
+      <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-inset max-w-md">
         <button onClick={goPrevDay} className="btn-ghost p-2" aria-label="Previous day">
           <ChevronLeft size={20} />
         </button>
         <div className="relative">
           <button
             onClick={() => setShowDatePicker((v) => !v)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-hover transition-colors"
           >
             <Calendar size={16} className="text-[#007BFF]" />
             <span className="text-sm font-semibold">{formatDateLabel(selectedDate)}</span>
@@ -238,7 +238,7 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">Tasks for {formatDateLabel(selectedDate)}</h3>
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-fg-subtle">
             {dayTasks.filter((t) => t.completed).length}/{dayTasks.length} completed
             {dayTasks.length > 0 && (
               <span className="ml-2 font-medium" style={{ color: completionColor(completionPct(dayTasks)) }}>
@@ -250,7 +250,7 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
         <div className="space-y-2">
           {dayTasks.length === 0 && (
             <div className="card p-8 text-center">
-              <p className="text-sm text-gray-400">No tasks for this day.</p>
+              <p className="text-sm text-fg-subtle">No tasks for this day.</p>
             </div>
           )}
           {dayTasks.map((t) => (
@@ -282,7 +282,7 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
         )}
         <div className="space-y-3">
           {dayComments.length === 0 && (
-            <p className="text-sm text-gray-400">No comments for this day.</p>
+            <p className="text-sm text-fg-subtle">No comments for this day.</p>
           )}
           {dayComments.map((c) => (
             <div key={c.id} className="card p-4 animate-fade-in">
@@ -290,13 +290,13 @@ export default function EmployeeProfilePage({ employee, allTasks, onBack, canCom
                 <Avatar name={c.author?.full_name ?? 'User'} url={c.author?.avatar_url} size="md" />
                 <div>
                   <p className="text-sm font-semibold">{c.author?.full_name}</p>
-                  <p className="text-xs text-gray-400 capitalize">{c.author?.role === 'managing_director' ? 'Managing Director' : c.author?.role}</p>
+                  <p className="text-xs text-fg-subtle capitalize">{c.author?.role === 'managing_director' ? 'Managing Director' : c.author?.role}</p>
                 </div>
-                <span className="ml-auto text-xs text-gray-400">
+                <span className="ml-auto text-xs text-fg-subtle">
                   {new Date(c.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{c.content}</p>
+              <p className="text-sm text-fg-muted leading-relaxed">{c.content}</p>
             </div>
           ))}
         </div>
@@ -352,17 +352,17 @@ function TaskDetailCard({ task }: { task: Task }) {
         ? 'border-blue-300 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-500/5'
         : task.review_status === 'not_done'
         ? 'border-red-300 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/5'
-        : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f1f3a]'
+        : 'border-line bg-white dark:bg-[#0f1f3a]'
     }`}>
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-medium ${
-            task.completed ? 'text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'
+            task.completed ? 'text-fg-subtle ' : 'text-fg '
           }`}>
             {task.title}
           </p>
           {task.description && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{task.description}</p>
+            <p className="text-xs text-fg-muted mt-0.5">{task.description}</p>
           )}
         </div>
         {task.review_status && (
@@ -373,11 +373,11 @@ function TaskDetailCard({ task }: { task: Task }) {
       </div>
 
       {task.review_note && (
-        <div className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 dark:bg-white/5">
-          <FileText size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-2 p-2 rounded-lg bg-inset ">
+          <FileText size={14} className="text-fg-subtle mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Employee Note:</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{task.review_note}</p>
+            <p className="text-xs text-fg-muted ">Employee Note:</p>
+            <p className="text-sm text-fg-muted ">{task.review_note}</p>
           </div>
         </div>
       )}
@@ -386,7 +386,7 @@ function TaskDetailCard({ task }: { task: Task }) {
         <div>
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-fg-muted hover:text-fg-muted transition-colors"
           >
             <History size={14} />
             <span>View history ({history.length})</span>
@@ -395,14 +395,14 @@ function TaskDetailCard({ task }: { task: Task }) {
           {showHistory && (
             <div className="mt-2 space-y-1.5 max-h-32 overflow-y-auto">
               {history.map((h, idx) => (
-                <div key={`${h.date}-${idx}`} className="p-2 rounded-lg bg-gray-100 dark:bg-white/5 text-xs">
+                <div key={`${h.date}-${idx}`} className="p-2 rounded-lg bg-inset text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">{formatDateLabel(h.date)}</span>
+                    <span className="text-fg-muted ">{formatDateLabel(h.date)}</span>
                     <span className={`font-medium px-1.5 py-0.5 rounded ${statusConfig[h.review_status].bgColor} ${statusConfig[h.review_status].color}`}>
                       {statusConfig[h.review_status].label}
                     </span>
                   </div>
-                  {h.review_note && <p className="text-gray-500 dark:text-gray-400 mt-1">{h.review_note}</p>}
+                  {h.review_note && <p className="text-fg-muted mt-1">{h.review_note}</p>}
                 </div>
               ))}
             </div>

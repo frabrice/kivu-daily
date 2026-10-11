@@ -141,11 +141,11 @@ export default function OutreachReport({ drivers, statuses, calls, round, names 
     <div className="space-y-4">
       <div className="card p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-[13px] font-semibold">Non-Insider outreach — full report</p>
-          <p className="text-[11px] text-gray-500">All {total} Non-Insider drivers, every call since the campaign started · round {round?.number ?? 1}</p>
+          <p className="text-body font-semibold">Non-Insider outreach — full report</p>
+          <p className="text-caption text-fg-muted">All {total} Non-Insider drivers, every call since the campaign started · round {round?.number ?? 1}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={csv} className="btn-ghost border border-gray-200 dark:border-white/10 flex items-center gap-1.5"><FileSpreadsheet size={14} /> Download list (Excel)</button>
+          <button onClick={csv} className="btn-ghost border border-line flex items-center gap-1.5"><FileSpreadsheet size={14} /> Download list (Excel)</button>
           <button onClick={pdf} disabled={busy} className="btn-primary flex items-center gap-1.5 disabled:opacity-50"><Download size={14} /> {busy ? 'Preparing…' : 'Download report (PDF)'}</button>
         </div>
       </div>
@@ -206,21 +206,21 @@ export default function OutreachReport({ drivers, statuses, calls, round, names 
         </ChartCard>
 
         <ChartCard title="Agents" sub="Every outreach call since the start.">
-          <table className="w-full text-[12px]">
-            <thead><tr className="text-left text-gray-500 text-[11px]">{['Agent', 'Calls', 'Drivers', 'Reached', 'Said yes'].map((h, i) => <th key={h} className={`py-1.5 pr-3 font-medium ${i ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
+          <table className="w-full text-small">
+            <thead><tr className="text-left text-fg-muted text-caption">{['Agent', 'Calls', 'Drivers', 'Reached', 'Said yes'].map((h, i) => <th key={h} className={`py-1.5 pr-3 font-medium ${i ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
             <tbody>{agents.map((a) => (
-              <tr key={a.name} className="border-t border-gray-100 dark:border-white/5">
+              <tr key={a.name} className="border-t border-line-muted ">
                 <td className="py-1.5 pr-3 font-medium">{a.name}</td>
                 <td className="py-1.5 pr-3 text-right tabular-nums">{a.calls}</td>
                 <td className="py-1.5 pr-3 text-right tabular-nums">{a.drivers.size}</td>
-                <td className="py-1.5 pr-3 text-right tabular-nums">{a.reached} <span className="text-gray-400">{pct(a.reached, a.calls)}</span></td>
+                <td className="py-1.5 pr-3 text-right tabular-nums">{a.reached} <span className="text-fg-subtle">{pct(a.reached, a.calls)}</span></td>
                 <td className="py-1.5 text-right tabular-nums">{a.yes}</td>
               </tr>
             ))}</tbody>
           </table>
-          <div className="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-gray-100 dark:border-white/5 text-[11px]">
-            <div><p className="font-semibold mb-1">How much they use our app</p>{usage.map((u) => <p key={u.label} className="flex justify-between text-gray-600 dark:text-gray-300"><span>{u.label}</span><b>{u.n}</b></p>)}</div>
-            <div><p className="font-semibold mb-1">Where interested drivers work</p>{areas.length ? areas.map(([a, n]) => <p key={a} className="flex justify-between text-gray-600 dark:text-gray-300"><span className="truncate">{a}</span><b>{n}</b></p>) : <p className="text-gray-400">No areas recorded yet.</p>}</div>
+          <div className="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-line-muted text-caption">
+            <div><p className="font-semibold mb-1">How much they use our app</p>{usage.map((u) => <p key={u.label} className="flex justify-between text-fg-muted "><span>{u.label}</span><b>{u.n}</b></p>)}</div>
+            <div><p className="font-semibold mb-1">Where interested drivers work</p>{areas.length ? areas.map(([a, n]) => <p key={a} className="flex justify-between text-fg-muted "><span className="truncate">{a}</span><b>{n}</b></p>) : <p className="text-fg-subtle">No areas recorded yet.</p>}</div>
           </div>
         </ChartCard>
       </div>
@@ -229,37 +229,37 @@ export default function OutreachReport({ drivers, statuses, calls, round, names 
         <div className="flex flex-wrap items-center gap-2">
           {QUICK.map((x) => (
             <button key={x.key} onClick={() => setQuick(x.key)} aria-pressed={quick === x.key}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${quick === x.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500'}`}>{x.label}</button>
+              className={`px-2.5 py-1 rounded-full text-caption font-medium border ${quick === x.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-line text-fg-muted'}`}>{x.label}</button>
           ))}
-          <select value={category} onChange={(e) => setCategory(e.target.value as Category | '')} className="input py-1 text-[11px] w-auto" aria-label="Category">
+          <select value={category} onChange={(e) => setCategory(e.target.value as Category | '')} className="input py-1 text-caption w-auto" aria-label="Category">
             <option value="">Any category</option>
             {CATEGORIES.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
           </select>
           <div className="relative ml-auto">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} className="input pl-8 py-1.5 text-[12px] w-56" placeholder="Name, phone, plate or area" aria-label="Search" />
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} className="input pl-8 py-1.5 text-small w-56" placeholder="Name, phone, plate or area" aria-label="Search" />
           </div>
         </div>
-        <p className="text-[11px] text-gray-500">{shown.length} driver{shown.length === 1 ? '' : 's'} · "Download list" exports exactly this list.</p>
+        <p className="text-caption text-fg-muted">{shown.length} driver{shown.length === 1 ? '' : 's'} · "Download list" exports exactly this list.</p>
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px] min-w-[980px]">
-            <thead><tr className="text-left text-gray-500 text-[11px]">
+          <table className="w-full text-small min-w-[980px]">
+            <thead><tr className="text-left text-fg-muted text-caption">
               {['Driver', 'Car', 'Category', 'Updated app', 'Device', 'Branding', 'Came', 'Area', 'Calls', 'Last call', 'Note'].map((h) => <th key={h} className="py-1.5 pr-3 font-medium">{h}</th>)}
             </tr></thead>
             <tbody>
               {shown.map((r) => (
-                <tr key={r.d.id} className="border-t border-gray-100 dark:border-white/5 align-top">
-                  <td className="py-1.5 pr-3"><p className="font-medium">{r.d.full_name}</p><a href={`tel:${r.d.phone}`} className="text-[11px] text-brand-600 dark:text-brand-300 flex items-center gap-1"><Phone size={10} />{r.d.phone}</a></td>
-                  <td className="py-1.5 pr-3 whitespace-nowrap">{r.d.car?.plate_number ?? '—'}<span className="block text-[10px] text-gray-500">{[r.d.car?.make, r.d.car?.model].filter(Boolean).join(' ')}</span></td>
+                <tr key={r.d.id} className="border-t border-line-muted align-top">
+                  <td className="py-1.5 pr-3"><p className="font-medium">{r.d.full_name}</p><a href={`tel:${r.d.phone}`} className="text-caption text-brand-600 dark:text-brand-300 flex items-center gap-1"><Phone size={10} />{r.d.phone}</a></td>
+                  <td className="py-1.5 pr-3 whitespace-nowrap">{r.d.car?.plate_number ?? '—'}<span className="block text-micro text-fg-muted">{[r.d.car?.make, r.d.car?.model].filter(Boolean).join(' ')}</span></td>
                   <td className="py-1.5 pr-3">{CATEGORY_LABEL[r.category]}</td>
-                  <td className="py-1.5 pr-3">{r.s?.app_status ? APP_STATUS_SHORT[r.s.app_status] : '—'}{r.s?.app_usage && <span className="block text-[10px] text-gray-500">uses: {APP_USAGE_LABEL[r.s.app_usage].toLowerCase()}</span>}</td>
+                  <td className="py-1.5 pr-3">{r.s?.app_status ? APP_STATUS_SHORT[r.s.app_status] : '—'}{r.s?.app_usage && <span className="block text-micro text-fg-muted">uses: {APP_USAGE_LABEL[r.s.app_usage].toLowerCase()}</span>}</td>
                   <td className="py-1.5 pr-3"><Ans v={r.s?.device_answer} /></td>
                   <td className="py-1.5 pr-3"><Ans v={r.s?.branding_answer} /></td>
                   <td className="py-1.5 pr-3 whitespace-nowrap">{r.s?.came_to_office_on ? shortDate(r.s.came_to_office_on) : '—'}</td>
                   <td className="py-1.5 pr-3">{r.s?.usual_area ?? '—'}</td>
                   <td className="py-1.5 pr-3 tabular-nums">{r.calls}</td>
-                  <td className="py-1.5 pr-3 whitespace-nowrap">{r.s?.last_called_at ? <>{shortDate(r.s.last_called_at)}<span className="block text-[10px] text-gray-500">{r.s.last_result ? RESULT_LABEL[r.s.last_result] : ''}{r.s.last_agent_id && names[r.s.last_agent_id] ? ` · ${names[r.s.last_agent_id].split(/\s+/)[0]}` : ''}</span></> : '—'}</td>
-                  <td className="py-1.5 text-gray-600 dark:text-gray-300 max-w-[220px]">{r.lastNote ?? ''}</td>
+                  <td className="py-1.5 pr-3 whitespace-nowrap">{r.s?.last_called_at ? <>{shortDate(r.s.last_called_at)}<span className="block text-micro text-fg-muted">{r.s.last_result ? RESULT_LABEL[r.s.last_result] : ''}{r.s.last_agent_id && names[r.s.last_agent_id] ? ` · ${names[r.s.last_agent_id].split(/\s+/)[0]}` : ''}</span></> : '—'}</td>
+                  <td className="py-1.5 text-fg-muted max-w-[220px]">{r.lastNote ?? ''}</td>
                 </tr>
               ))}
             </tbody>
@@ -278,17 +278,17 @@ function save(blob: Blob, name: string) {
 }
 
 function Ans({ v }: { v: 'yes' | 'thinking' | 'no' | null | undefined }) {
-  if (!v) return <span className="text-gray-400">—</span>;
-  const cls = v === 'yes' ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200' : v === 'thinking' ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200' : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300';
-  return <span className={`text-[11px] px-1.5 py-0.5 rounded ${cls}`}>{ANSWER_LABEL[v]}</span>;
+  if (!v) return <span className="text-fg-subtle">—</span>;
+  const cls = v === 'yes' ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200' : v === 'thinking' ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200' : 'bg-inset text-fg-muted  ';
+  return <span className={`text-caption px-1.5 py-0.5 rounded ${cls}`}>{ANSWER_LABEL[v]}</span>;
 }
 
 function Tile({ icon: Icon, label, value, sub, good }: { icon: typeof Users2; label: string; value: string; sub: string; good?: boolean }) {
   return (
     <div className={`card p-4 ${good ? 'ring-1 ring-emerald-200 dark:ring-emerald-500/30' : ''}`}>
-      <p className="text-[11px] text-gray-500 flex items-center gap-1.5"><Icon size={13} /> {label}</p>
-      <p className="text-[22px] font-bold leading-tight mt-1 tabular-nums">{value}</p>
-      <p className="text-[11px] text-gray-500 mt-0.5">{sub}</p>
+      <p className="text-caption text-fg-muted flex items-center gap-1.5"><Icon size={13} /> {label}</p>
+      <p className="text-h2 font-bold leading-tight mt-1 tabular-nums">{value}</p>
+      <p className="text-caption text-fg-muted mt-0.5">{sub}</p>
     </div>
   );
 }
@@ -296,8 +296,8 @@ function Tile({ icon: Icon, label, value, sub, good }: { icon: typeof Users2; la
 function ChartCard({ title, sub, legend, children }: { title: string; sub: string; legend?: { l: string; c: string }[]; children: React.ReactNode }) {
   return (
     <div className="card p-4 space-y-2">
-      <div><p className="text-[13px] font-semibold">{title}</p><p className="text-[11px] text-gray-500">{sub}</p></div>
-      {legend && <div className="flex flex-wrap gap-x-4 gap-y-1">{legend.map((x) => <span key={x.l} className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: x.c }} />{x.l}</span>)}</div>}
+      <div><p className="text-body font-semibold">{title}</p><p className="text-caption text-fg-muted">{sub}</p></div>
+      {legend && <div className="flex flex-wrap gap-x-4 gap-y-1">{legend.map((x) => <span key={x.l} className="flex items-center gap-1.5 text-caption text-fg-muted "><span className="w-2.5 h-2.5 rounded-sm" style={{ background: x.c }} />{x.l}</span>)}</div>}
       {children}
     </div>
   );

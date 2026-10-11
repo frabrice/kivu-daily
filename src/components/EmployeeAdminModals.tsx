@@ -8,8 +8,8 @@ function FormSection({ icon: Icon, title, children }: { icon: typeof Mail; title
   return (
     <div className="mb-6">
       <div className="flex items-center gap-1.5 mb-3">
-        <Icon size={13} className="text-gray-400" />
-        <h3 className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{title}</h3>
+        <Icon size={13} className="text-fg-subtle" />
+        <h3 className="text-micro font-semibold text-fg-subtle uppercase tracking-wide">{title}</h3>
       </div>
       <div className="space-y-3">{children}</div>
     </div>
@@ -85,17 +85,17 @@ export function CreateUserModal({
         <div className="text-center py-6">
           {warning ? (
             <>
-              <p className="text-[12px] font-medium text-orange-600 dark:text-orange-400">Created, but the invite didn't send</p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">{warning}</p>
+              <p className="text-small font-medium text-orange-600 dark:text-orange-400">Created, but the invite didn't send</p>
+              <p className="text-caption text-fg-muted mt-2">{warning}</p>
             </>
           ) : (
             <>
-              <p className="text-[12px] font-medium">Invite sent to {email}</p>
-              <p className="text-[11px] text-gray-400 mt-1">They'll get an email with a link to sign in and set their own password.</p>
+              <p className="text-small font-medium">Invite sent to {email}</p>
+              <p className="text-caption text-fg-subtle mt-1">They'll get an email with a link to sign in and set their own password.</p>
             </>
           )}
           {replaced && (
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 max-w-sm mx-auto">
+            <p className="text-caption text-fg-muted mt-3 max-w-sm mx-auto">
               This email belonged to {replaced}'s former account. That account stays deactivated with its history kept, and this is a brand-new account.
             </p>
           )}
@@ -112,20 +112,20 @@ export function CreateUserModal({
       <form onSubmit={submit}>
         <FormSection icon={UserCog} title="Identity">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Full Name</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Full Name</label>
             <input required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Doe" className="input" autoFocus />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Email</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Email</label>
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@kivuride.com" className="input" />
-            <p className="text-[10px] text-gray-400 mt-1">They'll receive an invite email here to set their own password.</p>
+            <p className="text-micro text-fg-subtle mt-1">They'll receive an invite email here to set their own password.</p>
           </div>
         </FormSection>
 
         {!lockedDepartmentId && (
           <FormSection icon={Shield} title="Access">
             <div>
-              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Role</label>
+              <label className="block text-caption font-medium mb-1.5 text-fg-muted">Role</label>
               <select value={role} onChange={(e) => setRole(e.target.value as Profile['role'])} className="input">
                 <option value="employee">Employee</option>
                 <option value="managing_director">Managing Director</option>
@@ -133,23 +133,23 @@ export function CreateUserModal({
             </div>
             {role === 'employee' && (
               <div>
-                <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Department</label>
+                <label className="block text-caption font-medium mb-1.5 text-fg-muted">Department</label>
                 <select value={deptId} onChange={(e) => setDeptId(e.target.value)} className="input">
                   <option value="">Select a department</option>
                   {departments.map((d) => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
-                <p className="text-[10px] text-gray-400 mt-1">Determines which workspace pages this employee sees.</p>
+                <p className="text-micro text-fg-subtle mt-1">Determines which workspace pages this employee sees.</p>
               </div>
             )}
           </FormSection>
         )}
 
         {error && (
-          <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2 mb-4">{error}</div>
+          <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2 mb-4">{error}</div>
         )}
-        <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-white/5">
+        <div className="flex justify-end gap-2 pt-4 border-t border-line-muted ">
           <button type="button" onClick={onClose} className="btn-ghost">Cancel</button>
           <button type="submit" disabled={loading} className="btn-primary disabled:opacity-50 flex items-center gap-1.5">
             {loading && <Loader2 size={14} className="animate-spin" />}
@@ -194,7 +194,7 @@ export function EditUserModal({
     <Modal open onClose={onClose} title={`Edit ${user.full_name}`} maxWidth="max-w-lg">
       <FormSection icon={Shield} title="Access">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Role</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Role</label>
           <select value={role} onChange={(e) => setRole(e.target.value as Profile['role'])} className="input" disabled={!allowMDRole}>
             <option value="employee">Employee</option>
             {allowMDRole && <option value="managing_director">Managing Director</option>}
@@ -202,7 +202,7 @@ export function EditUserModal({
         </div>
         {role === 'employee' && (
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Department</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Department</label>
             <select value={deptId} onChange={(e) => setDeptId(e.target.value)} className="input">
               <option value="">Select a department</option>
               {departments.map((d) => (
@@ -212,15 +212,15 @@ export function EditUserModal({
           </div>
         )}
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500" htmlFor="in-charge-of">In charge of</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted" htmlFor="in-charge-of">In charge of</label>
           <input id="in-charge-of" value={inChargeOf} onChange={(e) => setInChargeOf(e.target.value)} className="input" placeholder="e.g. Head of IT, Finance, Operations Manager" />
-          <p className="text-[10px] text-gray-400 mt-1">Shown to the Call Center when they assign a caller's issue: "{user.full_name.trim()} ({inChargeOf.trim() || 'In charge of…'})".</p>
+          <p className="text-micro text-fg-subtle mt-1">Shown to the Call Center when they assign a caller's issue: "{user.full_name.trim()} ({inChargeOf.trim() || 'In charge of…'})".</p>
         </div>
       </FormSection>
       {error && (
-        <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2 mb-4">{error}</div>
+        <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2 mb-4">{error}</div>
       )}
-      <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-white/5">
+      <div className="flex justify-end gap-2 pt-4 border-t border-line-muted ">
         <button onClick={onClose} className="btn-ghost">Cancel</button>
         <button onClick={save} className="btn-primary">Save</button>
       </div>

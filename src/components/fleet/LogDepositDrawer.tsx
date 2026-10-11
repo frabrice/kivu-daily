@@ -67,9 +67,9 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
       {!confirming ? (
         <div className="space-y-3">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Amount (RWF)</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Amount (RWF)</label>
             <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="input" />
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-micro text-fg-subtle mt-1">
               {before.weekBehind > 0
                 ? `Behind ${formatRwf(before.weekBehind)} on the week${before.owes > 0 ? ` · owes ${formatRwf(before.owes)} for days already worked` : ''}${before.ruleInForce ? ' — the full amount clears them to drive' : ''}.`
                 : before.nextDueAmount > 0
@@ -77,25 +77,25 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
                   : 'Already paid for next week - this goes further ahead.'}
             </p>
             {numAmount > 0 && after.paidThrough && (
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Covers them through {formatDateLabelSafe(after.paidThrough)}.</p>
+              <p className="text-micro text-fg-muted mt-1">Covers them through {formatDateLabelSafe(after.paidThrough)}.</p>
             )}
-            {numAmount > 0 && effect && <p className={`text-[10px] font-medium mt-1 ${effect.tone}`}>{effect.text}</p>}
+            {numAmount > 0 && effect && <p className={`text-micro font-medium mt-1 ${effect.tone}`}>{effect.text}</p>}
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Date Paid</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Date Paid</label>
             <DateInput value={paidDate} onChange={setPaidDate} />
-            <p className="text-[10px] text-gray-400 mt-1">Every driver pays by Sunday for the Monday–Sunday week ahead.</p>
+            <p className="text-micro text-fg-subtle mt-1">Every driver pays by Sunday for the Monday–Sunday week ahead.</p>
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Payment Method</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Payment Method</label>
             <div className="grid grid-cols-2 gap-2">
               {DEPOSIT_PAYMENT_METHODS.map((m) => (
                 <button
                   key={m.key}
                   type="button"
                   onClick={() => setPaymentMethod(m.key)}
-                  className={`p-2 rounded-lg border text-left text-[11px] flex items-center gap-1.5 ${
-                    paymentMethod === m.key ? 'border-brand bg-brand/10' : 'border-gray-200 dark:border-white/10'
+                  className={`p-2 rounded-lg border text-left text-caption flex items-center gap-1.5 ${
+                    paymentMethod === m.key ? 'border-brand bg-brand/10' : 'border-line '
                   }`}
                 >
                   {m.key === 'momo' ? <Smartphone size={12} /> : <Landmark size={12} />}
@@ -106,14 +106,14 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
           </div>
           {paymentMethod === 'bank' && (
             <div>
-              <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Which Bank</label>
+              <label className="block text-caption font-medium mb-1.5 text-fg-muted">Which Bank</label>
               <input value={bankName} onChange={(e) => setBankName(e.target.value)} className="input" placeholder="e.g. Bank of Kigali" autoFocus />
             </div>
           )}
 
-          {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+          {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Cancel</button>
             <button onClick={() => setConfirming(true)} disabled={!canContinue} className="btn-primary disabled:opacity-50">
               Continue
@@ -122,21 +122,21 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="card p-3.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 flex items-center gap-1.5"><ShieldCheck size={12} /> Confirm this deposit</p>
-            <p className="text-[13px]"><span className="font-semibold">{numAmount.toLocaleString()} RWF</span> for <span className="font-semibold">{driver.full_name}</span></p>
-            <p className="text-[12px] text-gray-500 dark:text-gray-400">Paid on {formatDateLabelSafe(paidDate)}</p>
-            <p className="text-[12px] text-gray-500 dark:text-gray-400">
+          <div className="card p-3.5 bg-inset border border-line space-y-1.5">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle flex items-center gap-1.5"><ShieldCheck size={12} /> Confirm this deposit</p>
+            <p className="text-body"><span className="font-semibold">{numAmount.toLocaleString()} RWF</span> for <span className="font-semibold">{driver.full_name}</span></p>
+            <p className="text-small text-fg-muted ">Paid on {formatDateLabelSafe(paidDate)}</p>
+            <p className="text-small text-fg-muted ">
               Via {paymentMethod === 'momo' ? 'MoMo' : `Bank Transfer · ${bankName.trim()}`}
             </p>
-            {after.paidThrough && <p className="text-[12px] text-gray-500 dark:text-gray-400">Covers through {formatDateLabelSafe(after.paidThrough)}</p>}
-            {effect && <p className={`text-[12px] font-medium ${effect.tone}`}>{effect.text}</p>}
+            {after.paidThrough && <p className="text-small text-fg-muted ">Covers through {formatDateLabelSafe(after.paidThrough)}</p>}
+            {effect && <p className={`text-small font-medium ${effect.tone}`}>{effect.text}</p>}
           </div>
-          <p className="text-[10px] text-gray-400">It stays pending until Finance confirms it. If this doesn't cover everything owed, you can log another payment for the rest at any time.</p>
+          <p className="text-micro text-fg-subtle">It stays pending until Finance confirms it. If this doesn't cover everything owed, you can log another payment for the rest at any time.</p>
 
-          {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+          {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={() => setConfirming(false)} disabled={saving} className="btn-ghost">Back</button>
             <button onClick={save} disabled={saving} className="btn-primary disabled:opacity-50">
               {saving ? 'Saving…' : 'Confirm & Log Deposit'}

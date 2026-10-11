@@ -60,10 +60,10 @@ export default function DriverLinkPicker({ value, onChange, autoMatchPhone }: {
     return (
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-brand/30 bg-brand/5">
         <Car size={14} className="text-brand-600 dark:text-brand-300 shrink-0" />
-        <div className="flex-1 min-w-0 text-[12px]">
+        <div className="flex-1 min-w-0 text-small">
           <span className="font-medium">{value.name}</span>
-          {value.plate && <span className="text-gray-500"> · {value.plate}</span>}
-          <span className="text-[10px] text-gray-400 ml-1.5">{value.kind === 'internal' ? 'Our driver' : 'Non-Insider'}</span>
+          {value.plate && <span className="text-fg-muted"> · {value.plate}</span>}
+          <span className="text-micro text-fg-subtle ml-1.5">{value.kind === 'internal' ? 'Our driver' : 'Non-Insider'}</span>
         </div>
         <button type="button" onClick={() => onChange(null)} className="btn-ghost p-1" aria-label="Remove driver link"><X size={13} /></button>
       </div>
@@ -73,29 +73,29 @@ export default function DriverLinkPicker({ value, onChange, autoMatchPhone }: {
   return (
     <div className="space-y-1.5">
       {phoneMatch && (
-        <button type="button" onClick={() => onChange(phoneMatch)} className="w-full text-left text-[11px] px-3 py-2 rounded-lg bg-brand/5 border border-brand/20 text-brand-700 dark:text-brand-300">
+        <button type="button" onClick={() => onChange(phoneMatch)} className="w-full text-left text-caption px-3 py-2 rounded-lg bg-brand/5 border border-brand/20 text-brand-700 dark:text-brand-300">
           This number belongs to <b>{phoneMatch.name}</b>{phoneMatch.plate ? ` · ${phoneMatch.plate}` : ''} ({phoneMatch.kind === 'internal' ? 'our driver' : 'Non-Insider'}) — tap to link
         </button>
       )}
       <div className="relative">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle" />
         <input value={q} onChange={(e) => setQ(e.target.value)} className="input pl-8" placeholder="Search driver name, phone or plate (optional)" aria-label="Search driver or car" />
       </div>
       {results.length > 0 && (
-        <div className="rounded-lg border border-gray-200 dark:border-white/10 divide-y divide-gray-50 dark:divide-white/5 max-h-52 overflow-y-auto">
+        <div className="rounded-lg border border-line divide-y divide-line-muted max-h-52 overflow-y-auto">
           {results.map((d) => (
             <button key={`${d.kind}-${d.id}`} type="button" onClick={() => { onChange(d); setQ(''); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-white/[0.03]">
-              <Car size={13} className="text-gray-400 shrink-0" />
-              <span className="flex-1 min-w-0 text-[12px] truncate"><b className="font-medium">{d.name}</b>{d.plate ? ` · ${d.plate}` : ''}{d.phone ? ` · ${d.phone}` : ''}</span>
-              <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${d.kind === 'internal' ? 'bg-brand/10 text-brand-700 dark:text-brand-300' : 'bg-gray-100 text-gray-500 dark:bg-white/5'}`}>
+              className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-hover ">
+              <Car size={13} className="text-fg-subtle shrink-0" />
+              <span className="flex-1 min-w-0 text-small truncate"><b className="font-medium">{d.name}</b>{d.plate ? ` · ${d.plate}` : ''}{d.phone ? ` · ${d.phone}` : ''}</span>
+              <span className={`text-micro font-medium px-1.5 py-0.5 rounded-full shrink-0 ${d.kind === 'internal' ? 'bg-brand/10 text-brand-700 dark:text-brand-300' : 'bg-inset text-fg-muted '}`}>
                 {d.kind === 'internal' ? 'Our driver' : 'Non-Insider'}
               </span>
             </button>
           ))}
         </div>
       )}
-      {q.trim().length >= 2 && results.length === 0 && <p className="text-[11px] text-gray-400 px-1">No driver or car matches "{q}". You can still type the plate in the details.</p>}
+      {q.trim().length >= 2 && results.length === 0 && <p className="text-caption text-fg-subtle px-1">No driver or car matches "{q}". You can still type the plate in the details.</p>}
     </div>
   );
 }

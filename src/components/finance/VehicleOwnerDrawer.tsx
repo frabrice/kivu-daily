@@ -75,48 +75,48 @@ export default function VehicleOwnerDrawer({
     <Modal open onClose={onClose} title={owner ? owner.full_name : 'Add Vehicle Owner'} subtitle={owner ? timeAgo(owner.updated_at) + ' updated' : 'Bank details used for their weekly payout'} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Full Name</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Full Name</label>
           <input value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!editing} className="input" placeholder="e.g. Jean Bosco Habimana" autoFocus />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Phone</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Phone</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!editing} className="input" placeholder="078xxxxxxx" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Email</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Email</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} disabled={!editing} className="input" placeholder="Optional" />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Bank Name</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Bank Name</label>
             <input value={bankName} onChange={(e) => setBankName(e.target.value)} disabled={!editing} className="input" placeholder="e.g. Bank of Kigali" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Account Number</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Account Number</label>
             <input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} disabled={!editing} className="input" placeholder="Account number" />
           </div>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Payment Day</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Payment Day</label>
           <select value={paymentDay} onChange={(e) => setPaymentDay(e.target.value as PaymentDay | '')} disabled={!editing} className="input">
             <option value="">Not set</option>
             {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as PaymentDay[]).map((d) => (
               <option key={d} value={d}>{d[0].toUpperCase() + d.slice(1)}</option>
             ))}
           </select>
-          <p className="text-[10px] text-gray-400 mt-1">Reference only — the weekly payout schedule itself still follows each car's own operation start date.</p>
+          <p className="text-micro text-fg-subtle mt-1">Reference only — the weekly payout schedule itself still follows each car's own operation start date.</p>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="Contract terms, anything worth remembering…" />
         </div>
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
-          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
             {owner ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
                 <Trash2 size={13} /> Remove
@@ -130,7 +130,7 @@ export default function VehicleOwnerDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Close</button>
             {canEdit && (
               <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">

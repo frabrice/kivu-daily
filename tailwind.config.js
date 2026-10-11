@@ -5,6 +5,36 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Kivu OS semantic tokens - values live in src/index.css (:root / .dark).
+        canvas: 'rgb(var(--c-canvas) / <alpha-value>)',
+        surface: {
+          DEFAULT: 'rgb(var(--c-surface-1) / <alpha-value>)',
+          2: 'rgb(var(--c-surface-2) / <alpha-value>)',
+          3: 'rgb(var(--c-surface-3) / <alpha-value>)',
+        },
+        inset: 'rgb(var(--c-inset) / <alpha-value>)',
+        hover: 'rgb(var(--c-hover) / <alpha-value>)',
+        line: {
+          DEFAULT: 'rgb(var(--c-line) / <alpha-value>)',
+          muted: 'rgb(var(--c-line-muted) / <alpha-value>)',
+          strong: 'rgb(var(--c-line-strong) / <alpha-value>)',
+        },
+        fg: {
+          DEFAULT: 'rgb(var(--c-fg) / <alpha-value>)',
+          muted: 'rgb(var(--c-fg-muted) / <alpha-value>)',
+          subtle: 'rgb(var(--c-fg-subtle) / <alpha-value>)',
+          onaccent: 'rgb(var(--c-fg-onaccent) / <alpha-value>)',
+        },
+        accent: {
+          DEFAULT: 'rgb(var(--c-accent) / <alpha-value>)',
+          fg: 'rgb(var(--c-accent-fg) / <alpha-value>)',
+          muted: 'rgb(var(--c-accent) / 0.12)',
+        },
+        link: 'rgb(var(--c-link) / <alpha-value>)',
+        success: { DEFAULT: 'rgb(var(--c-success) / <alpha-value>)', muted: 'rgb(var(--c-success) / 0.14)' },
+        attention: { DEFAULT: 'rgb(var(--c-attention) / <alpha-value>)', muted: 'rgb(var(--c-attention) / 0.16)' },
+        danger: { DEFAULT: 'rgb(var(--c-danger) / <alpha-value>)', muted: 'rgb(var(--c-danger) / 0.14)' },
+        done: { DEFAULT: 'rgb(var(--c-done) / <alpha-value>)', muted: 'rgb(var(--c-done) / 0.14)' },
         navy: {
           DEFAULT: '#17263A',
           50: '#eef1f4',
@@ -48,11 +78,30 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+      },
+      boxShadow: {
+        raised: 'var(--shadow-raised)',
+        overlay: 'var(--shadow-overlay)',
+      },
+      borderRadius: {
+        card: '10px',
       },
       // Shrunk ~1-2px off every step of the default scale - this app
       // reads dense/data-table-heavy, not prose, so a slightly smaller
       // default type scale suits it better than Tailwind's stock sizes.
       fontSize: {
+        // Kivu OS type scale. micro is for counters and badges only.
+        micro: ['0.625rem', { lineHeight: '0.875rem' }],
+        caption: ['0.6875rem', { lineHeight: '1rem' }],
+        small: ['0.75rem', { lineHeight: '1.125rem' }],
+        body: ['0.8125rem', { lineHeight: '1.25rem' }],
+        ui: ['0.875rem', { lineHeight: '1.375rem' }],
+        title: ['1rem', { lineHeight: '1.5rem' }],
+        h3: ['1.125rem', { lineHeight: '1.625rem' }],
+        h2: ['1.25rem', { lineHeight: '1.75rem' }],
+        h1: ['1.5rem', { lineHeight: '2rem' }],
+        display: ['1.75rem', { lineHeight: '2.25rem' }],
         xs: ['0.6875rem', { lineHeight: '0.9375rem' }],
         sm: ['0.8125rem', { lineHeight: '1.125rem' }],
         base: ['0.9375rem', { lineHeight: '1.375rem' }],

@@ -38,7 +38,7 @@ export default function AuthPage({ prefillEmail = '', onBack }: AuthPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex bg-white dark:bg-navy-950">
+    <div className="min-h-screen flex bg-canvas ">
       {/* Left: brand / landing panel */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-navy-900 via-navy-800 to-navy-900 text-white flex-col justify-between p-12">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand/20 rounded-full blur-3xl" />
@@ -53,7 +53,7 @@ export default function AuthPage({ prefillEmail = '', onBack }: AuthPageProps) {
           </div>
           <div>
             <p className="font-bold text-sm leading-tight">Kivu Daily</p>
-            <p className="text-[10px] text-white/50 leading-tight">Kivu Ride Ltd</p>
+            <p className="text-micro text-white/50 leading-tight">Kivu Ride Ltd</p>
           </div>
         </div>
 
@@ -73,15 +73,15 @@ export default function AuthPage({ prefillEmail = '', onBack }: AuthPageProps) {
                   <h.icon size={15} className="text-brand-200" />
                 </div>
                 <div>
-                  <p className="text-[12px] font-medium">{h.title}</p>
-                  <p className="text-[11px] text-white/50 mt-0.5">{h.desc}</p>
+                  <p className="text-small font-medium">{h.title}</p>
+                  <p className="text-caption text-white/50 mt-0.5">{h.desc}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="relative text-[10px] text-white/30">© {new Date().getFullYear()} Kivu Ride Ltd. All rights reserved.</p>
+        <p className="relative text-micro text-white/30">© {new Date().getFullYear()} Kivu Ride Ltd. All rights reserved.</p>
       </div>
 
       {/* Right: sign-in */}
@@ -93,19 +93,19 @@ export default function AuthPage({ prefillEmail = '', onBack }: AuthPageProps) {
             </button>
           )}
           <div className="lg:hidden flex flex-col items-center text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-white border border-gray-200 flex items-center justify-center overflow-hidden mb-4 shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-white border border-line flex items-center justify-center overflow-hidden mb-4 shadow-sm">
               <img src="/kivu-ride-logo.png" alt="Kivu Ride" className="w-10 h-10 object-contain" />
             </div>
             <h1 className="text-xl font-bold">Kivu Daily</h1>
-            <p className="text-xs text-gray-400 mt-1">The Kivu Ride control center.</p>
+            <p className="text-xs text-fg-subtle mt-1">The Kivu Ride control center.</p>
           </div>
 
           <h2 className="text-xl font-semibold mb-1">Welcome back</h2>
-          <p className="text-[12px] text-gray-400 mb-6">Sign in to your Kivu Daily workspace.</p>
+          <p className="text-small text-fg-subtle mb-6">Sign in to your Kivu Daily workspace.</p>
 
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="block text-[11px] font-medium text-gray-500 mb-1.5">Email</label>
+              <label className="block text-caption font-medium text-fg-muted mb-1.5">Email</label>
               <input
                 type="email"
                 required
@@ -117,7 +117,7 @@ export default function AuthPage({ prefillEmail = '', onBack }: AuthPageProps) {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-gray-500 mb-1.5">Password</label>
+              <label className="block text-caption font-medium text-fg-muted mb-1.5">Password</label>
               <input
                 type="password"
                 required
@@ -130,7 +130,7 @@ export default function AuthPage({ prefillEmail = '', onBack }: AuthPageProps) {
             </div>
 
             {error && (
-              <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>
+              <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>
             )}
 
             <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 disabled:opacity-50">
@@ -138,7 +138,7 @@ export default function AuthPage({ prefillEmail = '', onBack }: AuthPageProps) {
             </button>
           </form>
 
-          <p className="text-xs text-center text-gray-400 mt-6">
+          <p className="text-xs text-center text-fg-subtle mt-6">
             Don't have an account? Contact the Managing Director to create one for you.
           </p>
         </div>

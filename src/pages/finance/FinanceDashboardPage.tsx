@@ -56,7 +56,7 @@ export default function FinanceDashboardPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><LayoutDashboard size={16} className="text-amber-600 dark:text-amber-300" /> Finance Dashboard</h2>
-        <p className="text-[10px] text-gray-400 mt-0.5">Showing {thisMonth} · figures update live as transactions are logged across every Finance page</p>
+        <p className="text-micro text-fg-subtle mt-0.5">Showing {thisMonth} · figures update live as transactions are logged across every Finance page</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -103,7 +103,7 @@ export default function FinanceDashboardPage() {
       </div>
 
       {accounts.length === 0 && (
-        <p className="text-[11px] text-gray-400 text-center pt-2">No bank accounts set up yet — add them from the Accounts page.</p>
+        <p className="text-caption text-fg-subtle text-center pt-2">No bank accounts set up yet — add them from the Accounts page.</p>
       )}
     </div>
   );

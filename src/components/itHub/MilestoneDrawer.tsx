@@ -52,30 +52,30 @@ export default function MilestoneDrawer({
     <Modal open onClose={onClose} title={milestone ? milestone.name : 'New Milestone'} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Name</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} disabled={!canEdit} className="input" placeholder="v2.0 Launch" autoFocus />
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Description (optional)</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Description (optional)</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} disabled={!canEdit} rows={3} className="input resize-none" />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Status</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Status</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as MilestoneStatus)} disabled={!canEdit} className="input">
               {MILESTONE_STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Target date</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Target date</label>
             <DateInput value={targetDate} onChange={setTargetDate} disabled={!canEdit} />
           </div>
         </div>
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {canEdit && (
-          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
             {milestone ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
                 <Trash2 size={13} /> Remove

@@ -22,11 +22,11 @@ export default function NotificationBell() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative p-2 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+        className="relative p-2 rounded-xl text-fg-subtle hover:text-fg-muted hover:bg-hover transition-colors"
       >
         <Bell size={19} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-micro font-bold rounded-full flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -44,7 +44,7 @@ export default function NotificationBell() {
           </div>
 
           {notifications.length === 0 && (
-            <p className="text-sm text-gray-400 text-center py-6">No notifications yet.</p>
+            <p className="text-sm text-fg-subtle text-center py-6">No notifications yet.</p>
           )}
 
           <div className="space-y-0.5">
@@ -53,11 +53,11 @@ export default function NotificationBell() {
                 key={n.id}
                 onClick={() => markRead(n.id)}
                 className={`w-full text-left p-2.5 rounded-xl transition-colors ${
-                  n.read ? 'hover:bg-gray-50 dark:hover:bg-white/5' : 'bg-brand/5 hover:bg-brand/10'
+                  n.read ? 'hover:bg-hover ' : 'bg-brand/5 hover:bg-brand/10'
                 }`}
               >
-                <p className={`text-sm ${n.read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-100'}`}>{n.message}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{timeAgo(n.created_at)}</p>
+                <p className={`text-sm ${n.read ? 'text-fg-muted ' : 'text-fg '}`}>{n.message}</p>
+                <p className="text-xs text-fg-subtle mt-0.5">{timeAgo(n.created_at)}</p>
               </button>
             ))}
           </div>

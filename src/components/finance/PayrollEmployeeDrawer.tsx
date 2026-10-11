@@ -132,15 +132,15 @@ export default function PayrollEmployeeDrawer({
       <div className="space-y-3">
         {employee?.pending_removal && (
           <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5">
-            <p className="text-[11px] text-red-700 dark:text-red-300 flex items-center gap-1.5">
+            <p className="text-caption text-red-700 dark:text-red-300 flex items-center gap-1.5">
               <UserX size={13} className="shrink-0" /> Removal requested{employee.removal_requested_at ? ' ' + formatDateLabelSafe(employee.removal_requested_at.slice(0, 10)) : ''} — awaiting MD confirmation.
             </p>
             <div className="flex items-center gap-1 shrink-0">
-              <button onClick={cancelRemoval} disabled={saving} className="btn-ghost text-[10px] px-2 py-1 flex items-center gap-1 disabled:opacity-50">
+              <button onClick={cancelRemoval} disabled={saving} className="btn-ghost text-micro px-2 py-1 flex items-center gap-1 disabled:opacity-50">
                 <Undo2 size={11} /> Cancel
               </button>
               {isMD && (
-                <button onClick={confirmRemoval} disabled={saving} className="bg-red-500 hover:bg-red-600 text-white text-[10px] font-medium px-2 py-1 rounded-md disabled:opacity-50">
+                <button onClick={confirmRemoval} disabled={saving} className="bg-red-500 hover:bg-red-600 text-white text-micro font-medium px-2 py-1 rounded-md disabled:opacity-50">
                   Confirm Removal
                 </button>
               )}
@@ -148,26 +148,26 @@ export default function PayrollEmployeeDrawer({
           </div>
         )}
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Full Name</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Full Name</label>
           <input value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!editing} className="input" placeholder="e.g. Jean Bosco Habimana" autoFocus />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Position</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Position</label>
             <input value={position} onChange={(e) => setPosition(e.target.value)} disabled={!editing} className="input" placeholder="e.g. Call Center Agent" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Start Date</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Start Date</label>
             <DateInput value={startDate} onChange={setStartDate} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Monthly Salary</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Monthly Salary</label>
             <input type="number" value={monthlySalary} onChange={(e) => setMonthlySalary(e.target.value)} disabled={!editing} className="input" placeholder="e.g. 300000" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Status</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Status</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as PayrollEmployeeStatus)} disabled={!editing} className="input">
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -175,15 +175,15 @@ export default function PayrollEmployeeDrawer({
           </div>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">ID Document</label>
-          <div className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 dark:border-white/10">
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">ID Document</label>
+          <div className="flex items-center gap-2 p-2 rounded-lg border border-line-muted ">
             <div className="flex-1 min-w-0">
               {idDocUrl ? (
-                <button type="button" onClick={viewId} className="text-[11px] text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 truncate">
+                <button type="button" onClick={viewId} className="text-caption text-brand-600 dark:text-brand-300 hover:underline flex items-center gap-1 truncate">
                   <ExternalLink size={11} className="shrink-0" /> <span className="truncate">{idDocName}</span>
                 </button>
               ) : (
-                <p className="text-[11px] text-gray-400">Not uploaded</p>
+                <p className="text-caption text-fg-subtle">Not uploaded</p>
               )}
             </div>
             {idDocUrl && <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />}
@@ -196,14 +196,14 @@ export default function PayrollEmployeeDrawer({
           </div>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="Anything worth remembering…" />
         </div>
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
-          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
             {employee && !employee.pending_removal ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
                 <Trash2 size={13} /> {isMD ? 'Remove' : 'Request Removal'}
@@ -217,7 +217,7 @@ export default function PayrollEmployeeDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Close</button>
             {canEdit && (
               <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">

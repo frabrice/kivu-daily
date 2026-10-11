@@ -50,24 +50,24 @@ export default function StationAnalytics({ stations }: { stations: ChargingStati
     setBusy('');
   };
 
-  if (an.n === 0) return <div className="card p-12 text-center text-[12px] text-gray-400">No data yet — analytics appear once stations are submitted.</div>;
+  if (an.n === 0) return <div className="card p-12 text-center text-small text-fg-subtle">No data yet — analytics appear once stations are submitted.</div>;
 
   return (
     <div className="space-y-4">
       <div className="card p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-[13px] font-semibold">Charging stations — survey analysis</p>
-          <p className="text-[11px] text-gray-500">{an.n} stations surveyed {an.firstDate && `${new Date(an.firstDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}–${new Date(an.lastDate!).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`} · field follow-up by Henry Rugaba Mark</p>
+          <p className="text-body font-semibold">Charging stations — survey analysis</p>
+          <p className="text-caption text-fg-muted">{an.n} stations surveyed {an.firstDate && `${new Date(an.firstDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}–${new Date(an.lastDate!).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`} · field follow-up by Henry Rugaba Mark</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => download('data')} disabled={!!busy} className="btn-ghost flex items-center gap-1.5 border border-gray-200 dark:border-white/10 disabled:opacity-50">
+          <button onClick={() => download('data')} disabled={!!busy} className="btn-ghost flex items-center gap-1.5 border border-line disabled:opacity-50">
             <FileText size={14} /> {busy === 'data' ? 'Preparing…' : 'Download data collected'}
           </button>
           <button onClick={() => download('analysis')} disabled={!!busy} className="btn-primary flex items-center gap-1.5 disabled:opacity-50">
             <Download size={14} /> {busy === 'analysis' ? 'Preparing…' : 'Download analysis report'}
           </button>
         </div>
-        {error && <p className="w-full text-[11px] text-red-600">{error}</p>}
+        {error && <p className="w-full text-caption text-red-600">{error}</p>}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -83,15 +83,15 @@ export default function StationAnalytics({ stations }: { stations: ChargingStati
 
       <div className="card p-4 flex flex-wrap items-end gap-4">
         <div>
-          <p className="text-[12px] font-semibold">Assumptions</p>
-          <p className="text-[11px] text-gray-500 max-w-md">Not measured in the field — change them and every number, chart and the downloaded report follow.</p>
+          <p className="text-small font-semibold">Assumptions</p>
+          <p className="text-caption text-fg-muted max-w-md">Not measured in the field — change them and every number, chart and the downloaded report follow.</p>
         </div>
         <label className="block">
-          <span className="block text-[11px] text-gray-500 mb-1">Energy per charge: <b className="text-gray-800 dark:text-gray-100">{kwh} kWh</b></span>
+          <span className="block text-caption text-fg-muted mb-1">Energy per charge: <b className="text-fg ">{kwh} kWh</b></span>
           <input type="range" min={5} max={40} step={1} value={kwh} onChange={(e) => setKwh(Number(e.target.value))} className="w-56 accent-brand" aria-label="Energy per charge in kWh" />
         </label>
         <label className="block">
-          <span className="block text-[11px] text-gray-500 mb-1">Operators per shift</span>
+          <span className="block text-caption text-fg-muted mb-1">Operators per shift</span>
           <select value={ops} onChange={(e) => setOps(Number(e.target.value))} className="input py-1.5 w-28">
             {[1, 2, 3].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
@@ -118,9 +118,9 @@ export default function StationAnalytics({ stations }: { stations: ChargingStati
 function Kpi({ icon: Icon, label, value, sub, tone }: { icon: typeof Zap; label: string; value: string; sub: string; tone?: 'warn' }) {
   return (
     <div className={`card p-4 ${tone === 'warn' ? 'ring-1 ring-amber-300 dark:ring-amber-500/40' : ''}`}>
-      <p className="text-[11px] text-gray-500 flex items-center gap-1.5"><Icon size={13} /> {label}</p>
-      <p className="text-[20px] font-bold leading-tight mt-1 tabular-nums">{value}</p>
-      <p className="text-[11px] text-gray-500 mt-0.5">{sub}</p>
+      <p className="text-caption text-fg-muted flex items-center gap-1.5"><Icon size={13} /> {label}</p>
+      <p className="text-h2 font-bold leading-tight mt-1 tabular-nums">{value}</p>
+      <p className="text-caption text-fg-muted mt-0.5">{sub}</p>
     </div>
   );
 }
@@ -129,10 +129,10 @@ function Card({ title, sub, children, legend }: { title: string; sub: string; ch
   return (
     <div className="card p-4 space-y-2">
       <div>
-        <p className="text-[13px] font-semibold">{title}</p>
-        <p className="text-[11px] text-gray-500">{sub}</p>
+        <p className="text-body font-semibold">{title}</p>
+        <p className="text-caption text-fg-muted">{sub}</p>
       </div>
-      {legend && <div className="flex flex-wrap gap-x-4 gap-y-1">{legend.map((l) => <span key={l.label} className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: l.color }} />{l.label}</span>)}</div>}
+      {legend && <div className="flex flex-wrap gap-x-4 gap-y-1">{legend.map((l) => <span key={l.label} className="flex items-center gap-1.5 text-caption text-fg-muted "><span className="w-2.5 h-2.5 rounded-sm" style={{ background: l.color }} />{l.label}</span>)}</div>}
       {children}
     </div>
   );
@@ -142,8 +142,8 @@ function Tip({ active, payload, rows }: { active?: boolean; payload?: { payload:
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="rounded-lg border border-gray-100 dark:border-white/10 bg-white dark:bg-navy-700 shadow-lg px-3 py-2 text-[11px] max-w-[260px]">
-      {rows(p).map(([k, v], i) => <p key={i} className={i === 0 ? 'font-semibold mb-0.5' : 'flex justify-between gap-3 text-gray-600 dark:text-gray-300'}>{i === 0 ? k : <><span>{k}</span><b className="text-gray-900 dark:text-white">{v}</b></>}</p>)}
+    <div className="rounded-lg border border-line-muted bg-surface-3 shadow-lg px-3 py-2 text-caption max-w-[260px]">
+      {rows(p).map(([k, v], i) => <p key={i} className={i === 0 ? 'font-semibold mb-0.5' : 'flex justify-between gap-3 text-fg-muted '}>{i === 0 ? k : <><span>{k}</span><b className="text-fg ">{v}</b></>}</p>)}
     </div>
   );
 }
@@ -151,13 +151,13 @@ function Tip({ active, payload, rows }: { active?: boolean; payload?: { payload:
 function Findings({ an }: { an: StationAnalysis }) {
   return (
     <div className="card p-4 space-y-2">
-      <p className="text-[13px] font-semibold flex items-center gap-1.5"><Lightbulb size={14} className="text-amber-500" /> What the data says</p>
+      <p className="text-body font-semibold flex items-center gap-1.5"><Lightbulb size={14} className="text-amber-500" /> What the data says</p>
       <ol className="space-y-1.5">
         {an.findings.map((f, i) => (
-          <li key={i} className="text-[12px] leading-relaxed flex gap-2"><span className="w-5 h-5 rounded-full bg-brand/10 text-brand-700 dark:text-brand-300 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span><span>{f}</span></li>
+          <li key={i} className="text-small leading-relaxed flex gap-2"><span className="w-5 h-5 rounded-full bg-brand/10 text-brand-700 dark:text-brand-300 text-micro font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span><span>{f}</span></li>
         ))}
       </ol>
-      <p className="text-[10px] text-gray-400">Profit figures are before rent, maintenance, equipment and financing — those weren't collected.</p>
+      <p className="text-micro text-fg-subtle">Profit figures are before rent, maintenance, equipment and financing — those weren't collected.</p>
     </div>
   );
 }
@@ -244,9 +244,9 @@ function SensitivityChart({ an, c }: { an: StationAnalysis; c: typeof PAL.light 
             <XAxis dataKey="cars" tick={{ fontSize: 10, fill: c.axis }} axisLine={false} tickLine={false} label={{ value: 'cars a day', position: 'insideBottomRight', offset: -2, fontSize: 10, fill: c.axis }} />
             <YAxis tickFormatter={mrwf} tick={{ fontSize: 10, fill: c.axis }} axisLine={false} tickLine={false} width={44} />
             <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
-              <div className="rounded-lg border border-gray-100 dark:border-white/10 bg-white dark:bg-navy-700 shadow-lg px-3 py-2 text-[11px]">
+              <div className="rounded-lg border border-line-muted bg-surface-3 shadow-lg px-3 py-2 text-caption">
                 <p className="font-semibold mb-0.5">{label} cars a day</p>
-                {KWH_SCENARIOS.map((k, i) => <p key={k} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300"><span className="w-2 h-2 rounded-sm" style={{ background: colors[i] }} />{k} kWh: <b className="text-gray-900 dark:text-white">{rwf(Number(payload.find((p) => p.dataKey === `k${k}`)?.value ?? 0))}</b></p>)}
+                {KWH_SCENARIOS.map((k, i) => <p key={k} className="flex items-center gap-1.5 text-fg-muted "><span className="w-2 h-2 rounded-sm" style={{ background: colors[i] }} />{k} kWh: <b className="text-fg ">{rwf(Number(payload.find((p) => p.dataKey === `k${k}`)?.value ?? 0))}</b></p>)}
               </div>
             ) : null} />
             {SCEN_KEYS.map((k, i) => <Line key={k} dataKey={k} stroke={colors[i]} strokeWidth={2} dot={false} isAnimationActive={false} />)}
@@ -315,15 +315,15 @@ function MapChart({ an, c }: { an: StationAnalysis; c: typeof PAL.light }) {
 }
 
 function DataQuality({ an }: { an: StationAnalysis }) {
-  const tone = { high: 'border-red-400 bg-red-50 dark:bg-red-500/10', medium: 'border-amber-400 bg-amber-50 dark:bg-amber-500/10', low: 'border-gray-300 bg-gray-50 dark:bg-white/5' };
+  const tone = { high: 'border-red-400 bg-red-50 dark:bg-red-500/10', medium: 'border-amber-400 bg-amber-50 dark:bg-amber-500/10', low: 'border-line bg-inset ' };
   return (
     <div className="card p-4 space-y-2">
-      <p className="text-[13px] font-semibold flex items-center gap-1.5"><AlertTriangle size={14} className="text-amber-500" /> Data quality — check before relying on it</p>
+      <p className="text-body font-semibold flex items-center gap-1.5"><AlertTriangle size={14} className="text-amber-500" /> Data quality — check before relying on it</p>
       {an.issues.map((i) => (
         <div key={i.title} className={`rounded-lg border-l-4 px-3 py-2 ${tone[i.severity]}`}>
-          <p className="text-[12px] font-semibold">{i.title}</p>
-          <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5">{i.detail}</p>
-          {i.stations.length > 0 && <ul className="mt-1 space-y-0.5">{i.stations.map((s) => <li key={s} className="text-[11px] text-gray-500">• {s}</li>)}</ul>}
+          <p className="text-small font-semibold">{i.title}</p>
+          <p className="text-caption text-fg-muted mt-0.5">{i.detail}</p>
+          {i.stations.length > 0 && <ul className="mt-1 space-y-0.5">{i.stations.map((s) => <li key={s} className="text-caption text-fg-muted">• {s}</li>)}</ul>}
         </div>
       ))}
     </div>
@@ -333,15 +333,15 @@ function DataQuality({ an }: { an: StationAnalysis }) {
 function StationTable({ an }: { an: StationAnalysis }) {
   return (
     <div className="card p-4 space-y-2">
-      <p className="text-[13px] font-semibold">Station by station</p>
+      <p className="text-body font-semibold">Station by station</p>
       <div className="overflow-x-auto">
-        <table className="w-full text-[11px] min-w-[900px]">
-          <thead><tr className="text-left text-gray-500">
+        <table className="w-full text-caption min-w-[900px]">
+          <thead><tr className="text-left text-fg-muted">
             {['Station', 'Guns', 'Price', 'Margin', 'Reported cars', 'Possible max', 'Field cars', 'Guns busy', 'Margin a month', 'Salaries', 'Left a month'].map((h, i) => <th key={h} className={`py-1.5 pr-3 font-medium ${i ? 'text-right' : ''}`}>{h}</th>)}
           </tr></thead>
           <tbody>
             {an.stations.map((m) => (
-              <tr key={m.s.id} className="border-t border-gray-100 dark:border-white/5">
+              <tr key={m.s.id} className="border-t border-line-muted ">
                 <td className="py-1.5 pr-3 font-medium">{m.label}</td>
                 <td className="py-1.5 pr-3 text-right tabular-nums">{m.guns}</td>
                 <td className="py-1.5 pr-3 text-right tabular-nums">{m.sell}</td>
@@ -358,7 +358,7 @@ function StationTable({ an }: { an: StationAnalysis }) {
           </tbody>
         </table>
       </div>
-      <p className="text-[10px] text-gray-400">Prices and margins in RWF/kWh. Money columns use field cars a day × {an.a.kwhPerSession} kWh per charge (assumption) × {an.a.daysPerMonth} days, before rent, maintenance and equipment.</p>
+      <p className="text-micro text-fg-subtle">Prices and margins in RWF/kWh. Money columns use field cars a day × {an.a.kwhPerSession} kWh per charge (assumption) × {an.a.daysPerMonth} days, before rent, maintenance and equipment.</p>
     </div>
   );
 }

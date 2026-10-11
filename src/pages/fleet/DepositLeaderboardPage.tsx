@@ -45,7 +45,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Trophy size={16} className="text-amber-600 dark:text-amber-300" /> Weekly Deposit Leaderboard</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">
+        <p className="text-caption text-fg-subtle mt-0.5">
           Every driver pays by Sunday for the Monday–Sunday week ahead. Unpaid on Monday means not cleared to drive, and every working day lost costs {DEPOSIT_LATE_PENALTY_PER_DAY} points.
         </p>
       </div>
@@ -60,14 +60,14 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
       {beforeSwitchover && rows.length > 0 && (
         <div className="card p-3.5 border border-amber-200 dark:border-amber-500/20 bg-amber-50/40 dark:bg-amber-500/5 space-y-2">
           <div>
-            <p className="text-[12px] font-semibold flex items-center gap-1.5"><CalendarClock size={13} className="text-amber-600 dark:text-amber-300" /> Switch-over: due by Sunday {formatDateLabelSafe(rows[0].standing.nextDueDate ?? SUNDAY_RULE_START)}</p>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+            <p className="text-small font-semibold flex items-center gap-1.5"><CalendarClock size={13} className="text-amber-600 dark:text-amber-300" /> Switch-over: due by Sunday {formatDateLabelSafe(rows[0].standing.nextDueDate ?? SUNDAY_RULE_START)}</p>
+            <p className="text-micro text-fg-muted mt-0.5">
               From Monday {formatDateLabelSafe(SUNDAY_RULE_START)}, a driver must have paid for every working day up to the coming Sunday to be cleared to drive. Scores start counting that week. Tell each driver what they owe:
             </p>
           </div>
-          <div className="divide-y divide-amber-100 dark:divide-white/5">
+          <div className="divide-y divide-amber-100 dark:divide-line-muted">
             {switchoverRows.map((r) => (
-              <div key={r.driver.id} className="flex items-center justify-between gap-2 py-1.5 text-[11px]">
+              <div key={r.driver.id} className="flex items-center justify-between gap-2 py-1.5 text-caption">
                 <span className="truncate">{r.driver.full_name}</span>
                 <span className={`font-semibold shrink-0 ${r.standing.nextDueAmount > 0 ? '' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   {r.standing.nextDueAmount > 0 ? formatRwf(r.standing.nextDueAmount) : 'Already covered'}
@@ -79,7 +79,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
       )}
 
       <div className="relative w-64">
-        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name" className="input pl-8 w-full" />
       </div>
 
@@ -95,12 +95,12 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
               className={`card p-3 flex items-center gap-3 ${notCleared ? 'border-red-200 dark:border-red-500/30 bg-red-50/40 dark:bg-red-500/5' : ''}`}
             >
               <div className="w-7 text-center shrink-0">
-                <span className="text-[13px] font-bold text-gray-400">#{i + 1}</span>
+                <span className="text-body font-bold text-fg-subtle">#{i + 1}</span>
               </div>
               <div className={`w-1.5 h-8 rounded-full shrink-0 ${dotColor}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-medium truncate">{row.driver.full_name}</p>
-                <p className="text-[10px] text-gray-400 flex items-center gap-2 flex-wrap">
+                <p className="text-small font-medium truncate">{row.driver.full_name}</p>
+                <p className="text-micro text-fg-subtle flex items-center gap-2 flex-wrap">
                   <span className="flex items-center gap-1"><Car size={10} /> {row.driver.vehicle?.plate_number ?? '—'}</span>
                   <span>· Started {row.driver.start_date ? formatDateLabelSafe(row.driver.start_date) : '—'}</span>
                   {s.onTimeWeeks + s.lateWeeks > 0 && <span>· {s.onTimeWeeks} on time · {s.lateWeeks} late</span>}
@@ -109,9 +109,9 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
               </div>
               <div className="text-right shrink-0 w-20">
                 <p className={`text-base font-bold leading-none ${s.score < 0 ? 'text-red-500' : 'text-emerald-500'}`}>{s.score}</p>
-                <p className="text-[9px] text-gray-400 mt-0.5">points</p>
+                <p className="text-micro text-fg-subtle mt-0.5">points</p>
               </div>
-              <span className={`text-[10px] font-bold shrink-0 px-2 py-0.5 rounded-full ${notCleared ? 'text-white bg-red-500' : style.badge}`}>
+              <span className={`text-micro font-bold shrink-0 px-2 py-0.5 rounded-full ${notCleared ? 'text-white bg-red-500' : style.badge}`}>
                 {depositStandingLabel(s)}
               </span>
             </div>
@@ -119,8 +119,8 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
         })}
         {filteredRows.length === 0 && (
           <div className="card p-10 text-center">
-            <Trophy size={26} className="text-gray-300 dark:text-white/20 mx-auto mb-2" />
-            <p className="text-[12px] text-gray-400">{rows.length === 0 ? 'No drivers with a vehicle and a start date yet.' : 'No drivers match this search.'}</p>
+            <Trophy size={26} className="text-fg-subtle mx-auto mb-2" />
+            <p className="text-small text-fg-subtle">{rows.length === 0 ? 'No drivers with a vehicle and a start date yet.' : 'No drivers match this search.'}</p>
           </div>
         )}
       </div>

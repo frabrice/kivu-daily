@@ -51,19 +51,19 @@ export default function PublicSurveyApp({ token }: { token: string }) {
   };
 
   if (stage === 'loading') {
-    return <CenteredMessage><Loader2 className="animate-spin mx-auto mb-3 text-brand-600" size={28} /><p className="text-[13px] text-gray-500">Loading survey…</p></CenteredMessage>;
+    return <CenteredMessage><Loader2 className="animate-spin mx-auto mb-3 text-brand-600" size={28} /><p className="text-body text-fg-muted">Loading survey…</p></CenteredMessage>;
   }
 
   if (stage === 'invalid') {
-    return <CenteredMessage><p className="text-[14px] font-medium text-gray-700">This link is invalid or no longer active.</p><p className="text-[12px] text-gray-400 mt-1.5">Contact your administrator for a current link.</p></CenteredMessage>;
+    return <CenteredMessage><p className="text-ui font-medium text-fg-muted">This link is invalid or no longer active.</p><p className="text-small text-fg-subtle mt-1.5">Contact your administrator for a current link.</p></CenteredMessage>;
   }
 
   if (stage === 'email-gate') {
     return (
       <CenteredMessage>
         <div className="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center mx-auto mb-4"><Zap size={26} className="text-brand-600" /></div>
-        <h1 className="text-[18px] font-semibold text-center">{caseName}</h1>
-        <p className="text-[12px] text-gray-400 text-center mt-1 mb-5">Enter your email to start collecting data.</p>
+        <h1 className="text-h3 font-semibold text-center">{caseName}</h1>
+        <p className="text-small text-fg-subtle text-center mt-1 mb-5">Enter your email to start collecting data.</p>
         <form onSubmit={submitEmail} className="space-y-3">
           <input
             type="email"
@@ -74,7 +74,7 @@ export default function PublicSurveyApp({ token }: { token: string }) {
             className="input text-center"
             autoFocus
           />
-          {emailError && <p className="text-[11px] text-red-500 text-center">{emailError}</p>}
+          {emailError && <p className="text-caption text-red-500 text-center">{emailError}</p>}
           <button type="submit" disabled={checkingEmail} className="btn-primary w-full disabled:opacity-50">
             {checkingEmail ? 'Checking…' : 'Continue'}
           </button>
@@ -87,7 +87,7 @@ export default function PublicSurveyApp({ token }: { token: string }) {
     return (
       <CenteredMessage>
         <CheckCircle2 size={40} className="text-positive mx-auto mb-3" />
-        <p className="text-[14px] font-medium text-center">Station recorded. Thank you!</p>
+        <p className="text-ui font-medium text-center">Station recorded. Thank you!</p>
         <button onClick={() => { setStage('form'); loadProgress(); }} className="btn-primary w-full mt-4">Add Another Station</button>
       </CenteredMessage>
     );
@@ -98,7 +98,7 @@ export default function PublicSurveyApp({ token }: { token: string }) {
 
 function CenteredMessage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-5">
+    <div className="min-h-screen flex items-center justify-center bg-inset p-5">
       <div className="w-full max-w-sm">{children}</div>
     </div>
   );
@@ -217,10 +217,10 @@ function StationForm({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
-        <p className="text-[11px] text-gray-400">{caseName}</p>
-        <h1 className="text-[16px] font-semibold">Station {stationNumber}</h1>
+    <div className="min-h-screen bg-inset pb-10">
+      <div className="bg-white border-b border-line-muted px-4 py-4 sticky top-0 z-10">
+        <p className="text-caption text-fg-subtle">{caseName}</p>
+        <h1 className="text-title font-semibold">Station {stationNumber}</h1>
       </div>
 
       <div className="p-4 space-y-4 max-w-lg mx-auto">
@@ -236,8 +236,8 @@ function StationForm({
               {locating ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
               {locating ? 'Getting location…' : lat ? 'Update Location' : 'Get Current Location'}
             </button>
-            {address && <p className="text-[11px] text-gray-500 mt-1.5">{address}</p>}
-            {locationError && <p className="text-[11px] text-red-500 mt-1.5">{locationError}</p>}
+            {address && <p className="text-caption text-fg-muted mt-1.5">{address}</p>}
+            {locationError && <p className="text-caption text-red-500 mt-1.5">{locationError}</p>}
           </Field>
         </Section>
 
@@ -251,10 +251,10 @@ function StationForm({
           <Field label="Gun Types" required>
             <div className="space-y-2">
               {GUN_TYPES.map((t) => (
-                <div key={t.key} className="border border-gray-100 rounded-lg p-2.5">
+                <div key={t.key} className="border border-line-muted rounded-lg p-2.5">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={guns[t.key].checked} onChange={() => toggleGun(t.key)} className="w-4 h-4" />
-                    <span className="text-[12px] font-medium flex-1">{t.label}</span>
+                    <span className="text-small font-medium flex-1">{t.label}</span>
                   </label>
                   {guns[t.key].checked && (
                     <div className="grid grid-cols-2 gap-2 mt-2">
@@ -323,7 +323,7 @@ function StationForm({
           {photos.length > 0 && (
             <div className="grid grid-cols-3 gap-2 mt-2">
               {photos.map((f, i) => (
-                <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-gray-100">
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-line-muted">
                   <img src={URL.createObjectURL(f)} alt="" className="w-full h-full object-cover" />
                   <button type="button" onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5">
                     <X size={12} />
@@ -334,7 +334,7 @@ function StationForm({
           )}
         </Section>
 
-        {error && <div className="text-[12px] text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-small text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</div>}
 
         <button onClick={submit} disabled={saving || !canSubmit} className="btn-primary w-full disabled:opacity-50">
           {uploading ? 'Uploading photos…' : saving ? 'Submitting…' : 'Submit Station'}
@@ -346,8 +346,8 @@ function StationForm({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-3">{title}</p>
+    <div className="bg-white rounded-xl border border-line-muted p-4">
+      <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-3">{title}</p>
       <div className="space-y-3">{children}</div>
     </div>
   );
@@ -356,7 +356,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[12px] font-medium mb-1.5 text-gray-600">{label}{required && <span className="text-red-500"> *</span>}</label>
+      <label className="block text-small font-medium mb-1.5 text-fg-muted">{label}{required && <span className="text-red-500"> *</span>}</label>
       {children}
     </div>
   );
@@ -367,7 +367,7 @@ function ToggleButton({ active, onClick, children }: { active: boolean; onClick:
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 py-2 rounded-lg text-[12px] font-medium border transition-colors ${active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-gray-500 border-gray-200'}`}
+      className={`flex-1 py-2 rounded-lg text-small font-medium border transition-colors ${active ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-fg-muted border-line'}`}
     >
       {children}
     </button>

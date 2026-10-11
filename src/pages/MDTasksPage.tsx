@@ -52,7 +52,7 @@ export default function MDTasksPage() {
     <div className="space-y-5">
       <div className="animate-fade-in">
         <h2 className="text-lg font-semibold">My Tasks</h2>
-        <p className="text-[11px] text-gray-400 mt-0.5">{formatDateFull(now)}</p>
+        <p className="text-caption text-fg-subtle mt-0.5">{formatDateFull(now)}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -65,7 +65,7 @@ export default function MDTasksPage() {
         </div>
         <div className="card p-3.5">
           <p className="stat-label mb-0.5">Tasks Today</p>
-          <p className="text-xl font-bold leading-none">{todayTasks.length}<span className="text-[10px] font-normal text-gray-400 ml-1">{completedCount} done</span></p>
+          <p className="text-xl font-bold leading-none">{todayTasks.length}<span className="text-micro font-normal text-fg-subtle ml-1">{completedCount} done</span></p>
         </div>
         <div className="card p-3.5 flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center shrink-0">
@@ -99,17 +99,17 @@ export default function MDTasksPage() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="section-title">
                   {formatDateLabel(date)}
-                  {isToday && <span className="ml-2 text-[8px] font-bold text-brand-700 dark:text-brand-300 bg-brand/10 px-1.5 py-0.5 rounded-full">LIVE</span>}
+                  {isToday && <span className="ml-2 text-micro font-bold text-brand-700 dark:text-brand-300 bg-brand/10 px-1.5 py-0.5 rounded-full">LIVE</span>}
                 </h3>
                 {dayTasks.length > 0 && (
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-micro text-fg-subtle">
                     {dayTasks.filter((t) => t.completed).length}/{dayTasks.length} · {Math.round(pct)}%
                   </span>
                 )}
               </div>
 
               {carried.length > 0 && isToday && (
-                <p className="text-[10px] font-medium text-orange-500 mb-1.5 px-0.5">Carried Over</p>
+                <p className="text-micro font-medium text-orange-500 mb-1.5 px-0.5">Carried Over</p>
               )}
 
               <div className="space-y-1.5">
@@ -128,7 +128,7 @@ export default function MDTasksPage() {
                   ))}
                 {dayTasks.length === 0 && isToday && (
                   <div className="card p-6 text-center">
-                    <p className="text-gray-400 text-[12px]">No tasks yet. Add your first task.</p>
+                    <p className="text-fg-subtle text-small">No tasks yet. Add your first task.</p>
                   </div>
                 )}
               </div>

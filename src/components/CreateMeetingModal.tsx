@@ -111,11 +111,11 @@ export default function CreateMeetingModal({ open, meeting, onClose, onCreated }
               className={`text-left p-3 rounded-xl border transition-colors ${
                 visibility === o.value
                   ? 'border-brand bg-brand/10'
-                  : 'border-gray-200 dark:border-white/10 hover:border-brand/40'
+                  : 'border-line hover:border-brand/40'
               }`}
             >
               <p className="text-sm font-medium">{o.label}</p>
-              <p className="text-xs text-gray-400">{o.hint}</p>
+              <p className="text-xs text-fg-subtle">{o.hint}</p>
             </button>
           ))}
         </div>

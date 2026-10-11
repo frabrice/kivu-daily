@@ -73,48 +73,48 @@ export default function ContactDrawer({
     <Modal open onClose={onClose} title={contact ? contact.org_name : 'Add Contact'} subtitle={contact ? `Last touched ${timeAgo(contact.updated_at)}` : undefined} maxWidth="max-w-md">
       <div className="space-y-3">
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><Building2 size={11} /> Organization</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted flex items-center gap-1"><Building2 size={11} /> Organization</label>
           <input value={orgName} onChange={(e) => setOrgName(e.target.value)} disabled={!editing} className="input" placeholder="Kigali Serena Hotel" autoFocus />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Contact person</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Contact person</label>
             <input value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} disabled={!editing} className="input" placeholder="Name" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Type</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Type</label>
             <input value={typeTag} onChange={(e) => setTypeTag(e.target.value)} disabled={!editing} className="input" placeholder="Hotel, Partner…" />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><Phone size={11} /> Phone</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted flex items-center gap-1"><Phone size={11} /> Phone</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!editing} className="input" placeholder="+250…" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><Mail size={11} /> Email</label>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted flex items-center gap-1"><Mail size={11} /> Email</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} disabled={!editing} className="input" placeholder="name@org.com" />
           </div>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Stage</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Stage</label>
           <select value={stage} onChange={(e) => setStage(e.target.value as ContactStage)} disabled={!editing} className="input">
             {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500 flex items-center gap-1"><CalendarClock size={11} /> Next follow-up</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted flex items-center gap-1"><CalendarClock size={11} /> Next follow-up</label>
           <DateInput value={nextFollowUp} onChange={setNextFollowUp} disabled={!editing} />
         </div>
         <div>
-          <label className="block text-[11px] font-medium mb-1.5 text-gray-500">Notes</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="What's been discussed…" />
         </div>
 
-        {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+        {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
-          <div className="flex justify-between gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-between gap-2 pt-3 border-t border-line-muted ">
             {contact ? (
               <button onClick={remove} disabled={saving} className="btn-ghost text-red-500 flex items-center gap-1.5">
                 <Trash2 size={13} /> Remove
@@ -128,7 +128,7 @@ export default function ContactDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-white/5">
+          <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Close</button>
             <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">
               <Pencil size={13} /> Edit

@@ -59,7 +59,7 @@ export const STATUS_META: Record<CallTicketStatus, { label: string; chip: string
   in_progress: { label: 'In progress', chip: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' },
   waiting_on_caller: { label: 'Pending', chip: 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300' },
   resolved: { label: 'Resolved', chip: 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300' },
-  closed: { label: 'Closed', chip: 'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400' },
+  closed: { label: 'Closed', chip: 'bg-inset text-fg-muted  ' },
 };
 
 export const UNRESOLVED: CallTicketStatus[] = ['open', 'in_progress', 'waiting_on_caller'];

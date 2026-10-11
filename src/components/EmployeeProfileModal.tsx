@@ -123,11 +123,11 @@ export default function EmployeeProfileModal({ employee, allTasks, onClose, canC
         <div className="flex items-center gap-4 mb-6">
           <Avatar name={employee.full_name} url={employee.avatar_url} size="xl" />
           <div>
-            <p className="text-xs text-gray-400">{streak} day streak · {userTasks.filter((t) => t.completed).length} tasks completed</p>
+            <p className="text-xs text-fg-subtle">{streak} day streak · {userTasks.filter((t) => t.completed).length} tasks completed</p>
           </div>
           <div className="ml-auto text-right">
             <p className="text-3xl font-bold" style={{ color: completionColor(employee.todayPct) }}>{Math.round(employee.todayPct)}%</p>
-            <p className="text-xs text-gray-400">Today</p>
+            <p className="text-xs text-fg-subtle">Today</p>
           </div>
         </div>
 
@@ -151,14 +151,14 @@ export default function EmployeeProfileModal({ employee, allTasks, onClose, canC
 
         {/* Date navigation */}
         <div className="mb-4">
-          <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-gray-50 dark:bg-white/5">
+          <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-inset ">
             <button onClick={goPrevDay} className="btn-ghost p-2" aria-label="Previous day">
               <ChevronLeft size={20} />
             </button>
             <div className="relative">
               <button
                 onClick={() => setShowDatePicker((v) => !v)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-hover transition-colors"
               >
                 <Calendar size={16} className="text-[#007BFF]" />
                 <span className="text-sm font-semibold">{formatDateLabel(selectedDate)}</span>
@@ -184,7 +184,7 @@ export default function EmployeeProfileModal({ employee, allTasks, onClose, canC
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold">Tasks</h3>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-fg-subtle">
               {dayTasks.filter((t) => t.completed).length}/{dayTasks.length} completed
               {dayTasks.length > 0 && (
                 <span className="ml-2 font-medium" style={{ color: completionColor(completionPct(dayTasks)) }}>
@@ -195,7 +195,7 @@ export default function EmployeeProfileModal({ employee, allTasks, onClose, canC
           </div>
           <div className="space-y-2">
             {dayTasks.length === 0 && (
-              <p className="text-sm text-gray-400 py-4 text-center">No tasks for this day.</p>
+              <p className="text-sm text-fg-subtle py-4 text-center">No tasks for this day.</p>
             )}
             {dayTasks.map((t) => (
               <TaskCard key={t.id} task={t} onToggle={() => {}} showTime={false} />
@@ -226,16 +226,16 @@ export default function EmployeeProfileModal({ employee, allTasks, onClose, canC
           )}
           <div className="space-y-2">
             {dayComments.length === 0 && (
-              <p className="text-sm text-gray-400">No comments for this day.</p>
+              <p className="text-sm text-fg-subtle">No comments for this day.</p>
             )}
             {dayComments.map((c) => (
               <div key={c.id} className="card p-3 animate-fade-in">
                 <div className="flex items-center gap-2 mb-1">
                   <Avatar name={c.author?.full_name ?? 'User'} size="sm" />
                   <p className="text-sm font-medium">{c.author?.full_name}</p>
-                  <span className="text-xs text-gray-400">{new Date(c.created_at).toLocaleDateString('en-GB')}</span>
+                  <span className="text-xs text-fg-subtle">{new Date(c.created_at).toLocaleDateString('en-GB')}</span>
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">{c.content}</p>
+                <p className="text-sm text-fg-muted ">{c.content}</p>
               </div>
             ))}
           </div>

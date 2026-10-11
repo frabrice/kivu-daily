@@ -102,7 +102,7 @@ export default function VehicleOwnerProfilePage({
     className: 'text-right',
     render: (t: FinanceTransaction) => (
       canEdit && t.status === 'pending' ? (
-        <button onClick={() => onClick(t)} disabled={actingId === t.id} className="btn-primary text-[11px] px-2.5 py-1.5 disabled:opacity-50">
+        <button onClick={() => onClick(t)} disabled={actingId === t.id} className="btn-primary text-caption px-2.5 py-1.5 disabled:opacity-50">
           {actingId === t.id ? 'Working…' : labelFor(t)}
         </button>
       ) : null
@@ -112,7 +112,7 @@ export default function VehicleOwnerProfilePage({
   const statusColumn = {
     header: 'Status',
     render: (t: FinanceTransaction) => (
-      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
+      <span className="text-micro font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${STATUS_META[t.status].color}20`, color: STATUS_META[t.status].color }}>
         {STATUS_META[t.status].label}
       </span>
     ),
@@ -131,39 +131,39 @@ export default function VehicleOwnerProfilePage({
         )}
       </div>
 
-      {error && <div className="text-[11px] text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
+      {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
       <div className="card p-5">
         <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
           <div>
             <h2 className="text-lg font-semibold">{owner.full_name}</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">{ownedVehicles.length} vehicle{ownedVehicles.length === 1 ? '' : 's'}</p>
+            <p className="text-caption text-fg-subtle mt-0.5">{ownedVehicles.length} vehicle{ownedVehicles.length === 1 ? '' : 's'}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Phone size={10} /> Phone</p>
-            <p className="text-[12px] font-medium">{owner.phone}</p>
+          <div className="card p-2.5 bg-inset ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1 flex items-center gap-1"><Phone size={10} /> Phone</p>
+            <p className="text-small font-medium">{owner.phone}</p>
           </div>
-          <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Mail size={10} /> Email</p>
-            <p className="text-[12px] font-medium truncate">{owner.email || <span className="text-gray-400 font-normal">Not provided</span>}</p>
+          <div className="card p-2.5 bg-inset ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1 flex items-center gap-1"><Mail size={10} /> Email</p>
+            <p className="text-small font-medium truncate">{owner.email || <span className="text-fg-subtle font-normal">Not provided</span>}</p>
           </div>
-          <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><Landmark size={10} /> Bank Account</p>
-            <p className="text-[12px] font-medium truncate">{owner.bank_name ? `${owner.bank_name}${owner.account_number ? ` · ${owner.account_number}` : ''}` : <span className="text-gray-400 font-normal">Not set</span>}</p>
+          <div className="card p-2.5 bg-inset ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1 flex items-center gap-1"><Landmark size={10} /> Bank Account</p>
+            <p className="text-small font-medium truncate">{owner.bank_name ? `${owner.bank_name}${owner.account_number ? ` · ${owner.account_number}` : ''}` : <span className="text-fg-subtle font-normal">Not set</span>}</p>
           </div>
-          <div className="card p-2.5 bg-gray-50 dark:bg-white/5">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-1 flex items-center gap-1"><CalendarDays size={10} /> Payment Day</p>
-            <p className="text-[12px] font-medium">{owner.payment_day ? PAYMENT_DAY_LABEL[owner.payment_day] : <span className="text-gray-400 font-normal">Not set</span>}</p>
+          <div className="card p-2.5 bg-inset ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1 flex items-center gap-1"><CalendarDays size={10} /> Payment Day</p>
+            <p className="text-small font-medium">{owner.payment_day ? PAYMENT_DAY_LABEL[owner.payment_day] : <span className="text-fg-subtle font-normal">Not set</span>}</p>
           </div>
         </div>
 
         {owner.notes && (
           <div className="mt-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Notes</p>
-            <p className="text-[12px] leading-relaxed whitespace-pre-wrap">{owner.notes}</p>
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1.5">Notes</p>
+            <p className="text-small leading-relaxed whitespace-pre-wrap">{owner.notes}</p>
           </div>
         )}
       </div>
@@ -175,7 +175,7 @@ export default function VehicleOwnerProfilePage({
             <p className="stat-label">Total Paid Out</p>
           </div>
           <p className="text-2xl font-bold leading-none">{totalPaid.toLocaleString()}</p>
-          <p className="text-[10px] text-gray-400 mt-1.5">RWF posted across all weekly payouts</p>
+          <p className="text-micro text-fg-subtle mt-1.5">RWF posted across all weekly payouts</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center gap-1.5 mb-2">
@@ -183,7 +183,7 @@ export default function VehicleOwnerProfilePage({
             <p className="stat-label">Needs Action</p>
           </div>
           <p className="text-2xl font-bold leading-none">{totalPending.toLocaleString()}</p>
-          <p className="text-[10px] text-gray-400 mt-1.5">RWF across {pendingCount} pending item{pendingCount === 1 ? '' : 's'}</p>
+          <p className="text-micro text-fg-subtle mt-1.5">RWF across {pendingCount} pending item{pendingCount === 1 ? '' : 's'}</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center gap-1.5 mb-2">
@@ -191,29 +191,29 @@ export default function VehicleOwnerProfilePage({
             <p className="stat-label">Managed Cars</p>
           </div>
           <p className="text-2xl font-bold leading-none">{ownedVehicles.length}</p>
-          <p className="text-[10px] text-gray-400 mt-1.5">{ownedVehicles.map((v) => v.plate_number).join(', ') || '—'}</p>
+          <p className="text-micro text-fg-subtle mt-1.5">{ownedVehicles.map((v) => v.plate_number).join(', ') || '—'}</p>
         </div>
       </div>
 
       {/* Vehicles & payout schedule */}
       <div className="card p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><CalendarClock size={13} /> Vehicles &amp; Payout Schedule</p>
+        <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2.5 flex items-center gap-1.5"><CalendarClock size={13} /> Vehicles &amp; Payout Schedule</p>
         {ownedVehicles.length === 0 ? (
-          <p className="text-[11px] text-gray-400">No vehicles linked to this owner yet.</p>
+          <p className="text-caption text-fg-subtle">No vehicles linked to this owner yet.</p>
         ) : (
           <div className="space-y-1.5">
             {ownedVehicles.map((v) => (
-              <div key={v.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-gray-50 dark:border-white/5 last:border-0">
+              <div key={v.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-line-muted last:border-0">
                 <div className="min-w-0">
-                  <p className="text-[12px] font-medium flex items-center gap-1.5"><Car size={11} className="text-gray-400 shrink-0" /> {v.plate_number}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
+                  <p className="text-small font-medium flex items-center gap-1.5"><Car size={11} className="text-fg-subtle shrink-0" /> {v.plate_number}</p>
+                  <p className="text-micro text-fg-subtle mt-0.5">
                     {v.operation_start_date
                       ? <>Since {formatDateLabelSafe(v.operation_start_date)} · {fmt(Math.round((v.weekly_owner_payout_amount ?? WEEKLY_OWNER_PAYOUT_DEFAULT) / OWNER_PAYOUT_DAYS_PER_WEEK))}/day ({fmt(v.weekly_owner_payout_amount ?? WEEKLY_OWNER_PAYOUT_DEFAULT)}/week) · {fmt(v.monthly_management_fee_amount ?? MONTHLY_MANAGEMENT_FEE_DEFAULT)}/month</>
                       : <span className="text-red-500 dark:text-red-400">No start date set — payments won't generate until it is</span>}
                   </p>
                 </div>
                 {canEdit && (
-                  <button onClick={() => setSchedulingVehicle(v)} className="btn-ghost shrink-0 whitespace-nowrap text-[11px] px-2.5 py-1.5">
+                  <button onClick={() => setSchedulingVehicle(v)} className="btn-ghost shrink-0 whitespace-nowrap text-caption px-2.5 py-1.5">
                     {v.operation_start_date ? 'Edit Schedule' : 'Set Start Date'}
                   </button>
                 )}
@@ -225,9 +225,9 @@ export default function VehicleOwnerProfilePage({
 
       {/* Onboarding & setup */}
       <div className="card p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><Receipt size={13} /> Onboarding &amp; Setup</p>
+        <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2.5 flex items-center gap-1.5"><Receipt size={13} /> Onboarding &amp; Setup</p>
         {onboardingRows.length === 0 ? (
-          <p className="text-[11px] text-gray-400">Nothing on file yet — set a start date above to load the onboarding fee.</p>
+          <p className="text-caption text-fg-subtle">Nothing on file yet — set a start date above to load the onboarding fee.</p>
         ) : (
           <DataTable
             rows={onboardingRows}
@@ -246,9 +246,9 @@ export default function VehicleOwnerProfilePage({
 
       {/* Monthly management fees */}
       <div className="card p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><TrendingUp size={13} /> Monthly Management Fees</p>
+        <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2.5 flex items-center gap-1.5"><TrendingUp size={13} /> Monthly Management Fees</p>
         {monthlyFeeRows.length === 0 ? (
-          <p className="text-[11px] text-gray-400">Nothing on file yet.</p>
+          <p className="text-caption text-fg-subtle">Nothing on file yet.</p>
         ) : (
           <DataTable
             rows={monthlyFeeRows}
@@ -266,9 +266,9 @@ export default function VehicleOwnerProfilePage({
 
       {/* Weekly payments */}
       <div className="card p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2.5 flex items-center gap-1.5"><Wallet size={13} /> Weekly Payments</p>
+        <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle mb-2.5 flex items-center gap-1.5"><Wallet size={13} /> Weekly Payments</p>
         {weeklyPaymentRows.length === 0 ? (
-          <p className="text-[11px] text-gray-400">Nothing on file yet.</p>
+          <p className="text-caption text-fg-subtle">Nothing on file yet.</p>
         ) : (
           <DataTable
             rows={weeklyPaymentRows}
