@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { useTasks } from '../lib/hooks';
 import { useCompanyData, buildEmployeeStats } from '../lib/company';
@@ -15,6 +15,7 @@ import HowToUsePage from '../pages/HowToUsePage';
 import PerformancePage from '../pages/performance/PerformancePage';
 import ManagingDirectorApp from '../pages/ManagingDirectorApp';
 import StaffHome from '../pages/os/StaffHome';
+import CommandCenter from '../pages/os/CommandCenter';
 import { NavItem, NavKey } from '../components/AppShell';
 import { useAccess } from './access';
 import { LEGACY_PATH, MODULES, visiblePages } from './registry';
@@ -95,5 +96,12 @@ export function Departments() {
 
 export function Home() {
   const access = useAccess();
-  return access.isMd ? <ManagingDirectorApp view="dashboard" /> : <StaffHome />;
+  return access.isMd ? <CommandCenter /> : <StaffHome />;
+}
+
+// Supplier payments, bank transfers and expense claims now live in the ledger.
+const ledgers: Record<string, () => JSX.Element> = {};
+export function ledgerOf(type: string) {
+  ledgers[type] ??= () => <Navigate to={`/finance/ledger?type=${type}`} replace />;
+  return ledgers[type];
 }

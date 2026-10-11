@@ -24,6 +24,7 @@ export interface PageDef {
   group?: string;          // sidebar section heading
   keywords?: string;       // extra words for the command palette
   description?: string;    // shown in How to Use and the palette
+  hidden?: boolean;        // has an address but no menu entry (old pages folded into others)
 }
 
 export interface ModuleDef {
@@ -36,6 +37,10 @@ export interface ModuleDef {
 }
 
 const L = (f: () => Promise<{ default: ComponentType<never> }>) => lazy(f as () => Promise<{ default: ComponentType }>);
+// A list page with its number strip on top (see strips.tsx).
+type StripName = 'DriversStrip' | 'CarsStrip' | 'DepositsStrip' | 'DaysOffStrip' | 'FinesStrip' | 'CasesStrip' | 'GrowthStrip' | 'ProductStrip' | 'PeopleStrip';
+const LS = (f: () => Promise<{ default: ComponentType<never> }>, strip: StripName) =>
+  lazy(() => Promise.all([f(), import('./strips')]).then(([page, s]) => ({ default: s.withStrip(page.default as ComponentType, s[strip]) })));
 
 // ---- adapters for pages that need props from the old app shells
 const A = {
@@ -44,11 +49,12 @@ const A = {
   StaffAnalytics: L(() => import('./adapters').then((m) => ({ default: m.StaffAnalytics }))),
   MyCases: L(() => import('./adapters').then((m) => ({ default: m.MyCases }))),
   CallCases: L(() => import('./adapters').then((m) => ({ default: m.CallCases }))),
+  CallCasesStripped: LS(() => import('./adapters').then((m) => ({ default: m.CallCases })), 'CasesStrip'),
   StaffLeaderboard: L(() => import('./adapters').then((m) => ({ default: m.StaffLeaderboard }))),
   PeopleSearch: L(() => import('./adapters').then((m) => ({ default: m.PeopleSearch }))),
   Activity: L(() => import('./adapters').then((m) => ({ default: m.ActivityLog }))),
   Help: L(() => import('./adapters').then((m) => ({ default: m.Help }))),
-  Departments: L(() => import('./adapters').then((m) => ({ default: m.Departments }))),
+  Departments: LS(() => import('./adapters').then((m) => ({ default: m.Departments })), 'PeopleStrip'),
   Performance: L(() => import('./adapters').then((m) => ({ default: m.Performance }))),
   Home: L(() => import('./adapters').then((m) => ({ default: m.Home }))),
 };
@@ -78,11 +84,11 @@ export const MODULES: ModuleDef[] = [
     id: 'fleet', label: 'Fleet', icon: Truck, base: '/fleet', shortcut: 'g f',
     pages: [
       { id: 'fleet-overview', path: '/fleet', label: 'Overview', icon: Gauge, component: L(() => import('../pages/os/FleetOverview')), can: (a) => a.in('fleet', 'it', 'finance') },
-      { id: 'fleet-drivers', path: '/fleet/drivers', label: 'Drivers', icon: Truck, component: L(() => import('../pages/fleet/FleetPipelinePage')), can: (a) => a.in('fleet', 'it'), keywords: 'pipeline' },
-      { id: 'fleet-cars', path: '/fleet/cars', label: 'Cars', icon: Car, component: L(() => import('../pages/fleet/FleetVehiclesPage')), can: (a) => a.in('fleet', 'it'), keywords: 'vehicles' },
-      { id: 'fleet-deposits', path: '/fleet/deposits', label: 'Deposits', icon: Wallet, component: L(() => import('../pages/fleet/FleetDepositsPage')), can: (a) => a.in('fleet', 'it'), badge: 'overdueDeposits', group: 'Money' },
-      { id: 'fleet-fines', path: '/fleet/fines', label: 'Fines', icon: Receipt, component: L(() => import('../pages/fleet/FleetFinesPage')), can: (a) => a.in('fleet', 'it'), group: 'Money' },
-      { id: 'fleet-days-off', path: '/fleet/days-off', label: 'Days off', icon: CalendarOff, component: L(() => import('../pages/fleet/DriverPausesPage')), can: (a) => a.in('fleet', 'it', 'finance'), badge: 'pendingPauses', group: 'Money', keywords: 'pauses sick garage' },
+      { id: 'fleet-drivers', path: '/fleet/drivers', label: 'Drivers', icon: Truck, component: LS(() => import('../pages/fleet/FleetPipelinePage'), 'DriversStrip'), can: (a) => a.in('fleet', 'it'), keywords: 'pipeline' },
+      { id: 'fleet-cars', path: '/fleet/cars', label: 'Cars', icon: Car, component: LS(() => import('../pages/fleet/FleetVehiclesPage'), 'CarsStrip'), can: (a) => a.in('fleet', 'it'), keywords: 'vehicles' },
+      { id: 'fleet-deposits', path: '/fleet/deposits', label: 'Deposits', icon: Wallet, component: LS(() => import('../pages/fleet/FleetDepositsPage'), 'DepositsStrip'), can: (a) => a.in('fleet', 'it'), badge: 'overdueDeposits', group: 'Money' },
+      { id: 'fleet-fines', path: '/fleet/fines', label: 'Fines', icon: Receipt, component: LS(() => import('../pages/fleet/FleetFinesPage'), 'FinesStrip'), can: (a) => a.in('fleet', 'it'), group: 'Money' },
+      { id: 'fleet-days-off', path: '/fleet/days-off', label: 'Days off', icon: CalendarOff, component: LS(() => import('../pages/fleet/DriverPausesPage'), 'DaysOffStrip'), can: (a) => a.in('fleet', 'it', 'finance'), badge: 'pendingPauses', group: 'Money', keywords: 'pauses sick garage' },
       { id: 'fleet-leaderboard', path: '/fleet/leaderboard', label: 'Leaderboard', icon: Trophy, component: L(() => import('../pages/fleet/DepositLeaderboardPage')), can: (a) => a.in('fleet', 'it', 'finance'), group: 'Money' },
       { id: 'fleet-branding', path: '/fleet/branding', label: 'Branding & devices', icon: Paintbrush, component: L(() => import('../pages/fleet/BrandingDevicesPage')), can: (a) => a.in('fleet', 'it'), badge: 'carFollowups', group: 'Partners' },
       { id: 'non-insider', path: '/non-insider', label: 'Non-Insider', icon: CarFront, component: L(() => import('../pages/nonInsider/NonInsiderPage')), can: (a) => a.in('fleet', 'it', 'call_center'), group: 'Partners', keywords: 'platform drivers cars partners' },
@@ -100,9 +106,9 @@ export const MODULES: ModuleDef[] = [
       { id: 'finance-newsletters', path: '/finance/newsletters', label: 'Newsletters', icon: Mail, component: L(() => import('../pages/finance/NewslettersPage')), can: (a) => a.in('finance'), group: 'Owners' },
       { id: 'finance-payroll', path: '/finance/payroll', label: 'Staff payroll', icon: Users2, component: L(() => import('../pages/finance/FinancePayrollPage')), can: (a) => a.in('finance'), group: 'Payroll' },
       { id: 'finance-driver-payroll', path: '/finance/driver-payroll', label: 'Driver payroll', icon: Truck, component: L(() => import('../pages/finance/FinanceDriverPayrollPage')), can: (a) => a.in('finance'), group: 'Payroll' },
-      { id: 'finance-suppliers', path: '/finance/suppliers', label: 'Supplier payments', icon: Truck, component: L(() => import('../pages/finance/FinanceSuppliersPage')), can: (a) => a.in('finance'), group: 'Payments' },
-      { id: 'finance-transfers', path: '/finance/transfers', label: 'Bank transfers', icon: ArrowLeftRight, component: L(() => import('../pages/finance/FinanceTransfersPage')), can: (a) => a.in('finance'), group: 'Payments' },
-      { id: 'finance-expenses', path: '/finance/expenses', label: 'Expense claims', icon: Receipt, component: L(() => import('../pages/finance/FinanceExpenseClaimsPage')), can: (a) => a.in('finance'), group: 'Payments' },
+      { id: 'finance-suppliers', path: '/finance/suppliers', label: 'Supplier payments', icon: Truck, component: L(() => import('./adapters').then((m) => ({ default: m.ledgerOf('supplier_payment') }))), can: (a) => a.in('finance'), group: 'Payments', hidden: true },
+      { id: 'finance-transfers', path: '/finance/transfers', label: 'Bank transfers', icon: ArrowLeftRight, component: L(() => import('./adapters').then((m) => ({ default: m.ledgerOf('transfer') }))), can: (a) => a.in('finance'), group: 'Payments', hidden: true },
+      { id: 'finance-expenses', path: '/finance/expenses', label: 'Expense claims', icon: Receipt, component: L(() => import('./adapters').then((m) => ({ default: m.ledgerOf('expense_claim') }))), can: (a) => a.in('finance'), group: 'Payments', hidden: true },
       { id: 'finance-accounts', path: '/finance/accounts', label: 'Bank accounts', icon: Landmark, component: L(() => import('../pages/finance/FinanceAccountsPage')), can: (a) => a.in('finance'), group: 'Banks' },
       { id: 'finance-reconciliation', path: '/finance/reconciliation', label: 'Reconciliation', icon: ClipboardCheck, component: L(() => import('../pages/finance/FinanceReconciliationPage')), can: (a) => a.in('finance'), group: 'Banks' },
       { id: 'finance-team', path: '/finance/team', label: 'Team', icon: UserCog, component: L(() => import('../pages/finance/FinanceTeamPage')), can: (a) => a.in('finance'), group: 'Banks' },
@@ -112,7 +118,7 @@ export const MODULES: ModuleDef[] = [
     id: 'calls', label: 'Call Center', icon: PhoneCall, base: '/call-center', shortcut: 'g c',
     pages: [
       { id: 'calls-overview', path: '/call-center', label: 'Live board', icon: Gauge, component: L(() => import('../pages/os/CallCenterOverview')), can: (a) => a.in('call_center', 'finance'), description: 'Who is on shift, open cases by age, call-backs due and today\'s numbers.' },
-      { id: 'calls-cases', path: '/call-center/cases', label: 'Calls & cases', icon: PhoneIncoming, component: A.CallCases, can: (a) => a.in('call_center'), keywords: 'tickets' },
+      { id: 'calls-cases', path: '/call-center/cases', label: 'Calls & cases', icon: PhoneIncoming, component: A.CallCasesStripped, can: (a) => a.in('call_center'), keywords: 'tickets' },
       { id: 'calls-queue', path: '/call-center/queue', label: 'Call queue', icon: PhoneCall, component: L(() => import('../pages/callCenter/CallQueuePage')), can: (a) => a.in('call_center') },
       { id: 'calls-outreach', path: '/call-center/outreach', label: 'Outreach', icon: Megaphone, component: L(() => import('../pages/callCenter/OutreachPage')), can: (a) => a.in('call_center') , keywords: 'non-insider rounds calls log' },
       { id: 'calls-directory', path: '/call-center/directory', label: 'Directory', icon: BookMarked, component: L(() => import('../pages/callCenter/CallDirectoryPage')), can: (a) => a.in('call_center') },
@@ -124,16 +130,16 @@ export const MODULES: ModuleDef[] = [
   {
     id: 'growth', label: 'Growth', icon: Target, base: '/growth', shortcut: 'g g',
     pages: [
-      { id: 'growth-campaigns', path: '/growth/campaigns', label: 'Campaigns', icon: Target, component: L(() => import('../pages/marketing/CampaignsPage')), can: (a) => a.in('marketing_sales_bd'), keywords: 'marketing sales crm contacts' },
-      { id: 'growth-followups', path: '/growth/follow-ups', label: 'Follow-ups', icon: CalendarClock, component: L(() => import('../pages/marketing/FollowUpsPage')), can: (a) => a.in('marketing_sales_bd') },
+      { id: 'growth-campaigns', path: '/growth/campaigns', label: 'Campaigns', icon: Target, component: LS(() => import('../pages/marketing/CampaignsPage'), 'GrowthStrip'), can: (a) => a.in('marketing_sales_bd'), keywords: 'marketing sales crm contacts' },
+      { id: 'growth-followups', path: '/growth/follow-ups', label: 'Follow-ups', icon: CalendarClock, component: LS(() => import('../pages/marketing/FollowUpsPage'), 'GrowthStrip'), can: (a) => a.in('marketing_sales_bd') },
       { id: 'growth-content', path: '/growth/content', label: 'Content calendar', icon: ImageIcon, component: L(() => import('../pages/SocialMediaPage')), can: (a) => a.in('social_media'), keywords: 'social media posts' },
     ],
   },
   {
     id: 'product', label: 'Product Hub', icon: Package, base: '/product', shortcut: 'g p',
     pages: [
-      { id: 'product-issues', path: '/product/issues', label: 'Issues', icon: AlertTriangle, component: L(() => import('../pages/itHub/IssuesPage')), can: (a) => a.in('it'), badge: 'openIssues', keywords: 'it stories bugs' },
-      { id: 'product-products', path: '/product/products', label: 'Products', icon: Package, component: L(() => import('../pages/itHub/ProductsPage')), can: (a) => a.in('it'), keywords: 'roadmap milestones features' },
+      { id: 'product-issues', path: '/product/issues', label: 'Issues', icon: AlertTriangle, component: LS(() => import('../pages/itHub/IssuesPage'), 'ProductStrip'), can: (a) => a.in('it'), badge: 'openIssues', keywords: 'it stories bugs' },
+      { id: 'product-products', path: '/product/products', label: 'Products', icon: Package, component: LS(() => import('../pages/itHub/ProductsPage'), 'ProductStrip'), can: (a) => a.in('it'), keywords: 'roadmap milestones features' },
     ],
   },
   {
@@ -170,7 +176,8 @@ export const MODULES: ModuleDef[] = [
   },
 ];
 
-export const visiblePages = (m: ModuleDef, a: Access) => m.pages.filter((p) => !p.can || p.can(a));
+export const visiblePages = (m: ModuleDef, a: Access) => m.pages.filter((p) => !p.hidden && (!p.can || p.can(a)));
+const allowedPages = (m: ModuleDef, a: Access) => m.pages.filter((p) => !p.can || p.can(a));
 export const visibleModules = (a: Access) => MODULES.filter((m) => visiblePages(m, a).length > 0);
 
 // Route table: first visible page per path wins (MD and staff variants
@@ -178,7 +185,7 @@ export const visibleModules = (a: Access) => MODULES.filter((m) => visiblePages(
 export function routeTable(a: Access): PageDef[] {
   const seen = new Set<string>();
   const out: PageDef[] = [];
-  for (const m of MODULES) for (const p of visiblePages(m, a)) if (!seen.has(p.path)) { seen.add(p.path); out.push(p); }
+  for (const m of MODULES) for (const p of allowedPages(m, a)) if (!seen.has(p.path)) { seen.add(p.path); out.push(p); }
   return out;
 }
 
