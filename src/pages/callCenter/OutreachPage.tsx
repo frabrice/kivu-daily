@@ -115,7 +115,7 @@ export default function OutreachPage() {
       ))}
     </div>
   );
-  if (tab === 'log') return <div className="space-y-4">{tabs}<OutreachLog calls={calls} drivers={drivers} names={names} /></div>;
+  if (tab === 'log') return <div className="space-y-4">{tabs}<OutreachLog calls={calls} drivers={drivers} statuses={statuses} names={names} /></div>;
   if (tab === 'report' && isMd) return <div className="space-y-4">{tabs}<OutreachReport drivers={drivers} statuses={statuses} calls={calls} round={round} names={names} /></div>;
 
   return (

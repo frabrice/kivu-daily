@@ -150,6 +150,7 @@ export default function EmployeeApp() {
     it_hub_issues: 'Issues',
     non_insider: 'Non-Insider',
     driver_pauses: 'Driver days off',
+    performance: 'Performance',
   };
   const title = TITLES[active];
 

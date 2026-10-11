@@ -6,6 +6,7 @@ import { useTheme } from '../../lib/theme';
 import { CATEGORY_LABEL } from '../../lib/callTickets';
 import { durationLabel } from '../../lib/shifts';
 import { CallTicketCategory } from '../../lib/supabase';
+import AgentPerformancePage from './AgentPerformancePage';
 
 // Call analytics for the MD and Finance: how many calls we get and make
 // each day and what they're about, when the phones are busiest, and how
@@ -60,6 +61,7 @@ export default function CallAnalyticsPage() {
   const [days, setDays] = useState(30);
   const [data, setData] = useState<Analytics | null>(null);
   const [error, setError] = useState('');
+  const [agentPage, setAgentPage] = useState<string | null>(null);
 
   useEffect(() => {
     setError('');
@@ -83,6 +85,7 @@ export default function CallAnalyticsPage() {
     { key: 'out_other', label: 'Other', color: c.other },
   ] as const, [c]);
 
+  if (agentPage) return <AgentPerformancePage agentId={agentPage} onBack={() => setAgentPage(null)} />;
   if (error) return <div className="card p-6 text-[12px] text-red-600">{error}</div>;
   if (!data) return <div className="card p-10 text-center text-[12px] text-gray-400">Loading call analytics…</div>;
 
@@ -123,7 +126,7 @@ export default function CallAnalyticsPage() {
       <StackedDaily title="Calls made per day" subtitle="Who we called" data={data.daily} series={OUT_SERIES} c={c} />
       {legacy && <p className="text-[11px] text-gray-400 -mt-2">Shift reports before 5 Oct 2026 only had totals, so those calls show as "Other".</p>}
 
-      <AgentsSection agents={data.agents} c={c} />
+      <AgentsSection agents={data.agents} c={c} onOpen={setAgentPage} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <TopicsCard data={data} c={c} />
@@ -233,7 +236,7 @@ function StackedDaily({ title, subtitle, data, series, c }: { title: string; sub
 }
 
 // ---------------------------------------------------------------- agents
-function AgentsSection({ agents, c }: { agents: Agent[]; c: typeof PALETTE.light }) {
+function AgentsSection({ agents, c, onOpen }: { agents: Agent[]; c: typeof PALETTE.light; onOpen: (id: string) => void }) {
   const rows = agents.filter((a) => a.shifts > 0 || a.contacts_logged > 0 || a.outreach_calls > 0);
   if (!rows.length) {
     return <div className="card p-4"><p className="text-[13px] font-semibold">Agent performance</p><p className="text-[12px] text-gray-400 py-6 text-center">No shifts in this period yet.</p></div>;
@@ -254,7 +257,7 @@ function AgentsSection({ agents, c }: { agents: Agent[]; c: typeof PALETTE.light
     <div className="card p-4 space-y-4">
       <div>
         <p className="text-[13px] font-semibold">Agent performance</p>
-        <p className="text-[11px] text-gray-500">On time = started within 10 minutes of the shift start. Calls are what each agent reported at the end of their shifts.</p>
+        <p className="text-[11px] text-gray-500">On time = started within 10 minutes of the shift start. Calls are what each agent reported at the end of their shifts. Click an agent for their full page.</p>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <Highlight label="Most on time" who={onTime?.name} value={onTime ? `${Math.round(onTime.v)}% of shifts` : 'Needs 2+ shifts'} />
@@ -296,8 +299,8 @@ function AgentsSection({ agents, c }: { agents: Agent[]; c: typeof PALETTE.light
             {rows.map((a) => {
               const ot = pct(a.on_time, a.shifts);
               return (
-                <tr key={a.id} className="border-t border-gray-100 dark:border-white/5">
-                  <td className="py-2 pr-3 font-medium whitespace-nowrap">{a.name}{!a.is_active && <span className="text-gray-400 font-normal"> (left)</span>}</td>
+                <tr key={a.id} onClick={() => onOpen(a.id)} className="border-t border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.03]">
+                  <td className="py-2 pr-3 font-medium whitespace-nowrap text-brand-600 dark:text-brand-300">{a.name}{!a.is_active && <span className="text-gray-400 font-normal"> (left)</span>}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{a.shifts}</td>
                   <td className="py-2 pr-3 text-right tabular-nums whitespace-nowrap">{a.shifts ? <>{a.on_time}/{a.shifts} <span className={ot !== null && ot < 80 ? 'text-red-600 font-semibold' : 'text-gray-500'}>({ot}%)</span></> : '—'}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{a.avg_late == null ? '—' : `${a.avg_late} min`}</td>

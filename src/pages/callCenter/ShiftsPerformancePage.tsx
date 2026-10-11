@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Timer, AlertTriangle } from 'lucide-react';
+import { Timer, AlertTriangle, ChevronRight } from 'lucide-react';
 import { supabase, Profile } from '../../lib/supabase';
-import { CallCenterShift, durationLabel, INCOMING_TYPES, OUTGOING_TYPES, SLOT_LABEL } from '../../lib/shifts';
-import Modal from '../../components/Modal';
+import { CallCenterShift, durationLabel, SLOT_LABEL } from '../../lib/shifts';
+import ShiftReportModal, { shiftMinutes } from '../../components/callCenter/ShiftReportModal';
+import AgentPerformancePage from './AgentPerformancePage';
 
 // MD: every Call Center shift - time on shift, lateness, what the agent
 // reported (calls received / made / missed) against what they logged in
@@ -13,6 +14,7 @@ export default function ShiftsPerformancePage() {
   const [days, setDays] = useState<7 | 30>(7);
   const [open, setOpen] = useState<CallCenterShift | null>(null);
   const [loading, setLoading] = useState(true);
+  const [agentPage, setAgentPage] = useState<string | null>(null);
 
   useEffect(() => {
     const since = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -27,7 +29,7 @@ export default function ShiftsPerformancePage() {
   }, []);
 
   const name = (id: string | null) => profiles.find((p) => p.id === id)?.full_name.trim() ?? '—';
-  const minutesOf = (s: CallCenterShift) => (s.stats.minutes ?? (new Date(s.ended_at ?? Date.now()).getTime() - new Date(s.started_at).getTime()) / 60000);
+  const minutesOf = shiftMinutes;
   const inRange = shifts.filter((s) => Date.now() - new Date(s.started_at).getTime() <= days * 86400000);
 
   const perAgent = useMemo(() => {
@@ -47,6 +49,7 @@ export default function ShiftsPerformancePage() {
     }).sort((a, b) => b.minutes - a.minutes);
   }, [inRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (agentPage) return <AgentPerformancePage agentId={agentPage} onBack={() => setAgentPage(null)} />;
   if (loading) return <div className="space-y-2">{[0, 1].map((i) => <div key={i} className="h-24 skeleton rounded-xl" />)}</div>;
 
   const th = 'px-3 py-2 font-medium text-left';
@@ -72,12 +75,12 @@ export default function ShiftsPerformancePage() {
           <table className="w-full text-[12px] min-w-[760px]">
             <thead><tr className="text-[11px] text-gray-400 border-b border-gray-100 dark:border-white/5">
               <th className={th}>Agent</th><th className={th}>Shifts</th><th className={th}>Time on shift</th><th className={th}>Late starts</th>
-              <th className={th}>Calls in / out / missed (reported)</th><th className={th}>Contacts logged</th><th className={th}>Solved on the spot</th><th className={th}>Driver calls</th><th className={th}>Cases closed</th>
+              <th className={th}>Calls in / out / missed (reported)</th><th className={th}>Contacts logged</th><th className={th}>Solved on the spot</th><th className={th}>Driver calls</th><th className={th}>Cases closed</th><th />
             </tr></thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
               {perAgent.map((a) => (
-                <tr key={a.id}>
-                  <td className={`${td} font-medium`}>{name(a.id)}{a.notClosed > 0 && <span className="ml-1.5 text-[10px] text-red-600" title="Shifts not ended properly">⚠ {a.notClosed}</span>}</td>
+                <tr key={a.id} onClick={() => setAgentPage(a.id)} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.03]" title="Open this agent's page">
+                  <td className={`${td} font-medium`}><span className="text-brand-600 dark:text-brand-300 hover:underline">{name(a.id)}</span>{a.notClosed > 0 && <span className="ml-1.5 text-[10px] text-red-600" title="Shifts not ended properly">⚠ {a.notClosed}</span>}</td>
                   <td className={td}>{a.shifts}</td>
                   <td className={td}>{durationLabel(a.minutes)}</td>
                   <td className={`${td} ${a.late ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-400'}`}>{a.late || '—'}</td>
@@ -86,6 +89,7 @@ export default function ShiftsPerformancePage() {
                   <td className={td}>{a.solvedPct === null ? '—' : `${a.solvedPct}%`}</td>
                   <td className={td}>{a.driverCalls}</td>
                   <td className={td}>{a.closed}</td>
+                  <td className="pr-2 text-gray-300"><ChevronRight size={14} /></td>
                 </tr>
               ))}
             </tbody>
@@ -109,34 +113,7 @@ export default function ShiftsPerformancePage() {
         ))}
       </div>
 
-      {open && (
-        <Modal open onClose={() => setOpen(null)} title={`${name(open.agent_id)} — ${SLOT_LABEL[open.slot]}`} subtitle={`${new Date(open.started_at).toLocaleString('en-GB')} · ${durationLabel(minutesOf(open))} · ${open.station}`} maxWidth="max-w-lg">
-          <div className="space-y-3 text-[12px]">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-              {[['Calls received', open.report.calls_received], ['Calls made', open.report.calls_made], ['Missed', open.report.calls_missed], ['WhatsApp/SMS', open.report.messages_handled],
-                ['Contacts logged', open.stats.contacts_logged], ['Solved on the spot', open.stats.solved_on_call], ['Handed on', open.stats.handed_on], ['Cases closed', open.stats.cases_closed],
-                ['Outreach calls', open.stats.outreach_calls], ['Bookings', open.stats.bookings], ['Emergencies', open.stats.emergencies], ['Late (min)', open.late_minutes]].map(([l, v]) => (
-                <div key={l as string} className="rounded-lg bg-gray-50 dark:bg-white/[0.03] p-2 text-center"><p className="text-[14px] font-bold">{(v as number | undefined) ?? '—'}</p><p className="text-[10px] text-gray-500">{l}</p></div>
-              ))}
-            </div>
-            {open.report.in_passengers !== undefined && (
-              <div className="grid sm:grid-cols-2 gap-2 text-[11px]">
-                {([['Received', INCOMING_TYPES], ['Made', OUTGOING_TYPES]] as const).map(([l, types]) => (
-                  <div key={l} className="rounded-lg border border-gray-100 dark:border-white/10 p-2">
-                    <p className="font-semibold mb-0.5">{l}</p>
-                    {types.map((t) => <p key={t.key} className="flex justify-between text-gray-600 dark:text-gray-300"><span>{t.label}</span><b>{open.report[t.key] ?? 0}</b></p>)}
-                  </div>
-                ))}
-              </div>
-            )}
-            {([['Worked on', open.report.worked_on], ['Resolved', open.report.resolved_summary], ['Still unresolved', open.report.unresolved_summary], ['Problems', open.report.problems], ['Caller feedback', open.report.feedback], ['Suggestions', open.report.suggestions]] as [string, string | undefined][])
-              .filter(([, v]) => v && v.trim()).map(([l, v]) => (
-                <div key={l}><p className="text-[11px] font-semibold text-gray-500">{l}</p><p className="whitespace-pre-wrap">{v}</p></div>
-              ))}
-            {open.status === 'auto_closed' && <p className="text-red-600">This shift wasn't ended — it was closed automatically after 10 hours, so there's no report.</p>}
-          </div>
-        </Modal>
-      )}
+      {open && <ShiftReportModal shift={open} name={name} onClose={() => setOpen(null)} />}
     </div>
   );
 }

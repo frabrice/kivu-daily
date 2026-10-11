@@ -60,6 +60,8 @@ export interface ScheduledRule {
   when?: (today: string) => boolean;
   // `force` = test send: skip date guards so the MD can preview any day.
   build: (ctx: Ctx, force: boolean) => Promise<Built[]>;
+  // "Send test to me" sends every version (one per person), not just the first.
+  testAll?: boolean;
 }
 
 export interface EventRule {

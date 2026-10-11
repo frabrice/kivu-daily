@@ -37,6 +37,7 @@ import {
   Loader2,
   Check,
   Mail,
+  Activity,
 } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, BarChart, Bar, Cell } from 'recharts';
 import AppShell, { NavKey, NavItem } from '../components/AppShell';
@@ -56,6 +57,7 @@ import CreateMeetingModal from '../components/CreateMeetingModal';
 import TaskReviewModal from '../components/TaskReviewModal';
 import NotificationBell from '../components/NotificationBell';
 import EmployeeProfilePage from '../components/EmployeeProfilePage';
+import PerformancePage from './performance/PerformancePage';
 import { CreateUserModal, EditUserModal } from '../components/EmployeeAdminModals';
 import TerminateEmployeeModal from '../components/TerminateEmployeeModal';
 import Leaderboard from './Leaderboard';
@@ -185,6 +187,7 @@ export default function ManagingDirectorApp() {
 
   const NAV: NavItem[] = [
     { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { key: 'performance', label: 'Performance', icon: Activity },
     { key: 'tasks', label: 'My Tasks', icon: ListTodo },
     { key: 'from_call_center', label: 'From Call Center', icon: Headphones, badge: myOpenTickets },
     { key: 'fleet', label: 'Fleet', icon: Truck },
@@ -295,6 +298,9 @@ export default function ManagingDirectorApp() {
                 {totalTasks > 0 && <> · <span style={{ color: completionColor(overallPct) }}>{Math.round(overallPct)}%</span> company completion</>}
                 {silentEmployees.length > 0 && <> · {silentEmployees.length} silent</>}
               </p>
+              <button onClick={() => setActive('performance')} className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium bg-white/10 hover:bg-white/20 rounded-lg px-3 py-1.5">
+                <Activity size={13} /> Performance: people, drivers, cars, money <ChevronRight size={13} />
+              </button>
             </div>
           </div>
 
@@ -616,6 +622,7 @@ export default function ManagingDirectorApp() {
       {active === 'finance_newsletters' && <NewslettersPage />}
       {active === 'call_center' && <CallCenterPage />}
       {active === 'call_analytics' && <CallAnalyticsPage />}
+      {active === 'performance' && <PerformancePage onNavigate={setActive} />}
       {active === 'from_call_center' && <FromCallCenterPage initialTicketId={link.ticketId} />}
       {active === 'marketing' && <MarketingPage />}
       {active === 'social' && <SocialMediaPage />}

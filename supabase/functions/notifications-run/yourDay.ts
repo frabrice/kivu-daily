@@ -1,15 +1,15 @@
-import Anthropic from "npm:@anthropic-ai/sdk";
 import { Block, Built, Ctx, esc, firstName, plural, Profile, Tone } from "./core.ts";
 import { loadTodayTasks, TodayTask } from "./smartTasks.ts";
+import { aiConfigured, makeMask, Mask, writeText } from "./aiText.ts";
 
 // "Your day" (07:00): one email per person instead of many. Order:
 //   focus line -> what needs you today (smart + own tasks) -> since
 //   yesterday (instant-but-not-urgent events) -> the reports for your role.
 // "Still open" (16:00): only when a high-priority task is still open.
 //
-// The focus line is written by Claude when ANTHROPIC_API_KEY is set (from
-// the real numbers only - any number not in the facts rejects the text);
-// otherwise, or on any error, a plain rule-based line is used.
+// The focus line is written by AI when a provider key is set (aiText.ts:
+// Gemini, Groq or Claude; names masked; any number not in the facts
+// rejects the text); otherwise, or on any error, a plain rule-based line.
 
 export interface BundledPart { ruleKey: string; built: Built }
 export interface DigestLine { id: string; rule_key: string; line: string; created_at: string }
@@ -62,39 +62,25 @@ function ruleFocus(p: Profile, tasks: TodayTask[], parts: BundledPart[], digest:
   return lines.join(" ");
 }
 
-// Claude-written focus, grounded on the facts. Returns null to fall back.
-async function aiFocus(p: Profile, tasks: TodayTask[], parts: BundledPart[], digest: DigestLine[]): Promise<string | null> {
-  const key = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!key) return null;
+// AI-written focus (Gemini, Groq or Claude - see aiText.ts), grounded on
+// the facts, with names masked. Returns null to fall back.
+async function aiFocus(mask: Mask | null, p: Profile, tasks: TodayTask[], parts: BundledPart[], digest: DigestLine[]): Promise<string | null> {
+  if (!mask) return null;
   const facts = {
     person: firstName(p.full_name), role: p.department?.name ?? (p.role === "managing_director" ? "Managing Director" : "Employee"),
     tasks: tasks.slice(0, 8).map((t) => ({ task: t.title, urgent: t.priority === "high", by: t.due_time, items: bullets(t).slice(0, 5) })),
     reports: parts.map((x) => x.built.subject),
     since_yesterday: digest.slice(0, 12).map((d) => d.line),
   };
-  const factsText = JSON.stringify(facts);
-  try {
-    const client = new Anthropic({ apiKey: key, timeout: 20_000, maxRetries: 1 });
-    const res = await client.beta.messages.create({
-      model: "claude-opus-5-5",
-      max_tokens: 2000,
-      output_config: { effort: "low" },
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      system: "You write the opening paragraph of a staff member's morning email at Kivu Ride, an electric ride-hailing company in Kigali. Write 2 or 3 short sentences in plain English that tell this person what matters most today and in what order. Use only the facts provided: never invent names, amounts or counts, and only use numbers that appear in the facts. No greeting, no sign-off, no lists, no markdown.",
-      messages: [{ role: "user", content: `Facts for today (JSON):\n${factsText}` }],
-    } as unknown as Parameters<typeof client.beta.messages.create>[0]) as Anthropic.Beta.BetaMessage;
-    if (res.stop_reason === "refusal") return null;
-    const text = res.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map((b) => b.text).join(" ").trim();
-    if (!text || text.length > 700) return null;
-    // Grounding check: every number in the text must appear in the facts.
-    const nums = text.match(/\d[\d,.]*/g) ?? [];
-    if (nums.some((n) => !factsText.includes(n.replace(/[.,]$/, "")))) return null;
-    return esc(text);
-  } catch (err) {
-    console.error("your_day focus: falling back to rule-based text", err instanceof Error ? err.message : err);
-    return null;
-  }
+  const factsText = mask.hide(JSON.stringify(facts));
+  const system = "You write the opening paragraph of a staff member's morning email at Kivu Ride, an electric ride-hailing company in Kigali. Write 2 or 3 short sentences in plain English that tell this person what matters most today and in what order. Use only the facts provided: never invent names, amounts or counts, and only use numbers that appear in the facts. People, drivers and cars appear as codes such as \"Driver B\" or \"Car C\" - keep those codes exactly as written. No greeting, no sign-off, no lists, no markdown.";
+  // Grounding check: every number in the text must appear in the facts.
+  const grounded = (text: string) => text.length <= 700 && !(text.match(/\d[\d,.]*/g) ?? []).some((n) => !factsText.includes(n.replace(/[.,]$/, "")));
+  const res = await writeText(system, `Facts for today (JSON):
+${factsText}`, grounded);
+  if (!res) return null;
+  console.log(`your_day focus for ${p.id} written by ${res.provider}`);
+  return esc(mask.show(res.text));
 }
 
 export async function composeYourDay(ctx: Ctx, parts: Map<string, BundledPart[]>, digest: Map<string, DigestLine[]>): Promise<Built[]> {
@@ -102,6 +88,7 @@ export async function composeYourDay(ctx: Ctx, parts: Map<string, BundledPart[]>
   const tasks = all.filter((t) => !t.completed);
   const teamTasks = all.filter((t) => t.smart_key && !t.completed);
   const people = ctx.profiles.filter((p) => p.is_active && p.email);
+  const mask = aiConfigured() ? await makeMask(ctx).catch(() => null) : null;
   const out: Built[] = [];
   await Promise.all(people.map(async (p) => {
     const mine = tasks.filter((t) => t.user_id === p.id).sort(sortTasks);
@@ -109,7 +96,7 @@ export async function composeYourDay(ctx: Ctx, parts: Map<string, BundledPart[]>
     const myDigest = digest.get(p.id) ?? [];
     if (!mine.length && !myParts.length && !myDigest.length) return;
 
-    const focus = (await aiFocus(p, mine, myParts, myDigest)) ?? ruleFocus(p, mine, myParts, myDigest);
+    const focus = (await aiFocus(mask, p, mine, myParts, myDigest)) ?? ruleFocus(p, mine, myParts, myDigest);
     const blocks: Block[] = [];
     if (mine.length) blocks.push({ heading: `Needs you today (${mine.length})`, table: taskTable(mine) });
     if (myDigest.length) {

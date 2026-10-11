@@ -64,6 +64,7 @@ export type NavKey =
   | 'from_call_center'
   | 'call_center_outreach'
   | 'call_analytics'
+  | 'performance'
   | 'marketing_campaigns'
   | 'marketing_followups'
   | 'it_hub_products'

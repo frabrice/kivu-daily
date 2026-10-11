@@ -1,22 +1,99 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, Download, Search, X } from 'lucide-react';
 import { PlatformDriver } from '../../lib/supabase';
-import { ANSWER_LABEL, APP_STATUS_SHORT, OutreachCall, RESULT_LABEL } from '../../lib/outreach';
+import {
+  ANSWER_LABEL, ANSWERS, APP_STATUS, APP_STATUS_SHORT, CATEGORIES, CATEGORY_LABEL, categoryOf, OutreachCall, OutreachStatus, RESULT_LABEL, RESULTS,
+} from '../../lib/outreach';
 
-// Every outreach call, day by day: who called whom, what they answered.
-// The per-agent summary at the top is the outreach report for that day.
-export default function OutreachLog({ calls, drivers, names }: { calls: OutreachCall[]; drivers: PlatformDriver[]; names: Record<string, string> }) {
-  const kigaliDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+type Period = 'all' | 'today' | 'yesterday' | 'week' | '7d' | 'month' | 'custom';
+const PERIODS: { key: Period; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'today', label: 'Today' },
+  { key: 'yesterday', label: 'Yesterday' },
+  { key: 'week', label: 'This week' },
+  { key: '7d', label: 'Last 7 days' },
+  { key: 'month', label: 'This month' },
+  { key: 'custom', label: 'Pick dates' },
+];
+const PAGE_SIZES = [25, 50, 100];
+
+const kigaliDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const addDays = (day: string, n: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+
+// [from, to] inclusive, as Kigali days; null = no limit.
+function periodRange(p: Period, today: string, from: string, to: string): [string | null, string | null] {
+  if (p === 'today') return [today, today];
+  if (p === 'yesterday') return [addDays(today, -1), addDays(today, -1)];
+  if (p === 'week') { const dow = (new Date(`${today}T12:00:00Z`).getUTCDay() + 6) % 7; return [addDays(today, -dow), today]; }
+  if (p === '7d') return [addDays(today, -6), today];
+  if (p === 'month') return [`${today.slice(0, 8)}01`, today];
+  if (p === 'custom') return [from || null, to || null];
+  return [null, null];
+}
+
+// Every outreach call: all of them by default, newest first, page by page.
+// Filters narrow it down; the per-agent summary always matches the filters.
+export default function OutreachLog({ calls, drivers, statuses, names }: {
+  calls: OutreachCall[]; drivers: PlatformDriver[]; statuses: Record<string, OutreachStatus>; names: Record<string, string>;
+}) {
   const today = kigaliDay(new Date().toISOString());
-  const [day, setDay] = useState(today);
+  const [period, setPeriod] = useState<Period>('all');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [agent, setAgent] = useState('');
+  const [result, setResult] = useState('');
+  const [round, setRound] = useState('');
+  const [app, setApp] = useState('');
+  const [device, setDevice] = useState('');
+  const [branding, setBranding] = useState('');
+  const [category, setCategory] = useState('');
+  const [onlyYes, setOnlyYes] = useState(false);
+  const [onlyNotes, setOnlyNotes] = useState(false);
+  const [q, setQ] = useState('');
+  const [oldestFirst, setOldestFirst] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   const driverById = useMemo(() => new Map(drivers.map((d) => [d.id, d])), [drivers]);
 
-  const dayCalls = calls.filter((c) => kigaliDay(c.created_at) === day);
-  const shown = dayCalls.filter((c) => !agent || c.agent_id === agent);
-  const agents = [...new Set(dayCalls.map((c) => c.agent_id ?? ''))];
-  const summary = agents.map((id) => {
-    const list = dayCalls.filter((c) => (c.agent_id ?? '') === id);
-    return {
+  const [rangeFrom, rangeTo] = periodRange(period, today, from, to);
+  const term = q.trim().toLowerCase().replace(/\s/g, '');
+  const match = (f: string, v: string | null | undefined) => !f || (f === 'none' ? !v : v === f);
+
+  // Everything except the agent filter - the summary table uses this so it
+  // keeps showing every agent while one of them is selected.
+  const base = useMemo(() => calls.filter((c) => {
+    const day = kigaliDay(c.created_at);
+    if (rangeFrom && day < rangeFrom) return false;
+    if (rangeTo && day > rangeTo) return false;
+    if (result && c.result !== result) return false;
+    if (round && String(c.round) !== round) return false;
+    if (!match(app, c.app_status) || !match(device, c.device_answer) || !match(branding, c.branding_answer)) return false;
+    if (onlyYes && !c.interested) return false;
+    if (onlyNotes && !c.note?.trim()) return false;
+    if (category && categoryOf(statuses[c.platform_driver_id]) !== category) return false;
+    if (term) {
+      const d = driverById.get(c.platform_driver_id);
+      if (![d?.full_name, d?.phone, d?.car?.plate_number, c.note].some((v) => v?.toLowerCase().replace(/\s/g, '').includes(term))) return false;
+    }
+    return true;
+  }), [calls, rangeFrom, rangeTo, result, round, app, device, branding, onlyYes, onlyNotes, category, term, statuses, driverById]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const shown = useMemo(() => {
+    const list = base.filter((c) => !agent || (c.agent_id ?? '') === agent);
+    return oldestFirst ? [...list].reverse() : list;
+  }, [base, agent, oldestFirst]);
+
+  // Back to page 1 whenever the filters change.
+  useEffect(() => { setPage(0); }, [period, from, to, agent, result, round, app, device, branding, category, onlyYes, onlyNotes, term, oldestFirst, pageSize]);
+
+  const pages = Math.max(1, Math.ceil(shown.length / pageSize));
+  const safePage = Math.min(page, pages - 1);
+  const pageRows = shown.slice(safePage * pageSize, safePage * pageSize + pageSize);
+
+  const summary = useMemo(() => {
+    const byAgent = new Map<string, OutreachCall[]>();
+    for (const c of base) { const k = c.agent_id ?? ''; byAgent.set(k, [...(byAgent.get(k) ?? []), c]); }
+    return [...byAgent.entries()].map(([id, list]) => ({
       id, name: names[id] ?? 'Unknown', calls: list.length,
       reached: list.filter((c) => c.result === 'reached').length,
       noAnswer: list.filter((c) => c.result === 'no_answer').length,
@@ -24,24 +101,98 @@ export default function OutreachLog({ calls, drivers, names }: { calls: Outreach
       device: list.filter((c) => c.device_answer === 'yes').length,
       branding: list.filter((c) => c.branding_answer === 'yes').length,
       coming: list.filter((c) => c.app_status === 'will_come').length,
-    };
-  }).sort((a, b) => b.calls - a.calls);
-  const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
+    })).sort((a, b) => b.calls - a.calls);
+  }, [base, names]);
+
+  const agentOptions = useMemo(() => [...new Set(calls.map((c) => c.agent_id ?? ''))]
+    .map((id) => ({ id, name: names[id] ?? 'Unknown' })).sort((a, b) => a.name.localeCompare(b.name)), [calls, names]);
+  const rounds = useMemo(() => [...new Set(calls.map((c) => c.round))].sort((a, b) => b - a), [calls]);
+
+  const active = [agent, result, round, app, device, branding, category, term].filter(Boolean).length + (onlyYes ? 1 : 0) + (onlyNotes ? 1 : 0) + (period !== 'all' ? 1 : 0);
+  const clear = () => { setPeriod('all'); setFrom(''); setTo(''); setAgent(''); setResult(''); setRound(''); setApp(''); setDevice(''); setBranding(''); setCategory(''); setOnlyYes(false); setOnlyNotes(false); setQ(''); };
+
+  const when = (iso: string) => {
+    const d = new Date(iso);
+    const day = kigaliDay(iso);
+    const t = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
+    if (day === today) return `Today ${t}`;
+    if (day === addDays(today, -1)) return `Yesterday ${t}`;
+    return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Kigali' })} ${t}`;
+  };
+
+  const downloadCsv = () => {
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const head = ['Date', 'Time', 'Agent', 'Driver', 'Phone', 'Plate', 'Round', 'Result', 'Updated app', 'Device', 'Branding', 'Said yes', 'Note'];
+    const lines = shown.map((c) => {
+      const d = driverById.get(c.platform_driver_id);
+      const t = new Date(c.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
+      return [kigaliDay(c.created_at), t, c.agent_id ? names[c.agent_id] ?? '' : '', d?.full_name ?? '', d?.phone ?? '', d?.car?.plate_number ?? '', `R${c.round}`,
+        RESULT_LABEL[c.result], c.app_status ? APP_STATUS_SHORT[c.app_status] : '', c.device_answer ? ANSWER_LABEL[c.device_answer] : '',
+        c.branding_answer ? ANSWER_LABEL[c.branding_answer] : '', c.interested ? 'Yes' : '', c.note ?? ''].map((v) => esc(String(v))).join(',');
+    });
+    const blob = new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `outreach-calls-${rangeFrom ?? 'start'}-to-${rangeTo ?? today}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const sel = (label: string, value: string, set: (v: string) => void, options: { key: string; label: string }[], notAsked = false) => (
+    <label className="block min-w-0"><span className="block text-[10px] text-gray-500 mb-0.5">{label}</span>
+      <select value={value} onChange={(e) => set(e.target.value)} className="input py-1 text-[11px]">
+        <option value="">Any</option>
+        {options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+        {notAsked && <option value="none">Not asked</option>}
+      </select>
+    </label>
+  );
 
   return (
     <div className="space-y-4">
       <div className="card p-4 space-y-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="block"><span className="block text-[11px] text-gray-500 mb-1">Day</span>
-            <input type="date" value={day} max={today} onChange={(e) => { setDay(e.target.value || today); setAgent(''); }} className="input py-1.5" />
+        <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Period">
+          {PERIODS.map((p) => (
+            <button key={p.key} role="tab" aria-selected={period === p.key} onClick={() => setPeriod(p.key)}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium border ${period === p.key ? 'border-brand bg-brand/10 text-brand-700 dark:text-brand-300' : 'border-gray-200 dark:border-white/10 text-gray-500 hover:border-brand/40'}`}>{p.label}</button>
+          ))}
+          {period === 'custom' && (
+            <div className="flex items-center gap-1.5 ml-1">
+              <input type="date" value={from} max={to || today} onChange={(e) => setFrom(e.target.value)} className="input py-1 text-[11px]" aria-label="From" />
+              <span className="text-[11px] text-gray-400">to</span>
+              <input type="date" value={to} min={from} max={today} onChange={(e) => setTo(e.target.value)} className="input py-1 text-[11px]" aria-label="To" />
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          {sel('Agent', agent, setAgent, agentOptions.map((a) => ({ key: a.id, label: a.name })))}
+          {sel('Result', result, setResult, RESULTS.map((r) => ({ key: r.key, label: r.label })))}
+          {sel('Round', round, setRound, rounds.map((r) => ({ key: String(r), label: `Round ${r}` })))}
+          {sel('Updated app', app, setApp, APP_STATUS.map((a) => ({ key: a.key, label: a.short })), true)}
+          {sel('Device', device, setDevice, ANSWERS, true)}
+          {sel('Branding', branding, setBranding, ANSWERS, true)}
+          {sel('Driver now', category, setCategory, CATEGORIES.map((c) => ({ key: c.key, label: c.label })))}
+          <label className="block min-w-0"><span className="block text-[10px] text-gray-500 mb-0.5">Sort</span>
+            <select value={oldestFirst ? 'old' : 'new'} onChange={(e) => setOldestFirst(e.target.value === 'old')} className="input py-1 text-[11px]">
+              <option value="new">Newest first</option>
+              <option value="old">Oldest first</option>
+            </select>
           </label>
-          <div className="flex gap-1">
-            {[0, 1].map((back) => {
-              const d = new Date(Date.now() - back * 86400000).toISOString();
-              return <button key={back} onClick={() => { setDay(kigaliDay(d)); setAgent(''); }} className={`btn-ghost text-[11px] ${day === kigaliDay(d) ? 'text-brand-600 dark:text-brand-300' : ''}`}>{back ? 'Yesterday' : 'Today'}</button>;
-            })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Driver, phone, plate or note" className="input pl-8 py-1.5 text-[12px]" />
           </div>
-          <p className="text-[12px] text-gray-500 ml-auto">{dayCalls.length} outreach call{dayCalls.length === 1 ? '' : 's'} on {new Date(`${day}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
+          <label className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><input type="checkbox" checked={onlyYes} onChange={(e) => setOnlyYes(e.target.checked)} /> Said yes to something</label>
+          <label className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300"><input type="checkbox" checked={onlyNotes} onChange={(e) => setOnlyNotes(e.target.checked)} /> Has a note</label>
+          {active > 0 && <button onClick={clear} className="btn-ghost text-[11px] flex items-center gap-1"><X size={12} /> Clear {active} filter{active === 1 ? '' : 's'}</button>}
+          <div className="ml-auto flex items-center gap-3">
+            <p className="text-[12px] text-gray-500 tabular-nums">{shown.length} of {calls.length} call{calls.length === 1 ? '' : 's'}</p>
+            <button onClick={downloadCsv} disabled={!shown.length} className="btn-ghost text-[11px] flex items-center gap-1 border border-gray-200 dark:border-white/10"><Download size={12} /> CSV</button>
+          </div>
         </div>
 
         {summary.length > 0 && (
@@ -64,19 +215,19 @@ export default function OutreachLog({ calls, drivers, names }: { calls: Outreach
         )}
       </div>
 
-      <div className="card p-4">
-        {shown.length === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">No outreach calls logged on this day.</p> : (
+      <div className="card p-4 space-y-3">
+        {shown.length === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">No outreach calls match these filters.</p> : (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px] min-w-[820px]">
+            <table className="w-full text-[12px] min-w-[880px]">
               <thead><tr className="text-left text-gray-500 text-[11px]">
-                {['Time', 'Agent', 'Driver', 'Round', 'Result', 'Updated app', 'Device', 'Branding', 'Note'].map((h) => <th key={h} className="py-1.5 pr-3 font-medium">{h}</th>)}
+                {['When', 'Agent', 'Driver', 'Round', 'Result', 'Updated app', 'Device', 'Branding', 'Driver now', 'Note'].map((h) => <th key={h} className="py-1.5 pr-3 font-medium">{h}</th>)}
               </tr></thead>
               <tbody>
-                {shown.map((c) => {
+                {pageRows.map((c) => {
                   const d = driverById.get(c.platform_driver_id);
                   return (
                     <tr key={c.id} className="border-t border-gray-100 dark:border-white/5 align-top">
-                      <td className="py-1.5 pr-3 tabular-nums">{time(c.created_at)}</td>
+                      <td className="py-1.5 pr-3 tabular-nums whitespace-nowrap">{when(c.created_at)}</td>
                       <td className="py-1.5 pr-3 whitespace-nowrap">{c.agent_id ? names[c.agent_id] ?? '—' : '—'}</td>
                       <td className="py-1.5 pr-3"><span className="font-medium">{d?.full_name ?? '—'}</span><span className="block text-[10px] text-gray-500">{d?.car?.plate_number ?? ''} {d?.phone ?? ''}</span></td>
                       <td className="py-1.5 pr-3">R{c.round}</td>
@@ -84,6 +235,7 @@ export default function OutreachLog({ calls, drivers, names }: { calls: Outreach
                       <td className="py-1.5 pr-3">{c.app_status ? APP_STATUS_SHORT[c.app_status] : '—'}</td>
                       <td className="py-1.5 pr-3">{c.device_answer ? ANSWER_LABEL[c.device_answer] : '—'}</td>
                       <td className="py-1.5 pr-3">{c.branding_answer ? ANSWER_LABEL[c.branding_answer] : '—'}</td>
+                      <td className="py-1.5 pr-3 text-[11px] text-gray-500 whitespace-nowrap">{CATEGORY_LABEL[categoryOf(statuses[c.platform_driver_id])].split(' — ')[0]}</td>
                       <td className="py-1.5 text-gray-600 dark:text-gray-300 max-w-[260px]">{c.note ?? ''}</td>
                     </tr>
                   );
@@ -92,7 +244,36 @@ export default function OutreachLog({ calls, drivers, names }: { calls: Outreach
             </table>
           </div>
         )}
+
+        {shown.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <p className="text-[11px] text-gray-500 tabular-nums">Showing {safePage * pageSize + 1}–{Math.min(shown.length, (safePage + 1) * pageSize)} of {shown.length}</p>
+            <label className="flex items-center gap-1.5 text-[11px] text-gray-500">Per page
+              <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="input py-0.5 text-[11px] w-auto">
+                {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
+            <div className="ml-auto flex items-center gap-1">
+              <button onClick={() => setPage(safePage - 1)} disabled={safePage === 0} className="btn-ghost p-1 disabled:opacity-30" aria-label="Previous page"><ChevronLeft size={14} /></button>
+              {pageNumbers(safePage, pages).map((n, i) => n < 0
+                ? <span key={`gap${i}`} className="px-1 text-[11px] text-gray-400">…</span>
+                : <button key={n} onClick={() => setPage(n)} aria-current={n === safePage ? 'page' : undefined}
+                    className={`min-w-[26px] h-[26px] rounded-md text-[11px] tabular-nums ${n === safePage ? 'bg-brand text-white font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'}`}>{n + 1}</button>)}
+              <button onClick={() => setPage(safePage + 1)} disabled={safePage >= pages - 1} className="btn-ghost p-1 disabled:opacity-30" aria-label="Next page"><ChevronRight size={14} /></button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+// 0-based page numbers with gaps (-1): 1 … 4 5 6 … 12
+function pageNumbers(current: number, total: number): number[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+  const set = new Set([0, total - 1, current - 1, current, current + 1].filter((n) => n >= 0 && n < total));
+  const sorted = [...set].sort((a, b) => a - b);
+  const out: number[] = [];
+  sorted.forEach((n, i) => { if (i && n - sorted[i - 1] > 1) out.push(-1); out.push(n); });
+  return out;
 }

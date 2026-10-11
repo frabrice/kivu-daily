@@ -128,6 +128,18 @@ export function callbackDue(s: OutreachStatus | undefined, now = Date.now()): bo
   return !!s && s.last_result === 'callback' && !!s.callback_at && new Date(s.callback_at).getTime() <= now + 15 * 60000 && !s.came_to_office_on;
 }
 
+// Every call, past the 1,000-row cap of a single request.
+async function allCalls() {
+  const rows: OutreachCall[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from('platform_outreach_calls').select('*').order('created_at', { ascending: false }).range(from, from + 999);
+    if (error || !data) break;
+    rows.push(...(data as OutreachCall[]));
+    if (data.length < 1000) break;
+  }
+  return { data: rows };
+}
+
 export function useOutreach() {
   const [drivers, setDrivers] = useState<PlatformDriver[]>([]);
   const [statuses, setStatuses] = useState<Record<string, OutreachStatus>>({});
@@ -145,7 +157,7 @@ export function useOutreach() {
   const load = useCallback(async () => {
     const [d, c, r, p] = await Promise.all([
       supabase.from('platform_drivers').select('*, car:platform_cars(*)').order('full_name'),
-      supabase.from('platform_outreach_calls').select('*').order('created_at', { ascending: false }),
+      allCalls(),
       supabase.from('outreach_rounds').select('*').order('number', { ascending: false }).limit(1),
       supabase.from('profiles').select('id, full_name'),
       loadStatuses(),

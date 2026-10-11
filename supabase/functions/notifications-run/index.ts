@@ -12,6 +12,7 @@ import { ticketRules } from "./tickets.ts";
 import { shiftRules } from "./shifts.ts";
 import { moneyRules } from "./money.ts";
 import { outreachRules } from "./outreach.ts";
+import { announceRules } from "./announce.ts";
 import { syncSmartTasks } from "./smartTasks.ts";
 import { BundledPart, composeUrgentNudge, composeYourDay, DigestLine } from "./yourDay.ts";
 
@@ -30,7 +31,7 @@ const COMPOSED: Record<string, ScheduledRule> = {
   your_day: { kind: "scheduled", days: ALL_DAYS, at: hm(7), build: async () => [] },
   urgent_nudge: { kind: "scheduled", days: ALL_DAYS, at: hm(16), build: async () => [] },
 };
-const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules, ...outreachRules, ...COMPOSED };
+const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules, ...outreachRules, ...announceRules, ...COMPOSED };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -221,10 +222,16 @@ Deno.serve(async (req: Request) => {
       const rule = ruleMap.get(key);
       if (!def || !rule) return json({ error: "Unknown rule" }, 400);
       let built: Built | null = null;
+      let extra: Built[] = [];
       if (key in COMPOSED) {
         const mdId = callerMdId ?? ctx.profiles.find((p) => p.role === "managing_director" && p.is_active)?.id;
         built = (await buildComposed(key, ctx, ruleMap, { ctx, prefs: await loadPrefs(db) })).built.find((b) => b.recipients?.includes(mdId ?? "")) ?? null;
-      } else if (def.kind === "scheduled") built = (await def.build(ctx, true))[0] ?? null;
+      } else if (def.kind === "scheduled") {
+        // { all: true } sends the MD every version (e.g. one per role), not just the first.
+        const list = await def.build(ctx, true);
+        built = list[0] ?? null;
+        if (body.all || def.testAll) extra = list.slice(1, 20);
+      }
       else {
         const sample = await def.sample(ctx);
         if (sample) built = await def.build(sample, ctx);
@@ -234,7 +241,12 @@ Deno.serve(async (req: Request) => {
       // scheduler's secret, used for maintenance checks) the active MD.
       const md = ctx.profiles.find((p) => (callerMdId ? p.id === callerMdId : p.role === "managing_director" && p.is_active && !!p.email));
       if (!md?.email) return json({ error: "No MD email to send the test to" }, 400);
-      await enqueue(ctx, rule, `test:${key}:${Date.now()}`, built, [{ id: md.id, email: md.email, name: md.full_name.trim() }], true);
+      const stamp = Date.now();
+      for (const [i, b] of [built, ...extra].entries()) {
+        const who = b.recipients?.length === 1 ? ctx.profiles.find((p) => p.id === b.recipients![0])?.full_name.trim() : null;
+        // Each version keeps its real recipient's name, so the MD sees exactly what they'll get.
+        await enqueue(ctx, rule, `test:${key}:${stamp}:${i}`, who ? { ...b, subject: `${b.subject} (${who})` } : b, [{ id: md.id, email: md.email, name: who ?? md.full_name.trim() }], true);
+      }
       const { data: queued } = await db.from("notification_outbox").select("id").eq("is_test", true).eq("rule_key", key).eq("status", "pending");
       const results = await sendPending(db, (queued ?? []).map((q) => q.id));
       const failed = results.find((r) => !r.ok);
