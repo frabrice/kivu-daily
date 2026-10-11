@@ -5,8 +5,7 @@ import LandingPage from './pages/LandingPage';
 import RoleSelectPage from './pages/RoleSelectPage';
 import AuthPage from './pages/AuthPage';
 import SetPasswordPage from './pages/SetPasswordPage';
-import EmployeeApp from './pages/EmployeeApp';
-import ManagingDirectorApp from './pages/ManagingDirectorApp';
+import OsApp from './os/OsApp';
 import LoadingScreen from './components/LoadingScreen';
 import PublicSurveyApp from './pages/survey/PublicSurveyApp';
 
@@ -53,8 +52,7 @@ function AppInner() {
 
   if (profile.force_password_change) return <SetPasswordPage />;
 
-  if (profile.role === 'managing_director') return <ManagingDirectorApp />;
-  return <EmployeeApp />;
+  return <OsApp />;
 }
 
 // /survey/<token> is a fully public, unauthenticated route for field

@@ -1,11 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
 import {
-  Headphones,
-  LayoutDashboard,
-  Trophy,
-  Search,
-  Shield,
-  Settings,
   Users2,
   ListTodo,
   AlertCircle,
@@ -13,21 +7,15 @@ import {
   MessageSquare,
   UserPlus,
   Megaphone,
-  BarChart3,
   CalendarPlus,
   ClipboardCheck,
   MoonStar,
   Radio,
-  FileText,
-  Calendar as CalendarIcon,
   Truck,
   Wallet,
-  Car,
   PhoneCall,
   Target,
-  Image as ImageIcon,
   Package,
-  HelpCircle,
   TrendingUp as TrendingUpIcon,
   ChevronRight,
   Plus,
@@ -36,11 +24,11 @@ import {
   Send,
   Loader2,
   Check,
-  Mail,
   Activity,
 } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, BarChart, Bar, Cell } from 'recharts';
-import AppShell, { NavKey, NavItem } from '../components/AppShell';
+import { useNavigate } from 'react-router-dom';
+import { LEGACY_PATH } from '../os/registry';
 import { useCompanyData, buildEmployeeStats, departmentStats, EmployeeWithStats } from '../lib/company';
 import { useActivityFeed } from '../lib/activity';
 import { useCompanySnapshot } from '../lib/dashboardSnapshot';
@@ -55,34 +43,10 @@ import AssignTaskModal from '../components/AssignTaskModal';
 import CreateAnnouncementModal from '../components/CreateAnnouncementModal';
 import CreateMeetingModal from '../components/CreateMeetingModal';
 import TaskReviewModal from '../components/TaskReviewModal';
-import NotificationBell from '../components/NotificationBell';
 import EmployeeProfilePage from '../components/EmployeeProfilePage';
-import PerformancePage from './performance/PerformancePage';
 import { CreateUserModal, EditUserModal } from '../components/EmployeeAdminModals';
 import TerminateEmployeeModal from '../components/TerminateEmployeeModal';
-import Leaderboard from './Leaderboard';
-import SearchPage from './SearchPage';
-import MDPanel from './MDPanel';
-import SettingsPage from './SettingsPage';
-import MDTasksPage from './MDTasksPage';
-import MDCommentsPage from './MDCommentsPage';
-import ActivityLogPage from './ActivityLogPage';
-import DocumentsPage from './DocumentsPage';
-import AnnouncementsPage from './AnnouncementsPage';
-import MeetingsPage from './MeetingsPage';
-import FleetPage from './FleetPage';
-import FinanceDeptPage from './FinanceDeptPage';
-import FinanceVehicleOwnersPage from './finance/FinanceVehicleOwnersPage';
-import NewslettersPage from './finance/NewslettersPage';
-import CallCenterPage from './CallCenterPage';
-import CallAnalyticsPage from './callCenter/CallAnalyticsPage';
-import FromCallCenterPage from './FromCallCenterPage';
-import { takeTicketLink, useMyOpenTicketCount } from '../lib/callTickets';
 import { edgeFunctionError } from '../lib/edgeFunctions';
-import MarketingPage from './MarketingPage';
-import SocialMediaPage from './SocialMediaPage';
-import ITHubPage from './ITHubPage';
-import HowToUsePage from './HowToUsePage';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
 
@@ -102,7 +66,8 @@ const ACCENT_COLORS = {
 } as const;
 type AccentColor = keyof typeof ACCENT_COLORS;
 
-export default function ManagingDirectorApp() {
+// MD Home (dashboard) and the Departments view, rendered inside the Kivu OS shell.
+export default function ManagingDirectorApp({ view = 'dashboard' }: { view?: 'dashboard' | 'departments' }) {
   const { profile } = useAuth();
   const { theme } = useTheme();
   const tooltipStyle = {
@@ -116,26 +81,10 @@ export default function ManagingDirectorApp() {
   };
   const axisColor = theme === 'dark' ? '#5d7791' : '#9ca3af';
   const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.05)' : '#f1f5f9';
-  // A ticket link from an email (?ticket=...) opens straight onto it.
-  const [link] = useState(() => takeTicketLink());
-  const [active, setActiveRaw] = useState<NavKey>(() => {
-    if (link.page === 'fleet_branding') {
-      try { localStorage.setItem('kivu-active-nav-fleet-tab', 'branding'); } catch { /* ignore */ }
-      return 'fleet';
-    }
-    if (link.ticketId || link.page) return 'from_call_center';
-    try {
-      const saved = localStorage.getItem('kivu-active-nav-md');
-      if (saved) return saved as NavKey;
-    } catch { /* ignore */ }
-    return 'dashboard';
-  });
-  const setActive = (key: NavKey) => {
-    setActiveRaw(key);
-    try { localStorage.setItem('kivu-active-nav-md', key); } catch { /* ignore */ }
-  };
+  const navigate = useNavigate();
+  const active: string = view;
+  const setActive = (key: string) => navigate(LEGACY_PATH[key] ?? '/');
   const { profiles, departments, allTasks, loading, reload } = useCompanyData();
-  const myOpenTickets = useMyOpenTicketCount(profile?.id);
   const { entries: activity, loading: activityLoading } = useActivityFeed(15);
   const snapshot = useCompanySnapshot();
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithStats | null>(null);
@@ -185,32 +134,6 @@ export default function ManagingDirectorApp() {
     return () => { supabase.removeChannel(channel); };
   }, [profile]);
 
-  const NAV: NavItem[] = [
-    { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { key: 'performance', label: 'Performance', icon: Activity },
-    { key: 'tasks', label: 'My Tasks', icon: ListTodo },
-    { key: 'from_call_center', label: 'From Call Center', icon: Headphones, badge: myOpenTickets },
-    { key: 'fleet', label: 'Fleet', icon: Truck },
-    { key: 'finance', label: 'Finance', icon: Wallet },
-    { key: 'finance_vehicle_owners', label: 'Vehicle Owners', icon: Car },
-    { key: 'finance_newsletters', label: 'Newsletters', icon: Mail },
-    { key: 'call_center', label: 'Call Center', icon: PhoneCall },
-    { key: 'call_analytics', label: 'Call Analytics', icon: BarChart3 },
-    { key: 'marketing', label: 'Campaigns', icon: Target },
-    { key: 'social', label: 'Content Calendar', icon: ImageIcon },
-    { key: 'it_hub', label: 'Product Hub', icon: Package },
-    { key: 'meetings', label: 'Meetings', icon: CalendarIcon },
-    { key: 'documents', label: 'Documents', icon: FileText },
-    { key: 'announcements', label: 'Announcements', icon: Megaphone },
-    { key: 'comments', label: 'Comments', icon: MessageSquare, badge: unreadComments },
-    { key: 'activity_log', label: 'Activity Log', icon: Radio },
-    { key: 'departments', label: 'Departments', icon: Users2 },
-    { key: 'leaderboard', label: 'Leaderboard', icon: Trophy },
-    { key: 'search', label: 'Search', icon: Search },
-    { key: 'admin', label: 'MD Panel', icon: Shield },
-    { key: 'help', label: 'How to Use', icon: HelpCircle },
-    { key: 'settings', label: 'Settings', icon: Settings },
-  ];
 
   const employees = useMemo(() => profiles.map((p) => buildEmployeeStats(p, allTasks)), [profiles, allTasks]);
   const activeEmployees = useMemo(() => profiles.filter((p) => p.role === 'employee' && p.is_active), [profiles]);
@@ -269,12 +192,11 @@ export default function ManagingDirectorApp() {
     return sorted;
   }, [employees, sortMode]);
 
-  const title = NAV.find((n) => n.key === active)?.label ?? 'Dashboard';
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-fg-subtle">Loading…</div>;
 
   return (
-    <AppShell active={active} onNavigate={setActive} navItems={NAV} title={title} notifications={<NotificationBell />}>
+    <>
       {active === 'dashboard' && selectedEmployee && (
         <EmployeeProfilePage
           employee={selectedEmployee}
@@ -615,28 +537,6 @@ export default function ManagingDirectorApp() {
           reload={reload}
         />
       )}
-      {active === 'tasks' && <MDTasksPage />}
-      {active === 'fleet' && <FleetPage />}
-      {active === 'finance' && <FinanceDeptPage />}
-      {active === 'finance_vehicle_owners' && <FinanceVehicleOwnersPage />}
-      {active === 'finance_newsletters' && <NewslettersPage />}
-      {active === 'call_center' && <CallCenterPage />}
-      {active === 'call_analytics' && <CallAnalyticsPage />}
-      {active === 'performance' && <PerformancePage onNavigate={setActive} />}
-      {active === 'from_call_center' && <FromCallCenterPage initialTicketId={link.ticketId} />}
-      {active === 'marketing' && <MarketingPage />}
-      {active === 'social' && <SocialMediaPage />}
-      {active === 'it_hub' && <ITHubPage />}
-      {active === 'help' && <HowToUsePage navItems={NAV} />}
-      {active === 'meetings' && <MeetingsPage />}
-      {active === 'documents' && <DocumentsPage />}
-      {active === 'announcements' && <AnnouncementsPage />}
-      {active === 'comments' && <MDCommentsPage />}
-      {active === 'activity_log' && <ActivityLogPage profiles={profiles} />}
-      {active === 'leaderboard' && <Leaderboard employees={employees} allTasks={allTasks} onSelect={setSelectedEmployee} />}
-      {active === 'search' && <SearchPage employees={employees} allTasks={allTasks} onSelect={setSelectedEmployee} />}
-      {active === 'admin' && <MDPanel />}
-      {active === 'settings' && <SettingsPage />}
 
       <AssignTaskModal
         open={assignOpen}
@@ -657,7 +557,7 @@ export default function ManagingDirectorApp() {
           }}
         />
       )}
-    </AppShell>
+    </>
   );
 }
 

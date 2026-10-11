@@ -14,11 +14,11 @@ type Tab = 'callback' | 'open' | 'all';
 // The Call Center's inbound desk: log every call, hand off what can't be
 // solved on the spot, and close the loop by calling callers back once
 // their issue is resolved.
-export default function CallTicketsPage({ initialTicketId }: { initialTicketId?: string | null }) {
+export default function CallTicketsPage({ initialTicketId, initialNew }: { initialTicketId?: string | null; initialNew?: 'call' | 'booking' | null }) {
   const { tickets, people, assignable, loading, reload, personName, updatesFor } = useCallTickets();
   const [tab, setTab] = useState<Tab>('open');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [creating, setCreating] = useState<false | 'call' | 'booking'>(false);
+  const [creating, setCreating] = useState<false | 'call' | 'booking'>(initialNew ?? false);
   const [toast, setToast] = useState('');
   // One-time welcome for new agents (per browser).
   const [welcome, setWelcome] = useState(() => { try { return !localStorage.getItem('kivu-cc-welcome-seen'); } catch { return false; } });
