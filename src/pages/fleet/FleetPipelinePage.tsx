@@ -11,6 +11,8 @@ import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import DriverDrawer from '../../components/fleet/DriverDrawer';
 import DriverProfilePage from './DriverProfilePage';
+import { EntityLink } from '../../os/EntityLink';
+import { usePeek } from '../../os/peek';
 
 interface DriverDrawerState { driver: Driver | null; startEditing: boolean }
 
@@ -32,6 +34,7 @@ function FleetPipelinePageWithData() {
 
 function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
+  const peek = usePeek();
   const { drivers, vehicles, deposits, fines, finePayments, contractEvents, driverDocuments, loading, reload } = data;
   const canEdit = canEditFleet(profile);
   const [view, setView] = useState<ViewMode>('table');
@@ -122,13 +125,13 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                 {byStage[stage.key].map((d) => (
                   <div
                     key={d.id}
-                    onClick={() => setViewingDriverId(d.id)}
+                    onClick={() => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
                     className="w-full card p-2.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
                   >
                     <div className="flex items-start justify-between gap-1.5">
                       <p className="text-caption font-medium truncate">{d.full_name}</p>
                       <EntryActions
-                        onView={() => setViewingDriverId(d.id)}
+                        onView={() => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
                         onEdit={() => setDriverDrawer({ driver: d, startEditing: true })}
                         canEdit={canEdit}
                       />
@@ -168,9 +171,9 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
           rows={filtered}
           keyFn={(d) => d.id}
           emptyLabel="No drivers yet."
-          onRowClick={(d) => setViewingDriverId(d.id)}
+          onRowClick={(d) => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
           columns={[
-            { header: 'Name', render: (d) => <span className="font-medium">{d.full_name}</span> },
+            { header: 'Name', render: (d) => <EntityLink type="driver" id={d.id} label={d.full_name} /> },
             { header: 'Phone', render: (d) => d.phone },
             {
               header: 'Stage',
@@ -183,14 +186,14 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                 );
               },
             },
-            { header: 'Vehicle', render: (d) => d.vehicle?.plate_number ?? '—' },
+            { header: 'Vehicle', render: (d) => d.vehicle ? <EntityLink type="car" id={d.vehicle.id} label={d.vehicle.plate_number} className="font-mono" /> : '—' },
             { header: 'Shift', render: (d) => (d.shift ? (d.shift === 'day' ? 'Day' : 'Night') : '—') },
             {
               header: '',
               className: 'text-right',
               render: (d) => (
                 <EntryActions
-                  onView={() => setViewingDriverId(d.id)}
+                  onView={() => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
                   onEdit={() => setDriverDrawer({ driver: d, startEditing: true })}
                   canEdit={canEdit}
                 />

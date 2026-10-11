@@ -3,6 +3,7 @@ import { CheckCircle2, Clock, ListTodo, Sparkles, XCircle, Zap } from 'lucide-re
 import { ChartCard, DailyBars, DailyLines, Kpi, MiniTable, longDay, pct, usePalette } from '../../components/charts/kit';
 import { durationLabel } from '../../lib/shifts';
 import { kDay, PerfData, Period, personRows, PersonRow, teamDaily, within } from '../../lib/performance';
+import { EntityLink } from '../../os/EntityLink';
 
 type SortKey = 'rate' | 'onTime' | 'given' | 'missed' | 'smart' | 'reply';
 
@@ -85,7 +86,7 @@ export default function TeamTab({ data, period: p }: { data: PerfData; period: P
                 return (
                   <FragmentRow key={r.id} open={open === r.id} onToggle={() => setOpen(open === r.id ? null : r.id)} cols={11}
                     cells={[
-                      <span className="font-medium text-brand-600 dark:text-brand-300">{r.name}</span>,
+                      <EntityLink type="person" id={r.id} label={r.name} />,
                       <span className="text-fg-muted">{r.dept}</span>,
                       r.given,
                       <span className={rate < 60 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}>{rate}%</span>,

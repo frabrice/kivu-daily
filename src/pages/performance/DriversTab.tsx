@@ -4,6 +4,8 @@ import { ChartCard, Kpi, pct, RankBars, rwf, rwfShort, usePalette } from '../../
 import { PAUSE_REASON_LABEL } from '../../lib/fleet';
 import { PauseReason } from '../../lib/supabase';
 import { driverRows, DriverRow, PerfData, Period } from '../../lib/performance';
+import { EntityLink } from '../../os/EntityLink';
+import { usePeek } from '../../os/peek';
 
 type SortKey = 'reliability' | 'lost' | 'paused' | 'collected' | 'owes' | 'name';
 
@@ -11,6 +13,7 @@ type SortKey = 'reliability' | 'lost' | 'paused' | 'collected' | 'owes' | 'name'
 // paying), days off and why, money paid, fines and what they owe now.
 export default function DriversTab({ data, period: p }: { data: PerfData; period: Period }) {
   const c = usePalette();
+  const peek = usePeek();
   const [sort, setSort] = useState<SortKey>('lost');
   const [showEnded, setShowEnded] = useState(false);
   const all = useMemo(() => driverRows(data, p), [data, p]);
@@ -56,13 +59,13 @@ export default function DriversTab({ data, period: p }: { data: PerfData; period
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <ChartCard title="Most days lost" subtitle="Working days driven without paying">
-          <RankBars rows={rows.filter((r) => r.unpaid).sort((a, b) => b.unpaid - a.unpaid).slice(0, 10).map((r) => ({ key: r.driver.id, label: label(r), n: r.unpaid }))} color={c.orange} empty="No days lost in this period." />
+          <RankBars rows={rows.filter((r) => r.unpaid).sort((a, b) => b.unpaid - a.unpaid).slice(0, 10).map((r) => ({ key: r.driver.id, label: label(r), n: r.unpaid }))} onRowClick={(k) => peek.open({ type: 'driver', id: k })} color={c.orange} empty="No days lost in this period." />
         </ChartCard>
         <ChartCard title="Days off by reason" subtitle="Paused days (sick, garage...)">
           <RankBars rows={byReason} color={c.aqua} empty="No days off in this period." />
         </ChartCard>
         <ChartCard title="Paid in by driver" subtitle="Deposits in this period">
-          <RankBars rows={rows.filter((r) => r.collected).sort((a, b) => b.collected - a.collected).slice(0, 10).map((r) => ({ key: r.driver.id, label: label(r), n: r.collected }))} color={c.blue} format={rwfShort} empty="No deposits in this period." />
+          <RankBars rows={rows.filter((r) => r.collected).sort((a, b) => b.collected - a.collected).slice(0, 10).map((r) => ({ key: r.driver.id, label: label(r), n: r.collected }))} onRowClick={(k) => peek.open({ type: 'driver', id: k })} color={c.blue} format={rwfShort} empty="No deposits in this period." />
         </ChartCard>
       </div>
 
@@ -86,7 +89,7 @@ export default function DriversTab({ data, period: p }: { data: PerfData; period
                 const reasons = Object.entries(r.pausedBy).map(([k, n]) => `${PAUSE_REASON_LABEL[k as PauseReason]} ${n}`).join(', ');
                 return (
                   <tr key={r.driver.id} className={`border-t border-line-muted ${r.end ? 'opacity-60' : ''}`}>
-                    <td className="py-2 pr-3 font-medium whitespace-nowrap">{r.driver.full_name}</td>
+                    <td className="py-2 pr-3 whitespace-nowrap"><EntityLink type="driver" id={r.driver.id} label={r.driver.full_name} /></td>
                     <td className="py-2 pr-3 whitespace-nowrap text-fg-muted">{r.driver.vehicle?.plate_number ?? '—'}{r.driver.shift ? ` · ${r.driver.shift === 'day' ? 'Day' : 'Night'}` : ''}</td>
                     <td className={`py-2 pr-3 text-right tabular-nums ${rel !== null && rel < 80 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}`}>{rel === null ? '—' : `${rel}%`}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{r.paid}</td>

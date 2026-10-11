@@ -7,6 +7,8 @@ import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import VehicleDrawer from '../../components/fleet/VehicleDrawer';
+import { EntityLink } from '../../os/EntityLink';
+import { usePeek } from '../../os/peek';
 
 interface VehicleDrawerState { vehicle: Vehicle | null; startEditing: boolean }
 
@@ -22,6 +24,7 @@ function FleetVehiclesPageWithData() {
 
 function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
+  const peek = usePeek();
   const { drivers, vehicles, loading, reload } = data;
   const canEdit = canEditFleet(profile);
   const [view, setView] = useState<ViewMode>('cards');
@@ -131,9 +134,9 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
           rows={filteredVehicles}
           keyFn={(v) => v.id}
           emptyLabel="No vehicles yet."
-          onRowClick={(v) => setVehicleDrawer({ vehicle: v, startEditing: false })}
+          onRowClick={(v) => peek.open({ type: 'car', id: v.id, label: v.plate_number })}
           columns={[
-            { header: 'Plate', render: (v) => <span className="font-medium">{v.plate_number}</span> },
+            { header: 'Plate', render: (v) => <EntityLink type="car" id={v.id} label={v.plate_number} className="font-mono" /> },
             { header: 'Make / Model', render: (v) => [v.make, v.model].filter(Boolean).join(' ') || '—' },
             {
               header: 'RURA',

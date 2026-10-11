@@ -8,6 +8,8 @@ import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import PlatformDriverDrawer from '../../components/nonInsider/PlatformDriverDrawer';
+import { EntityLink } from '../../os/EntityLink';
+import { usePeek } from '../../os/peek';
 
 interface DriverDrawerState { driver: PlatformDriver | null; startEditing: boolean }
 
@@ -16,6 +18,7 @@ type CarFilter = 'all' | 'has_car' | 'no_car';
 
 export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeof useNonInsiderData> }) {
   const { profile } = useAuth();
+  const peek = usePeek();
   const { drivers, cars, reload } = data;
   const canEdit = canEditFleet(profile);
   const [view, setView] = useState<ViewMode>('cards');
@@ -189,9 +192,9 @@ export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeo
           rows={filtered}
           keyFn={(d) => d.id}
           emptyLabel={drivers.length === 0 ? 'No non-insider drivers yet.' : 'No drivers match these filters.'}
-          onRowClick={(d) => setDrawer({ driver: d, startEditing: false })}
+          onRowClick={(d) => peek.open({ type: 'partner', id: d.id, label: d.full_name })}
           columns={[
-            { header: 'Name', render: (d) => <span className="font-medium">{d.full_name}</span> },
+            { header: 'Name', render: (d) => <EntityLink type="partner" id={d.id} label={d.full_name} /> },
             { header: 'Phone', render: (d) => d.phone },
             { header: 'Car', render: (d) => d.car ? `${d.car.plate_number}${d.car.make ? ` · ${d.car.make}` : ''}` : <span className="text-orange-600 dark:text-orange-400">No car</span> },
             { header: 'Owner', render: (d) => yesNoUnknown(d.is_owner) },

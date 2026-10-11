@@ -8,6 +8,7 @@ import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import FineDrawer from '../../components/fleet/FineDrawer';
 import LogFinePaymentDrawer from '../../components/fleet/LogFinePaymentDrawer';
+import { EntityLink } from '../../os/EntityLink';
 
 interface FineDrawerState { fine: DriverFine | null; startEditing: boolean }
 
@@ -119,8 +120,8 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
           emptyLabel="No fines logged yet."
           onRowClick={(f) => setFineDrawer({ fine: f, startEditing: false })}
           columns={[
-            { header: 'Driver', render: (f) => <span className="font-medium">{f.driver?.full_name ?? 'Unknown'}</span> },
-            { header: 'Vehicle', render: (f) => f.vehicle?.plate_number ?? '—' },
+            { header: 'Driver', render: (f) => f.driver ? <EntityLink type="driver" id={f.driver_id} label={f.driver.full_name} /> : 'Unknown' },
+            { header: 'Vehicle', render: (f) => f.vehicle && f.vehicle_id ? <EntityLink type="car" id={f.vehicle_id} label={f.vehicle.plate_number} className="font-mono" /> : '—' },
             { header: 'Amount', render: (f) => `${f.amount.toLocaleString()} RWF` },
             { header: 'Date', render: (f) => f.fine_date },
             {

@@ -3,11 +3,14 @@ import { Car, FileWarning, Gauge, ParkingCircleOff, Wrench } from 'lucide-react'
 import { ChartCard, DailyBars, Kpi, MiniTable, longDay, pct, RankBars, usePalette } from '../../components/charts/kit';
 import { addDays, CAR_STATE_LABEL, carDay, CarDayState, endDateOf, fleetDays, onContract, PerfData, Period, today } from '../../lib/performance';
 import { pauseOn } from '../../lib/fleet';
+import { EntityLink } from '../../os/EntityLink';
+import { usePeek } from '../../os/peek';
 
 // Every car: was it working, off for a reason, held back by an unpaid
 // driver, or without a driver - day by day - plus garage days and licences.
 export default function FleetTab({ data, period: p }: { data: PerfData; period: Period }) {
   const c = usePalette();
+  const peek = usePeek();
   const t = today();
   const days = useMemo(() => fleetDays(data, p.from, p.to), [data, p.from, p.to]);
   const series = [
@@ -56,7 +59,7 @@ export default function FleetTab({ data, period: p }: { data: PerfData; period: 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ChartCard title="Car-days worked, by car" subtitle="Share of the period each car worked with a paid-up driver">
-          <RankBars rows={[...cars].filter((x) => x.total).sort((a, b) => (b.util ?? 0) - (a.util ?? 0)).map((x) => ({ key: x.v.id, label: x.v.plate_number, n: Math.round((x.util ?? 0) * 100), sub: `${x.count.working}/${x.total} days` }))} color={c.blue} format={(n) => `${n}%`} empty="No cars in this period." />
+          <RankBars rows={[...cars].filter((x) => x.total).sort((a, b) => (b.util ?? 0) - (a.util ?? 0)).map((x) => ({ key: x.v.id, label: x.v.plate_number, n: Math.round((x.util ?? 0) * 100), sub: `${x.count.working}/${x.total} days` }))} onRowClick={(k) => peek.open({ type: 'car', id: k })} color={c.blue} format={(n) => `${n}%`} empty="No cars in this period." />
         </ChartCard>
         <div className="card p-4 space-y-2">
           <p className="text-body font-semibold flex items-center gap-1.5"><FileWarning size={14} /> RURA licences</p>
@@ -84,7 +87,7 @@ export default function FleetTab({ data, period: p }: { data: PerfData; period: 
             <tbody>
               {[...cars].sort((a, b) => (a.util ?? 2) - (b.util ?? 2)).map((x) => (
                 <tr key={x.v.id} className="border-t border-line-muted ">
-                  <td className="py-2 pr-3 whitespace-nowrap"><span className="font-medium">{x.v.plate_number}</span><span className="block text-micro text-fg-subtle">{[x.v.make, x.v.model].filter(Boolean).join(' ')}</span></td>
+                  <td className="py-2 pr-3 whitespace-nowrap"><EntityLink type="car" id={x.v.id} label={x.v.plate_number} className="font-mono" /><span className="block text-micro text-fg-subtle">{[x.v.make, x.v.model].filter(Boolean).join(' ')}</span></td>
                   <td className="py-2 pr-3">{x.onNow.length ? x.onNow.map((d) => `${d.full_name.split(/\s+/)[0]}${d.shift ? ` (${d.shift})` : ''}`).join(', ') : <span className="text-red-600 dark:text-red-400">None</span>}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{x.count.working}{x.util !== null && <span className="text-fg-subtle"> · {Math.round(x.util * 100)}%</span>}</td>
                   <td className={`py-2 pr-3 text-right tabular-nums ${x.count.unpaid ? 'text-red-600 dark:text-red-400' : 'text-fg-subtle'}`}>{x.count.unpaid || '—'}</td>

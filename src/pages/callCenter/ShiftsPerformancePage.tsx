@@ -3,7 +3,7 @@ import { Timer, AlertTriangle, ChevronRight } from 'lucide-react';
 import { supabase, Profile } from '../../lib/supabase';
 import { CallCenterShift, durationLabel, SLOT_LABEL } from '../../lib/shifts';
 import ShiftReportModal, { shiftMinutes } from '../../components/callCenter/ShiftReportModal';
-import AgentPerformancePage from './AgentPerformancePage';
+import { useNavigate } from 'react-router-dom';
 
 // MD: every Call Center shift - time on shift, lateness, what the agent
 // reported (calls received / made / missed) against what they logged in
@@ -14,7 +14,8 @@ export default function ShiftsPerformancePage() {
   const [days, setDays] = useState<7 | 30>(7);
   const [open, setOpen] = useState<CallCenterShift | null>(null);
   const [loading, setLoading] = useState(true);
-  const [agentPage, setAgentPage] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const setAgentPage = (id: string) => navigate(`/call-center/agents/${id}`);
 
   useEffect(() => {
     const since = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -49,7 +50,6 @@ export default function ShiftsPerformancePage() {
     }).sort((a, b) => b.minutes - a.minutes);
   }, [inRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (agentPage) return <AgentPerformancePage agentId={agentPage} onBack={() => setAgentPage(null)} />;
   if (loading) return <div className="space-y-2">{[0, 1].map((i) => <div key={i} className="h-24 skeleton rounded-xl" />)}</div>;
 
   const th = 'px-3 py-2 font-medium text-left';

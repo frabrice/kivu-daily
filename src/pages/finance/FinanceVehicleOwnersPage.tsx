@@ -13,6 +13,7 @@ import SearchableSelect from '../../components/SearchableSelect';
 import VehicleOwnerDrawer from '../../components/finance/VehicleOwnerDrawer';
 import OnboardVehicleOwnerDrawer from '../../components/finance/OnboardVehicleOwnerDrawer';
 import VehicleOwnerProfilePage from './VehicleOwnerProfilePage';
+import { useNavigate } from 'react-router-dom';
 
 type Tab = 'owners' | 'payments';
 
@@ -65,6 +66,7 @@ function isActionable(t: FinanceTransaction): boolean {
 // confirmation or approval - the weekly payout, plus onboarding money).
 export default function FinanceVehicleOwnersPage() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const { vehicles, owners, transactions, loading, reload } = useFinanceData();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'finance';
 
@@ -143,7 +145,7 @@ export default function FinanceVehicleOwnersPage() {
           managedVehicles={managedVehicles}
           unassignedVehicles={unassignedVehicles}
           canEdit={canEdit}
-          onViewOwner={(o) => setViewingOwnerId(o.id)}
+          onViewOwner={(o) => navigate(`/finance/owners/${o.id}`)}
           onOnboardVehicle={setOnboardVehicle}
         />
       )}

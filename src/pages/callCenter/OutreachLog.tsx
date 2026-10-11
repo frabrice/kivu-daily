@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Download, Search, X } from 'lucide-react';
 import { PlatformDriver } from '../../lib/supabase';
+import { EntityLink } from '../../os/EntityLink';
 import {
   ANSWER_LABEL, ANSWERS, APP_STATUS, APP_STATUS_SHORT, CATEGORIES, CATEGORY_LABEL, categoryOf, OutreachCall, OutreachStatus, RESULT_LABEL, RESULTS,
 } from '../../lib/outreach';
@@ -229,7 +230,7 @@ export default function OutreachLog({ calls, drivers, statuses, names }: {
                     <tr key={c.id} className="border-t border-line-muted align-top">
                       <td className="py-1.5 pr-3 tabular-nums whitespace-nowrap">{when(c.created_at)}</td>
                       <td className="py-1.5 pr-3 whitespace-nowrap">{c.agent_id ? names[c.agent_id] ?? '—' : '—'}</td>
-                      <td className="py-1.5 pr-3"><span className="font-medium">{d?.full_name ?? '—'}</span><span className="block text-micro text-fg-muted">{d?.car?.plate_number ?? ''} {d?.phone ?? ''}</span></td>
+                      <td className="py-1.5 pr-3">{d ? <EntityLink type="partner" id={d.id} label={d.full_name} /> : <span>—</span>}<span className="block text-micro text-fg-muted">{d?.car?.plate_number ?? ''} {d?.phone ?? ''}</span></td>
                       <td className="py-1.5 pr-3">R{c.round}</td>
                       <td className="py-1.5 pr-3 whitespace-nowrap">{RESULT_LABEL[c.result]}{c.result === 'callback' && c.callback_at ? <span className="block text-micro text-fg-muted">→ {new Date(c.callback_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span> : null}</td>
                       <td className="py-1.5 pr-3">{c.app_status ? APP_STATUS_SHORT[c.app_status] : '—'}</td>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, FileText, PlayCircle, X } from 'lucide-react';
 import { supabase, Driver, DriverPause } from '../../lib/supabase';
 import { PAUSE_REASON_LABEL } from '../../lib/fleet';
+import { EntityLink } from '../../os/EntityLink';
 
 const kigaliToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
 const dayLabel = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -69,7 +70,7 @@ function PauseRow({ p, driver, names, canRecord, canReview, showDriver, onChange
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-small font-semibold">
-            {showDriver && <span>{driver?.full_name ?? 'Driver'} · </span>}{PAUSE_REASON_LABEL[p.reason]}
+            {showDriver && <span>{driver ? <EntityLink type="driver" id={driver.id} label={driver.full_name} /> : 'Driver'} · </span>}{PAUSE_REASON_LABEL[p.reason]}
             {active && <span className="ml-1.5 text-micro font-medium text-amber-700 dark:text-amber-300">paused now</span>}
           </p>
           <p className="text-caption text-fg-muted ">{pauseSpan(p)}{driver?.vehicle?.plate_number ? ` · ${driver.vehicle.plate_number}` : ''}</p>

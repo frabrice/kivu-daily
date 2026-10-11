@@ -3,6 +3,7 @@ import { AlertTriangle, BadgeCheck, CalendarOff, Car, ClipboardCheck, Coins, Meg
 import { NavKey } from '../../components/AppShell';
 import { ChartCard, DailyBars, Delta, Kpi, MiniTable, longDay, pct, rwf, rwfShort, usePalette } from '../../components/charts/kit';
 import { CAR_STATE_LABEL, collected, driverRows, fleetDays, kDay, kivuRevenue, lostDays, PerfData, Period, personRows, today, within } from '../../lib/performance';
+import { EntityLink } from '../../os/EntityLink';
 
 type Tab = 'overview' | 'team' | 'drivers' | 'fleet' | 'money' | 'calls';
 
@@ -139,7 +140,7 @@ export default function OverviewTab({ data, period: p, onNavigate, onTab }: { da
           <div className="flex flex-wrap gap-2">
             {active.filter((r) => !r.standing.isCleared).sort((a, b) => b.standing.owes - a.standing.owes).map((r) => (
               <span key={r.driver.id} className="text-caption rounded-md bg-inset px-2 py-1">
-                <b>{r.driver.full_name}</b> · {r.driver.vehicle?.plate_number ?? '—'} · owes {rwf(r.standing.owes)}{r.standing.pausedToday ? ' · paused today' : ''}
+                <EntityLink type="driver" id={r.driver.id} label={r.driver.full_name} /> · {r.driver.vehicle?.plate_number ?? '—'} · owes {rwf(r.standing.owes)}{r.standing.pausedToday ? ' · paused today' : ''}
               </span>
             ))}
           </div>

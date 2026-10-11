@@ -4,6 +4,7 @@ import { useAuth } from '../../lib/auth';
 import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe, PAUSE_REASON_LABEL } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
+import { EntityLink } from '../../os/EntityLink';
 
 interface FleetDepositsPageProps { data?: ReturnType<typeof useFleetData> }
 
@@ -74,7 +75,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
               <div className={`w-1.5 h-8 rounded-full shrink-0 ${row.isEnded ? 'bg-gray-300 dark:bg-white/10' : dotColor}`} />
               <div className="flex-1 min-w-0">
                 <p className="text-small font-medium truncate">
-                  {row.driver.full_name}
+                  <EntityLink type="driver" id={row.driver.id} label={row.driver.full_name} />
                   {row.standing.pausedToday && <span className="ml-1.5 text-micro font-semibold text-amber-700 dark:text-amber-300">Paused · {PAUSE_REASON_LABEL[(row.standing.pausedToday.reason ?? 'other') as keyof typeof PAUSE_REASON_LABEL]}</span>}
                 </p>
                 <p className="text-micro text-fg-subtle flex items-center gap-1">

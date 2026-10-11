@@ -6,7 +6,7 @@ import { useTheme } from '../../lib/theme';
 import { CATEGORY_LABEL } from '../../lib/callTickets';
 import { durationLabel } from '../../lib/shifts';
 import { CallTicketCategory } from '../../lib/supabase';
-import AgentPerformancePage from './AgentPerformancePage';
+import { useNavigate } from 'react-router-dom';
 
 // Call analytics for the MD and Finance: how many calls we get and make
 // each day and what they're about, when the phones are busiest, and how
@@ -61,7 +61,8 @@ export default function CallAnalyticsPage() {
   const [days, setDays] = useState(30);
   const [data, setData] = useState<Analytics | null>(null);
   const [error, setError] = useState('');
-  const [agentPage, setAgentPage] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const setAgentPage = (id: string) => navigate(`/call-center/agents/${id}`);
 
   useEffect(() => {
     setError('');
@@ -85,7 +86,6 @@ export default function CallAnalyticsPage() {
     { key: 'out_other', label: 'Other', color: c.other },
   ] as const, [c]);
 
-  if (agentPage) return <AgentPerformancePage agentId={agentPage} onBack={() => setAgentPage(null)} />;
   if (error) return <div className="card p-6 text-small text-red-600">{error}</div>;
   if (!data) return <div className="card p-10 text-center text-small text-fg-subtle">Loading call analytics…</div>;
 

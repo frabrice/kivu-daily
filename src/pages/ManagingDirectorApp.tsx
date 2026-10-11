@@ -473,7 +473,7 @@ export default function ManagingDirectorApp({ view = 'dashboard' }: { view?: 'da
                       {silentEmployees.slice(0, 8).map((e) => (
                         <button
                           key={e.id}
-                          onClick={() => setSelectedEmployee(e)}
+                          onClick={() => navigate(`/people/${e.id}`)}
                           className="text-micro px-2 py-0.5 rounded-full bg-inset hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
                         >
                           {e.full_name.split(' ')[0]}
@@ -520,7 +520,7 @@ export default function ManagingDirectorApp({ view = 'dashboard' }: { view?: 'da
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {sortedEmployees.map((e) => (
-                <EmployeeCard key={e.id} employee={e} onClick={() => setSelectedEmployee(e)} />
+                <EmployeeCard key={e.id} employee={e} onClick={() => navigate(`/people/${e.id}`)} />
               ))}
               {sortedEmployees.length === 0 && <p className="text-small text-fg-subtle col-span-full">No employees found.</p>}
             </div>
@@ -533,7 +533,7 @@ export default function ManagingDirectorApp({ view = 'dashboard' }: { view?: 'da
           employees={employees}
           departments={departments}
           allTasks={allTasks}
-          onSelect={(e) => { setSelectedEmployee(e); setActive('dashboard'); }}
+          onSelect={(e) => navigate(`/people/${e.id}`)}
           reload={reload}
         />
       )}

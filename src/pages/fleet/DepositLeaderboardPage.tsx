@@ -6,6 +6,7 @@ import {
 } from '../../lib/fleet';
 import { todayStr } from '../../lib/utils';
 import KpiTile from '../../components/KpiTile';
+import { EntityLink } from '../../os/EntityLink';
 
 interface DepositLeaderboardPageProps { data?: ReturnType<typeof useFleetData> }
 
@@ -68,7 +69,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
           <div className="divide-y divide-amber-100 dark:divide-line-muted">
             {switchoverRows.map((r) => (
               <div key={r.driver.id} className="flex items-center justify-between gap-2 py-1.5 text-caption">
-                <span className="truncate">{r.driver.full_name}</span>
+                <span className="truncate"><EntityLink type="driver" id={r.driver.id} label={r.driver.full_name} /></span>
                 <span className={`font-semibold shrink-0 ${r.standing.nextDueAmount > 0 ? '' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   {r.standing.nextDueAmount > 0 ? formatRwf(r.standing.nextDueAmount) : 'Already covered'}
                 </span>
@@ -99,7 +100,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
               </div>
               <div className={`w-1.5 h-8 rounded-full shrink-0 ${dotColor}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-small font-medium truncate">{row.driver.full_name}</p>
+                <p className="text-small font-medium truncate"><EntityLink type="driver" id={row.driver.id} label={row.driver.full_name} /></p>
                 <p className="text-micro text-fg-subtle flex items-center gap-2 flex-wrap">
                   <span className="flex items-center gap-1"><Car size={10} /> {row.driver.vehicle?.plate_number ?? '—'}</span>
                   <span>· Started {row.driver.start_date ? formatDateLabelSafe(row.driver.start_date) : '—'}</span>
