@@ -43,6 +43,8 @@ export default function Shell({ access, children }: { access: Access; children: 
   const mods = useMemo(() => visibleModules(access), [access]);
   const current = moduleOfPath(loc.pathname, access) ?? mods[0];
   const [pinned, setPinned] = useLocalBool('kivu-os-sidebar-pinned', true);
+  const [railOpen, setRailOpen] = useLocalBool('kivu-os-rail-expanded', false);
+  const { theme, toggle: toggleTheme } = useTheme();
   const [flyout, setFlyout] = useState<string | null>(null);
   const [palette, setPalette] = useState(false);
   const [shortcuts, setShortcuts] = useState(false);
@@ -88,6 +90,8 @@ export default function Shell({ access, children }: { access: Access; children: 
   const closeFly = () => { window.clearTimeout(flyTimer.current); flyTimer.current = window.setTimeout(() => setFlyout(null), 220); };
   const flyModule = flyout ? mods.find((m) => m.id === flyout) ?? null : null;
   const showSidebar = pinned && current && current.id !== 'home' && visiblePages(current, access).length > 1;
+  const railW = railOpen ? '13rem' : '3rem';
+  const offset = `calc(${railW} + ${showSidebar ? '14rem' : '0rem'})`;
 
   return (
     <div className="min-h-screen bg-canvas text-fg">
@@ -96,51 +100,48 @@ export default function Shell({ access, children }: { access: Access; children: 
         shiftChip={shift ? <ShiftChip shift={shift} onEnd={() => setEnding('end')} /> : null} />
 
       <div className="flex pt-12">
-        {/* Rail */}
-        <nav aria-label="Modules" className="hidden md:flex fixed left-0 top-12 bottom-0 z-30 w-12 flex-col items-center gap-1 py-2 bg-surface border-r border-line-muted" onMouseLeave={closeFly}>
+        {/* Rail: icons, or icons with names when expanded */}
+        <nav aria-label="Modules" style={{ width: railW }} className="hidden md:flex fixed left-0 top-12 bottom-0 z-30 flex-col gap-1 py-2 px-1.5 bg-surface border-r border-line-muted transition-[width] duration-200" onMouseLeave={closeFly}>
           {mods.map((m) => {
             const active = current?.id === m.id;
             const n = moduleBadge(m, access, badges);
-            return (
-              <Tooltip key={m.id} label={<span>{m.label}{m.shortcut && <span className="ml-2 opacity-70">{m.shortcut}</span>}</span>} placement="right">
-                <button onClick={() => nav(visiblePages(m, access)[0].path)} onMouseEnter={() => (!showSidebar || !active ? openFly(m.id) : undefined)}
-                  aria-label={m.label} aria-current={active ? 'page' : undefined}
-                  className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${active ? 'bg-accent/15 text-accent-fg' : 'text-fg-subtle hover:text-fg hover:bg-hover'}`}>
-                  {active && <span className="absolute -left-1.5 top-2 bottom-2 w-[3px] rounded-r bg-accent" />}
-                  <m.icon size={18} />
-                  {n > 0 && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-danger ring-2 ring-surface" />}
-                </button>
-              </Tooltip>
-            );
-          })}
-          <div className="mt-auto flex flex-col items-center gap-1">
-            <Tooltip label={pinned ? 'Hide sidebar  [' : 'Show sidebar  ['} placement="right">
-              <button onClick={() => setPinned((p) => !p)} aria-label="Toggle sidebar" className="w-9 h-9 rounded-lg flex items-center justify-center text-fg-subtle hover:text-fg hover:bg-hover">
-                {pinned ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
+            const btn = (
+              <button key={m.id} onClick={() => nav(visiblePages(m, access)[0].path)} onMouseEnter={() => (!railOpen && (!showSidebar || !active) ? openFly(m.id) : undefined)}
+                aria-label={m.label} aria-current={active ? 'page' : undefined}
+                className={`relative h-9 rounded-lg flex items-center gap-2.5 transition-colors ${railOpen ? 'w-full px-2.5' : 'w-9 justify-center'} ${active ? 'bg-accent/15 text-accent-fg' : 'text-fg-subtle hover:text-fg hover:bg-hover'}`}>
+                {active && <span className="absolute -left-1.5 top-2 bottom-2 w-[3px] rounded-r bg-accent" />}
+                <m.icon size={18} className="shrink-0" />
+                {railOpen && <span className={`flex-1 text-left text-body truncate ${active ? 'font-semibold' : 'text-fg-muted'}`}>{m.label}</span>}
+                {n > 0 && (railOpen ? <span className="counter !bg-danger-muted !text-danger">{n}</span> : <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-danger ring-2 ring-surface" />)}
               </button>
-            </Tooltip>
+            );
+            return railOpen ? btn : <Tooltip key={m.id} label={<span>{m.label}{m.shortcut && <span className="ml-2 opacity-70">{m.shortcut}</span>}</span>} placement="right">{btn}</Tooltip>;
+          })}
+          <div className={`mt-auto flex flex-col gap-1 ${railOpen ? '' : 'items-center'}`}>
+            <RailButton open={railOpen} onClick={toggleTheme} icon={theme === 'dark' ? Sun : Moon} label={theme === 'dark' ? 'Light mode' : 'Dark mode'} />
+            <RailButton open={railOpen} onClick={() => setRailOpen((o) => !o)} icon={railOpen ? PanelLeftClose : PanelLeftOpen} label={railOpen ? 'Collapse menu' : 'Expand menu'} />
           </div>
         </nav>
 
-        {/* Left-edge hover zone when the sidebar is hidden */}
-        {!showSidebar && current && current.id !== 'home' && <div className="hidden md:block fixed left-12 top-12 bottom-0 w-2 z-30" onMouseEnter={() => openFly(current.id)} />}
+        {/* Left-edge hover zone when the module menu is hidden */}
+        {!showSidebar && current && current.id !== 'home' && visiblePages(current, access).length > 1 && <div style={{ left: railW }} className="hidden md:block fixed top-12 bottom-0 w-2 z-30" onMouseEnter={() => openFly(current.id)} />}
 
-        {/* Pinned module sidebar */}
+        {/* Pinned module menu */}
         {showSidebar && (
-          <aside className="hidden md:flex fixed left-12 top-12 bottom-0 z-20 w-56 flex-col bg-surface border-r border-line-muted">
-            <ModuleSidebar module={current} access={access} badges={badges} />
+          <aside style={{ left: railW }} className="hidden md:flex fixed top-12 bottom-0 z-20 w-56 flex-col bg-surface border-r border-line-muted transition-[left] duration-200">
+            <ModuleSidebar module={current} access={access} badges={badges} onHide={() => setPinned(false)} />
           </aside>
         )}
 
-        {/* Flyout sidebar (hover) */}
+        {/* Flyout module menu (hover) */}
         {flyModule && (!showSidebar || flyModule.id !== current?.id) && (
-          <aside className="hidden md:flex fixed left-12 top-12 bottom-0 z-40 w-60 flex-col bg-surface-3 border-r border-line shadow-overlay animate-slide-in-left"
+          <aside style={{ left: railW }} className="hidden md:flex fixed top-12 bottom-0 z-40 w-60 flex-col bg-surface-3 border-r border-line shadow-overlay animate-slide-in-left"
             onMouseEnter={() => window.clearTimeout(flyTimer.current)} onMouseLeave={closeFly}>
             <ModuleSidebar module={flyModule} access={access} badges={badges} onPin={flyModule.id === current?.id ? () => { setPinned(true); setFlyout(null); } : undefined} />
           </aside>
         )}
 
-        <main className={`flex-1 min-w-0 md:ml-12 ${showSidebar ? 'md:ml-[17rem]' : ''} pb-16 md:pb-0`}>
+        <main style={{ ['--os-offset' as string]: offset }} className="flex-1 min-w-0 md:ml-[var(--os-offset)] transition-[margin] duration-200 pb-16 md:pb-0">
           <WorkspaceTabs access={access} />
           <div className="flex">
             <div className="flex-1 min-w-0 px-4 md:px-6 py-4 md:py-5 max-w-[1500px] mx-auto w-full">
@@ -174,6 +175,15 @@ export default function Shell({ access, children }: { access: Access; children: 
       </Suspense>
     </div>
   );
+}
+
+function RailButton({ open, onClick, icon: Icon, label }: { open: boolean; onClick: () => void; icon: typeof Sun; label: string }) {
+  const btn = (
+    <button onClick={onClick} aria-label={label} className={`h-9 rounded-lg flex items-center gap-2.5 text-fg-subtle hover:text-fg hover:bg-hover ${open ? 'w-full px-2.5' : 'w-9 justify-center'}`}>
+      <Icon size={17} className="shrink-0" />{open && <span className="text-body text-fg-muted">{label}</span>}
+    </button>
+  );
+  return open ? btn : <Tooltip label={label} placement="right">{btn}</Tooltip>;
 }
 
 export function PageSkeleton() {
@@ -237,6 +247,7 @@ function TopBar({ access, current, onPalette, onToday, onMenu, onNew, onShortcut
           </div>
         )}
       </Popover>
+      <Tooltip label={theme === 'dark' ? 'Light mode' : 'Dark mode'}><button onClick={toggle} className="btn-ghost p-2" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button></Tooltip>
       <Tooltip label="Today  t"><button onClick={onToday} className="btn-ghost p-2" aria-label="Today"><SunMedium size={17} /></button></Tooltip>
       <NotificationBell />
       <Popover placement="bottom-end" width={250} trigger={<button className="rounded-full ml-0.5" aria-label="Account menu"><Avatar name={profile?.full_name ?? ''} url={profile?.avatar_url} size="sm" /></button>}>
@@ -260,7 +271,7 @@ function TopBar({ access, current, onPalette, onToday, onMenu, onNew, onShortcut
 }
 
 // ---------------------------------------------------------------- module sidebar
-function ModuleSidebar({ module, access, badges, onPin }: { module: ModuleDef; access: Access; badges: Badges; onPin?: () => void }) {
+function ModuleSidebar({ module, access, badges, onPin, onHide }: { module: ModuleDef; access: Access; badges: Badges; onPin?: () => void; onHide?: () => void }) {
   const pages = visiblePages(module, access).filter((p, i, arr) => arr.findIndex((x) => x.path === p.path) === i);
   const groups: { name: string; pages: PageDef[] }[] = [];
   for (const p of pages) {
@@ -275,7 +286,8 @@ function ModuleSidebar({ module, access, badges, onPin }: { module: ModuleDef; a
       <div className="h-11 px-3 flex items-center gap-2 shrink-0">
         <module.icon size={16} className="text-fg-muted" />
         <p className="text-ui font-semibold flex-1 truncate">{module.label}</p>
-        {onPin && <button onClick={onPin} className="btn-ghost p-1" aria-label="Pin sidebar" title="Keep open"><Pin size={13} /></button>}
+        {onPin && <button onClick={onPin} className="btn-ghost p-1" aria-label="Keep this menu open" title="Keep open"><Pin size={13} /></button>}
+        {onHide && <Tooltip label="Hide this menu  ["><button onClick={onHide} className="btn-ghost p-1" aria-label="Hide this menu"><PanelLeftClose size={14} /></button></Tooltip>}
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-3">
         {groups.map((g) => (
