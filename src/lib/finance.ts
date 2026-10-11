@@ -72,7 +72,7 @@ export function useFinanceData() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('finance-feed')
+      .channel(`finance-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'finance_transactions' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'finance_reconciliations' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_runs' }, () => load())

@@ -28,7 +28,7 @@ export function useITHubData() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('it-hub-feed')
+      .channel(`it-hub-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'milestones' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'features' }, () => load())

@@ -28,7 +28,7 @@ export default function AnnouncementsPage() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('announcements-feed')
+      .channel(`announcements-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

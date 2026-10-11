@@ -85,7 +85,7 @@ export function useFleetData() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('fleet-feed')
+      .channel(`fleet-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_deposits' }, () => load())

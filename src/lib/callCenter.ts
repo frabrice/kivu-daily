@@ -33,7 +33,7 @@ export function useCallCenterData() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('call-center-feed')
+      .channel(`call-center-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'call_logs' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'call_scripts' }, () => load())

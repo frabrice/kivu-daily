@@ -44,7 +44,7 @@ export default function SocialMediaPage() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('content-calendar-feed')
+      .channel(`content-calendar-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'content_calendar' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

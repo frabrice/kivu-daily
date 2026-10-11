@@ -22,7 +22,7 @@ export default function CommentsPage() {
     loadComments();
 
     const channel = supabase
-      .channel('employee-comments')
+      .channel(`employee-comments-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => loadComments())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

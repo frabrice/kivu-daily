@@ -48,7 +48,7 @@ export default function FinanceTeamPage() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('finance-team-feed')
+      .channel(`finance-team-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

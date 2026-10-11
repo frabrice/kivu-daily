@@ -19,7 +19,7 @@ export function useMarketingData() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('crm-feed')
+      .channel(`crm-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'campaigns' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => load())
       .subscribe();

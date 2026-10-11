@@ -98,7 +98,7 @@ export function useCompanySnapshot() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('dashboard-snapshot-feed')
+      .channel(`dashboard-snapshot-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_deposits' }, () => load())

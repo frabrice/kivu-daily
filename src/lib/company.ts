@@ -34,7 +34,7 @@ export function useCompanyData() {
 
   useEffect(() => {
     const channel = supabase
-      .channel('company-tasks')
+      .channel(`company-tasks-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => load())
       .subscribe();

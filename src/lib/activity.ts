@@ -21,7 +21,7 @@ export function useActivityFeed(limit = 20) {
 
   useEffect(() => {
     const channel = supabase
-      .channel('activity-log-feed')
+      .channel(`activity-log-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -80,7 +80,7 @@ export function useActivityLog(pageSize = 30) {
 
   useEffect(() => {
     const channel = supabase
-      .channel('activity-log-full')
+      .channel(`activity-log-full-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log' }, () => reload())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

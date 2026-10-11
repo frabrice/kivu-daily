@@ -39,7 +39,7 @@ export default function MeetingsPage() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('meetings-feed')
+      .channel(`meetings-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

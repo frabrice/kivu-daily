@@ -117,7 +117,7 @@ export default function ManagingDirectorApp({ view = 'dashboard' }: { view?: 'da
     loadUnread();
 
     const channel = supabase
-      .channel('md-unread-comments')
+      .channel(`md-unread-comments-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
         if (payload.new && 'target_user_id' in payload.new) {
           const newComment = payload.new as { target_user_id: string; created_at: string };

@@ -33,6 +33,7 @@ export default function DriverProfilePage({
   onBack,
   onEdit,
   reload,
+  embedded = false,
 }: {
   driver: Driver;
   drivers: Driver[];
@@ -44,6 +45,8 @@ export default function DriverProfilePage({
   onBack: () => void;
   onEdit: () => void;
   reload: () => void;
+  // Inside the Kivu OS driver page: no back button or identity card (the page header has them).
+  embedded?: boolean;
 }) {
   const [flagOpen, setFlagOpen] = useState(false);
   const [loggingDeposit, setLoggingDeposit] = useState(false);
@@ -99,9 +102,11 @@ export default function DriverProfilePage({
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <button onClick={onBack} className="btn-ghost flex items-center gap-1.5">
-          <ArrowLeft size={14} /> Back to Pipeline
-        </button>
+        {embedded ? <span /> : (
+          <button onClick={onBack} className="btn-ghost flex items-center gap-1.5">
+            <ArrowLeft size={14} /> Back to Pipeline
+          </button>
+        )}
         <div className="flex items-center gap-2">
           {canEdit && (
             <button onClick={() => setFlagOpen(true)} className="btn-ghost text-fg-muted flex items-center gap-1.5">
@@ -143,7 +148,7 @@ export default function DriverProfilePage({
         </div>
       )}
 
-      <div className="card p-5">
+      {!embedded && <div className="card p-5">
         <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
           <div>
             <h2 className="text-lg font-semibold">{driver.full_name}</h2>
@@ -217,7 +222,7 @@ export default function DriverProfilePage({
             <p className="text-small leading-relaxed whitespace-pre-wrap">{driver.notes}</p>
           </div>
         )}
-      </div>
+      </div>}
 
       {showMoney && (<>
       {/* Reliability */}

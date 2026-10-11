@@ -68,7 +68,7 @@ export default function DocumentsPage() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel('documents-feed')
+      .channel(`documents-feed-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'document_categories' }, () => load())
       .subscribe();
