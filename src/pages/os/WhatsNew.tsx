@@ -4,7 +4,7 @@ import { useAccess } from '../../os/access';
 import { MODULES, visiblePages } from '../../os/registry';
 import { Box, PageHeader } from '../../ui/kit';
 
-const ITEMS = [
+export const ITEMS = [
   { icon: Search, title: 'Search and jump anywhere', body: <>Press <span className="kbd">Ctrl K</span> (or <span className="kbd">/</span>) and type a driver, car, person, case or page. Enter opens it.</> },
   { icon: PanelLeft, title: 'Modules on the left', body: <>The thin bar on the left has one icon per area (Fleet, Finance, Call Center…). Hover an icon to slide its menu out; click to open it. A red dot means something there needs attention.</> },
   { icon: AppWindow, title: 'Tabs for what you have open', body: <>Every page and person you open gets a tab under the top bar, like windows on a computer. Pin the ones you use most; middle-click closes a tab.</> },
@@ -45,5 +45,18 @@ export default function WhatsNew() {
       </Box>
       <p className="text-caption text-fg-muted mt-4 flex items-center gap-1.5"><Command size={12} /> Something missing or not working? Use “Flag to IT” on any driver or case, or tell the MD.</p>
     </div>
+  );
+}
+
+// Compact version for the top of How to Use.
+export function GettingAround() {
+  return (
+    <Box title="Getting around" icon={Command}>
+      <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+        {ITEMS.map((i) => (
+          <div key={i.title} className="flex gap-2.5"><i.icon size={15} className="text-accent-fg shrink-0 mt-0.5" /><div><p className="text-body font-semibold">{i.title}</p><p className="text-small text-fg-muted">{i.body}</p></div></div>
+        ))}
+      </div>
+    </Box>
   );
 }

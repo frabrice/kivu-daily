@@ -51,11 +51,11 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
           <h2 className="text-base font-semibold flex items-center gap-2"><Car size={16} className="text-blue-600 dark:text-blue-300" /> Vehicles</h2>
           <p className="text-caption text-fg-subtle mt-0.5">Plate, RURA license, device, and documents handed over with each car.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search plate or driver" className="input pl-8 w-52" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search plate or driver" className="input pl-8 w-full sm:w-52" />
           </div>
           {canEdit && (
             <button onClick={() => setVehicleDrawer({ vehicle: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">

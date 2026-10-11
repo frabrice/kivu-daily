@@ -33,7 +33,7 @@ export default function HowToUsePage({ navItems }: HowToUsePageProps) {
           <h2 className="text-ui font-semibold">How to Use Kivu Daily</h2>
           <p className="text-caption text-white/80 mt-0.5">
             A full walkthrough of every page you have access to — what's on it, what happens when you click each thing, and tips for using it well.
-            This list matches your own sidebar, so you'll only see pages you actually have.
+            This list matches your own menus, so you'll only see pages you actually have.
           </p>
         </div>
       </div>

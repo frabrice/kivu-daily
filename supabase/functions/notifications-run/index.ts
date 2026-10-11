@@ -13,6 +13,7 @@ import { shiftRules } from "./shifts.ts";
 import { moneyRules } from "./money.ts";
 import { outreachRules } from "./outreach.ts";
 import { announceRules } from "./announce.ts";
+import { launchRules } from "./launch.ts";
 import { syncSmartTasks } from "./smartTasks.ts";
 import { BundledPart, composeUrgentNudge, composeYourDay, DigestLine } from "./yourDay.ts";
 
@@ -31,7 +32,7 @@ const COMPOSED: Record<string, ScheduledRule> = {
   your_day: { kind: "scheduled", days: ALL_DAYS, at: hm(7), build: async () => [] },
   urgent_nudge: { kind: "scheduled", days: ALL_DAYS, at: hm(16), build: async () => [] },
 };
-const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules, ...outreachRules, ...announceRules, ...COMPOSED };
+const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules, ...outreachRules, ...announceRules, ...launchRules, ...COMPOSED };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -51,7 +51,7 @@ export default function OverviewTab({ data, period: p, onNavigate, onTab }: { da
 
   const w = data.waiting;
   const waiting = [
-    { n: w.pauses, label: `driver pause${w.pauses === 1 ? '' : 's'} to approve`, icon: CalendarOff, go: () => { try { localStorage.setItem('kivu-active-nav-fleet-tab', 'days_off'); } catch { /* ignore */ } onNavigate('fleet'); } },
+    { n: w.pauses, label: `driver pause${w.pauses === 1 ? '' : 's'} to approve`, icon: CalendarOff, go: () => onNavigate('driver_pauses') },
     { n: w.emergencies, label: `emergenc${w.emergencies === 1 ? 'y' : 'ies'} not acknowledged`, icon: ShieldAlert, go: () => onNavigate('from_call_center') },
     { n: w.finance, label: `finance entr${w.finance === 1 ? 'y' : 'ies'} waiting (${rwf(w.financeAmount)})`, icon: Receipt, go: () => onNavigate('finance') },
     { n: w.deposits, label: `deposit${w.deposits === 1 ? '' : 's'} to confirm`, icon: Coins, go: () => onNavigate('finance') },

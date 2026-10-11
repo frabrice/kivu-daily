@@ -48,11 +48,11 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
           <h2 className="text-base font-semibold flex items-center gap-2"><Receipt size={16} className="text-blue-600 dark:text-blue-300" /> Fines</h2>
           <p className="text-caption text-fg-subtle mt-0.5">Traffic and disciplinary fines logged against a driver and the car involved.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or plate" className="input pl-8 w-52" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or plate" className="input pl-8 w-full sm:w-52" />
           </div>
           {canEdit && (
             <button onClick={() => setFineDrawer({ fine: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">

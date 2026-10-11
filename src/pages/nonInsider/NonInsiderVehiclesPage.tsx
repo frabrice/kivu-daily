@@ -66,7 +66,7 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search plate or driver" className="input pl-8 w-52" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search plate or driver" className="input pl-8 w-full sm:w-52" />
           </div>
           <select value={makeFilter} onChange={(e) => setMakeFilter(e.target.value)} className={selectClass}>
             <option value="all">All makes</option>
@@ -101,7 +101,7 @@ export default function NonInsiderVehiclesPage({ data }: { data: ReturnType<type
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           {canEdit && (
             <button onClick={() => setDrawer({ car: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">

@@ -2,6 +2,7 @@ import { createContext, lazy, LazyExoticComponent, ComponentType, ReactNode, Sus
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Maximize2, X } from 'lucide-react';
 import { EntityType } from './workspace';
+import PageBoundary from './PageBoundary';
 
 // Objects open in a side panel next to the page you're on ("peek"), and
 // peeks stack: driver -> their car -> its owner. "Open full page" turns
@@ -77,9 +78,11 @@ export function PeekPanel() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <Suspense fallback={<div className="p-4 space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 skeleton rounded-lg" />)}</div>}>
-          <View key={`${top.type}${top.id}`} id={top.id} mode="peek" />
-        </Suspense>
+        <PageBoundary resetKey={`${top.type}${top.id}`}>
+          <Suspense fallback={<div className="p-4 space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 skeleton rounded-lg" />)}</div>}>
+            <View key={`${top.type}${top.id}`} id={top.id} mode="peek" />
+          </Suspense>
+        </PageBoundary>
       </div>
     </aside>
   );

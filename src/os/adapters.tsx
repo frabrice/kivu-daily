@@ -16,6 +16,7 @@ import PerformancePage from '../pages/performance/PerformancePage';
 import ManagingDirectorApp from '../pages/ManagingDirectorApp';
 import StaffHome from '../pages/os/StaffHome';
 import CommandCenter from '../pages/os/CommandCenter';
+import { GettingAround } from '../pages/os/WhatsNew';
 import { NavItem, NavKey } from '../components/AppShell';
 import { useAccess } from './access';
 import { LEGACY_PATH, MODULES, visiblePages } from './registry';
@@ -82,7 +83,7 @@ export function Help() {
     const key = keyOf(p.path);
     if (key && !items.some((i) => i.key === key)) items.push({ key, label: p.label, icon: p.icon });
   }
-  return <HowToUsePage navItems={items} />;
+  return <div className="space-y-4"><GettingAround /><HowToUsePage navItems={items} /></div>;
 }
 
 export function Performance() {

@@ -50,7 +50,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
           </h2>
           <p className="text-caption text-fg-subtle mt-0.5">Friction flagged in from other departments, anything IT adds directly, and the user stories planned under each product.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={view} onChange={setView} modes={['kanban', 'cards', 'table']} />
           {canEdit && (
             <button onClick={() => setStoryDrawer({ story: null, startEditing: true })} className="btn-primary flex items-center gap-1.5">

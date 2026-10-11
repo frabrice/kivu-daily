@@ -65,7 +65,7 @@ function CampaignsPageView({ data }: { data: ReturnType<typeof useMarketingData>
           <h2 className="text-base font-semibold flex items-center gap-2"><Target size={16} className="text-rose-600 dark:text-rose-300" /> Campaigns</h2>
           <p className="text-caption text-fg-subtle mt-0.5">Outreach pushes, each with its own funnel of targets.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           <button onClick={() => setCampaignDrawer({ campaign: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
             <Plus size={14} /> New Campaign
@@ -199,7 +199,7 @@ function CampaignDetail({
           {campaign.goal && <p className="text-small text-fg-muted mt-1">{campaign.goal}</p>}
           <p className="text-micro text-fg-subtle mt-1">Owned by {campaign.owner?.full_name ?? 'Unknown'}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           <button onClick={onAddContact} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
             <Plus size={14} /> Add Contact

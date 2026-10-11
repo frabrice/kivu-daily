@@ -76,7 +76,7 @@ export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeo
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or plate" className="input pl-8 w-52" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or plate" className="input pl-8 w-full sm:w-52" />
           </div>
           <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value as OwnerFilter)} className={selectClass}>
             <option value="all">Owner: any</option>
@@ -117,7 +117,7 @@ export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeo
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           {canEdit && (
             <button onClick={() => setDrawer({ driver: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">

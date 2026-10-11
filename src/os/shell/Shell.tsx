@@ -18,6 +18,7 @@ import { useWorkspace } from '../workspace';
 import { PeekPanel, usePeek } from '../peek';
 import { Popover, MenuItem, MenuDivider, MenuLabel, Tooltip } from '../../ui/Popover';
 import CommandPalette from './CommandPalette';
+import PageBoundary from '../PageBoundary';
 
 const AssignTaskModalHost = lazy(() => import('./NewThingModals').then((m) => ({ default: m.AssignTaskHost })));
 const AnnouncementHost = lazy(() => import('./NewThingModals').then((m) => ({ default: m.AnnouncementHost })));
@@ -147,9 +148,11 @@ export default function Shell({ access, children }: { access: Access; children: 
                 <EndShiftDrawer shift={shift} onClose={() => setEnding(null)}
                   onEnded={() => { const thenSignOut = ending === 'signout'; setEnding(null); if (thenSignOut) plainSignOut(); else reloadShift(); }} />
               )}
-              <Suspense fallback={<PageSkeleton />}>
-                {needsShift ? <StartShiftScreen onStarted={reloadShift} /> : children}
-              </Suspense>
+              <PageBoundary resetKey={loc.pathname}>
+                <Suspense fallback={<PageSkeleton />}>
+                  {needsShift ? <StartShiftScreen onStarted={reloadShift} /> : children}
+                </Suspense>
+              </PageBoundary>
             </div>
             {peekStack.length > 0 && <PeekPanel />}
           </div>

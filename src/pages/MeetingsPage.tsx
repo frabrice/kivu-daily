@@ -54,7 +54,7 @@ export default function MeetingsPage() {
           <h2 className="text-base font-semibold">Meeting Notes</h2>
           <p className="text-xs text-fg-subtle mt-0.5">{meetings.length} note{meetings.length === 1 ? '' : 's'}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           <button onClick={() => setCreateOpen(true)} className="btn-primary flex items-center gap-1.5">
             <Plus size={15} />

@@ -7,13 +7,13 @@ keep teal/navy · workspace tabs YES · all modules at once · Finance ledger me
 
 ## Status
 - [x] P1 Foundation: deps, tokens/themes (contrast-checked), type scale codemod (139 files), fonts, query cache, lazy pages
-- [~] P2 Shell (working: router, registry, top bar, rail+flyout, sidebar, tabs, palette, peek, Today, mobile bar, shortcuts, legacy links): router + route registry (one app for MD + staff), top bar, rail, flyout sidebars, command palette, peeks, Today drawer, workspace tabs, mobile
-- [ ] P3 Objects: Driver, Car, Owner, Staff, Agent, Case, Non-Insider, Station pages; EntityLink + hover cards
-- [ ] P4 Modules: Fleet, Finance (ledger), Call Center, MD Command Center, Growth, Product Hub, People, Docs
-- [ ] P5 Polish: shortcuts, saved views, How to Use, staff email, remove old shell
-- [ ] Release: build, phone check, real-data review with MD, merge to main
+- [x] P2 Shell: router + registry (one app for MD + staff), top bar, rail + hover flyouts, sidebars with counters, workspace tabs, command palette, side peeks, Today drawer, mobile bar, shortcuts, legacy email links, page error boundary
+- [x] P3 Objects: Driver, Car, Owner, Person, Agent, Case, Non-Insider pages; EntityLink + hover cards wired into lists (stations stay in MD Panel)
+- [x] P4 Modules: MD Command Center, staff Home, Fleet overview, Finance ledger (suppliers/transfers/expenses folded in), Call Center live board, number strips on Fleet/Cases/Growth/Product/People lists, What's new
+- [x] P5 Polish: How to Use 'Getting around', launch email rule kivu_os_launch (OFF until MD switches it on; sends once), old shells deleted, debug harness removed, phone check 375px on 36 pages, 59-route crash sweep clean, build 672 KB main chunk (was 1.78 MB)
+- [ ] Release: MD reviews with real data (Vercel preview of branch kivu-os), merge to main, switch on kivu_os_launch
 
 ## Notes
-- Debug harness: `?debugos=md|fleet|call_center|finance|it` (sessionStorage flag) renders OsApp with a fake profile, no login. Files marked `DEBUG TEMP` (src/DebugOs.tsx, main.tsx lines, lib/auth.tsx export) must be removed before release.
+- (removed) Debug harness: `?debugos=md|fleet|call_center|finance|it` (sessionStorage flag) renders OsApp with a fake profile, no login. Files marked `DEBUG TEMP` (src/DebugOs.tsx, main.tsx lines, lib/auth.tsx export) must be removed before release.
 - Stubs to replace: src/pages/os/{FleetOverview,FinanceLedger,CallCenterOverview,WhatsNew,StaffHome}.tsx, src/pages/entities/*.tsx.
 - Old shells EmployeeApp.tsx / components/AppShell.tsx no longer mounted (AppShell types NavKey/NavItem still imported by HowToUse) - delete in P5.

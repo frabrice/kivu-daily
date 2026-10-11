@@ -40,7 +40,7 @@ function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenter
           <h2 className="text-base font-semibold flex items-center gap-2"><Users2 size={16} className="text-violet-600 dark:text-violet-300" /> Directory</h2>
           <p className="text-caption text-fg-subtle mt-0.5">Every driver, searchable — click to call.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={view} onChange={setView} />
           <div className="relative w-64">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />

@@ -32,6 +32,7 @@ function LegacyLinks({ access }: { access: Access }) {
     const page = p.get('page');
     if (loc.pathname !== '/' || (!ticket && !page)) return;
     if (page === 'fleet_branding') { nav('/fleet/branding', { replace: true }); return; }
+    if (page === 'whats_new') { nav('/docs/whats-new', { replace: true }); return; }
     if (ticket) {
       const own = page === 'from_call_center' || access.dept !== 'call_center';
       nav(`${own ? '/me/cases' : '/call-center/cases'}?ticket=${encodeURIComponent(ticket)}`, { replace: true });
