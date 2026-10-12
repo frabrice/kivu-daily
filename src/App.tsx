@@ -1,40 +1,18 @@
-import { useState } from 'react';
 import { AuthProvider, useAuth } from './lib/auth';
 import { ThemeProvider } from './lib/theme';
-import LandingPage from './pages/LandingPage';
-import RoleSelectPage from './pages/RoleSelectPage';
-import AuthPage from './pages/AuthPage';
+import EntryPage from './pages/EntryPage';
 import SetPasswordPage from './pages/SetPasswordPage';
 import OsApp from './os/OsApp';
 import LoadingScreen from './components/LoadingScreen';
 import PublicSurveyApp from './pages/survey/PublicSurveyApp';
 
-type PreAuthView = 'landing' | 'role-select' | 'login';
-
 function AppInner() {
   const { user, profile, loading, signOut } = useAuth();
-  const [preAuthView, setPreAuthView] = useState<PreAuthView>('landing');
-  const [prefillEmail, setPrefillEmail] = useState('');
 
   if (loading) return <LoadingScreen />;
 
-  if (!user || !profile) {
-    if (preAuthView === 'landing') {
-      return <LandingPage onLogin={() => setPreAuthView('role-select')} />;
-    }
-    if (preAuthView === 'role-select') {
-      return (
-        <RoleSelectPage
-          onBack={() => setPreAuthView('landing')}
-          onManual={(email) => {
-            setPrefillEmail(email);
-            setPreAuthView('login');
-          }}
-        />
-      );
-    }
-    return <AuthPage prefillEmail={prefillEmail} onBack={() => setPreAuthView('role-select')} />;
-  }
+  // Not signed in: the entry room (the door into Kivu Daily).
+  if (!user || !profile) return <EntryPage />;
 
   // Deactivated or terminated: their sign-in is also blocked server-side,
   // but a session opened before that can still be loaded once.
