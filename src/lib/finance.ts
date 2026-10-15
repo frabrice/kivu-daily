@@ -121,6 +121,7 @@ export const TYPE_META: Record<FinanceTransactionType, { label: string; defaultD
   onboarding_fee: { label: 'Onboarding Fee', defaultDirection: 'in' },
   management_margin: { label: 'Management Margin', defaultDirection: 'in' },
   driver_payroll: { label: 'Driver Payroll', defaultDirection: 'out' },
+  app_commission: { label: 'App Commissions', defaultDirection: 'in' },
 };
 
 // What actually counts as Kivu's own income for a "revenue" figure -
@@ -130,7 +131,7 @@ export const TYPE_META: Record<FinanceTransactionType, { label: string; defaultD
 // Only the margin on that spread, the flat monthly/onboarding fees, and
 // whatever Finance logs directly as 'revenue' (trip commissions etc.)
 // are genuine income.
-export const KIVU_REVENUE_TYPES: FinanceTransactionType[] = ['revenue', 'management_margin', 'onboarding_fee'];
+export const KIVU_REVENUE_TYPES: FinanceTransactionType[] = ['revenue', 'management_margin', 'onboarding_fee', 'app_commission'];
 
 export const STATUS_META = {
   pending: { label: 'Pending', color: '#9ca3af' },

@@ -75,6 +75,13 @@ function PauseRow({ p, driver, names, canRecord, canReview, showDriver, onChange
           </p>
           <p className="text-caption text-fg-muted ">{pauseSpan(p)}{driver?.vehicle?.plate_number ? ` · ${driver.vehicle.plate_number}` : ''}</p>
           {p.note && <p className="text-caption text-fg-muted mt-0.5">“{p.note}”</p>}
+          {p.vehicle_id && (
+            <p className="text-caption mt-0.5">
+              {p.owner_payout_paused
+                ? <span className="text-fg-muted">Owner's payment paused for these days too</span>
+                : <span className="text-attention">Owner still paid for these days — they count as a loss</span>}
+            </p>
+          )}
           <p className="text-micro text-fg-subtle mt-0.5">
             Recorded by {p.recorded_by ? names[p.recorded_by] ?? '—' : '—'}
             {p.reviewed_by && ` · ${p.approval_status} by ${names[p.reviewed_by] ?? '—'}`}{p.review_note && ` — ${p.review_note}`}
@@ -94,6 +101,11 @@ function PauseRow({ p, driver, names, canRecord, canReview, showDriver, onChange
           )}
         {!p.end_date && p.approval_status !== 'rejected' && (canRecord || canReview) && (
           <button onClick={() => setMode(mode === 'resume' ? '' : 'resume')} className="btn-ghost text-caption flex items-center gap-1 text-brand-700 dark:text-brand-300"><PlayCircle size={12} /> Resume</button>
+        )}
+        {p.vehicle_id && canReview && p.approval_status !== 'rejected' && (
+          <button onClick={() => run(() => supabase.rpc('set_pause_owner_payout', { p_group_id: p.group_id, p_paused: !p.owner_payout_paused }))} disabled={busy} className="btn-ghost text-caption">
+            {p.owner_payout_paused ? 'Pay the owner for these days' : "Pause the owner's payment too"}
+          </button>
         )}
         {p.approval_status === 'pending' && canReview && (
           <>

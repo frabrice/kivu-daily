@@ -97,6 +97,8 @@ export function Departments() {
 
 export function Home() {
   const access = useAccess();
+  // Finance's first page is the Finance overview (MD, 15 Oct 2026).
+  if (!access.isMd && access.dept === 'finance') return <Navigate to="/finance" replace />;
   return access.isMd ? <CommandCenter /> : <StaffHome />;
 }
 

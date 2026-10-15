@@ -97,7 +97,7 @@ export const MODULES: ModuleDef[] = [
   {
     id: 'finance', label: 'Finance', icon: Wallet, base: '/finance', shortcut: 'g $',
     pages: [
-      { id: 'finance-overview', path: '/finance', label: 'Overview', icon: LayoutDashboard, component: L(() => import('../pages/finance/FinanceDashboardPage')), can: (a) => a.in('finance') },
+      { id: 'finance-overview', path: '/finance', label: 'Overview', icon: LayoutDashboard, component: L(() => import('../pages/os/FinanceOverview')), can: (a) => a.in('finance'), description: 'What we made, spent and lost; money in and out; every car against its 360,000 a week.', keywords: 'made spent lost leakage commissions management fees onboarding owners' },
       { id: 'finance-ledger', path: '/finance/ledger', label: 'Ledger', icon: ScrollText, component: L(() => import('../pages/os/FinanceLedger')), can: (a) => a.in('finance'), badge: 'pendingFinance', keywords: 'transactions suppliers transfers expense claims payments', description: 'Every transaction in one place, with filters by type, status and account.' },
       { id: 'finance-confirmations', path: '/finance/confirmations', label: 'Deposit confirmations', icon: ShieldCheck, component: L(() => import('../pages/finance/FinanceDepositConfirmationsPage')), can: (a) => a.in('finance') },
       { id: 'finance-revenue', path: '/finance/revenue', label: 'Revenue', icon: TrendingUp, component: L(() => import('../pages/finance/FinanceRevenuePage')), can: (a) => a.in('finance'), group: 'Income' },

@@ -16,9 +16,9 @@ export interface TxRow {
 export const TYPE_LABEL: Record<string, string> = {
   revenue: "Revenue", fleet_collection: "Fleet collection", vehicle_owner_payment: "Owner payout", payroll: "Payroll",
   supplier_payment: "Supplier payment", transfer: "Transfer", expense_claim: "Expense claim", other: "Other",
-  onboarding_fee: "Onboarding fee", management_margin: "Management margin", driver_payroll: "Driver payroll",
+  onboarding_fee: "Onboarding fee", management_margin: "Management margin", driver_payroll: "Driver payroll", app_commission: "App commissions",
 };
-export const KIVU_REVENUE_TYPES = ["revenue", "management_margin", "onboarding_fee"];
+export const KIVU_REVENUE_TYPES = ["revenue", "management_margin", "onboarding_fee", "app_commission"];
 export const OPERATING_COST_TYPES = ["supplier_payment", "payroll", "expense_claim", "other", "driver_payroll"];
 // 'approved' is treated as settled: paying a payroll run records its
 // ledger rows as approved and stops there, and balances count every

@@ -120,7 +120,20 @@ export interface DriverPause {
   recorded_by: string | null;
   resumed_by: string | null;
   resumed_at: string | null;
+  // The car owner isn't paid for these days either (so they aren't a loss).
+  owner_payout_paused?: boolean;
   created_at: string;
+}
+
+// Which car a driver was on, day by day (driver_car_assignments).
+export interface DriverCarAssignment {
+  id: string;
+  driver_id: string;
+  vehicle_id: string | null;
+  from_date: string;
+  to_date: string | null;
+  source: 'live' | 'log' | 'fine' | 'current' | 'unknown' | 'manual';
+  note: string | null;
 }
 
 export interface Driver {
@@ -580,7 +593,8 @@ export type FinanceTransactionType =
   | 'other'
   | 'onboarding_fee'
   | 'management_margin'
-  | 'driver_payroll';
+  | 'driver_payroll'
+  | 'app_commission';
 
 export type FinanceDirection = 'in' | 'out';
 export type FinanceTransactionStatus = 'pending' | 'checked' | 'approved' | 'posted' | 'rejected';

@@ -1,4 +1,4 @@
-import { daysUntilDate } from "../_shared/depositRules.ts";
+import { daysUntilDate, shiftDay } from "../_shared/depositRules.ts";
 import { Ctx, day, plural, rows, rwf } from "./core.ts";
 import { activeStandings, car, loadDeposits, loadDrivers, PAUSE_REASON } from "./drivers.ts";
 import { openTransactions, TYPE_LABEL } from "./finance.ts";
@@ -47,6 +47,8 @@ async function onShiftAgents(ctx: Ctx): Promise<string[]> {
 }
 
 const finance = (ctx: Ctx) => ctx.responsibilities["route_finance"] ?? null;
+// First week of app commissions to enter (Mon 5 Oct 2026, due Fri 16 Oct).
+const COMMISSIONS_START = "2026-10-05";
 
 const LIST_KINDS: ListKind[] = [
   {
@@ -141,6 +143,21 @@ const LIST_KINDS: ListKind[] = [
     compute: async (ctx) => {
       const items = (await openTransactions(ctx)).filter((t) => t.status === "pending").sort((a, b) => a.transaction_date.localeCompare(b.transaction_date))
         .map((t) => ({ id: t.id, label: `${TYPE_LABEL[t.type] ?? t.type}${t.counterparty ? ` · ${t.counterparty}` : ""}`, detail: `${rwf(t.amount)} · ${day(t.transaction_date)}${daysUntilDate(t.transaction_date, ctx.today) > 0 ? " · overdue" : ""}` }));
+      return { assignments: assign(one(ctx, "route_finance"), items), open: setOf(items) };
+    },
+  },
+  {
+    // Every Friday Finance enters the app commissions for the Monday-Sunday
+    // week before; the task stays until each overdue week is entered.
+    key: "app_commissions", priority: "normal", due: "17:00",
+    title: (n) => `Enter app commissions for ${plural(n, "week")}`, doneTitle: "App commissions entered",
+    intro: "The commissions collected through the app, one entry per Monday-Sunday week (Finance overview → Log app commissions). Enter 0 for a week with none.",
+    compute: async (ctx) => {
+      const entered = new Set((await rows<{ transaction_date: string }>(ctx.db.from("finance_transactions").select("transaction_date").eq("type", "app_commission").neq("status", "rejected"))).map((r) => r.transaction_date));
+      const items: SmartItem[] = [];
+      for (let w = COMMISSIONS_START; shiftDay(w, 11) <= ctx.today; w = shiftDay(w, 7)) {
+        if (!entered.has(w)) items.push({ id: `commission:${w}`, label: `Week of ${day(w)} – ${day(shiftDay(w, 6))}`, detail: `due Fri ${day(shiftDay(w, 11))}` });
+      }
       return { assignments: assign(one(ctx, "route_finance"), items), open: setOf(items) };
     },
   },

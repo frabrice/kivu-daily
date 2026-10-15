@@ -18,6 +18,7 @@ export default function PauseDrawer({ driver, drivers, onClose, onSaved }: { dri
   const [end, setEnd] = useState(today);
   const [note, setNote] = useState('');
   const [wholeCar, setWholeCar] = useState(true);
+  const [ownerPaused, setOwnerPaused] = useState<boolean | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -29,6 +30,7 @@ export default function PauseDrawer({ driver, drivers, onClose, onSaved }: { dri
     if (!reason) { setError('Choose why the driver is off.'); return; }
     if (reason === 'other' && !note.trim()) { setError('Explain the reason in the note.'); return; }
     if (!openEnded && end < start) { setError("The last day off can't be before the first."); return; }
+    if (driver.vehicle_id && ownerPaused === null) { setError("Say whether the car owner's payment is paused too."); return; }
     setBusy(true);
     setError('');
     let proofPath: string | null = null;
@@ -39,7 +41,7 @@ export default function PauseDrawer({ driver, drivers, onClose, onSaved }: { dri
       proofPath = path;
     }
     const { error: err } = await supabase.rpc('record_driver_pause', {
-      p: { driver_id: driver.id, reason, note, start_date: start, end_date: openEnded ? null : end, whole_car: garage && wholeCar, proof_path: proofPath },
+      p: { driver_id: driver.id, reason, note, start_date: start, end_date: openEnded ? null : end, whole_car: garage && wholeCar, proof_path: proofPath, owner_payout_paused: !!driver.vehicle_id && ownerPaused === true },
     });
     setBusy(false);
     if (err) { setError(err.message); return; }
@@ -67,6 +69,21 @@ export default function PauseDrawer({ driver, drivers, onClose, onSaved }: { dri
             <input type="checkbox" checked={wholeCar} onChange={(e) => setWholeCar(e.target.checked)} className="mt-0.5" />
             <span>Pause every driver on {driver.vehicle?.plate_number ?? 'this car'}{carMates.length ? ` (also ${carMates.map((d) => d.full_name.trim()).join(', ')})` : ''}</span>
           </label>
+        )}
+
+        {driver.vehicle_id && (
+          <div>
+            <span className={label}>Is the car owner's payment paused for these days too? *</span>
+            <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Owner payment">
+              {[{ v: true, t: 'Yes — owner not paid', d: 'Agreed with the owner. Not a loss.' }, { v: false, t: 'No — owner still paid', d: 'Kivu pays the owner; the days are a loss.' }].map((o) => (
+                <button key={String(o.v)} type="button" role="radio" aria-checked={ownerPaused === o.v} onClick={() => setOwnerPaused(o.v)}
+                  className={`px-2.5 py-2 rounded-lg border text-left ${ownerPaused === o.v ? 'border-brand bg-brand/10' : 'border-line hover:border-brand/40'}`}>
+                  <span className={`block text-small ${ownerPaused === o.v ? 'font-medium text-brand-800 dark:text-brand-200' : 'text-fg-muted'}`}>{o.t}</span>
+                  <span className="block text-caption text-fg-subtle">{o.d}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         <div className="grid grid-cols-2 gap-3">
