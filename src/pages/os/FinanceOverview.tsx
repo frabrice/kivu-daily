@@ -12,7 +12,7 @@ import { PerfEvent, today as kigaliToday } from '../../lib/performance';
 import { PAUSE_REASON_LABEL } from '../../lib/fleet';
 import {
   CAUSES, CAUSE_LABEL, CAR_STATUS, COMMISSIONS_START, IN_GROUPS, OUT_GROUPS, CarEconomics, CarStatus, InGroup, LossCause, OutGroup, PeriodKey, Range,
-  commissionWeeks, computeLeakage, insightsOf, isManaged, managementFees, moneySummary, onboardingFees, rangeOf, shareOf, targetShareOf,
+  commissionWeeks, computeLeakage, firstDayOf, insightsOf, isManaged, managementFees, moneySummary, onboardingFees, rangeOf, shareOf, targetShareOf,
 } from '../../lib/financeOverview';
 import { RangeTabs, usePalette } from '../../components/charts/kit';
 import Modal from '../../components/Modal';
@@ -51,9 +51,10 @@ export default function FinanceOverview() {
   }, []);
   useEffect(() => { loadExtra(); }, [loadExtra]);
 
-  const [pk, setPk] = useState<PeriodKey>('month');
+  const [pk, setPk] = useState<PeriodKey>('all');
   const [custom, setCustom] = useState<Range>({ from: `${t.slice(0, 7)}-01`, to: t });
-  const range = rangeOf(pk, t, custom);
+  const firstDay = useMemo(() => firstDayOf(fin.vehicles, fin.transactions), [fin.vehicles, fin.transactions]);
+  const range = rangeOf(pk, t, custom, firstDay ?? undefined);
   const [panel, setPanel] = useState<Panel | null>(null);
   const [statusFilter, setStatusFilter] = useState<CarStatus | null>(null);
 
@@ -83,7 +84,7 @@ export default function FinanceOverview() {
   const feesLate = fees.filter((f) => !f.paid && f.lateDays > 0);
   const commissionsIn = weeks.reduce((s, w) => s + Number(w.row?.amount ?? 0), 0);
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const periodLabel = pk === 'week' ? 'This week' : pk === 'month' ? 'This month' : pk === 'last_month' ? 'Last month' : 'Custom';
+  const periodLabel = pk === 'all' ? 'All time' : pk === 'week' ? 'This week' : pk === 'month' ? 'This month' : pk === 'last_month' ? 'Last month' : 'Custom';
 
   return (
     <div className="animate-fade-in">
@@ -95,7 +96,7 @@ export default function FinanceOverview() {
         </>} />
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <RangeTabs<PeriodKey> value={pk} onChange={setPk} options={[{ v: 'week', label: 'This week' }, { v: 'month', label: 'This month' }, { v: 'last_month', label: 'Last month' }, { v: 'custom', label: 'Custom' }]} />
+        <RangeTabs<PeriodKey> value={pk} onChange={setPk} options={[{ v: 'all', label: 'All time' }, { v: 'week', label: 'This week' }, { v: 'month', label: 'This month' }, { v: 'last_month', label: 'Last month' }, { v: 'custom', label: 'Custom' }]} />
         {pk === 'custom' && (
           <div className="flex items-center gap-1.5">
             <input type="date" value={custom.from} max={custom.to} onChange={(e) => setCustom((x) => ({ ...x, from: e.target.value }))} className="input !w-auto" aria-label="From" />

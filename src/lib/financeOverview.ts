@@ -36,9 +36,11 @@ const paidOut = (t: FinanceTransaction) => t.status === 'approved' || t.status =
 export const paidOnOf = (t: FinanceTransaction) => (t.approved_at ?? t.checked_at ?? t.updated_at).slice(0, 10);
 
 // ------------------------------------------------------------ periods
-export type PeriodKey = 'week' | 'month' | 'last_month' | 'custom';
+export type PeriodKey = 'all' | 'week' | 'month' | 'last_month' | 'custom';
 export interface Range { from: string; to: string }
-export function rangeOf(key: PeriodKey, today: string, custom?: Range): Range {
+// `start` = the first day anything happened (for All time).
+export function rangeOf(key: PeriodKey, today: string, custom?: Range, start?: string): Range {
+  if (key === 'all') return { from: start && start < today ? start : today, to: today };
   if (key === 'week') return { from: mondayOf(today), to: today };
   if (key === 'month') return { from: `${today.slice(0, 7)}-01`, to: today };
   if (key === 'last_month') {
@@ -49,6 +51,12 @@ export function rangeOf(key: PeriodKey, today: string, custom?: Range): Range {
   return custom && custom.from <= custom.to ? custom : { from: mondayOf(today), to: today };
 }
 const inRange = (d: string, r: Range) => d >= r.from && d <= r.to;
+
+// The first day with any money or any car on the road.
+export function firstDayOf(vehicles: Vehicle[], transactions: FinanceTransaction[]): string | null {
+  const days = [...vehicles.filter(isManaged).map((v) => v.operation_start_date!), ...transactions.map((t) => t.transaction_date)].filter(Boolean).sort();
+  return days[0] ?? null;
+}
 
 // Same date every month (clamped to the month's last day, like Postgres).
 export function addMonths(d: string, n: number): string {
