@@ -10,7 +10,7 @@ import {
   STAGES, effectiveStage, REST_DAYS, DEPOSIT_TIER_STYLE, depositRemainingColor, formatDateLabelSafe,
   computeDepositStanding, depositStandingTier, depositStandingLabel, depositPeriodLabel, paidThroughDate, formatRwf, SUNDAY_RULE_START,
   fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, canSeeDriverPayments, canRecordPause, canReviewPause, PAUSE_REASON_LABEL,
-  CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN, dailyRateOf, shiftLabel } from '../../lib/fleet';
+  CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN, dailyRateOn, shiftLabel } from '../../lib/fleet';
 import { useAuth } from '../../lib/auth';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
@@ -84,7 +84,7 @@ export default function DriverProfilePage({
   const paidThroughAfter = new Map<string, string | null>();
   if (driver.start_date) {
     // Only this contract's money counts (a renewed contract starts again), at the driver's own rate.
-    const rate = dailyRateOf(driver);
+    const rate = (day: string) => dailyRateOn(driver, day);
     let cumulative = Number(driver.opening_credit ?? 0) + (driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0);
     paidThroughAfter.set('initial', cumulative > 0 ? paidThroughDate(driver.start_date, driver.rest_day, cumulative, driver.pauses, rate) : null);
     for (const dep of [...driverDeposits].filter((d) => !driver.payments_from || d.paid_date >= driver.payments_from).sort((a, b) => a.paid_date.localeCompare(b.paid_date) || a.created_at.localeCompare(b.created_at))) {

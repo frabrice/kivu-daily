@@ -11,7 +11,7 @@ export interface DriverRow {
   id: string; full_name: string; phone: string | null; start_date: string | null; rest_day: RestDayKey | null;
   initial_deposit_paid: boolean; initial_deposit_amount: number | null; initial_deposit_date: string | null;
   contract_status: string; vehicle_id: string | null; shift: string | null; stage: string; created_at: string;
-  payments_from: string | null; opening_credit: number | null;
+  payments_from: string | null; opening_credit: number | null; rate_history: { from: string; daily: number }[] | null;
   vehicle: { plate_number: string } | null;
   pauses: { id: string; group_id: string; reason: string; note: string | null; start_date: string; end_date: string | null; approval_status: string; recorded_by: string | null; created_at: string }[];
 }
@@ -19,7 +19,7 @@ export interface DepositRow { id: string; driver_id: string; paid_date: string; 
 
 export function loadDrivers(ctx: Ctx) {
   return cached(ctx, "drivers", () => rows<DriverRow>(ctx.db.from("drivers").select(
-    "id, full_name, phone, start_date, rest_day, initial_deposit_paid, initial_deposit_amount, initial_deposit_date, contract_status, vehicle_id, shift, stage, created_at, payments_from, opening_credit, vehicle:vehicles(plate_number), pauses:driver_pauses(id, group_id, reason, note, start_date, end_date, approval_status, recorded_by, created_at)",
+    "id, full_name, phone, start_date, rest_day, initial_deposit_paid, initial_deposit_amount, initial_deposit_date, contract_status, vehicle_id, shift, stage, created_at, payments_from, opening_credit, rate_history, vehicle:vehicles(plate_number), pauses:driver_pauses(id, group_id, reason, note, start_date, end_date, approval_status, recorded_by, created_at)",
   )));
 }
 

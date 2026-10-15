@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, Driver, DriverDeposit, Vehicle, FinanceTransaction, CallTicket, PauseReason } from './supabase';
-import { computeDepositStanding, pauseOn, paidThroughDate, isoWeekday, DepositStanding, contractPayments, dailyRateOf } from '../../supabase/functions/_shared/depositRules';
+import { computeDepositStanding, pauseOn, paidThroughDate, isoWeekday, DepositStanding, contractPayments, dailyRateOn } from '../../supabase/functions/_shared/depositRules';
 import { CallCenterShift } from './shifts';
 import { OutreachCall } from './outreach';
 import { KIVU_REVENUE_TYPES } from './finance';
@@ -125,7 +125,7 @@ export function driverDay(d: Driver, deps: DriverDeposit[], day: string): Driver
   if (d.rest_day && REST_ISO[d.rest_day] === isoWeekday(day)) return 'rest';
   if (pauseOn(d.pauses, day)) return 'paused';
   const paid = contractPayments(d, deps).filter((p) => p.date <= day).reduce((s, p) => s + p.amount, 0);
-  const through = paidThroughDate(d.start_date!, d.rest_day, paid, d.pauses, dailyRateOf(d));
+  const through = paidThroughDate(d.start_date!, d.rest_day, paid, d.pauses, (x) => dailyRateOn(d, x));
   return through && through >= day ? 'paid' : 'unpaid';
 }
 

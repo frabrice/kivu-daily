@@ -96,7 +96,7 @@ const FINANCE_ENTRY: HelpEntry = {
         'Fleet Collections: every driver\'s weekly remittance, auto-posted the moment Fleet logs a deposit or a driver\'s initial deposit is recorded. Filterable by week and by a specific driver, with a running total per driver.',
         'Deposit Confirmations: deposits Fleet logs start "Pending" — Finance (or the MD) confirms each one here before it counts as settled.',
         'Internal Payroll: standalone employee records (position, start date, salary, ID) paid on one shared date each month; monthly runs pre-fill from those salaries. Approving one auto-creates the Equity → I&M funding transfer and the payroll payment from I&M together.',
-        'Driver Payroll: a flat 150,000/month per driver, counted from their own start date, each its own pending payment until confirmed.',
+        'Driver Payroll: a flat 150,000/month per driver (300,000 for a driver on both shifts), counted from their own start date, each its own pending payment until confirmed.',
         'Supplier Payments: insurance, charging, maintenance, RURA, office/admin — paid from I&M against an invoice or purchase order.',
         'Inter-Bank Transfers: moving money between Kivu\'s own accounts, most commonly Equity topping up I&M. Never counted as revenue or expense — it\'s Kivu\'s own money moving, not new money.',
         'Expense Claims: employee reimbursements, needs a supporting receipt before approval.',

@@ -1,4 +1,4 @@
-import { countWorkingDays, shiftDay, SUNDAY_RULE_START, mondayOf, DAILY_DEPOSIT_RATE, dailyRateOf } from "../_shared/depositRules.ts";
+import { countWorkingDays, shiftDay, SUNDAY_RULE_START, mondayOf, DAILY_DEPOSIT_RATE, workingCost } from "../_shared/depositRules.ts";
 import { activeStandings, loadDeposits, loadDrivers } from "./drivers.ts";
 import { KIVU_REVENUE_TYPES, loadTransactions, OPERATING_COST_TYPES, TYPE_LABEL, type TxRow } from "./finance.ts";
 import { loadPlatformCars, loadVehicles } from "./operations.ts";
@@ -31,7 +31,7 @@ async function snapshot(ctx: Ctx) {
   let expectedWeek = 0;
   for (const r of standings) {
     const from = r.d.start_date! > weekStart ? r.d.start_date! : weekStart;
-    if (from <= today) expectedWeek += countWorkingDays(from, today, r.d.rest_day) * dailyRateOf(r.d);
+    if (from <= today) expectedWeek += workingCost(r.d, from, today);
   }
   const collectedWeek = deposits.filter((d) => d.paid_date >= weekStart && d.paid_date <= today).reduce((s, d) => s + d.amount, 0);
   const owes = standings.reduce((s, r) => s + r.s.owes, 0);

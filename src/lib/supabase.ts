@@ -59,7 +59,7 @@ export type RuraLicenseStatus = 'pending' | 'provided';
 export type DriverShift = 'day' | 'night' | 'full';
 export type DriverRestDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 export type DriverContractStatus = 'active' | 'ended';
-export type ContractEventType = 'ended' | 'reactivated' | 'renewed';
+export type ContractEventType = 'ended' | 'reactivated' | 'renewed' | 'shift_changed';
 
 export type PaymentDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
@@ -144,6 +144,8 @@ export interface Driver {
   payments_from?: string | null;
   // Credit carried from the previous contract, counted as paid on start_date.
   opening_credit?: number | null;
+  // Daily rate from each date within the current contract (mid-contract shift changes).
+  rate_history?: { from: string; daily: number }[] | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

@@ -193,6 +193,8 @@ export const ONBOARDING_UNIFORM_COST = ONBOARDING_UNIFORM_COST_PER_DRIVER * 2;
 // "official start date") - not the shared internal-staff payment date.
 // A driver whose contract ends simply stops generating new months.
 export const DRIVER_MONTHLY_SALARY = 150000;
+// A driver on both shifts earns double (MD, 15 Oct 2026).
+export const DRIVER_MONTHLY_SALARY_BOTH_SHIFTS = 300000;
 
 // Internal Payroll: all payroll_employees are paid on one shared day of
 // the month (default the 28th, capped there to sidestep February).

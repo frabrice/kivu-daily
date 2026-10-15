@@ -3,7 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, Coins, Hourglass, Scale, Target } from 'lu
 import { ChartCard, DailyBars, Delta, Kpi, MiniTable, pct, RankBars, rwf, rwfShort, shortDay, usePalette } from '../../components/charts/kit';
 import { TYPE_META } from '../../lib/finance';
 import { FinanceTransactionType } from '../../lib/supabase';
-import { DAILY_DEPOSIT_RATE, dailyRateOf } from '../../lib/fleet';
+import { DAILY_DEPOSIT_RATE, dailyRateOn } from '../../lib/fleet';
 import { addDays, CASH_IN_TYPES, collected, driverDay, drives, endDateOf, kivuRevenue, moneyIn, moneyOut, onContract, PerfData, Period, weeksOf, within } from '../../lib/performance';
 
 const weekLabel = (start: string) => `Week of ${shortDay(start)}`;
@@ -28,7 +28,7 @@ export default function MoneyTab({ data, period: p }: { data: PerfData; period: 
       for (const d of data.drivers) {
         if (!drives(d) || !onContract(d, endDateOf(d, data.events), day)) continue;
         const st = driverDay(d, data.deposits.filter((x) => x.driver_id === d.id), day);
-        if (st === 'paid' || st === 'unpaid') expected += dailyRateOf(d);
+        if (st === 'paid' || st === 'unpaid') expected += dailyRateOn(d, day);
       }
     }
     const byType = (types: string[]) => tx.filter((t) => (t.status === 'posted' || t.status === 'approved') && t.direction === 'in' && types.includes(t.type) && within(t.transaction_date, w.start, w.end)).reduce((s, t) => s + Number(t.amount), 0);

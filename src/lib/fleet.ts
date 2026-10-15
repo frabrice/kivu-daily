@@ -225,7 +225,7 @@ export const REST_DAYS: { key: DriverRestDay; label: string; short: string }[] =
 // The weekly-payment rule lives in a dependency-free shared module so the
 // email notification engine computes exactly the same standing as the app.
 export * from '../../supabase/functions/_shared/depositRules';
-import { computeDepositStanding, daysUntilDate, countWorkingDays, contractPayments, dailyRateOf } from '../../supabase/functions/_shared/depositRules';
+import { computeDepositStanding, daysUntilDate, contractPayments, workingCost } from '../../supabase/functions/_shared/depositRules';
 import type { DepositLike, DepositPeriod, DepositStanding } from '../../supabase/functions/_shared/depositRules';
 
 export type DepositTier = 'red' | 'yellow' | 'green' | 'neutral';
@@ -372,7 +372,7 @@ export function contractSettlement(driver: Driver, deposits: DepositLike[], endD
   const deps = deposits.filter((d) => (d as { driver_id?: string }).driver_id === undefined || (d as { driver_id?: string }).driver_id === driver.id);
   if (!driver.start_date) return { owes: 0, credit: 0, paidThrough: null as string | null, totalPaid: 0 };
   const s = computeDepositStanding(driver, deps, endDate);
-  const cost = driver.start_date <= endDate ? countWorkingDays(driver.start_date, endDate, driver.rest_day, driver.pauses) * dailyRateOf(driver) : 0;
+  const cost = driver.start_date <= endDate ? workingCost(driver, driver.start_date, endDate) : 0;
   const paidByEnd = contractPayments(driver, deps).filter((p) => p.date <= endDate).reduce((t, p) => t + p.amount, 0);
   return { owes: Math.max(0, cost - paidByEnd), credit: Math.max(0, paidByEnd - cost), paidThrough: s.paidThrough, totalPaid: s.totalPaid };
 }

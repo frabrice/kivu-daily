@@ -15,6 +15,10 @@
 // A driver on BOTH shifts of a car (shift 'full', MD 15 Oct 2026) pays
 // double: 60,000 per working day, 360,000 for the week - same Sunday rule.
 //
+// A driver can switch between one shift and both shifts mid-contract:
+// drivers.rate_history ([{from, daily}]) keeps each rate from its date, so
+// past days keep the old rate (empty history = the rate of their shift).
+//
 // A renewed contract (drivers.payments_from / opening_credit) counts only
 // its own payments: deposits from payments_from on, the new first payment,
 // and any credit carried from the old contract (as paid on the start day).
@@ -25,6 +29,17 @@ export const DAILY_DEPOSIT_RATE = 30000;
 // Per driver: one shift = 30,000/day (180,000/week); both shifts = double.
 export const dailyRateOf = (d: { shift?: string | null }) => (d.shift === 'full' ? DAILY_DEPOSIT_RATE * 2 : DAILY_DEPOSIT_RATE);
 export const weeklyAmountOf = (d: { shift?: string | null }) => dailyRateOf(d) * 6;
+
+export interface RateChange { from: string; daily: number }
+// The daily rate on a given day, following any mid-contract shift change.
+export function dailyRateOn(d: { shift?: string | null; rate_history?: RateChange[] | null }, day: string): number {
+  const h = d.rate_history ?? [];
+  if (!h.length) return dailyRateOf(d);
+  const sorted = [...h].sort((a, b) => a.from.localeCompare(b.from));
+  let rate = sorted[0].daily;
+  for (const e of sorted) if (e.from <= day) rate = e.daily;
+  return Number(rate);
+}
 export const shiftLabel = (shift: string | null | undefined, long = false) =>
   shift === 'full' ? (long ? 'Both shifts (day & night)' : 'Day & night') : shift === 'day' ? (long ? 'Day shift' : 'Day') : shift === 'night' ? (long ? 'Night shift' : 'Night') : '';
 
@@ -71,6 +86,8 @@ export interface DepositDriverLike {
   payments_from?: string | null;
   // Credit carried from the previous contract, counted as paid on start_date.
   opening_credit?: number | null;
+  // Daily rate from each date (mid-contract shift changes).
+  rate_history?: RateChange[] | null;
 }
 
 // Every payment that counts for the driver's current contract, oldest first.
@@ -180,6 +197,14 @@ function countDays(from: string, to: string, include: (d: string) => boolean): n
   return n;
 }
 
+// What the working days from..to cost, at each day's own rate.
+export function workingCost(driver: DepositDriverLike, from: string, to: string): number {
+  const rest = restDayIso(driver.rest_day);
+  let total = 0;
+  for (let d = from; d <= to; d = shiftDay(d, 1)) if (isoWeekday(d) !== rest && !pauseOn(driver.pauses, d)) total += dailyRateOn(driver, d);
+  return total;
+}
+
 export function countWorkingDays(from: string, to: string, restDay: RestDayKey | null, pauses?: PauseLike[] | null): number {
   const rest = restDayIso(restDay);
   let n = 0;
@@ -190,7 +215,8 @@ export function countWorkingDays(from: string, to: string, restDay: RestDayKey |
 // The last day a given total covers, walking working days from the start
 // date at 30,000 each - a rest day right after the last paid working day
 // counts as covered too, since it costs nothing.
-export function paidThroughDate(startDate: string, restDay: RestDayKey | null, amount: number, pauses?: PauseLike[] | null, rate: number = DAILY_DEPOSIT_RATE): string | null {
+export function paidThroughDate(startDate: string, restDay: RestDayKey | null, amount: number, pauses?: PauseLike[] | null, rate: number | ((day: string) => number) = DAILY_DEPOSIT_RATE): string | null {
+  const rateOn = typeof rate === 'function' ? rate : () => rate;
   const rest = restDayIso(restDay);
   let remaining = amount;
   let last: string | null = null;
@@ -199,8 +225,9 @@ export function paidThroughDate(startDate: string, restDay: RestDayKey | null, a
     if (isoWeekday(d) === rest || pauseOn(pauses, d)) {
       last = d;
     } else {
-      if (remaining < rate) break;
-      remaining -= rate;
+      const r = rateOn(d);
+      if (remaining < r) break;
+      remaining -= r;
       last = d;
     }
     d = shiftDay(d, 1);
@@ -237,7 +264,7 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
   }
 
   const pauses = driver.pauses ?? [];
-  const costThrough = (d: string) => (d < start ? 0 : countWorkingDays(start, d, rest, pauses) * rate);
+  const costThrough = (d: string) => (d < start ? 0 : workingCost(driver, start, d));
   const paidToDate = payments.reduce((s, p) => (p.date <= today ? s + p.amount : s), 0);
   const clearedOn = (required: number): string | null => {
     let cum = 0;
@@ -285,7 +312,7 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     periods,
     current,
     totalPaid,
-    paidThrough: paidThroughDate(start, rest, paidToDate, pauses, rate),
+    paidThrough: paidThroughDate(start, rest, paidToDate, pauses, (day) => dailyRateOn(driver, day)),
     pausedToday: pauseOn(pauses, today),
     pausedDaysThisWeek: countDays(mondayOf(today), sundayOf(today), (d) => isoWeekday(d) !== restDayIso(rest) && !!pauseOn(pauses, d) && d >= start),
     owes,

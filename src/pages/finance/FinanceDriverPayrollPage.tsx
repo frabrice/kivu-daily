@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Wallet, Users2, Clock3, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFinanceData, DRIVER_MONTHLY_SALARY, STATUS_META, fmt, sumWhere } from '../../lib/finance';
+import { useFinanceData, DRIVER_MONTHLY_SALARY, DRIVER_MONTHLY_SALARY_BOTH_SHIFTS, STATUS_META, fmt, sumWhere } from '../../lib/finance';
 import { supabase, Driver, FinanceTransaction } from '../../lib/supabase';
 import { todayStr, dateStr, addMonths } from '../../lib/utils';
 import { formatDateLabelSafe } from '../../lib/fleet';
@@ -54,7 +54,7 @@ export default function FinanceDriverPayrollPage() {
     <div className="space-y-4">
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Users2 size={16} className="text-amber-600 dark:text-amber-300" /> Driver Payroll</h2>
-        <p className="text-caption text-fg-subtle mt-0.5">Flat {fmt(DRIVER_MONTHLY_SALARY)}/month per driver, counted from their own start date — paid from I&M.</p>
+        <p className="text-caption text-fg-subtle mt-0.5">Flat {fmt(DRIVER_MONTHLY_SALARY)}/month per driver ({fmt(DRIVER_MONTHLY_SALARY_BOTH_SHIFTS)} for a driver on both shifts), counted from their own start date — paid from I&M.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
