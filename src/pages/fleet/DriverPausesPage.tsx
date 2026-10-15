@@ -3,7 +3,7 @@ import { CalendarOff, PauseCircle } from 'lucide-react';
 import { supabase, Driver, PauseReason } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useDuties } from '../../lib/callTickets';
-import { canRecordPause, canReviewPause, countWorkingDays, DAILY_DEPOSIT_RATE, PAUSE_REASONS, useFleetData } from '../../lib/fleet';
+import { canRecordPause, canReviewPause, countWorkingDays, dailyRateOf, PAUSE_REASONS, useFleetData } from '../../lib/fleet';
 import PauseList, { isPausedOn } from '../../components/fleet/PauseList';
 import PauseDrawer from '../../components/fleet/PauseDrawer';
 
@@ -57,6 +57,7 @@ function View({ data }: { data: ReturnType<typeof useFleetData> }) {
     return [...rows.values()].sort((a, b) => b.days - a.days);
   }, [drivers, month, today]);
   const totalDays = summary.reduce((s, r) => s + r.days, 0);
+  const totalValue = summary.reduce((s, r) => s + r.days * dailyRateOf(r.driver), 0);
 
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-20 skeleton rounded-xl" />)}</div>;
   const active = drivers.filter((d) => d.contract_status === 'active').sort((a, b) => a.full_name.localeCompare(b.full_name));
@@ -96,7 +97,7 @@ function View({ data }: { data: ReturnType<typeof useFleetData> }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-body font-semibold">Days off in {new Date(`${month}-01T12:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</p>
-            <p className="text-caption text-fg-muted">{totalDays} working days paused · {rwf(totalDays * DAILY_DEPOSIT_RATE)} not charged (30,000 a day). Owner payments and salaries are unchanged.</p>
+            <p className="text-caption text-fg-muted">{totalDays} working days paused · {rwf(totalValue)} not charged (30,000 a day, 60,000 for drivers on both shifts). Owner payments and salaries are unchanged.</p>
           </div>
           <input type="month" value={month} max={today.slice(0, 7)} onChange={(e) => setMonth(e.target.value || today.slice(0, 7))} className="input py-1 text-small w-auto" aria-label="Month" />
         </div>
@@ -115,7 +116,7 @@ function View({ data }: { data: ReturnType<typeof useFleetData> }) {
                     <td className="py-1.5 pr-3 font-medium">{r.driver.full_name}<span className="block text-micro text-fg-muted font-normal">{r.driver.vehicle?.plate_number ?? ''}</span></td>
                     {PAUSE_REASONS.map((x) => <td key={x.key} className="py-1.5 pr-3 text-right tabular-nums">{r.byReason[x.key] ?? '—'}</td>)}
                     <td className="py-1.5 pr-3 text-right tabular-nums font-semibold">{r.days}</td>
-                    <td className="py-1.5 text-right tabular-nums">{rwf(r.days * DAILY_DEPOSIT_RATE)}</td>
+                    <td className="py-1.5 text-right tabular-nums">{rwf(r.days * dailyRateOf(r.driver))}</td>
                   </tr>
                 ))}
               </tbody>

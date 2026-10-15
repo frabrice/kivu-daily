@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, BedDouble, FileText } from 'lucide-react';
+import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, SunMoon, BedDouble, FileText } from 'lucide-react';
 import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay, DriverDocument } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { MANUAL_STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT, availableForReplacement, firstSundayPayment, formatRwf, formatDateLabelSafe } from '../../lib/fleet';
+import { MANUAL_STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT, availableForReplacement, firstSundayPayment, formatRwf, formatDateLabelSafe, shiftLabel, carSeats, seatFree, weeklyAmountOf, dailyRateOf } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import SearchableSelect from '../SearchableSelect';
@@ -55,8 +55,15 @@ export default function DriverDrawer({
 
   const replacementOptions = availableForReplacement(drivers, driver?.id).map((d) => ({ id: d.id, label: d.full_name, sublabel: d.phone }));
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
-  const shiftTakenBy = (s: DriverShift) => drivers.find((d) => d.vehicle_id === vehicleId && d.id !== driver?.id && d.shift === s);
-  const vehicleFull = !!selectedVehicle && drivers.filter((d) => d.vehicle_id === vehicleId && d.id !== driver?.id).length >= 2;
+  // A car has a day seat and a night seat; a driver on both shifts takes the whole car.
+  const seats = vehicleId ? carSeats(vehicleId, drivers, driver?.id) : null;
+  const vehicleFull = !!selectedVehicle && !seatFree(vehicleId, 'day', drivers, driver?.id) && !seatFree(vehicleId, 'night', drivers, driver?.id);
+  const weekly = weeklyAmountOf({ shift: shift || 'day' });
+  const pickShift = (s: DriverShift) => {
+    // Keep the upfront amount in step with the shift unless someone typed their own.
+    if (!initialDepositAmount || [String(weeklyAmountOf({ shift: 'day' })), String(weeklyAmountOf({ shift: 'full' }))].includes(initialDepositAmount)) setInitialDepositAmount(String(weeklyAmountOf({ shift: s })));
+    setShift(s);
+  };
 
   const save = async () => {
     if (!fullName.trim() || !phone.trim()) return;
@@ -177,14 +184,14 @@ export default function DriverDrawer({
         </div>
 
         {!driver && startDate && restDay && (() => {
-          const first = firstSundayPayment(startDate, restDay);
+          const first = firstSundayPayment(startDate, restDay, dailyRateOf({ shift: shift || 'day' }));
           return (
             <div className="p-2.5 rounded-lg border border-brand/30 bg-brand/5">
               <p className="text-caption font-medium mb-1">Payment schedule</p>
               <p className="text-micro text-fg-muted leading-relaxed">
-                {formatRwf(WEEKLY_DEPOSIT_AMOUNT)} on {formatDateLabelSafe(startDate)} before the first shift
+                {formatRwf(weekly)} on {formatDateLabelSafe(startDate)} before the first shift
                 {' → '}{formatRwf(first.amount)} by Sunday {formatDateLabelSafe(first.date)}
-                {' → '}{formatRwf(WEEKLY_DEPOSIT_AMOUNT)} every Sunday after.
+                {' → '}{formatRwf(weekly)} every Sunday after{shift === 'full' ? ' (both shifts: 60,000 a working day)' : ''}.
               </p>
             </div>
           );
@@ -214,7 +221,7 @@ export default function DriverDrawer({
                 <label className="block text-micro font-medium mb-1 text-fg-muted">Amount (RWF)</label>
                 <input type="number" value={initialDepositAmount} onChange={(e) => setInitialDepositAmount(e.target.value)} disabled={!editing} className="input" />
               </div>
-              <p className="text-micro text-fg-subtle col-span-2">This is the 180,000 paid upfront on the start day. Weekly payments are due every Sunday from then on; payroll counts from Start Date.</p>
+              <p className="text-micro text-fg-subtle col-span-2">This is the {formatRwf(weekly)} paid upfront on the start day. Weekly payments are due every Sunday from then on; payroll counts from Start Date.</p>
             </div>
           )}
         </div>
@@ -224,12 +231,12 @@ export default function DriverDrawer({
           <select value={vehicleId} onChange={(e) => { setVehicleId(e.target.value); setShift(''); }} disabled={!editing} className="input">
             <option value="">No vehicle assigned</option>
             {vehicles.map((v) => {
-              const others = drivers.filter((d) => d.vehicle_id === v.id && d.id !== driver?.id);
-              const full = others.length >= 2 && v.id !== driver?.vehicle_id;
+              const others = drivers.filter((d) => d.vehicle_id === v.id && d.id !== driver?.id && d.contract_status === 'active');
+              const full = !seatFree(v.id, 'day', drivers, driver?.id) && !seatFree(v.id, 'night', drivers, driver?.id) && v.id !== driver?.vehicle_id;
               return (
                 <option key={v.id} value={v.id} disabled={full}>
                   {v.plate_number}{v.make || v.model ? ` — ${[v.make, v.model].filter(Boolean).join(' ')}` : ''}
-                  {others.length > 0 ? ` (${others.map((d) => `${d.full_name}: ${d.shift === 'day' ? 'Day' : 'Night'}`).join(', ')})` : ''}
+                  {others.length > 0 ? ` (${others.map((d) => `${d.full_name}: ${shiftLabel(d.shift)}`).join(', ')})` : ''}
                   {full ? ' — full' : ''}
                 </option>
               );
@@ -250,26 +257,27 @@ export default function DriverDrawer({
               )}
               <div>
                 <p className="text-micro font-medium text-fg-muted mb-1">Shift</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['day', 'night'] as DriverShift[]).map((s) => {
-                    const taken = shiftTakenBy(s);
+                <div className="grid grid-cols-3 gap-2">
+                  {(['day', 'night', 'full'] as DriverShift[]).map((s) => {
+                    const free = seatFree(vehicleId, s, drivers, driver?.id);
+                    const taken = s === 'full' ? (seats?.full ?? seats?.day ?? seats?.night) : seats?.[s];
                     return (
                       <button
                         key={s}
                         type="button"
-                        disabled={!editing || !!taken}
-                        onClick={() => setShift(s)}
-                        className={`p-2 rounded-lg border text-left text-caption flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed ${
+                        disabled={!editing || !free}
+                        onClick={() => pickShift(s)}
+                        className={`p-2 rounded-lg border text-left text-caption disabled:opacity-40 disabled:cursor-not-allowed ${
                           shift === s ? 'border-brand bg-brand/10' : 'border-line '
                         }`}
                       >
-                        {s === 'day' ? <Sun size={12} /> : <Moon size={12} />}
-                        {s === 'day' ? 'Day' : 'Night'}
-                        {taken && <span className="text-micro text-fg-subtle">· {taken.full_name}</span>}
+                        <span className="flex items-center gap-1.5 font-medium">{s === 'day' ? <Sun size={12} /> : s === 'night' ? <Moon size={12} /> : <SunMoon size={12} />}{shiftLabel(s)}</span>
+                        <span className="block text-micro text-fg-subtle mt-0.5">{!free && taken ? taken.full_name : `${formatRwf(weeklyAmountOf({ shift: s }))}/week`}</span>
                       </button>
                     );
                   })}
                 </div>
+                {shift === 'full' && <p className="text-micro text-fg-muted mt-1.5">Works the day and the night shift: pays 60,000 per working day, {formatRwf(weeklyAmountOf({ shift: 'full' }))} by the start of each week. No other driver can be on this car.</p>}
               </div>
             </div>
           )}

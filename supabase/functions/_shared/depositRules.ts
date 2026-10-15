@@ -11,9 +11,22 @@
 // produces the new-driver rule on its own: 180,000 upfront on the start
 // day, then on the first Sunday a top-up for the days already driven,
 // then 180,000 every Sunday after.
+//
+// A driver on BOTH shifts of a car (shift 'full', MD 15 Oct 2026) pays
+// double: 60,000 per working day, 360,000 for the week - same Sunday rule.
+//
+// A renewed contract (drivers.payments_from / opening_credit) counts only
+// its own payments: deposits from payments_from on, the new first payment,
+// and any credit carried from the old contract (as paid on the start day).
 
 export const WEEKLY_DEPOSIT_AMOUNT = 180000;
 export const DAILY_DEPOSIT_RATE = 30000;
+
+// Per driver: one shift = 30,000/day (180,000/week); both shifts = double.
+export const dailyRateOf = (d: { shift?: string | null }) => (d.shift === 'full' ? DAILY_DEPOSIT_RATE * 2 : DAILY_DEPOSIT_RATE);
+export const weeklyAmountOf = (d: { shift?: string | null }) => dailyRateOf(d) * 6;
+export const shiftLabel = (shift: string | null | undefined, long = false) =>
+  shift === 'full' ? (long ? 'Both shifts (day & night)' : 'Day & night') : shift === 'day' ? (long ? 'Day shift' : 'Day') : shift === 'night' ? (long ? 'Night shift' : 'Night') : '';
 
 // First Monday the Sunday rule is enforced (payments due Sunday 11 Oct
 // 2026). Weeks before it ran on the old rolling 7-day cycle from each
@@ -53,6 +66,23 @@ export interface DepositDriverLike {
   initial_deposit_amount: number | null;
   initial_deposit_date: string | null;
   pauses?: PauseLike[] | null;
+  shift?: string | null;
+  // Current contract only (set on renewal): payments before this date belong to an old contract.
+  payments_from?: string | null;
+  // Credit carried from the previous contract, counted as paid on start_date.
+  opening_credit?: number | null;
+}
+
+// Every payment that counts for the driver's current contract, oldest first.
+export function contractPayments(driver: DepositDriverLike, deposits: DepositLike[]): { date: string; amount: number; order: string }[] {
+  const start = driver.start_date;
+  const initialAmount = driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0;
+  const credit = Number(driver.opening_credit ?? 0);
+  return [
+    ...(credit > 0 && start ? [{ date: start, amount: credit, order: '' }] : []),
+    ...(initialAmount > 0 ? [{ date: driver.initial_deposit_date ?? start ?? localToday(), amount: initialAmount, order: '' }] : []),
+    ...deposits.filter((d) => !driver.payments_from || d.paid_date >= driver.payments_from).map((d) => ({ date: d.paid_date, amount: Number(d.amount), order: d.created_at })),
+  ].sort((a, b) => a.date.localeCompare(b.date) || a.order.localeCompare(b.order));
 }
 
 export function pauseOn(pauses: PauseLike[] | null | undefined, d: string): PauseLike | null {
@@ -160,7 +190,7 @@ export function countWorkingDays(from: string, to: string, restDay: RestDayKey |
 // The last day a given total covers, walking working days from the start
 // date at 30,000 each - a rest day right after the last paid working day
 // counts as covered too, since it costs nothing.
-export function paidThroughDate(startDate: string, restDay: RestDayKey | null, amount: number, pauses?: PauseLike[] | null): string | null {
+export function paidThroughDate(startDate: string, restDay: RestDayKey | null, amount: number, pauses?: PauseLike[] | null, rate: number = DAILY_DEPOSIT_RATE): string | null {
   const rest = restDayIso(restDay);
   let remaining = amount;
   let last: string | null = null;
@@ -169,8 +199,8 @@ export function paidThroughDate(startDate: string, restDay: RestDayKey | null, a
     if (isoWeekday(d) === rest || pauseOn(pauses, d)) {
       last = d;
     } else {
-      if (remaining < DAILY_DEPOSIT_RATE) break;
-      remaining -= DAILY_DEPOSIT_RATE;
+      if (remaining < rate) break;
+      remaining -= rate;
       last = d;
     }
     d = shiftDay(d, 1);
@@ -182,10 +212,10 @@ export function paidThroughDate(startDate: string, restDay: RestDayKey | null, a
 // upfront - the working days already driven by then, or the normal
 // 180,000 when they start on a Monday. Before the rule starts, the first
 // enforced Sunday is the switch-over Sunday, not an earlier one.
-export function firstSundayPayment(startDate: string, restDay: RestDayKey | null): { date: string; amount: number } {
+export function firstSundayPayment(startDate: string, restDay: RestDayKey | null, rate: number = DAILY_DEPOSIT_RATE): { date: string; amount: number } {
   const switchoverSunday = shiftDay(SUNDAY_RULE_START, -1);
   const firstSunday = sundayOf(startDate) < switchoverSunday ? switchoverSunday : sundayOf(startDate);
-  const amount = countWorkingDays(startDate, shiftDay(firstSunday, 7), restDay) * DAILY_DEPOSIT_RATE - WEEKLY_DEPOSIT_AMOUNT;
+  const amount = countWorkingDays(startDate, shiftDay(firstSunday, 7), restDay) * rate - rate * 6;
   return { date: firstSunday, amount: Math.max(amount, 0) };
 }
 
@@ -193,23 +223,21 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
   const start = driver.start_date;
   const rest = driver.rest_day;
   const ruleInForce = today >= SUNDAY_RULE_START;
-  const initialAmount = driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0;
-  const payments = [
-    ...(initialAmount > 0 ? [{ date: driver.initial_deposit_date ?? start ?? today, amount: initialAmount, order: '' }] : []),
-    ...deposits.map((d) => ({ date: d.paid_date, amount: d.amount, order: d.created_at })),
-  ].sort((a, b) => a.date.localeCompare(b.date) || a.order.localeCompare(b.order));
+  const rate = dailyRateOf(driver);
+  const weekly = rate * 6;
+  const payments = contractPayments(driver, deposits);
   const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
 
   if (!start || start > today) {
     return {
       hasStarted: false, ruleInForce, periods: [], current: null, totalPaid, paidThrough: null, pausedToday: null, pausedDaysThisWeek: 0, owes: 0, weekBehind: 0,
-      isCleared: true, owedNow: 0, nextDueDate: start, nextDueAmount: Math.max(WEEKLY_DEPOSIT_AMOUNT - totalPaid, 0),
+      isCleared: true, owedNow: 0, nextDueDate: start, nextDueAmount: Math.max(weekly - totalPaid, 0),
       daysLost: 0, score: 0, onTimeWeeks: 0, lateWeeks: 0,
     };
   }
 
   const pauses = driver.pauses ?? [];
-  const costThrough = (d: string) => (d < start ? 0 : countWorkingDays(start, d, rest, pauses) * DAILY_DEPOSIT_RATE);
+  const costThrough = (d: string) => (d < start ? 0 : countWorkingDays(start, d, rest, pauses) * rate);
   const paidToDate = payments.reduce((s, p) => (p.date <= today ? s + p.amount : s), 0);
   const clearedOn = (required: number): string | null => {
     let cum = 0;
@@ -222,7 +250,7 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
 
   const raw: { start: string; end: string; required: number; isStartSegment: boolean }[] = [];
   if (start >= SUNDAY_RULE_START && isoWeekday(start) !== 1) {
-    raw.push({ start, end: sundayOf(start), required: WEEKLY_DEPOSIT_AMOUNT, isStartSegment: true });
+    raw.push({ start, end: sundayOf(start), required: weekly, isStartSegment: true });
   }
   const firstMonday = isoWeekday(start) === 1 ? start : shiftDay(mondayOf(start), 7);
   for (let m = firstMonday < SUNDAY_RULE_START ? SUNDAY_RULE_START : firstMonday; m <= today; m = shiftDay(m, 7)) {
@@ -257,7 +285,7 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     periods,
     current,
     totalPaid,
-    paidThrough: paidThroughDate(start, rest, paidToDate, pauses),
+    paidThrough: paidThroughDate(start, rest, paidToDate, pauses, rate),
     pausedToday: pauseOn(pauses, today),
     pausedDaysThisWeek: countDays(mondayOf(today), sundayOf(today), (d) => isoWeekday(d) !== restDayIso(rest) && !!pauseOn(pauses, d) && d >= start),
     owes,

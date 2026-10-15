@@ -1,6 +1,6 @@
 import {
-  computeDepositStanding, firstSundayPayment, sundayOf, shiftDay,
-  SUNDAY_RULE_START, WEEKLY_DEPOSIT_AMOUNT, type DepositStanding, type RestDayKey,
+  computeDepositStanding, firstSundayPayment, sundayOf, shiftDay, dailyRateOf, weeklyAmountOf, shiftLabel,
+  SUNDAY_RULE_START, type DepositStanding, type RestDayKey,
 } from "../_shared/depositRules.ts";
 import { ALL_DAYS, Block, Built, cached, Ctx, day, esc, hm, personName, plural, RuleDef, rows, rwf, Tone } from "./core.ts";
 
@@ -11,6 +11,7 @@ export interface DriverRow {
   id: string; full_name: string; phone: string | null; start_date: string | null; rest_day: RestDayKey | null;
   initial_deposit_paid: boolean; initial_deposit_amount: number | null; initial_deposit_date: string | null;
   contract_status: string; vehicle_id: string | null; shift: string | null; stage: string; created_at: string;
+  payments_from: string | null; opening_credit: number | null;
   vehicle: { plate_number: string } | null;
   pauses: { id: string; group_id: string; reason: string; note: string | null; start_date: string; end_date: string | null; approval_status: string; recorded_by: string | null; created_at: string }[];
 }
@@ -18,7 +19,7 @@ export interface DepositRow { id: string; driver_id: string; paid_date: string; 
 
 export function loadDrivers(ctx: Ctx) {
   return cached(ctx, "drivers", () => rows<DriverRow>(ctx.db.from("drivers").select(
-    "id, full_name, phone, start_date, rest_day, initial_deposit_paid, initial_deposit_amount, initial_deposit_date, contract_status, vehicle_id, shift, stage, created_at, vehicle:vehicles(plate_number), pauses:driver_pauses(id, group_id, reason, note, start_date, end_date, approval_status, recorded_by, created_at)",
+    "id, full_name, phone, start_date, rest_day, initial_deposit_paid, initial_deposit_amount, initial_deposit_date, contract_status, vehicle_id, shift, stage, created_at, payments_from, opening_credit, vehicle:vehicles(plate_number), pauses:driver_pauses(id, group_id, reason, note, start_date, end_date, approval_status, recorded_by, created_at)",
   )));
 }
 
@@ -41,7 +42,7 @@ export async function activeStandings(ctx: Ctx, today = ctx.today): Promise<Stan
     .sort((a, b) => a.d.full_name.localeCompare(b.d.full_name));
 }
 
-export const car = (d: DriverRow) => `${d.vehicle?.plate_number ?? "—"}${d.shift ? ` (${d.shift})` : ""}`;
+export const car = (d: DriverRow) => `${d.vehicle?.plate_number ?? "—"}${d.shift ? ` (${shiftLabel(d.shift).toLowerCase()})` : ""}`;
 const switchoverSunday = shiftDay(SUNDAY_RULE_START, -1);
 
 async function sundayLists(key: "call" | "unpaid", ctx: Ctx, force: boolean): Promise<Built[]> {
@@ -286,13 +287,14 @@ export const driverRules: Record<string, RuleDef> = {
     build: async (payload, ctx) => {
       const d = (await loadDrivers(ctx)).find((x) => x.id === payload.driver_id);
       if (!d) return null;
-      const first = d.start_date ? firstSundayPayment(d.start_date, d.rest_day) : null;
+      const first = d.start_date ? firstSundayPayment(d.start_date, d.rest_day, dailyRateOf(d)) : null;
       return {
         subject: `New driver: ${d.full_name}${d.start_date ? ` starts ${day(d.start_date)}` : ""}`,
         heading: `New driver: ${esc(d.full_name)}`,
         intro: d.start_date && first
           ? `${esc(d.full_name)} (${esc(d.phone ?? "no phone")}) starts on <b>${day(d.start_date)}</b>${d.rest_day ? `, resting on ${d.rest_day}s` : ""}.`
-            + `<br><br><b>${rwf(WEEKLY_DEPOSIT_AMOUNT)}</b> is due before the first shift${d.initial_deposit_paid ? " (already recorded as paid)" : ""}, then <b>${rwf(first.amount)}</b> by ${day(first.date)}, then ${rwf(WEEKLY_DEPOSIT_AMOUNT)} every Sunday.`
+            + (d.shift === "full" ? "<br><br>Works <b>both shifts</b> of the car (day and night)." : "")
+            + `<br><br><b>${rwf(weeklyAmountOf(d))}</b> is due before the first shift${d.initial_deposit_paid ? " (already recorded as paid)" : ""}, then <b>${rwf(first.amount)}</b> by ${day(first.date)}, then ${rwf(weeklyAmountOf(d))} every Sunday.`
           : `${esc(d.full_name)} was added without a start date yet — their payment schedule starts once one is set.`,
         inApp: `New driver ${d.full_name}${d.start_date ? ` starts ${day(d.start_date)}` : ""}`,
       };

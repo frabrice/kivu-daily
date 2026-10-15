@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { BadgeCheck, CalendarOff, Gavel, UserRound, Wallet, XCircle } from 'lucide-react';
 import { ChartCard, Kpi, pct, RankBars, rwf, rwfShort, usePalette } from '../../components/charts/kit';
-import { PAUSE_REASON_LABEL } from '../../lib/fleet';
+import { PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
 import { PauseReason } from '../../lib/supabase';
 import { driverRows, DriverRow, PerfData, Period } from '../../lib/performance';
 import { EntityLink } from '../../os/EntityLink';
@@ -90,7 +90,7 @@ export default function DriversTab({ data, period: p }: { data: PerfData; period
                 return (
                   <tr key={r.driver.id} className={`border-t border-line-muted ${r.end ? 'opacity-60' : ''}`}>
                     <td className="py-2 pr-3 whitespace-nowrap"><EntityLink type="driver" id={r.driver.id} label={r.driver.full_name} /></td>
-                    <td className="py-2 pr-3 whitespace-nowrap text-fg-muted">{r.driver.vehicle?.plate_number ?? '—'}{r.driver.shift ? ` · ${r.driver.shift === 'day' ? 'Day' : 'Night'}` : ''}</td>
+                    <td className="py-2 pr-3 whitespace-nowrap text-fg-muted">{r.driver.vehicle?.plate_number ?? '—'}{r.driver.shift ? ` · ${shiftLabel(r.driver.shift)}` : ''}</td>
                     <td className={`py-2 pr-3 text-right tabular-nums ${rel !== null && rel < 80 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}`}>{rel === null ? '—' : `${rel}%`}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{r.paid}</td>
                     <td className={`py-2 pr-3 text-right tabular-nums ${r.unpaid ? 'text-red-600 dark:text-red-400' : 'text-fg-subtle'}`}>{r.unpaid || '—'}</td>

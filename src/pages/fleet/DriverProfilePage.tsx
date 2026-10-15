@@ -5,17 +5,17 @@ import {
   Wallet, Receipt, TrendingUp, Smartphone, Landmark, ShieldCheck, ShieldAlert,
   UserX, UserCheck, History,
 } from 'lucide-react';
-import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent } from '../../lib/supabase';
+import { Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, Vehicle } from '../../lib/supabase';
 import {
   STAGES, effectiveStage, REST_DAYS, DEPOSIT_TIER_STYLE, depositRemainingColor, formatDateLabelSafe,
   computeDepositStanding, depositStandingTier, depositStandingLabel, depositPeriodLabel, paidThroughDate, formatRwf, SUNDAY_RULE_START,
   fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, canSeeDriverPayments, canRecordPause, canReviewPause, PAUSE_REASON_LABEL,
-} from '../../lib/fleet';
+  CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN, dailyRateOf, shiftLabel } from '../../lib/fleet';
 import { useAuth } from '../../lib/auth';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import EndContractDrawer from '../../components/fleet/EndContractDrawer';
-import ReactivateDriverDrawer from '../../components/fleet/ReactivateDriverDrawer';
+import RenewContractDrawer from '../../components/fleet/RenewContractDrawer';
 import PauseDrawer from '../../components/fleet/PauseDrawer';
 import PauseList, { isPausedOn } from '../../components/fleet/PauseList';
 import { useDuties } from '../../lib/callTickets';
@@ -34,6 +34,7 @@ export default function DriverProfilePage({
   onEdit,
   reload,
   embedded = false,
+  vehicles = [],
 }: {
   driver: Driver;
   drivers: Driver[];
@@ -47,6 +48,7 @@ export default function DriverProfilePage({
   reload: () => void;
   // Inside the Kivu OS driver page: no back button or identity card (the page header has them).
   embedded?: boolean;
+  vehicles?: Vehicle[];
 }) {
   const [flagOpen, setFlagOpen] = useState(false);
   const [loggingDeposit, setLoggingDeposit] = useState(false);
@@ -81,11 +83,13 @@ export default function DriverProfilePage({
   // the list reads as "this payment carried them through X".
   const paidThroughAfter = new Map<string, string | null>();
   if (driver.start_date) {
-    let cumulative = driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0;
-    paidThroughAfter.set('initial', cumulative > 0 ? paidThroughDate(driver.start_date, driver.rest_day, cumulative) : null);
-    for (const dep of [...driverDeposits].sort((a, b) => a.paid_date.localeCompare(b.paid_date) || a.created_at.localeCompare(b.created_at))) {
+    // Only this contract's money counts (a renewed contract starts again), at the driver's own rate.
+    const rate = dailyRateOf(driver);
+    let cumulative = Number(driver.opening_credit ?? 0) + (driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0);
+    paidThroughAfter.set('initial', cumulative > 0 ? paidThroughDate(driver.start_date, driver.rest_day, cumulative, driver.pauses, rate) : null);
+    for (const dep of [...driverDeposits].filter((d) => !driver.payments_from || d.paid_date >= driver.payments_from).sort((a, b) => a.paid_date.localeCompare(b.paid_date) || a.created_at.localeCompare(b.created_at))) {
       cumulative += dep.amount;
-      paidThroughAfter.set(dep.id, paidThroughDate(driver.start_date, driver.rest_day, cumulative));
+      paidThroughAfter.set(dep.id, paidThroughDate(driver.start_date, driver.rest_day, cumulative, driver.pauses, rate));
     }
   }
 
@@ -116,7 +120,7 @@ export default function DriverProfilePage({
           {canEdit && (
             isEnded ? (
               <button onClick={() => setReactivateOpen(true)} className="btn-primary flex items-center gap-1.5">
-                <UserCheck size={13} /> Reactivate
+                <UserCheck size={13} /> Renew contract
               </button>
             ) : (
               <button onClick={() => setEndContractOpen(true)} className="btn-ghost text-red-500 flex items-center gap-1.5">
@@ -169,7 +173,7 @@ export default function DriverProfilePage({
             {driver.vehicle ? (
               <span className="inline-flex items-center gap-1 text-micro font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
                 <Car size={10} /> {driver.vehicle.plate_number}
-                {driver.shift && <span>· {driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
+                {driver.shift && <span>· {shiftLabel(driver.shift, true)}</span>}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-micro font-medium text-fg-muted bg-inset px-2 py-0.5 rounded-full">
@@ -463,11 +467,12 @@ export default function DriverProfilePage({
                 <div className="flex items-center justify-between gap-2 text-caption">
                   <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${e.event_type === 'ended' ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'}`}>
                     {e.event_type === 'ended' ? <UserX size={10} /> : <UserCheck size={10} />}
-                    {e.event_type === 'ended' ? 'Ended' : 'Reactivated'}
+                    {e.event_type === 'ended' ? 'Ended' : e.event_type === 'renewed' ? 'Renewed' : 'Reactivated'}
                   </span>
                   <span className="text-fg-subtle shrink-0">{formatDateLabelSafe(e.event_date)}</span>
                 </div>
                 <p className="text-caption text-fg-muted mt-1">{e.reason}</p>
+                <ContractEventFacts meta={e.meta} type={e.event_type} />
                 {e.details && <p className="text-caption text-fg-subtle mt-0.5">{e.details}</p>}
               </div>
             ))}
@@ -496,18 +501,51 @@ export default function DriverProfilePage({
       {endContractOpen && (
         <EndContractDrawer
           driver={driver}
+          deposits={deposits}
+          fines={fines}
+          finePayments={finePayments}
           onClose={() => setEndContractOpen(false)}
           onSaved={reload}
         />
       )}
 
       {reactivateOpen && (
-        <ReactivateDriverDrawer
+        <RenewContractDrawer
           driver={driver}
+          drivers={drivers}
+          vehicles={vehicles}
+          deposits={deposits}
+          contractEvents={contractEvents}
           onClose={() => setReactivateOpen(false)}
           onSaved={reload}
         />
       )}
     </div>
   );
+}
+
+// The structured part of a contract event: who decided, money at the end,
+// or what the renewal set up.
+function ContractEventFacts({ meta, type }: { meta?: Record<string, unknown> | null; type: string }) {
+  if (!meta) return null;
+  const m = meta as Record<string, string | number | string[] | null | undefined>;
+  const items: string[] = [];
+  if (type === 'ended') {
+    const by = CONTRACT_END_DECIDED_BY.find((d) => d.key === m.decided_by)?.label;
+    const back = CONTRACT_CAN_RETURN.find((c) => c.key === m.can_return)?.label;
+    if (by) items.push(by);
+    if (back) items.push(`Come back: ${back.toLowerCase()}`);
+    if (Number(m.owed) > 0) items.push(`Owed ${formatRwf(Number(m.owed))}`);
+    if (Number(m.credit) > 0) items.push(`${formatRwf(Number(m.credit))} paid ahead`);
+    if (Number(m.fines_unpaid) > 0) items.push(`Unpaid fines ${formatRwf(Number(m.fines_unpaid))}`);
+  }
+  if (type === 'renewed') {
+    if (m.shift) items.push(shiftLabel(String(m.shift), true));
+    if (Number(m.first_payment) > 0) items.push(`First payment ${formatRwf(Number(m.first_payment))}`);
+    if (Number(m.opening_credit) > 0) items.push(`Credit carried ${formatRwf(Number(m.opening_credit))}`);
+    if (m.agreed_next_payment) items.push(`Next payment agreed for ${formatDateLabelSafe(String(m.agreed_next_payment))}`);
+    if (Array.isArray(m.changes) && m.changes.length) items.push(`Changed: ${m.changes.join(', ')}`);
+  }
+  if (!items.length) return null;
+  return <p className="text-caption text-fg-subtle mt-0.5">{items.join(' · ')}</p>;
 }

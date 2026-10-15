@@ -3,7 +3,7 @@ import { ShieldCheck, Smartphone, Landmark } from 'lucide-react';
 import { supabase, Driver, DriverDeposit, DepositPaymentMethod } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { todayStr } from '../../lib/utils';
-import { WEEKLY_DEPOSIT_AMOUNT, DEPOSIT_PAYMENT_METHODS, formatDateLabelSafe, computeDepositStanding, formatRwf } from '../../lib/fleet';
+import { weeklyAmountOf, DEPOSIT_PAYMENT_METHODS, formatDateLabelSafe, computeDepositStanding, formatRwf } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 
@@ -15,7 +15,7 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
   const driverDeposits = useMemo(() => deposits.filter((d) => d.driver_id === driver.id), [deposits, driver.id]);
   const before = useMemo(() => computeDepositStanding(driver, driverDeposits), [driver, driverDeposits]);
   // Suggest clearing the whole week (Behind); otherwise what's due Sunday.
-  const suggested = before.weekBehind > 0 ? before.weekBehind : before.nextDueAmount > 0 ? before.nextDueAmount : WEEKLY_DEPOSIT_AMOUNT;
+  const suggested = before.weekBehind > 0 ? before.weekBehind : before.nextDueAmount > 0 ? before.nextDueAmount : weeklyAmountOf(driver);
   const [amount, setAmount] = useState(String(suggested));
   const [paidDate, setPaidDate] = useState(todayStr());
   const [paymentMethod, setPaymentMethod] = useState<DepositPaymentMethod>('momo');

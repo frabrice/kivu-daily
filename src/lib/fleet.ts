@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, DriverDocument, DriverDocumentType, DriverStage, DriverContractStatus, DriverRestDay, DepositPaymentMethod, Profile } from './supabase';
+import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, DriverDocument, DriverDocumentType, DriverStage, DriverContractStatus, DriverRestDay, DriverShift, DepositPaymentMethod, Profile } from './supabase';
 import { todayStr } from './utils';
 
 // Who may change Fleet data - kept in step with the RLS policies. Call
@@ -130,6 +130,7 @@ interface StageLike {
   vehicle_id: string | null;
   initial_deposit_paid: boolean;
   contract_status: DriverContractStatus;
+  opening_credit?: number | null;
 }
 
 // 'Active' is never something Fleet sets directly - it's true exactly
@@ -140,7 +141,8 @@ interface StageLike {
 // longer qualify (car reassigned, contract ended), this falls back to
 // 'ready' rather than trusting the stale stored value.
 export function effectiveStage<T extends StageLike>(driver: T): DriverStage {
-  const isActive = driver.contract_status === 'active' && !!driver.vehicle_id && driver.initial_deposit_paid;
+  // A renewed driver whose only money is credit carried from the old contract counts too.
+  const isActive = driver.contract_status === 'active' && !!driver.vehicle_id && (driver.initial_deposit_paid || Number(driver.opening_credit ?? 0) > 0);
   if (isActive) return 'active';
   return driver.stage === 'active' ? 'ready' : driver.stage;
 }
@@ -153,13 +155,57 @@ export function availableForReplacement(drivers: Driver[], excludeDriverId?: str
   return drivers.filter((d) => d.contract_status === 'ended' && d.id !== excludeDriverId && !claimed.has(d.id));
 }
 
-export const CONTRACT_END_REASONS: { key: string; label: string }[] = [
-  { key: 'missed_deposits', label: 'Failure to make weekly deposits' },
-  { key: 'another_job', label: 'Found another job' },
-  { key: 'personal_reasons', label: 'Personal reasons' },
-  { key: 'medical', label: 'Medical / sickness' },
-  { key: 'other', label: 'Other' },
+// Why a contract ends, grouped for the dropdown. Keys are stored on the
+// contract event (reason_key) so the reasons can be counted later.
+export const CONTRACT_END_REASONS: { key: string; label: string; group: string }[] = [
+  { key: 'missed_deposits', label: 'Did not pay the weekly deposits', group: 'Payments' },
+  { key: 'late_payments', label: 'Kept paying late', group: 'Payments' },
+  { key: 'commission_unpaid', label: 'Did not pay the commission on cash trips', group: 'Payments' },
+  { key: 'fines_unpaid', label: 'Unpaid traffic fines', group: 'Payments' },
+  { key: 'no_show', label: 'Stopped coming / left the car unused', group: 'Conduct and safety' },
+  { key: 'misconduct', label: 'Misconduct or complaints from passengers', group: 'Conduct and safety' },
+  { key: 'reckless_driving', label: 'Reckless driving, accidents or damage to the car', group: 'Conduct and safety' },
+  { key: 'traffic_offences', label: 'Repeated traffic offences', group: 'Conduct and safety' },
+  { key: 'fraud', label: 'Fraud or dishonesty (hidden trips, false records)', group: 'Conduct and safety' },
+  { key: 'code_of_conduct', label: 'Broke the driver code of conduct', group: 'Conduct and safety' },
+  { key: 'documents', label: 'Licence or documents expired, suspended or invalid', group: 'Conduct and safety' },
+  { key: 'another_job', label: 'Found another job', group: "Driver's choice" },
+  { key: 'relocated', label: 'Moved away from Kigali', group: "Driver's choice" },
+  { key: 'personal_reasons', label: 'Personal or family reasons', group: "Driver's choice" },
+  { key: 'medical', label: 'Sickness or medical reasons', group: "Driver's choice" },
+  { key: 'resigned', label: 'Resigned without a reason', group: "Driver's choice" },
+  { key: 'car_withdrawn', label: 'The owner took the car back or sold it', group: 'Car or company' },
+  { key: 'car_off_road', label: 'Car off the road for a long time (repairs, accident)', group: 'Car or company' },
+  { key: 'term_ended', label: 'The agreed term came to an end', group: 'Car or company' },
+  { key: 'restructuring', label: 'Fewer cars or drivers needed', group: 'Car or company' },
+  { key: 'moved_to_full_shift', label: 'Another driver took both shifts of the car', group: 'Car or company' },
+  { key: 'other', label: 'Other (write it in)', group: 'Other' },
 ];
+export const CONTRACT_END_DECIDED_BY = [
+  { key: 'kivu', label: 'Kivu Ride ended it' },
+  { key: 'driver', label: 'The driver left' },
+  { key: 'mutual', label: 'Agreed together' },
+] as const;
+export const CONTRACT_CAN_RETURN = [
+  { key: 'yes', label: 'Yes, welcome back' },
+  { key: 'conditions', label: 'Only under conditions' },
+  { key: 'no', label: 'No, do not rehire' },
+] as const;
+
+// Why a contract is renewed.
+export const CONTRACT_RENEW_REASONS: { key: string; label: string }[] = [
+  { key: 'paid_owed', label: 'Paid what they owed' },
+  { key: 'issue_fixed', label: 'The problem was fixed' },
+  { key: 'back_from_sickness', label: 'Back from sickness or leave' },
+  { key: 'back_from_job', label: 'Came back from another job' },
+  { key: 'returned_to_kigali', label: 'Back in Kigali' },
+  { key: 'car_available', label: 'A car became available' },
+  { key: 'second_chance', label: 'Second chance after a warning' },
+  { key: 'new_terms', label: 'New agreement or new way of working' },
+  { key: 'other', label: 'Other (write it in)' },
+];
+// What changed in how they work, ticked on renewal.
+export const CONTRACT_RENEW_CHANGES = ['New car', 'New shift', 'Now on both shifts', 'New rest day', 'New payment terms', 'Probation period', 'Extra training'] as const;
 
 export const DEPOSIT_PAYMENT_METHODS: { key: DepositPaymentMethod; label: string }[] = [
   { key: 'momo', label: 'MoMo' },
@@ -179,7 +225,7 @@ export const REST_DAYS: { key: DriverRestDay; label: string; short: string }[] =
 // The weekly-payment rule lives in a dependency-free shared module so the
 // email notification engine computes exactly the same standing as the app.
 export * from '../../supabase/functions/_shared/depositRules';
-import { computeDepositStanding, daysUntilDate } from '../../supabase/functions/_shared/depositRules';
+import { computeDepositStanding, daysUntilDate, countWorkingDays, contractPayments, dailyRateOf } from '../../supabase/functions/_shared/depositRules';
 import type { DepositLike, DepositPeriod, DepositStanding } from '../../supabase/functions/_shared/depositRules';
 
 export type DepositTier = 'red' | 'yellow' | 'green' | 'neutral';
@@ -303,4 +349,30 @@ export function formatDateLabelSafe(d: string): string {
   } catch {
     return d;
   }
+}
+
+// ---------------------------------------------------------------- seats
+// A car has a day seat and a night seat; a driver on both shifts ('full')
+// takes the whole car. The database enforces the same rule (check_driver_seat).
+export function carSeats(vehicleId: string, drivers: Driver[], excludeDriverId?: string) {
+  const on = drivers.filter((d) => d.vehicle_id === vehicleId && d.contract_status === 'active' && d.id !== excludeDriverId && d.shift);
+  const full = on.find((d) => d.shift === 'full') ?? null;
+  return { day: full ?? on.find((d) => d.shift === 'day') ?? null, night: full ?? on.find((d) => d.shift === 'night') ?? null, full };
+}
+export function seatFree(vehicleId: string, shift: DriverShift, drivers: Driver[], excludeDriverId?: string): boolean {
+  const s = carSeats(vehicleId, drivers, excludeDriverId);
+  return shift === 'full' ? !s.day && !s.night : !s[shift];
+}
+
+// ---------------------------------------------------------------- contract settlement
+// Where a driver stands on the day their contract ends: what they still
+// owe for days driven, or how much they had paid beyond it (credit that
+// can be carried into a renewed contract).
+export function contractSettlement(driver: Driver, deposits: DepositLike[], endDate: string) {
+  const deps = deposits.filter((d) => (d as { driver_id?: string }).driver_id === undefined || (d as { driver_id?: string }).driver_id === driver.id);
+  if (!driver.start_date) return { owes: 0, credit: 0, paidThrough: null as string | null, totalPaid: 0 };
+  const s = computeDepositStanding(driver, deps, endDate);
+  const cost = driver.start_date <= endDate ? countWorkingDays(driver.start_date, endDate, driver.rest_day, driver.pauses) * dailyRateOf(driver) : 0;
+  const paidByEnd = contractPayments(driver, deps).filter((p) => p.date <= endDate).reduce((t, p) => t + p.amount, 0);
+  return { owes: Math.max(0, cost - paidByEnd), credit: Math.max(0, paidByEnd - cost), paidThrough: s.paidThrough, totalPaid: s.totalPaid };
 }

@@ -55,10 +55,11 @@ export interface Department {
 // writing it directly.
 export type DriverStage = 'applying' | 'raw' | 'ready' | 'active' | 'flagged' | 'inactive';
 export type RuraLicenseStatus = 'pending' | 'provided';
-export type DriverShift = 'day' | 'night';
+// 'full' = both shifts of the car (pays double: 360,000 a week).
+export type DriverShift = 'day' | 'night' | 'full';
 export type DriverRestDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 export type DriverContractStatus = 'active' | 'ended';
-export type ContractEventType = 'ended' | 'reactivated';
+export type ContractEventType = 'ended' | 'reactivated' | 'renewed';
 
 export type PaymentDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
@@ -139,6 +140,10 @@ export interface Driver {
   rest_day: DriverRestDay | null;
   contract_status: DriverContractStatus;
   replaced_driver_id: string | null;
+  // Current contract (set on renewal): payments before this date belong to the old contract.
+  payments_from?: string | null;
+  // Credit carried from the previous contract, counted as paid on start_date.
+  opening_credit?: number | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -164,8 +169,12 @@ export interface DriverContractEvent {
   driver_id: string;
   event_type: ContractEventType;
   reason: string;
+  reason_key?: string | null;
   details: string | null;
   event_date: string;
+  // Ended: decided_by, can_return, owed, fines_unpaid, paid_through, credit.
+  // Renewed: previous_start/end, first_payment, opening_credit, vehicle_id, shift, rest_day, changes[], agreed_next_payment.
+  meta?: Record<string, unknown> | null;
   created_by: string | null;
   created_at: string;
 }

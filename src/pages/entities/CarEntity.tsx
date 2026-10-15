@@ -5,7 +5,7 @@ import { EntityViewProps } from '../../os/peek';
 import { EntityLink, useEntityMeta } from '../../os/EntityLink';
 import { useAuth } from '../../lib/auth';
 import { supabase, FinanceTransaction, VehicleOwner } from '../../lib/supabase';
-import { useFleetData, canEditFleet, computeDepositStanding, formatDateLabelSafe, pauseOn, PAUSE_REASON_LABEL } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositStanding, formatDateLabelSafe, pauseOn, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
 import { TYPE_META } from '../../lib/finance';
 import { addDays, carDay, CarDayState, PerfData, today } from '../../lib/performance';
 import { Box, Details, EmptyState, Heatmap, Label, ObjectLayout, PageHeader, StatCard, StatGrid, Timeline, TimelineItem, UnderlineTabs, rwf } from '../../ui/kit';
@@ -112,7 +112,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
             return (
               <li key={d.id} className="flex items-center gap-3 px-4 py-2.5">
                 <Truck size={15} className="text-fg-subtle" />
-                <div className="flex-1 min-w-0"><EntityLink type="driver" id={d.id} label={d.full_name} /><p className="text-caption text-fg-muted">{d.shift ? `${d.shift === 'day' ? 'Day' : 'Night'} shift` : 'No shift'}{d.start_date ? ` · since ${formatDateLabelSafe(d.start_date)}` : ''}</p></div>
+                <div className="flex-1 min-w-0"><EntityLink type="driver" id={d.id} label={d.full_name} /><p className="text-caption text-fg-muted">{d.shift ? `${shiftLabel(d.shift)} shift` : 'No shift'}{d.start_date ? ` · since ${formatDateLabelSafe(d.start_date)}` : ''}</p></div>
                 {ended ? <Label>Ended</Label> : s && !s.isCleared ? <Label tone="danger">Owes {rwf(s.owes)}</Label> : <Label tone="success">Paid up</Label>}
               </li>
             );

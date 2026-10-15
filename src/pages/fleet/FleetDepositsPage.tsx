@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe, PAUSE_REASON_LABEL } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import { EntityLink } from '../../os/EntityLink';
@@ -58,7 +58,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
             <Wallet size={16} className="text-blue-600 dark:text-blue-300" /> Deposits
             {overdueCount > 0 && <span className="text-micro font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{overdueCount}</span>}
           </h2>
-          <p className="text-caption text-fg-subtle mt-0.5">Every driver pays 180,000 by Sunday for the Monday–Sunday week ahead. Unpaid on Monday means not cleared to drive.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Every driver pays 180,000 by Sunday for the Monday–Sunday week ahead (360,000 for a driver on both shifts). Unpaid on Monday means not cleared to drive.</p>
         </div>
         <div className="relative">
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
@@ -80,7 +80,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                 </p>
                 <p className="text-micro text-fg-subtle flex items-center gap-1">
                   <Car size={10} /> {row.driver.vehicle?.plate_number}
-                  {row.driver.shift && <span>· {row.driver.shift === 'day' ? 'Day shift' : 'Night shift'}</span>}
+                  {row.driver.shift && <span>· {shiftLabel(row.driver.shift, true)}</span>}
                 </p>
                 {!row.isEnded && depositOwesLabel(row.standing) && (
                   <p className="text-micro font-semibold mt-0.5 text-red-600 dark:text-red-400">{depositOwesLabel(row.standing)} for days already worked</p>

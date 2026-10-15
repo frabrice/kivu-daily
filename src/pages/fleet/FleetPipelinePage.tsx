@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, Phone, Car, Truck } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL } from '../../lib/fleet';
+import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
 import { isPausedOn } from '../../components/fleet/PauseList';
 
 const kigaliToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
@@ -70,6 +70,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
           fines={fines}
           finePayments={finePayments}
           contractEvents={contractEvents}
+          vehicles={vehicles}
           canEdit={canEdit}
           onBack={() => setViewingDriverId(null)}
           onEdit={() => setDriverDrawer({ driver: viewingDriver, startEditing: true })}
@@ -146,7 +147,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                     {d.vehicle ? (
                       <p className="text-micro text-brand-600 dark:text-brand-300 flex items-center gap-1 mt-1">
                         <Car size={10} /> {d.vehicle.plate_number}
-                        {d.shift && <span className="text-fg-subtle">· {d.shift === 'day' ? 'Day' : 'Night'}</span>}
+                        {d.shift && <span className="text-fg-subtle">· {shiftLabel(d.shift)}</span>}
                       </p>
                     ) : (
                       <p className="text-micro text-fg-subtle mt-1">
@@ -187,7 +188,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
               },
             },
             { header: 'Vehicle', render: (d) => d.vehicle ? <EntityLink type="car" id={d.vehicle.id} label={d.vehicle.plate_number} className="font-mono" /> : '—' },
-            { header: 'Shift', render: (d) => (d.shift ? (d.shift === 'day' ? 'Day' : 'Night') : '—') },
+            { header: 'Shift', render: (d) => (d.shift ? (shiftLabel(d.shift)) : '—') },
             {
               header: '',
               className: 'text-right',

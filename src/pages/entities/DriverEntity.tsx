@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Banknote, BedDouble, CalendarOff, Car, CircleDollarSign, FileText, Gavel, History, LayoutGrid, PauseCircle, Pencil, Phone, Truck,
-  UserX, Wallet, XCircle,
+  UserX, Wallet, XCircle, RotateCcw,
 } from 'lucide-react';
 import { EntityViewProps } from '../../os/peek';
 import { EntityLink, useEntityMeta } from '../../os/EntityLink';
@@ -9,8 +9,7 @@ import { useAuth } from '../../lib/auth';
 import { useDuties } from '../../lib/callTickets';
 import {
   useFleetData, canEditFleet, canRecordPause, computeDepositStanding, STAGES, effectiveStage, REST_DAYS, PAUSE_REASON_LABEL, formatDateLabelSafe,
-  fineAmountPaid, pauseOn,
-} from '../../lib/fleet';
+  fineAmountPaid, pauseOn, shiftLabel } from '../../lib/fleet';
 import { addDays, driverDay, endDateOf, onContract, today } from '../../lib/performance';
 import { Box, Details, EmptyState, Heatmap, HeatCell, Label, ObjectLayout, PageHeader, StatCard, StatGrid, Timeline, TimelineItem, UnderlineTabs, rwf } from '../../ui/kit';
 import DriverProfilePage from '../fleet/DriverProfilePage';
@@ -19,6 +18,8 @@ import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import PauseDrawer from '../../components/fleet/PauseDrawer';
 import DriverCasesList from '../../components/callTickets/DriverCasesList';
 import DriverDocumentsSection from '../../components/fleet/DriverDocumentsSection';
+import EndContractDrawer from '../../components/fleet/EndContractDrawer';
+import RenewContractDrawer from '../../components/fleet/RenewContractDrawer';
 
 type Tab = 'overview' | 'money' | 'cases' | 'documents';
 const DAY_COLOR = { paid: '#2a78d6', unpaid: '#eb6834', paused: '#1baf7a', rest: 'rgb(var(--c-line-strong))', none: 'rgb(var(--c-line-muted))' };
@@ -35,6 +36,8 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
   const [editing, setEditing] = useState(false);
   const [logging, setLogging] = useState(false);
   const [pausing, setPausing] = useState(false);
+  const [ending, setEnding] = useState(false);
+  const [renewing, setRenewing] = useState(false);
   const canEdit = canEditFleet(profile);
   const canPause = canRecordPause(profile, duties);
   useEntityMeta('driver', id, mode, driver?.full_name, driver?.vehicle?.plate_number);
@@ -93,7 +96,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
     <Box title="Details" padded>
       <Details items={[
         { label: 'Car', value: car ? <EntityLink type="car" id={car.id} label={car.plate_number} /> : 'No car' },
-        { label: 'Shift', value: driver.shift ? `${driver.shift === 'day' ? 'Day' : 'Night'} shift` : null },
+        { label: 'Shift', value: driver.shift ? `${shiftLabel(driver.shift)} shift` : null },
         { label: 'Shares the car with', value: coDriver ? <EntityLink type="driver" id={coDriver.id} label={coDriver.full_name} /> : null },
         { label: 'Phone', value: <a href={`tel:${driver.phone}`} className="link flex items-center gap-1"><Phone size={12} />{driver.phone}</a> },
         { label: 'Stage', value: stage ? <span style={{ color: stage.color }} className="font-medium">{stage.label}</span> : null },
@@ -129,13 +132,15 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
       title={driver.full_name} labels={status}
       meta={<>
         {car ? <EntityLink type="car" id={car.id} label={car.plate_number} /> : <span>No car</span>}
-        {driver.shift && <span>{driver.shift === 'day' ? 'Day' : 'Night'} shift</span>}
+        {driver.shift && <span>{shiftLabel(driver.shift)} shift</span>}
         {driver.start_date && <span>since {formatDateLabelSafe(driver.start_date)}</span>}
       </>}
       actions={mode === 'page' && <>
         {canEdit && !isEnded && <button onClick={() => setLogging(true)} className="btn-primary"><Banknote size={14} /> Log payment</button>}
         {canPause && !isEnded && <button onClick={() => setPausing(true)} className="btn-secondary"><CalendarOff size={14} /> Days off</button>}
         {canEdit && <button onClick={() => setEditing(true)} className="btn-secondary"><Pencil size={14} /> Edit</button>}
+        {canEdit && !isEnded && <button onClick={() => setEnding(true)} className="btn-danger"><UserX size={14} /> End contract</button>}
+        {canEdit && isEnded && <button onClick={() => setRenewing(true)} className="btn-primary"><RotateCcw size={14} /> Renew contract</button>}
       </>}
     />
   );
@@ -144,6 +149,8 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
     {editing && <DriverDrawer driver={driver} startEditing vehicles={vehicles} drivers={drivers} driverDocuments={driverDocuments} canEdit={canEdit} onClose={() => setEditing(false)} onSaved={reload} />}
     {logging && <LogDepositDrawer driver={driver} deposits={deposits} onClose={() => setLogging(false)} onSaved={reload} />}
     {pausing && <PauseDrawer driver={driver} drivers={drivers} onClose={() => setPausing(false)} onSaved={() => { setPausing(false); reload(); }} />}
+    {ending && <EndContractDrawer driver={driver} deposits={deposits} fines={fines} finePayments={finePayments} onClose={() => setEnding(false)} onSaved={reload} />}
+    {renewing && <RenewContractDrawer driver={driver} drivers={drivers} vehicles={vehicles} deposits={deposits} contractEvents={contractEvents} onClose={() => setRenewing(false)} onSaved={reload} />}
   </>;
 
   if (mode === 'peek') {
@@ -176,7 +183,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
         </>} />
       )}
       {tab === 'money' && (
-        <DriverProfilePage embedded driver={driver} drivers={drivers} deposits={deposits} fines={fines} finePayments={finePayments} contractEvents={contractEvents}
+        <DriverProfilePage embedded driver={driver} drivers={drivers} deposits={deposits} fines={fines} finePayments={finePayments} contractEvents={contractEvents} vehicles={vehicles}
           canEdit={canEdit} onBack={() => setTab('overview')} onEdit={() => setEditing(true)} reload={reload} />
       )}
       {tab === 'cases' && <Box title="Calls and cases about this driver" icon={FileText}><DriverCasesList driverId={id} /></Box>}

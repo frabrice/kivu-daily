@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Car, FileWarning, Gauge, ParkingCircleOff, Wrench } from 'lucide-react';
 import { ChartCard, DailyBars, Kpi, MiniTable, longDay, pct, RankBars, usePalette } from '../../components/charts/kit';
 import { addDays, CAR_STATE_LABEL, carDay, CarDayState, endDateOf, fleetDays, onContract, PerfData, Period, today } from '../../lib/performance';
-import { pauseOn } from '../../lib/fleet';
+import { pauseOn, shiftLabel } from '../../lib/fleet';
 import { EntityLink } from '../../os/EntityLink';
 import { usePeek } from '../../os/peek';
 
@@ -88,7 +88,7 @@ export default function FleetTab({ data, period: p }: { data: PerfData; period: 
               {[...cars].sort((a, b) => (a.util ?? 2) - (b.util ?? 2)).map((x) => (
                 <tr key={x.v.id} className="border-t border-line-muted ">
                   <td className="py-2 pr-3 whitespace-nowrap"><EntityLink type="car" id={x.v.id} label={x.v.plate_number} className="font-mono" /><span className="block text-micro text-fg-subtle">{[x.v.make, x.v.model].filter(Boolean).join(' ')}</span></td>
-                  <td className="py-2 pr-3">{x.onNow.length ? x.onNow.map((d) => `${d.full_name.split(/\s+/)[0]}${d.shift ? ` (${d.shift})` : ''}`).join(', ') : <span className="text-red-600 dark:text-red-400">None</span>}</td>
+                  <td className="py-2 pr-3">{x.onNow.length ? x.onNow.map((d) => `${d.full_name.split(/\s+/)[0]}${d.shift ? ` (${shiftLabel(d.shift)})` : ''}`).join(', ') : <span className="text-red-600 dark:text-red-400">None</span>}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{x.count.working}{x.util !== null && <span className="text-fg-subtle"> · {Math.round(x.util * 100)}%</span>}</td>
                   <td className={`py-2 pr-3 text-right tabular-nums ${x.count.unpaid ? 'text-red-600 dark:text-red-400' : 'text-fg-subtle'}`}>{x.count.unpaid || '—'}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{x.count.paused || '—'}</td>

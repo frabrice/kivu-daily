@@ -38,6 +38,21 @@ const FINANCE_ENTRY: HelpEntry = {
       ],
     },
     {
+      heading: 'One Driver on Both Shifts',
+      body: [
+        'A driver can work both the day and the night shift of a car. Pick "Both shifts" as their shift: they pay 60,000 per working day, 360,000 for the week, by the start of each week (the same Sunday rule), and no other driver can be put on that car.',
+        'Everything adds up automatically: what they owe, their payment calendar, cars working, Finance\'s expected collections, days off (60,000 a day not charged) and the morning payment emails.',
+      ],
+    },
+    {
+      heading: 'Ending and Renewing a Contract',
+      body: [
+        'End contract: pick the reason from the list (payments, conduct and safety, the driver\'s choice, the car or company), say who decided and whether they can come back. Kivu Daily shows what they still owe, or how much they had paid ahead, on the last day.',
+        'Renew contract (on an ended driver\'s page): pick why, the new start date, their car and shift (day, night or both) and rest day, whether they paid a new first payment, and any paid days left from before (suggested for you). Before saving you see what they have paid in, how far it covers and their next payment.',
+        'A renewed contract starts fresh: only its own payments count, so the old contract\'s money and the weeks they were away never show as owed.',
+      ],
+    },
+    {
       heading: "Car Management: Owner Payouts & Kivu's Margin",
       body: [
         'Of the 360,000/week collected from a car\'s two drivers, the owner is paid a flat daily rate x 6 days/week from I&M — regardless of how much was actually collected that week. Kivu absorbs the collection risk, not the owner. The default is 40,000/day (240,000/week), but this is set per car — some pay more (e.g. a car paying 45,000/day = 270,000/week) depending on the car and its contract.',

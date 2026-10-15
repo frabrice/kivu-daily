@@ -1,4 +1,4 @@
-import { countWorkingDays, shiftDay, SUNDAY_RULE_START, mondayOf, DAILY_DEPOSIT_RATE } from "../_shared/depositRules.ts";
+import { countWorkingDays, shiftDay, SUNDAY_RULE_START, mondayOf, DAILY_DEPOSIT_RATE, dailyRateOf } from "../_shared/depositRules.ts";
 import { activeStandings, loadDeposits, loadDrivers } from "./drivers.ts";
 import { KIVU_REVENUE_TYPES, loadTransactions, OPERATING_COST_TYPES, TYPE_LABEL, type TxRow } from "./finance.ts";
 import { loadPlatformCars, loadVehicles } from "./operations.ts";
@@ -31,7 +31,7 @@ async function snapshot(ctx: Ctx) {
   let expectedWeek = 0;
   for (const r of standings) {
     const from = r.d.start_date! > weekStart ? r.d.start_date! : weekStart;
-    if (from <= today) expectedWeek += countWorkingDays(from, today, r.d.rest_day) * DAILY_DEPOSIT_RATE;
+    if (from <= today) expectedWeek += countWorkingDays(from, today, r.d.rest_day) * dailyRateOf(r.d);
   }
   const collectedWeek = deposits.filter((d) => d.paid_date >= weekStart && d.paid_date <= today).reduce((s, d) => s + d.amount, 0);
   const owes = standings.reduce((s, r) => s + r.s.owes, 0);
@@ -39,9 +39,10 @@ async function snapshot(ctx: Ctx) {
   const owingDrivers = standings.filter((r) => r.s.owes > 0);
   const daysLostWeek = standings.reduce((s, r) => s + (r.s.current && r.s.current.start === weekStart ? r.s.current.daysLost : 0), 0);
 
-  // Empty driver slots: every car can run a day and a night driver.
+  // Empty driver slots: every car can run a day and a night driver; a
+  // driver on both shifts fills both.
   const activeByCar = new Map<string, number>();
-  for (const d of drivers) if (d.contract_status === "active" && d.vehicle_id) activeByCar.set(d.vehicle_id, (activeByCar.get(d.vehicle_id) ?? 0) + 1);
+  for (const d of drivers) if (d.contract_status === "active" && d.vehicle_id) activeByCar.set(d.vehicle_id, (activeByCar.get(d.vehicle_id) ?? 0) + (d.shift === "full" ? 2 : 1));
   const emptySlots = vehicles.reduce((s, v) => s + Math.max(0, 2 - (activeByCar.get(v.id) ?? 0)), 0);
   const idleCars = vehicles.filter((v) => !activeByCar.get(v.id));
   const applicants = drivers.filter((d) => d.contract_status === "active" && !d.vehicle_id && d.stage !== "inactive").length;
