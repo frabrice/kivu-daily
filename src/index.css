@@ -298,6 +298,9 @@
 }
 .door-scene:hover .door-panel:not(.is-open) { transform: rotateY(-10deg); }
 .door-panel.is-open { transform: rotateY(-112deg); box-shadow: 40px 0 70px rgba(0, 0, 0, 0.45); pointer-events: none; }
+/* Seen from behind once open: hide the front's logo, lettering and handle. */
+.door-panel > * { transition: opacity 0.35s ease 0.15s; }
+.door-panel.is-open > * { opacity: 0; }
 .door-handle {
   position: absolute; right: 22px; top: 52%; width: 9px; height: 64px; border-radius: 9px;
   background: linear-gradient(180deg, rgb(var(--e-glow)), rgb(var(--e-glow) / 0.55));
