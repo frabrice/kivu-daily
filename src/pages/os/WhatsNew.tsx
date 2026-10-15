@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { AppWindow, Command, Keyboard, LayoutGrid, MousePointerClick, Moon, PanelLeft, PanelRight, Rocket, Search, Smartphone, Sparkles, SunMedium } from 'lucide-react';
+import { AppWindow, Command, Keyboard, LayoutGrid, MousePointerClick, Moon, PanelLeft, PanelRight, Rocket, Search, Smartphone, Sparkles } from 'lucide-react';
 import { useAccess } from '../../os/access';
 import { MODULES, visiblePages } from '../../os/registry';
 import { Box, PageHeader } from '../../ui/kit';
@@ -11,7 +11,6 @@ export const ITEMS = [
   { icon: MousePointerClick, title: 'Click any name', body: <>Names of drivers, cars, people, owners and cases are links. Click to open them in a panel on the right without leaving your page, hover for a quick summary, or Ctrl-click to open a full page in a new tab.</> },
   { icon: LayoutGrid, title: 'A page for everything', body: <>Each driver, car, owner, staff member and case now has its own page: numbers at the top, a calendar of their days, everything that happened in order, and the details on the side.</> },
   { icon: Sparkles, title: 'Numbers on every page', body: <>Each area opens with an overview: cards with the key numbers (click a card to see the list behind it), charts and a list of what needs someone today.</> },
-  { icon: SunMedium, title: 'Today panel', body: <>Move your mouse to the right edge of the screen (or press <span className="kbd">t</span>) to see today's tasks and progress from any page.</> },
   { icon: Moon, title: 'A better dark mode', body: <>Dark mode has clear layers and borders now. Switch it from your picture at the top right.</> },
   { icon: Smartphone, title: 'On your phone', body: <>A bar at the bottom gives you Home, My work, your area, Search and the full menu.</> },
   { icon: Keyboard, title: 'Shortcuts', body: <>Press <span className="kbd">?</span> to see them all: <span className="kbd">g</span> then a letter jumps to an area (for example <span className="kbd">g f</span> for Fleet), <span className="kbd">[</span> hides the menu, <span className="kbd">Esc</span> closes panels.</> },

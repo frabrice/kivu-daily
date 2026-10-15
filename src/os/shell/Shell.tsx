@@ -1,12 +1,11 @@
 import { lazy, ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Bell, CalendarPlus, ChevronDown, ChevronRight, Keyboard, LogOut, Megaphone, Menu, Moon, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
-  PhoneIncoming, Plus, Rocket, Search, Settings, Sun, SunMedium, X, ListTodo, CalendarOff,
+  CalendarPlus, ChevronDown, Keyboard, LogOut, Megaphone, Menu, Moon, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
+  PhoneIncoming, Plus, Rocket, Search, Settings, Sun, X, ListTodo, CalendarOff,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useTheme } from '../../lib/theme';
-import { useTasks } from '../../lib/hooks';
 import { useMyOpenShift } from '../../lib/shifts';
 import { StartShiftScreen, ShiftChip, EndShiftDrawer } from '../../components/callTickets/ShiftControls';
 import NotificationBell from '../../components/NotificationBell';
@@ -48,7 +47,6 @@ export default function Shell({ access, children }: { access: Access; children: 
   const [flyout, setFlyout] = useState<string | null>(null);
   const [palette, setPalette] = useState(false);
   const [shortcuts, setShortcuts] = useState(false);
-  const [today, setToday] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [newModal, setNewModal] = useState<null | 'task' | 'announcement' | 'meeting'>(null);
   const flyTimer = useRef<number>();
@@ -73,7 +71,6 @@ export default function Shell({ access, children }: { access: Access; children: 
       if (e.key === '/') { e.preventDefault(); setPalette(true); return; }
       if (e.key === '?') { setShortcuts(true); return; }
       if (e.key === '[') { setPinned((p) => !p); return; }
-      if (e.key === 't') { setToday((t) => !t); return; }
       if (g) {
         g = false; window.clearTimeout(gt);
         const m = mods.find((x) => x.shortcut === `g ${e.key}`);
@@ -95,7 +92,7 @@ export default function Shell({ access, children }: { access: Access; children: 
 
   return (
     <div className="min-h-screen bg-canvas text-fg">
-      <TopBar access={access} current={current} onPalette={() => setPalette(true)} onToday={() => setToday(true)} onMenu={() => setMobileMenu(true)}
+      <TopBar access={access} current={current} onPalette={() => setPalette(true)} onMenu={() => setMobileMenu(true)}
         onNew={setNewModal} onShortcuts={() => setShortcuts(true)} signOut={signOut}
         shiftChip={shift ? <ShiftChip shift={shift} onEnd={() => setEnding('end')} /> : null} />
 
@@ -160,9 +157,6 @@ export default function Shell({ access, children }: { access: Access; children: 
         </main>
       </div>
 
-      {/* Right-edge hover opens Today */}
-      <div className="hidden md:block fixed right-0 top-24 bottom-0 w-1.5 z-30" onMouseEnter={() => setToday(true)} />
-      {today && <TodayDrawer access={access} onClose={() => setToday(false)} />}
 
       <MobileBar access={access} badges={badges} onMenu={() => setMobileMenu(true)} onSearch={() => setPalette(true)} />
       {mobileMenu && <MobileMenu access={access} badges={badges} onClose={() => setMobileMenu(false)} signOut={signOut} />}
@@ -197,8 +191,8 @@ export function PageSkeleton() {
 }
 
 // ---------------------------------------------------------------- top bar
-function TopBar({ access, current, onPalette, onToday, onMenu, onNew, onShortcuts, signOut, shiftChip }: {
-  access: Access; current: ModuleDef | undefined; onPalette: () => void; onToday: () => void; onMenu: () => void;
+function TopBar({ access, current, onPalette, onMenu, onNew, onShortcuts, signOut, shiftChip }: {
+  access: Access; current: ModuleDef | undefined; onPalette: () => void; onMenu: () => void;
   onNew: (k: 'task' | 'announcement' | 'meeting') => void; onShortcuts: () => void; signOut: () => void; shiftChip: ReactNode;
 }) {
   const { profile } = useAuth();
@@ -248,7 +242,6 @@ function TopBar({ access, current, onPalette, onToday, onMenu, onNew, onShortcut
         )}
       </Popover>
       <Tooltip label={theme === 'dark' ? 'Light mode' : 'Dark mode'}><button onClick={toggle} className="btn-ghost p-2" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button></Tooltip>
-      <Tooltip label="Today  t"><button onClick={onToday} className="btn-ghost p-2" aria-label="Today"><SunMedium size={17} /></button></Tooltip>
       <NotificationBell />
       <Popover placement="bottom-end" width={250} trigger={<button className="rounded-full ml-0.5" aria-label="Account menu"><Avatar name={profile?.full_name ?? ''} url={profile?.avatar_url} size="sm" /></button>}>
         {(close) => (
@@ -359,57 +352,6 @@ function WorkspaceTabs({ access }: { access: Access }) {
   );
 }
 
-// ---------------------------------------------------------------- Today drawer
-function TodayDrawer({ access, onClose }: { access: Access; onClose: () => void }) {
-  const { profile } = useAuth();
-  const { tasks } = useTasks(profile?.id);
-  const nav = useNavigate();
-  const day = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
-  const mine = tasks.filter((t) => t.date === day).sort((a, b) => Number(a.completed) - Number(b.completed));
-  const done = mine.filter((t) => t.completed).length;
-  const pct = mine.length ? Math.round((done / mine.length) * 100) : 0;
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-  return (
-    <div className="fixed inset-0 z-[60]" onMouseDown={onClose}>
-      <aside className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-surface-3 border-l border-line shadow-overlay flex flex-col animate-slide-in-right" onMouseDown={(e) => e.stopPropagation()} aria-label="Today">
-        <div className="h-12 px-4 flex items-center gap-2 border-b border-line-muted">
-          <SunMedium size={16} className="text-attention" />
-          <p className="text-ui font-semibold flex-1">Today</p>
-          <button onClick={onClose} className="btn-ghost p-1.5" aria-label="Close"><X size={16} /></button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="flex items-center gap-4">
-            <Ring pct={pct} />
-            <div>
-              <p className="text-h3 font-semibold tabular-nums">{done}/{mine.length}</p>
-              <p className="text-caption text-fg-muted">tasks done today</p>
-            </div>
-          </div>
-          <div className="space-y-1">
-            {mine.length === 0 && <p className="text-body text-fg-muted">No tasks for today.</p>}
-            {mine.map((t) => (
-              <button key={t.id} onClick={() => { onClose(); nav(access.isMd ? '/me/tasks' : '/me/tasks'); }} className="w-full flex items-start gap-2 text-left px-2 py-1.5 rounded-md hover:bg-hover">
-                <span className={`mt-1 w-3 h-3 rounded-full border-2 shrink-0 ${t.completed ? 'bg-success border-success' : 'border-line-strong'}`} />
-                <span className={`text-body ${t.completed ? 'line-through text-fg-subtle' : 'text-fg'}`}>{t.title}</span>
-                {!t.completed && t.priority === 'high' && <span className="ml-auto label border-danger/40 text-danger bg-danger-muted">Urgent</span>}
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Link to="/me/cases" onClick={onClose} className="card p-3 hover:bg-hover"><p className="text-caption text-fg-muted">Cases for me</p><p className="text-body font-medium flex items-center gap-1">Open <ChevronRight size={13} /></p></Link>
-            <Link to="/me/tasks" onClick={onClose} className="card p-3 hover:bg-hover"><p className="text-caption text-fg-muted">All my tasks</p><p className="text-body font-medium flex items-center gap-1">Open <ChevronRight size={13} /></p></Link>
-          </div>
-          <p className="text-caption text-fg-subtle flex items-center gap-1"><Bell size={12} /> Notifications are in the bell at the top.</p>
-        </div>
-      </aside>
-    </div>
-  );
-}
-
 export function Ring({ pct, size = 56 }: { pct: number; size?: number }) {
   const r = (size - 8) / 2;
   const c = 2 * Math.PI * r;
@@ -485,7 +427,7 @@ function ShortcutsDialog({ mods, onClose }: { mods: ModuleDef[]; onClose: () => 
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   const rows: [string, string][] = [
-    ['Ctrl K  or  /', 'Search and jump anywhere'], ['?', 'This list'], ['[', 'Show or hide the sidebar'], ['t', 'Today panel'], ['Esc', 'Close a panel or dialog'],
+    ['Ctrl K  or  /', 'Search and jump anywhere'], ['?', 'This list'], ['[', 'Show or hide the sidebar'], ['Esc', 'Close a panel or dialog'],
     ...mods.filter((m) => m.shortcut).map((m) => [m.shortcut!, `Go to ${m.label}`] as [string, string]),
   ];
   return (
