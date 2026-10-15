@@ -9,6 +9,9 @@ import { todayStr, startOfWeek, addDays, dateStr } from '../../lib/utils';
 import { formatDateLabelSafe } from '../../lib/fleet';
 import KpiTile from '../../components/KpiTile';
 import DataTable from '../../components/DataTable';
+import { Pager, usePaged } from '../../ui/Pager';
+import { missingForOwner, useLegalDocs } from '../../lib/legalDocs';
+import { Label } from '../../ui/kit';
 import SearchableSelect from '../../components/SearchableSelect';
 import VehicleOwnerDrawer from '../../components/finance/VehicleOwnerDrawer';
 import OnboardVehicleOwnerDrawer from '../../components/finance/OnboardVehicleOwnerDrawer';
@@ -193,6 +196,7 @@ function OwnersTab({
   onViewOwner: (o: VehicleOwner) => void;
   onOnboardVehicle: (v: Vehicle) => void;
 }) {
+  const legal = useLegalDocs();
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -230,7 +234,7 @@ function OwnersTab({
           emptyLabel="No vehicle owners on file yet."
           onRowClick={onViewOwner}
           columns={[
-            { header: 'Name', render: (o) => o.full_name },
+            { header: 'Name', render: (o) => <span className="flex items-center gap-2">{o.full_name}{!legal.loading && missingForOwner(o.id, vehicles, legal.docs) && <Label tone="danger">Agreement missing</Label>}</span> },
             { header: 'Phone', render: (o) => o.phone },
             { header: 'Email', render: (o) => o.email ?? '—' },
             {
@@ -347,6 +351,7 @@ function PaymentsTab({
     reload();
   };
 
+  const pgWeeks = usePaged(weeks, { key: 'owner-payment-weeks' });
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -441,7 +446,7 @@ function PaymentsTab({
         </div>
       )}
 
-      {weeks.map((week) => (
+      {pgWeeks.rows.map((week) => (
         <div key={week.weekStart} className="space-y-1.5">
           <div className="flex items-center justify-between gap-2 px-0.5">
             <p className="text-caption font-semibold text-fg-muted ">{weekLabel(week.weekStart)}</p>
@@ -478,6 +483,7 @@ function PaymentsTab({
           />
         </div>
       ))}
+      <Pager pager={pgWeeks.pager} noun="weeks" />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { useCarFollowupCount } from '../lib/nonInsider';
 import { useAuth } from '../lib/auth';
 import { Access } from './access';
 import { BadgeKey } from './registry';
+import { LegalDoc, missingForDriver, missingForOwner } from '../lib/legalDocs';
+import type { Driver, Vehicle } from '../lib/supabase';
 
 const head = async (q: PromiseLike<{ count: number | null }>) => (await q).count ?? 0;
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
@@ -29,7 +31,23 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
         head(supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('user_id', profile!.id).eq('date', today()).eq('completed', false)),
         a.in('fleet', 'finance', 'it') ? head(supabase.from('driver_deposits').select('id', { count: 'exact', head: true }).eq('status', 'pending')) : 0,
       ]);
-      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits };
+      // Contract papers missing: drivers (Fleet/IT/MD) and owners (Finance/MD).
+      let missingContracts = 0, missingAgreements = 0;
+      const wantDrivers = a.in('fleet', 'it'), wantOwners = a.in('finance');
+      if (wantDrivers || wantOwners) {
+        const [docs, drivers, vehicles] = await Promise.all([
+          supabase.from('contract_documents').select('kind, driver_id, owner_id, period_start'),
+          wantDrivers ? supabase.from('drivers').select('id, contract_status, vehicle_id, start_date') : Promise.resolve({ data: [] }),
+          supabase.from('vehicles').select('owner_id, operation_start_date'),
+        ]);
+        const d = (docs.data ?? []) as LegalDoc[];
+        if (wantDrivers) missingContracts = ((drivers.data ?? []) as Driver[]).filter((x) => missingForDriver(x, d)).length;
+        if (wantOwners) {
+          const v = (vehicles.data ?? []) as Vehicle[];
+          missingAgreements = [...new Set(v.map((x) => x.owner_id).filter(Boolean) as string[])].filter((o) => missingForOwner(o, v, d)).length;
+        }
+      }
+      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits, missingContracts, missingAgreements };
     },
   });
   return { myCases, unreadComments, carFollowups, ...(q.data ?? {}) };

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Plus, AlertTriangle, User, Package } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useITHubData, STORY_STATUSES, PRIORITY_STYLE } from '../../lib/itHub';
@@ -38,6 +39,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
   const issues = productFilter === 'all' ? allIssues : allIssues.filter((s) => (s.product?.id ?? 'none') === productFilter);
   const [storyDrawer, setStoryDrawer] = useState<{ story: UserStory | null; startEditing: boolean } | null>(null);
 
+  const pgIssues = usePaged(issues, { key: 'issues-cards', reset: productFilter });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -169,7 +171,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
 
       {issues.length > 0 && view === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {issues.map((s) => {
+          {pgIssues.rows.map((s) => {
             const status = STORY_STATUSES.find((st) => st.key === s.status)!;
             const doneCriteria = s.acceptance_criteria.filter((c) => c.done).length;
             return (
@@ -204,6 +206,7 @@ function IssuesPageView({ data }: { data: ReturnType<typeof useITHubData> }) {
               </div>
             );
           })}
+          <Pager pager={pgIssues.pager} noun="issues" className="col-span-full" />
         </div>
       )}
 

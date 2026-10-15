@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Pager, usePaged } from '../ui/Pager';
 import { Megaphone, Trash2, Pencil } from 'lucide-react';
 import { supabase, Announcement } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -40,6 +41,7 @@ export default function AnnouncementsPage() {
 
   const isMD = profile?.role === 'managing_director';
 
+  const pgAnnouncements = usePaged(announcements, { key: 'announcements' });
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2.5">
@@ -67,7 +69,7 @@ export default function AnnouncementsPage() {
 
       {!loading && announcements.length > 0 && view === 'cards' && (
         <div className="space-y-3">
-          {announcements.map((a) => (
+          {pgAnnouncements.rows.map((a) => (
             <div key={a.id} className="card p-5 animate-fade-in">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 mb-2">
@@ -92,6 +94,7 @@ export default function AnnouncementsPage() {
               {a.body && <p className="text-sm text-fg-muted whitespace-pre-wrap">{a.body}</p>}
             </div>
           ))}
+          <Pager pager={pgAnnouncements.pager} noun="announcements" className="col-span-full" />
         </div>
       )}
 

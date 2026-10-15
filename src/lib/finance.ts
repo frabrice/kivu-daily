@@ -3,6 +3,7 @@ import {
   supabase, FinanceAccount, FinanceTransaction, FinanceTransactionType, FinanceDirection,
   FinanceReconciliation, PayrollRun, PayrollEmployee, PayrollSettings, Driver, DriverDeposit, Vehicle, VehicleOwner, Profile, Document as Doc,
 } from './supabase';
+import { fetchAll } from './fetchAll';
 import { todayStr } from './utils';
 
 // Every dedicated Finance page (Revenue, Fleet Collections, Vehicle-Owner
@@ -38,17 +39,17 @@ export function useFinanceData() {
 
     const [acc, tx, rec, pr, pe, ps, d, dep, v, own, emp, docs] = await Promise.all([
       supabase.from('finance_accounts').select('*').order('key'),
-      supabase
+      fetchAll(() => supabase
         .from('finance_transactions')
         .select('*, account:finance_accounts(*), linked_vehicle:vehicles(*), linked_driver:drivers(*), preparer:profiles!finance_transactions_prepared_by_fkey(*), checker:profiles!finance_transactions_checked_by_fkey(*), approver:profiles!finance_transactions_approved_by_fkey(*), supporting_document:documents(*)')
         .order('transaction_date', { ascending: false })
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false }).order('id')),
       supabase.from('finance_reconciliations').select('*, account:finance_accounts(*), reconciler:profiles(*)').order('period', { ascending: false }),
       supabase.from('payroll_runs').select('*, lines:payroll_lines(*, employee:payroll_employees(*))').order('period', { ascending: false }),
       supabase.from('payroll_employees').select('*').order('full_name'),
       supabase.from('payroll_settings').select('*').eq('id', true).maybeSingle(),
       supabase.from('drivers').select('*, vehicle:vehicles(*), pauses:driver_pauses(*)'),
-      supabase.from('driver_deposits').select('*'),
+      fetchAll(() => supabase.from('driver_deposits').select('*').order('id')),
       supabase.from('vehicles').select('*, owner:vehicle_owners(*)'),
       supabase.from('vehicle_owners').select('*').order('full_name'),
       supabase.from('profiles').select('*').eq('is_active', true).order('full_name'),

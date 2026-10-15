@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { Pager, usePaged } from '../ui/Pager';
 import { MessageSquare, Calendar, User, Reply, Send, ChevronDown, ChevronUp, Clock, Users, Search } from 'lucide-react';
 import { supabase, Comment, Profile } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -163,6 +164,7 @@ export default function MDCommentsPage() {
 
   const totalConversations = groupedByDate.reduce((acc, [, comments]) => acc + comments.length, 0);
 
+  const pgFilteredGroups = usePaged(filteredGroups, { key: 'md-comments' });
   if (loading) return (
     <div className="flex items-center justify-center py-12">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#007BFF]"></div>
@@ -241,7 +243,7 @@ export default function MDCommentsPage() {
         </div>
       )}
 
-      {filteredGroups.map(([date, dayComments]) => (
+      {pgFilteredGroups.rows.map(([date, dayComments]) => (
         <div key={date} className="space-y-4">
           {/* Date Separator */}
           <div className="flex items-center gap-3">
@@ -287,6 +289,7 @@ export default function MDCommentsPage() {
           </div>
         </div>
       ))}
+      <Pager pager={pgFilteredGroups.pager} noun="days" />
     </div>
   );
 }

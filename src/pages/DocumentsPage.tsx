@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { FileText, Upload, Trash2, Download, Building2, Pencil, Folder, FolderPlus, ArrowLeft } from 'lucide-react';
+import { FileText, Upload, Trash2, Download, Building2, Pencil, Folder, FolderPlus, ArrowLeft, FileSignature } from 'lucide-react';
 import { supabase, Document as Doc, DocumentCategory, Department } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { timeAgo } from '../lib/utils';
@@ -7,6 +7,8 @@ import Modal from '../components/Modal';
 import ViewToggle, { ViewMode } from '../components/ViewToggle';
 import DataTable from '../components/DataTable';
 import EntryActions from '../components/EntryActions';
+import { LegalDocsBoard } from './os/LegalDocsPage';
+import { Pager, usePaged } from '../ui/Pager';
 
 interface ScopeOption { id: string; label: string }
 
@@ -20,7 +22,26 @@ interface ScopeOption { id: string; label: string }
 // wide" previously meant they read as shared with everyone even though
 // document_categories_select already kept them private - Admin is
 // unambiguous about whose space it is.
+// Company files (by department and category) and the contract papers:
+// driver contracts, amendments, termination letters and owner agreements.
 export default function DocumentsPage() {
+  const [section, setSection] = useState<'files' | 'contracts'>('files');
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit" role="tablist">
+        {([['files', 'Company files', Folder], ['contracts', 'Contract papers', FileSignature]] as const).map(([k, l, Icon]) => (
+          <button key={k} role="tab" aria-selected={section === k} onClick={() => setSection(k)}
+            className={`px-3 py-1.5 rounded-md text-small font-medium flex items-center gap-1.5 ${section === k ? 'bg-surface-2 text-brand-600 dark:text-brand-300 shadow-sm' : 'text-fg-muted'}`}>
+            <Icon size={13} /> {l}
+          </button>
+        ))}
+      </div>
+      {section === 'files' ? <CompanyFiles /> : <LegalDocsBoard scope="all" />}
+    </div>
+  );
+}
+
+function CompanyFiles() {
   const { profile } = useAuth();
   const isMD = profile?.role === 'managing_director';
 
@@ -107,6 +128,7 @@ export default function DocumentsPage() {
     return scopeDocuments.filter((d) => d.category_id === activeCategoryId);
   }, [scopeDocuments, activeCategoryId]);
 
+  const paged = usePaged(visibleDocuments, { key: 'documents', reset: activeCategoryId });
   const categoryDocCount = (id: string) => scopeDocuments.filter((d) => d.category_id === id).length;
 
   const openScope = (id: string) => {
@@ -208,7 +230,7 @@ export default function DocumentsPage() {
 
           {visibleDocuments.length > 0 && view === 'cards' && (
             <div className="space-y-2">
-              {visibleDocuments.map((d) => (
+              {paged.rows.map((d) => (
                 <div
                   key={d.id}
                   onClick={() => setDocDrawer({ doc: d, startEditing: false })}
@@ -250,6 +272,7 @@ export default function DocumentsPage() {
                   </div>
                 </div>
               ))}
+              <Pager pager={paged.pager} noun="files" />
             </div>
           )}
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, PlatformDriver } from './supabase';
+import { fetchAll } from './fetchAll';
 
 // Non-Insider outreach, in rounds. The Call Center calls every Non-Insider
 // driver one by one and records three answers: will they come to our office
@@ -156,7 +157,7 @@ export function useOutreach() {
 
   const load = useCallback(async () => {
     const [d, c, r, p] = await Promise.all([
-      supabase.from('platform_drivers').select('*, car:platform_cars(*)').order('full_name'),
+      fetchAll(() => supabase.from('platform_drivers').select('*, car:platform_cars(*)').order('full_name').order('id')),
       allCalls(),
       supabase.from('outreach_rounds').select('*').order('number', { ascending: false }).limit(1),
       supabase.from('profiles').select('id, full_name'),

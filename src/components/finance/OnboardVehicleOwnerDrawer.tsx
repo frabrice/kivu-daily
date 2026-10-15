@@ -5,6 +5,8 @@ import { todayStr } from '../../lib/utils';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import SearchableSelect from '../SearchableSelect';
+import { LegalDocFields } from '../legal/LegalDocFields';
+import { LegalDraft, draftError, emptyDraft, uploadDraft, useLegalDocs } from '../../lib/legalDocs';
 
 type OwnerMode = 'existing' | 'new';
 
@@ -39,20 +41,32 @@ export default function OnboardVehicleOwnerDrawer({
   const [monthlyFee, setMonthlyFee] = useState(String(MONTHLY_MANAGEMENT_FEE_DEFAULT));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // The signed and stamped management agreement (MD, 15 Oct 2026): required
+  // unless this owner already has one on file. The new owner's id is fixed
+  // up front so the file is filed under it.
+  const [newOwnerId] = useState(() => crypto.randomUUID());
+  const [agreement, setAgreement] = useState<LegalDraft>(emptyDraft(todayStr()));
+  const { docs: legalDocs } = useLegalDocs();
+  const targetOwner = mode === 'existing' ? ownerId : newOwnerId;
+  const hasAgreement = mode === 'existing' && !!ownerId && legalDocs.some((x) => x.owner_id === ownerId && x.kind === 'owner_management_agreement');
+  const agreementError = hasAgreement && !agreement.file ? null : draftError('owner_management_agreement', agreement);
 
   const weeklyPayout = (Number(dailyPayout) || DAILY_OWNER_PAYOUT_DEFAULT) * OWNER_PAYOUT_DAYS_PER_WEEK;
-  const canSave = mode === 'existing'
+  const canSave = (mode === 'existing'
     ? !!ownerId && !!operationStartDate
-    : fullName.trim() && phone.trim() && !!operationStartDate;
+    : fullName.trim() && phone.trim() && !!operationStartDate) && !agreementError;
 
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
     setError('');
+    const up = agreement.file ? await uploadDraft('owner_management_agreement', targetOwner, agreement) : null;
+    if (up && 'error' in up) { setSaving(false); setError(up.error); return; }
 
     let finalOwnerId = ownerId;
     if (mode === 'new') {
       const { data, error: err } = await supabase.from('vehicle_owners').insert({
+        id: newOwnerId,
         full_name: fullName.trim(),
         phone: phone.trim(),
         email: email.trim() || null,
@@ -64,7 +78,8 @@ export default function OnboardVehicleOwnerDrawer({
       finalOwnerId = data!.id;
     }
 
-    const { error: err } = await supabase.rpc('onboard_vehicle_owner', {
+    const { error: err } = await supabase.rpc('onboard_vehicle_owner_with_agreement', {
+      p_doc: up ? up.doc : null,
       p_vehicle_id: vehicle.id,
       p_owner_id: finalOwnerId,
       p_operation_start_date: operationStartDate,
@@ -169,6 +184,12 @@ export default function OnboardVehicleOwnerDrawer({
           <p>• First month's management fee — <span className="font-medium">{fmt(Number(monthlyFee) || MONTHLY_MANAGEMENT_FEE_DEFAULT)}</span> (Equity)</p>
           <p>Confirming the onboarding fee then loads the device, branding and uniform costs for approval.</p>
         </div>
+
+        {hasAgreement && !agreement.file
+          ? <p className="text-caption text-success">This owner's signed and stamped management agreement is already on file. Attach a new one below only if this car has its own.</p>
+          : null}
+        <LegalDocFields kind="owner_management_agreement" draft={agreement} onChange={setAgreement} title={hasAgreement ? 'Management agreement for this car (optional)' : 'Management agreement — signed and stamped *'} />
+        {!error && agreementError && <p className="text-caption text-fg-muted">{agreementError}</p>}
 
         {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 

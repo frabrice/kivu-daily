@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, PlatformDriver, PlatformCar } from './supabase';
+import { fetchAll } from './fetchAll';
 
 // Non-insider drivers: live on the passenger app but their car isn't part
 // of Kivu Ride's managed fleet. Kept in their own tables (not reusing
@@ -15,8 +16,8 @@ export function useNonInsiderData() {
 
   const load = useCallback(async () => {
     const [d, c] = await Promise.all([
-      supabase.from('platform_drivers').select('*, car:platform_cars(*)').order('created_at', { ascending: false }),
-      supabase.from('platform_cars').select('*').order('created_at', { ascending: false }),
+      fetchAll(() => supabase.from('platform_drivers').select('*, car:platform_cars(*)').order('created_at', { ascending: false }).order('id')),
+      fetchAll(() => supabase.from('platform_cars').select('*').order('created_at', { ascending: false }).order('id')),
     ]);
     setDrivers((d.data as PlatformDriver[]) ?? []);
     setCars((c.data as PlatformCar[]) ?? []);

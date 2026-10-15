@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Trophy, Search, Car, AlertTriangle, TrendingDown, Users2, CalendarClock } from 'lucide-react';
 import {
   useFleetData, buildDepositLeaderboard, depositStandingLabel, DEPOSIT_TIER_STYLE, foldDepositTier,
@@ -40,6 +41,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
   const perfectCount = rows.filter((r) => r.standing.daysLost === 0 && r.standing.onTimeWeeks > 0).length;
   const switchoverRows = [...rows].sort((a, b) => b.standing.nextDueAmount - a.standing.nextDueAmount);
 
+  const pgFilteredRows = usePaged(filteredRows, { key: 'leaderboard' });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -85,7 +87,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
       </div>
 
       <div className="space-y-1.5">
-        {filteredRows.map((row, i) => {
+        {pgFilteredRows.rows.map((row, i) => {
           const s = row.standing;
           const style = DEPOSIT_TIER_STYLE[row.tier];
           const dotColor = DEPOSIT_TIER_STYLE[foldDepositTier(row.tier)].dot;
@@ -96,7 +98,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
               className={`card p-3 flex items-center gap-3 ${notCleared ? 'border-red-200 dark:border-red-500/30 bg-red-50/40 dark:bg-red-500/5' : ''}`}
             >
               <div className="w-7 text-center shrink-0">
-                <span className="text-body font-bold text-fg-subtle">#{i + 1}</span>
+                <span className="text-body font-bold text-fg-subtle">#{(pgFilteredRows.pager.page - 1) * pgFilteredRows.pager.size + i + 1}</span>
               </div>
               <div className={`w-1.5 h-8 rounded-full shrink-0 ${dotColor}`} />
               <div className="flex-1 min-w-0">
@@ -118,6 +120,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
             </div>
           );
         })}
+        <Pager pager={pgFilteredRows.pager} noun="drivers" />
         {filteredRows.length === 0 && (
           <div className="card p-10 text-center">
             <Trophy size={26} className="text-fg-subtle mx-auto mb-2" />

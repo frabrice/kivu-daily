@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { ShieldCheck, Smartphone, Landmark, Car, Ban } from 'lucide-react';
 import { useFleetData, formatDateLabelSafe } from '../../lib/fleet';
 import { supabase, DriverDeposit } from '../../lib/supabase';
@@ -30,6 +31,8 @@ export default function FinanceDepositConfirmationsPage() {
     reload();
   };
 
+  const pgPending = usePaged(pending, { key: 'deposit-confirm' });
+  const pgRecentlyConfirmed = usePaged(recentlyConfirmed, { key: 'deposit-confirmed' });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -51,7 +54,7 @@ export default function FinanceDepositConfirmationsPage() {
             <p className="text-small text-fg-subtle">Nothing waiting on confirmation.</p>
           </div>
         )}
-        {pending.map((dep) => {
+        {pgPending.rows.map((dep) => {
           const driver = driverById.get(dep.driver_id);
           return (
             <div key={dep.id} className="card p-3.5 flex items-center gap-3">
@@ -85,13 +88,14 @@ export default function FinanceDepositConfirmationsPage() {
             </div>
           );
         })}
+        <Pager pager={pgPending.pager} noun="payments" />
       </div>
 
       {recentlyConfirmed.length > 0 && (
         <div>
           <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-2">Recently Confirmed</p>
           <div className="space-y-1">
-            {recentlyConfirmed.map((dep) => {
+            {pgRecentlyConfirmed.rows.map((dep) => {
               const driver = driverById.get(dep.driver_id);
               return (
                 <div key={dep.id} className="flex items-center justify-between gap-2 text-caption py-1.5 px-1 border-b border-line-muted last:border-0">
@@ -104,6 +108,7 @@ export default function FinanceDepositConfirmationsPage() {
                 </div>
               );
             })}
+            <Pager pager={pgRecentlyConfirmed.pager} noun="payments" />
           </div>
         </div>
       )}

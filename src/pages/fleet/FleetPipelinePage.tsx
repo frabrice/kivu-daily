@@ -13,6 +13,8 @@ import DriverDrawer from '../../components/fleet/DriverDrawer';
 import DriverProfilePage from './DriverProfilePage';
 import { EntityLink } from '../../os/EntityLink';
 import { usePeek } from '../../os/peek';
+import { LEGAL_KIND, missingForDriver, useLegalDocs } from '../../lib/legalDocs';
+import { Label } from '../../ui/kit';
 
 interface DriverDrawerState { driver: Driver | null; startEditing: boolean }
 
@@ -37,6 +39,8 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
   const peek = usePeek();
   const { drivers, vehicles, deposits, fines, finePayments, contractEvents, driverDocuments, loading, reload } = data;
   const canEdit = canEditFleet(profile);
+  const legal = useLegalDocs();
+  const missingDoc = (d: Driver) => (legal.loading ? null : missingForDriver(d, legal.docs));
   const [view, setView] = useState<ViewMode>('table');
   const [search, setSearch] = useState('');
   const [driverDrawer, setDriverDrawer] = useState<DriverDrawerState | null>(null);
@@ -137,6 +141,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                         canEdit={canEdit}
                       />
                     </div>
+                    {missingDoc(d) && <p className="text-micro text-danger font-medium mt-0.5">{LEGAL_KIND[missingDoc(d)!].missing}</p>}
                     <p className="text-micro text-fg-subtle flex items-center gap-1 mt-0.5">
                       <Phone size={10} /> {d.phone}
                     </p>
@@ -169,12 +174,14 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
 
       {view === 'table' && (
         <DataTable
+          pageKey="fleet-drivers"
+          noun="drivers"
           rows={filtered}
           keyFn={(d) => d.id}
           emptyLabel="No drivers yet."
           onRowClick={(d) => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
           columns={[
-            { header: 'Name', render: (d) => <EntityLink type="driver" id={d.id} label={d.full_name} /> },
+            { header: 'Name', render: (d) => { const m = missingDoc(d); return <span className="flex items-center gap-2"><EntityLink type="driver" id={d.id} label={d.full_name} />{m && <Label tone="danger">{LEGAL_KIND[m].missing}</Label>}</span>; } },
             { header: 'Phone', render: (d) => d.phone },
             {
               header: 'Stage',

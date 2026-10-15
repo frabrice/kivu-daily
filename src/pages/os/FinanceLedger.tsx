@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Download, Hourglass, Plus, Scale, ScrollText, Search, X } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Download, Hourglass, Plus, Scale, ScrollText, Search, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFinanceData, TYPE_META, STATUS_META } from '../../lib/finance';
 import { FinanceTransaction, FinanceTransactionType } from '../../lib/supabase';
 import { EntityLink } from '../../os/EntityLink';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Label, PageHeader, StatCard, StatGrid, Tone, UnderlineTabs, rwf, rwfShort } from '../../ui/kit';
 import FinanceTransactionDrawer from '../../components/finance/FinanceTransactionDrawer';
 import { addDays, today } from '../../lib/performance';
@@ -28,7 +29,6 @@ export default function FinanceLedger() {
   const [account, setAccount] = useState('');
   const [period, setPeriod] = useState<Period>('all');
   const [q, setQ] = useState('');
-  const [page, setPage] = useState(0);
   const [drawer, setDrawer] = useState<{ tx: FinanceTransaction | null; editing: boolean } | null>(null);
   const t = today();
 
@@ -54,9 +54,7 @@ export default function FinanceLedger() {
 
   const inView = (x: FinanceTransaction, v: View) => v === 'all' || (v === 'waiting' ? x.status === 'pending' || x.status === 'checked' : x.status === v);
   const rows = base.filter((x) => inView(x, view));
-  useEffect(() => { setPage(0); }, [view, type, direction, account, period, q]);
-  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
-  const shown = rows.slice(page * PAGE, page * PAGE + PAGE);
+  const { rows: shown, pager } = usePaged(rows, { key: 'ledger', size: PAGE, reset: `${view}|${type}|${direction}|${account}|${period}|${q}` });
 
   const counted = base.filter((x) => (x.status === 'posted' || x.status === 'approved') && x.type !== 'transfer' && x.type !== 'management_margin');
   const totalIn = counted.filter((x) => x.direction === 'in').reduce((s, x) => s + x.amount, 0);
@@ -146,16 +144,7 @@ export default function FinanceLedger() {
             </tbody>
           </table>
         </div>
-        {rows.length > PAGE && (
-          <div className="flex items-center gap-2 px-4 py-2 border-t border-line-muted text-caption text-fg-muted">
-            <span className="tabular-nums">Showing {page * PAGE + 1}–{Math.min(rows.length, (page + 1) * PAGE)} of {rows.length}</span>
-            <div className="ml-auto flex items-center gap-1">
-              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="btn-ghost p-1 disabled:opacity-30" aria-label="Previous page"><ChevronLeft size={14} /></button>
-              <span className="tabular-nums">{page + 1} / {pages}</span>
-              <button onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1} className="btn-ghost p-1 disabled:opacity-30" aria-label="Next page"><ChevronRight size={14} /></button>
-            </div>
-          </div>
-        )}
+        <Pager pager={pager} noun="transactions" className="px-4 border-t border-line-muted" />
       </div>
 
       {drawer && (

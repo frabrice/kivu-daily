@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import HelpButton from '../../components/HelpButton';
 import { Paintbrush, Cpu, Phone, User, Save, CheckCircle2 } from 'lucide-react';
 import { supabase, PlatformCar, PlatformDriver } from '../../lib/supabase';
@@ -54,6 +55,7 @@ export default function BrandingDevicesPage() {
     .sort((a, b) => FLOW[kind].findIndex((f) => f.key === statusOf(a)) - FLOW[kind].findIndex((f) => f.key === statusOf(b))
       || (kind === 'branding' ? (a.branding_recorded_at ?? '') : (a.device_recorded_at ?? '')).localeCompare(kind === 'branding' ? (b.branding_recorded_at ?? '') : (b.device_recorded_at ?? '')));
 
+  const pgShown = usePaged(shown, { key: 'branding', reset: `${view}${kind}` });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-24 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -88,9 +90,10 @@ export default function BrandingDevicesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {shown.map((c) => (
+          {pgShown.rows.map((c) => (
             <FollowupCard key={`${kind}-${c.id}`} car={c} kind={kind} owner={drivers.find((d) => d.car_id === c.id) ?? null} canEdit={canEdit} onSaved={reload} />
           ))}
+          <Pager pager={pgShown.pager} noun="cars" className="lg:col-span-2" />
         </div>
       )}
     </div>

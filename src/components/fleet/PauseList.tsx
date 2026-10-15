@@ -3,6 +3,7 @@ import { Check, FileText, PlayCircle, X } from 'lucide-react';
 import { supabase, Driver, DriverPause } from '../../lib/supabase';
 import { PAUSE_REASON_LABEL } from '../../lib/fleet';
 import { EntityLink } from '../../os/EntityLink';
+import { Pager, usePaged } from '../../ui/Pager';
 
 const kigaliToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
 const dayLabel = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -26,12 +27,14 @@ const STATUS: Record<DriverPause['approval_status'], { label: string; cls: strin
 export default function PauseList({ pauses, drivers, names, canRecord, canReview, showDriver, onChanged }: {
   pauses: DriverPause[]; drivers: Driver[]; names: Record<string, string>; canRecord: boolean; canReview: boolean; showDriver: boolean; onChanged: () => void;
 }) {
+  const { rows, pager } = usePaged([...pauses].sort((a, b) => b.start_date.localeCompare(a.start_date)), { key: 'pauses' });
   if (!pauses.length) return <p className="text-small text-fg-subtle py-3">No days off recorded.</p>;
   return (
     <div className="space-y-2">
-      {[...pauses].sort((a, b) => b.start_date.localeCompare(a.start_date)).map((p) => (
+      {rows.map((p) => (
         <PauseRow key={p.id} p={p} driver={drivers.find((d) => d.id === p.driver_id)} names={names} canRecord={canRecord} canReview={canReview} showDriver={showDriver} onChanged={onChanged} />
       ))}
+      <Pager pager={pager} noun="pauses" />
     </div>
   );
 }

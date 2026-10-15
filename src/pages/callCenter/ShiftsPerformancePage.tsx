@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Timer, AlertTriangle, ChevronRight } from 'lucide-react';
 import { supabase, Profile } from '../../lib/supabase';
 import { CallCenterShift, durationLabel, SLOT_LABEL } from '../../lib/shifts';
@@ -54,6 +55,7 @@ export default function ShiftsPerformancePage() {
 
   const th = 'px-3 py-2 font-medium text-left';
   const td = 'px-3 py-2';
+  const pgInRange = usePaged(inRange, { key: 'shifts', reset: days });
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -98,7 +100,7 @@ export default function ShiftsPerformancePage() {
       )}
 
       <div className="card divide-y divide-line-muted ">
-        {inRange.map((s) => (
+        {pgInRange.rows.map((s) => (
           <button key={s.id} onClick={() => setOpen(s)} className="w-full text-left px-4 py-3 hover:bg-hover flex items-center gap-3 flex-wrap">
             <div className="flex-1 min-w-[200px]">
               <p className="text-small font-medium">{name(s.agent_id)}{s.partner_id ? <span className="text-fg-subtle font-normal"> with {name(s.partner_id)}</span> : null}</p>
@@ -112,6 +114,7 @@ export default function ShiftsPerformancePage() {
           </button>
         ))}
       </div>
+      <Pager pager={pgInRange.pager} noun="shifts" />
 
       {open && <ShiftReportModal shift={open} name={name} onClose={() => setOpen(null)} />}
     </div>

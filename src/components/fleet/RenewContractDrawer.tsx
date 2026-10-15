@@ -8,6 +8,8 @@ import {
 } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
+import { LegalDocFields } from '../legal/LegalDocFields';
+import { LegalDraft, draftError, emptyDraft, uploadDraft } from '../../lib/legalDocs';
 
 const SHIFTS: { key: DriverShift; label: string; sub: string }[] = [
   { key: 'day', label: 'Day shift', sub: '180,000 a week' },
@@ -46,6 +48,7 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
   const [changes, setChanges] = useState<string[]>([]);
   const [agreedNext, setAgreedNext] = useState('');
   const [details, setDetails] = useState('');
+  const [contract, setContract] = useState<LegalDraft>(emptyDraft(todayStr()));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -72,12 +75,18 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
     return computeDepositStanding(hyp, myDeposits, on);
   }, [driver, startDate, shift, vehicleId, restDay, lastEnd, credit, first, firstDate, myDeposits]);
 
-  const canSave = !!reasonKey && (reasonKey !== 'other' || !!otherReason.trim()) && !!startDate && !!restDay && (!paidFirst || first > 0);
+  const contractError = draftError('driver_contract', contract);
+  const canSave = !!reasonKey && (reasonKey !== 'other' || !!otherReason.trim()) && !!startDate && !!restDay && (!paidFirst || first > 0) && !contractError;
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
     setError('');
-    const { error: err } = await supabase.rpc('renew_driver_contract', {
+    // The new signed contract is uploaded, then the renewal and the
+    // contract are saved together.
+    const up = await uploadDraft('driver_contract', driver.id, contract);
+    if ('error' in up) { setSaving(false); setError(up.error); return; }
+    const { error: err } = await supabase.rpc('renew_driver_contract_with_contract', {
+      doc: up.doc,
       p: {
         driver_id: driver.id, start_date: startDate, reason_key: reasonKey, reason, details: details.trim(),
         vehicle_id: vehicleId || null, shift: vehicleId ? shift : null, rest_day: restDay,
@@ -197,7 +206,9 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
           </div>
         </section>
 
+        <LegalDocFields kind="driver_contract" draft={contract} onChange={setContract} title="The new contract — signed and stamped *" />
         {error && <div className="text-caption text-danger bg-danger-muted rounded-md px-3 py-2">{error}</div>}
+        {!error && contractError && <p className="text-caption text-fg-muted">{contractError}</p>}
         <div className="flex items-center justify-between gap-2 pt-3 border-t border-line-muted">
           <p className="text-caption text-fg-muted">{CONTRACT_CAN_RETURN.find((c) => c.key === canReturn) ? `When it ended: ${CONTRACT_CAN_RETURN.find((c) => c.key === canReturn)!.label.toLowerCase()}` : ''}</p>
           <div className="flex gap-2">

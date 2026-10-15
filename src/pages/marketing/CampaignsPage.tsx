@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Plus, Target, ArrowLeft, CalendarClock } from 'lucide-react';
 import { useMarketingData, STAGES } from '../../lib/marketing';
 import { Campaign, Contact } from '../../lib/supabase';
@@ -32,6 +33,7 @@ function CampaignsPageView({ data }: { data: ReturnType<typeof useMarketingData>
   const [campaignDrawer, setCampaignDrawer] = useState<CampaignDrawerState | null>(null);
   const [contactDrawer, setContactDrawer] = useState<ContactDrawerState | null>(null);
 
+  const pgCampaigns = usePaged(campaigns, { key: 'campaigns-cards' });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
 
   const fresh = selectedCampaign ? campaigns.find((c) => c.id === selectedCampaign.id) ?? selectedCampaign : null;
@@ -75,7 +77,7 @@ function CampaignsPageView({ data }: { data: ReturnType<typeof useMarketingData>
 
       {view === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {campaigns.map((camp) => {
+          {pgCampaigns.rows.map((camp) => {
             const campContacts = contacts.filter((c) => c.campaign_id === camp.id);
             const won = campContacts.filter((c) => c.stage === 'won').length;
             const contactedOrFurther = campContacts.filter((c) => c.stage !== 'not_contacted').length;
@@ -113,6 +115,7 @@ function CampaignsPageView({ data }: { data: ReturnType<typeof useMarketingData>
               </div>
             );
           })}
+          <Pager pager={pgCampaigns.pager} noun="campaigns" className="col-span-full" />
           {campaigns.length === 0 && (
             <div className="card p-10 text-center col-span-full">
               <Target size={26} className="text-fg-subtle mx-auto mb-2" />

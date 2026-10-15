@@ -1,7 +1,7 @@
 import { lazy, LazyExoticComponent, ComponentType } from 'react';
 import {
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
-  FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
+  FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
   Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText,
 } from 'lucide-react';
@@ -11,7 +11,7 @@ import { Access } from './access';
 // sidebar, its address, and who may see it. The shell, the router, the
 // command palette, How to Use and the mobile menu all read from here.
 
-export type BadgeKey = 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks';
+export type BadgeKey = 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks' | 'missingContracts' | 'missingAgreements';
 
 export interface PageDef {
   id: string;
@@ -89,6 +89,7 @@ export const MODULES: ModuleDef[] = [
       { id: 'fleet-deposits', path: '/fleet/deposits', label: 'Deposits', icon: Wallet, component: LS(() => import('../pages/fleet/FleetDepositsPage'), 'DepositsStrip'), can: (a) => a.in('fleet', 'it'), badge: 'overdueDeposits', group: 'Money' },
       { id: 'fleet-fines', path: '/fleet/fines', label: 'Fines', icon: Receipt, component: LS(() => import('../pages/fleet/FleetFinesPage'), 'FinesStrip'), can: (a) => a.in('fleet', 'it'), group: 'Money' },
       { id: 'fleet-days-off', path: '/fleet/days-off', label: 'Days off', icon: CalendarOff, component: LS(() => import('../pages/fleet/DriverPausesPage'), 'DaysOffStrip'), can: (a) => a.in('fleet', 'it', 'finance'), badge: 'pendingPauses', group: 'Money', keywords: 'pauses sick garage' },
+      { id: 'fleet-contracts', path: '/fleet/contracts', label: 'Contracts', icon: FileSignature, component: L(() => import('../pages/os/LegalDocsPage').then((m) => ({ default: m.FleetContractsPage }))), can: (a) => a.in('fleet', 'it'), badge: 'missingContracts', keywords: 'contract termination letter amendment signed stamped missing documents', description: 'Signed and stamped driver contracts, amendments and termination letters — and what is missing.' },
       { id: 'fleet-leaderboard', path: '/fleet/leaderboard', label: 'Leaderboard', icon: Trophy, component: L(() => import('../pages/fleet/DepositLeaderboardPage')), can: (a) => a.in('fleet', 'it', 'finance'), group: 'Money' },
       { id: 'fleet-branding', path: '/fleet/branding', label: 'Branding & devices', icon: Paintbrush, component: L(() => import('../pages/fleet/BrandingDevicesPage')), can: (a) => a.in('fleet', 'it'), badge: 'carFollowups', group: 'Partners' },
       { id: 'non-insider', path: '/non-insider', label: 'Non-Insider', icon: CarFront, component: L(() => import('../pages/nonInsider/NonInsiderPage')), can: (a) => a.in('fleet', 'it'), group: 'Partners', keywords: 'platform drivers cars partners' },
@@ -103,6 +104,7 @@ export const MODULES: ModuleDef[] = [
       { id: 'finance-revenue', path: '/finance/revenue', label: 'Revenue', icon: TrendingUp, component: L(() => import('../pages/finance/FinanceRevenuePage')), can: (a) => a.in('finance'), group: 'Income' },
       { id: 'finance-collections', path: '/finance/collections', label: 'Fleet collections', icon: Wallet, component: L(() => import('../pages/finance/FinanceFleetCollectionsPage')), can: (a) => a.in('finance'), group: 'Income' },
       { id: 'finance-owners', path: '/finance/owners', label: 'Vehicle owners', icon: Car, component: L(() => import('../pages/finance/FinanceVehicleOwnersPage')), can: (a) => a.in('finance'), group: 'Owners' },
+      { id: 'finance-agreements', path: '/finance/agreements', label: 'Agreements', icon: FileSignature, component: L(() => import('../pages/os/LegalDocsPage').then((m) => ({ default: m.FinanceAgreementsPage }))), can: (a) => a.in('finance'), badge: 'missingAgreements', group: 'Owners', keywords: 'management agreement owner signed stamped missing documents', description: 'Signed and stamped owner management agreements — and which owners are missing one.' },
       { id: 'finance-newsletters', path: '/finance/newsletters', label: 'Newsletters', icon: Mail, component: L(() => import('../pages/finance/NewslettersPage')), can: (a) => a.in('finance'), group: 'Owners' },
       { id: 'finance-payroll', path: '/finance/payroll', label: 'Staff payroll', icon: Users2, component: L(() => import('../pages/finance/FinancePayrollPage')), can: (a) => a.in('finance'), group: 'Payroll' },
       { id: 'finance-driver-payroll', path: '/finance/driver-payroll', label: 'Driver payroll', icon: Truck, component: L(() => import('../pages/finance/FinanceDriverPayrollPage')), can: (a) => a.in('finance'), group: 'Payroll' },

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Building2, CarFront, CheckCircle2, ChevronRight, Lock, Megaphone, Pencil, Phone, PhoneForwarded, RotateCcw, Search, Target, Undo2 } from 'lucide-react';
 import { supabase, PlatformDriver, ScriptCard } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
@@ -89,6 +90,7 @@ export default function OutreachPage() {
   const pool = drivers.length - (counts.came ?? 0) - (counts.wrong_number ?? 0);
   const doneInRound = Math.max(0, pool - counts.round);
 
+  const pgList = usePaged(list, { key: 'outreach-call' });
   if (loading) return <div className="card p-10 text-center text-small text-fg-subtle">Loading Non-Insider drivers…</div>;
 
   const chip = (key: View, label: string, n: number | undefined, title?: string) => (
@@ -171,7 +173,7 @@ export default function OutreachPage() {
           <p className="text-micro text-fg-subtle">{list.length} driver{list.length === 1 ? '' : 's'}</p>
           <div className="max-h-[60vh] overflow-y-auto -mx-1 px-1 space-y-1">
             {list.length === 0 && <p className="text-small text-fg-subtle text-center py-6">{term ? 'No driver matches.' : view === 'round' ? `Round ${roundNo} is done — everyone has been reached.` : 'Nobody here.'}</p>}
-            {list.map((d) => {
+            {pgList.rows.map((d) => {
               const s = statuses[d.id];
               const lockedBy = claimedByOther(s, me) ? names[s!.claimed_by!] ?? 'another agent' : null;
               return (
@@ -198,6 +200,7 @@ export default function OutreachPage() {
               );
             })}
           </div>
+          <Pager pager={pgList.pager} noun="drivers" />
         </div>
 
         {selected ? (

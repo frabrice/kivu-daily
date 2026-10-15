@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, Driver, CallLog, CallReason, CallOutcome, CallScript } from './supabase';
+import { fetchAll } from './fetchAll';
 
 interface DirectoryRow { id: string; full_name: string; phone: string; stage: string; contract_status: string; plate_number: string | null; created_at: string }
 
@@ -17,7 +18,7 @@ export function useCallCenterData() {
       // drivers table (deposits and other details stay with Fleet/Finance).
       // The stage arrives already worked out (active / ready / ...).
       supabase.rpc('call_center_drivers'),
-      supabase.from('call_logs').select('*, outcome:call_outcomes(*), reason:call_reasons(*), caller:profiles(*)').order('created_at', { ascending: false }),
+      fetchAll(() => supabase.from('call_logs').select('*, outcome:call_outcomes(*), reason:call_reasons(*), caller:profiles(*)').order('created_at', { ascending: false }).order('id')),
       supabase.from('call_reasons').select('*').order('sort_order'),
       supabase.from('call_outcomes').select('*').order('sort_order'),
       supabase.from('call_scripts').select('*').order('created_at', { ascending: false }),

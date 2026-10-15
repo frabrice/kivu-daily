@@ -1,5 +1,6 @@
 import { AlertTriangle, CalendarClock, ChevronRight, Inbox, Phone } from 'lucide-react';
 import { CallTicket } from '../../lib/supabase';
+import { Pager, usePaged } from '../../ui/Pager';
 import { ageLabel, CATEGORY_LABEL, isOverdue, isResponseOverdue, STATUS_META, OUTCOME_LABEL } from '../../lib/callTickets';
 
 // One row per ticket: a priority stripe on the left, the caller and what
@@ -17,6 +18,7 @@ export default function TicketList({
   showAssignee?: boolean;
   empty: string;
 }) {
+  const { rows, pager } = usePaged(tickets, { key: 'tickets' });
   if (tickets.length === 0) {
     return (
       <div className="card p-10 text-center">
@@ -26,8 +28,9 @@ export default function TicketList({
     );
   }
   return (
+    <div>
     <div className="card divide-y divide-line-muted overflow-hidden">
-      {tickets.map((t) => {
+      {rows.map((t) => {
         const noResponse = isResponseOverdue(t);
         const overdue = noResponse || isOverdue(t);
         const callbackDue = !!t.callback_at && t.status !== 'closed' && new Date(t.callback_at).getTime() <= Date.now();
@@ -57,6 +60,8 @@ export default function TicketList({
           </button>
         );
       })}
+    </div>
+    <Pager pager={pager} noun="cases" />
     </div>
   );
 }

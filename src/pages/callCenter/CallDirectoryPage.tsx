@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Search, Users2, Phone, Clock3, History } from 'lucide-react';
 import { useCallCenterData, STAGE_LABEL } from '../../lib/callCenter';
 import { timeAgo } from '../../lib/utils';
@@ -31,6 +32,7 @@ function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenter
     return drivers.filter((d) => d.full_name.toLowerCase().includes(q) || d.phone.includes(q));
   }, [drivers, search]);
 
+  const pgFiltered = usePaged(filtered, { key: 'directory-cards' });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-14 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -51,7 +53,7 @@ function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenter
 
       {view === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-          {filtered.map((d) => {
+          {pgFiltered.rows.map((d) => {
             const callCount = logs.filter((l) => l.driver_id === d.id).length;
             const last = logs.find((l) => l.driver_id === d.id);
             return (
@@ -76,6 +78,7 @@ function CallDirectoryPageView({ data }: { data: ReturnType<typeof useCallCenter
               </div>
             );
           })}
+          <Pager pager={pgFiltered.pager} noun="people" className="col-span-full" />
           {filtered.length === 0 && <p className="text-small text-fg-subtle col-span-full text-center py-8">No drivers found.</p>}
         </div>
       )}

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Search, Plus, Users2, Phone, CarFront, CircleSlash, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { canEditFleet } from '../../lib/fleet';
@@ -70,6 +71,7 @@ export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeo
 
   const selectClass = 'input py-1.5 text-caption w-auto';
 
+  const pgFiltered = usePaged(filtered, { key: 'ni-drivers-cards' });
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
@@ -131,7 +133,7 @@ export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeo
 
       {view === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {filtered.map((d) => (
+          {pgFiltered.rows.map((d) => (
             <div
               key={d.id}
               onClick={() => setDrawer({ driver: d, startEditing: false })}
@@ -178,6 +180,7 @@ export default function NonInsiderDriversPage({ data }: { data: ReturnType<typeo
               </div>
             </div>
           ))}
+          <Pager pager={pgFiltered.pager} noun="drivers" className="col-span-full" />
           {filtered.length === 0 && (
             <div className="card p-10 text-center col-span-full">
               <Users2 size={26} className="text-fg-subtle mx-auto mb-2" />

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, Profile, Task, Department } from './supabase';
+import { fetchAll } from './fetchAll';
 import { todayStr, dateStr } from './utils';
 
 export interface EmployeeWithStats extends Profile {
@@ -20,7 +21,7 @@ export function useCompanyData() {
     const [pRes, dRes, tRes] = await Promise.all([
       supabase.from('profiles').select('*, department:departments(*)').eq('is_active', true),
       supabase.from('departments').select('*').order('name'),
-      supabase.from('tasks').select('*'),
+      fetchAll(() => supabase.from('tasks').select('*').order('id')),
     ]);
     setProfiles((pRes.data as Profile[]) ?? []);
     setDepartments((dRes.data as Department[]) ?? []);

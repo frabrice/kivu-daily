@@ -162,6 +162,41 @@ const LIST_KINDS: ListKind[] = [
     },
   },
   {
+    // Contract papers (MD, 15 Oct 2026): every driver on a car has their
+    // signed and stamped contract for this contract, every ended contract
+    // its termination letter.
+    key: "contract_papers", priority: "high", due: "12:00",
+    title: (n) => `Add ${plural(n, "missing contract paper")}`, doneTitle: "Contract papers complete",
+    intro: "Each one is missing from the driver's file (Fleet → Contracts, or the driver's Contract papers tab). Contracts must be signed and stamped.",
+    compute: async (ctx) => {
+      const docs = await rows<{ kind: string; driver_id: string | null; period_start: string | null }>(ctx.db.from("contract_documents").select("kind, driver_id, period_start").not("driver_id", "is", null));
+      const items: SmartItem[] = [];
+      for (const d of await loadDrivers(ctx)) {
+        const need = d.contract_status === "ended" ? (d.start_date ? "driver_termination_letter" : null) : d.vehicle_id && d.start_date ? "driver_contract" : null;
+        if (!need) continue;
+        if (docs.some((x) => x.driver_id === d.id && x.kind === need && (!x.period_start || x.period_start === d.start_date))) continue;
+        items.push({ id: `${need}:${d.id}:${d.start_date}`, label: d.full_name, detail: need === "driver_contract" ? `contract missing · ${car(d)}` : "termination letter missing" });
+      }
+      return { assignments: assign(one(ctx, "fleet_manager"), items), open: setOf(items) };
+    },
+  },
+  {
+    key: "owner_agreements", priority: "normal", due: "12:00",
+    title: (n) => `Add ${plural(n, "missing management agreement")}`, doneTitle: "Owner agreements complete",
+    intro: "Owners whose car we manage without their signed and stamped management agreement on file (Finance → Agreements).",
+    compute: async (ctx) => {
+      const [docs, cars, owners] = await Promise.all([
+        rows<{ owner_id: string | null }>(ctx.db.from("contract_documents").select("owner_id").eq("kind", "owner_management_agreement")),
+        rows<{ owner_id: string | null; operation_start_date: string | null; plate_number: string }>(ctx.db.from("vehicles").select("owner_id, operation_start_date, plate_number")),
+        rows<{ id: string; full_name: string }>(ctx.db.from("vehicle_owners").select("id, full_name")),
+      ]);
+      const items: SmartItem[] = owners
+        .filter((o) => cars.some((c) => c.owner_id === o.id && c.operation_start_date) && !docs.some((x) => x.owner_id === o.id))
+        .map((o) => ({ id: `agreement:${o.id}`, label: o.full_name, detail: cars.filter((c) => c.owner_id === o.id).map((c) => c.plate_number).join(", ") }));
+      return { assignments: assign(one(ctx, "route_finance"), items), open: setOf(items) };
+    },
+  },
+  {
     key: "md_approvals", priority: "high", due: "10:00",
     title: (n) => `Approve or reject ${plural(n, "item")}`, doneTitle: "Nothing waiting for your approval",
     intro: "Checked by Finance and waiting for you.",

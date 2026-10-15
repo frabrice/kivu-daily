@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Pager, usePaged } from '../ui/Pager';
 import { Calendar, Lock, Users2, Globe2, Shield, Plus, ListPlus, Pencil } from 'lucide-react';
 import { supabase, Meeting, MeetingVisibility, Profile } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -47,6 +48,7 @@ export default function MeetingsPage() {
 
   const canEditMeeting = (m: Meeting) => profile?.id === m.author_id || profile?.role === 'managing_director';
 
+  const pgMeetings = usePaged(meetings, { key: 'meetings-cards' });
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
@@ -78,7 +80,7 @@ export default function MeetingsPage() {
 
       {!loading && meetings.length > 0 && view === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-          {meetings.map((m) => {
+          {pgMeetings.rows.map((m) => {
             const Meta = VISIBILITY_META[m.visibility];
             return (
               <div
@@ -104,6 +106,7 @@ export default function MeetingsPage() {
               </div>
             );
           })}
+          <Pager pager={pgMeetings.pager} noun="meetings" className="col-span-full" />
         </div>
       )}
 

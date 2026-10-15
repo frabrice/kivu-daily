@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Pager, usePaged } from '../ui/Pager';
 import { Plus, ChevronLeft, ChevronRight, Rocket, Image as ImageIcon, Zap, Trash2, ListFilter, CalendarDays, Pencil } from 'lucide-react';
 import { supabase, ContentPost, ContentStatus } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -66,6 +67,7 @@ export default function SocialMediaPage() {
     setPostDrawer({ post: null, startEditing: true });
   };
 
+  const pgPosts = usePaged(posts, { key: 'posts' });
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2.5">
@@ -147,7 +149,7 @@ export default function SocialMediaPage() {
 
       {!loading && mode === 'list' && posts.length > 0 && listView === 'cards' && (
         <div className="space-y-1.5">
-          {posts.map((p) => (
+          {pgPosts.rows.map((p) => (
             <div
               key={p.id}
               onClick={() => setPostDrawer({ post: p, startEditing: false })}
@@ -170,6 +172,7 @@ export default function SocialMediaPage() {
               />
             </div>
           ))}
+          <Pager pager={pgPosts.pager} noun="posts" className="col-span-full" />
         </div>
       )}
 

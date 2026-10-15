@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
@@ -48,6 +49,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
 
   const overdueCount = depositQueue.filter((r) => !r.isEnded && r.tier === 'red').length;
 
+  const pgDepositQueue = usePaged(depositQueue, { key: 'fleet-deposits', reset: search });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -67,7 +69,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       </div>
 
       <div className="space-y-1.5">
-        {depositQueue.map((row) => {
+        {pgDepositQueue.rows.map((row) => {
           const style = DEPOSIT_TIER_STYLE[row.tier];
           const dotColor = DEPOSIT_TIER_STYLE[foldDepositTier(row.tier)].dot;
           return (
@@ -113,6 +115,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
             </div>
           );
         })}
+        <Pager pager={pgDepositQueue.pager} noun="drivers" />
         {depositQueue.length === 0 && (
           <div className="card p-10 text-center">
             <Wallet size={26} className="text-fg-subtle mx-auto mb-2" />

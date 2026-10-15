@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { CalendarClock, AlertTriangle } from 'lucide-react';
 import { useMarketingData } from '../../lib/marketing';
 import { Contact } from '../../lib/supabase';
@@ -31,6 +32,7 @@ function FollowUpsPageView({ data }: { data: ReturnType<typeof useMarketingData>
 
   const overdueCount = followUpsDue.filter((c) => c.next_follow_up! < todayStr()).length;
 
+  const pgFollowUpsDue = usePaged(followUpsDue, { key: 'follow-ups' });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-14 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -50,7 +52,7 @@ function FollowUpsPageView({ data }: { data: ReturnType<typeof useMarketingData>
             <p className="text-small text-fg-subtle">Nothing due in the next 3 days.</p>
           </div>
         )}
-        {followUpsDue.map((c) => {
+        {pgFollowUpsDue.rows.map((c) => {
           const camp = campaigns.find((camp) => camp.id === c.campaign_id);
           const overdue = c.next_follow_up! < todayStr();
           return (
@@ -70,6 +72,7 @@ function FollowUpsPageView({ data }: { data: ReturnType<typeof useMarketingData>
             </button>
           );
         })}
+        <Pager pager={pgFollowUpsDue.pager} noun="follow-ups" />
       </div>
 
       {contactDrawer && (

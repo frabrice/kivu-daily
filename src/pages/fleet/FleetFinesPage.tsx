@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Search, Plus, Receipt, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFleetData, formatDateLabelSafe, canEditFleet, fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel } from '../../lib/fleet';
@@ -39,6 +40,7 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
     );
   }, [fines, search]);
 
+  const pgFilteredFines = usePaged(filteredFines, { key: 'fines-cards' });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -64,7 +66,7 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
 
       {view === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {filteredFines.map((f) => {
+          {pgFilteredFines.rows.map((f) => {
             const amountPaid = fineAmountPaid(f.id, finePayments);
             const status = fineStatus(f.amount, amountPaid);
             const statusStyle = FINE_STATUS_STYLE[status];
@@ -104,6 +106,7 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
               </div>
             );
           })}
+          <Pager pager={pgFilteredFines.pager} noun="fines" className="col-span-full" />
           {filteredFines.length === 0 && (
             <div className="card p-10 text-center col-span-full">
               <Receipt size={26} className="text-fg-subtle mx-auto mb-2" />

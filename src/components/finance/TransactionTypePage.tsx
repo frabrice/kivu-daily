@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Plus, LucideIcon, Clock3, ListChecks } from 'lucide-react';
 import { FinanceTransaction, FinanceTransactionType } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
@@ -35,6 +36,7 @@ export default function TransactionTypePage({ type, title, icon: Icon, descripti
   const monthTotal = sumWhere(monthRows, type, direction);
   const pendingCount = rows.filter((t) => t.status === 'pending' || t.status === 'checked').length;
 
+  const pgRows = usePaged(rows, { key: 'tx-type-cards' });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -104,7 +106,7 @@ export default function TransactionTypePage({ type, title, icon: Icon, descripti
 
       {rows.length > 0 && view === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {rows.map((t) => (
+          {pgRows.rows.map((t) => (
             <div key={t.id} onClick={() => setDrawer({ tx: t, startEditing: false })} className="card p-4 cursor-pointer hover:shadow-md hover:border-brand/30 transition-all">
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <span className="font-mono text-micro text-fg-subtle">{t.reference}</span>
@@ -123,6 +125,7 @@ export default function TransactionTypePage({ type, title, icon: Icon, descripti
               </div>
             </div>
           ))}
+          <Pager pager={pgRows.pager} noun="entries" className="col-span-full" />
         </div>
       )}
 

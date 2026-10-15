@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Wallet, Plus, ListChecks, Clock3, Users2, ChevronLeft, ChevronRight, X, Ban } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFinanceData, STATUS_META, fmt, sumWhere } from '../../lib/finance';
@@ -129,6 +130,7 @@ export default function FinanceFleetCollectionsPage() {
     setWeekFilter(dateStr(addDays(new Date(`${base}T00:00:00`), dir * 7)));
   };
 
+  const pgWeeks = usePaged(weeks, { key: 'collections-weeks' });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -271,7 +273,7 @@ export default function FinanceFleetCollectionsPage() {
         </div>
       )}
 
-      {weeks.map((week) => (
+      {pgWeeks.rows.map((week) => (
         <div key={week.weekStart} className="space-y-1.5">
           <div className="flex items-center justify-between gap-2 px-0.5">
             <p className="text-caption font-semibold text-fg-muted ">{weekLabel(week.weekStart)}</p>
@@ -316,6 +318,7 @@ export default function FinanceFleetCollectionsPage() {
           />
         </div>
       ))}
+      <Pager pager={pgWeeks.pager} noun="weeks" className="col-span-full" />
 
       {drawer && (
         <FinanceTransactionDrawer

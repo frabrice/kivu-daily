@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { Pager, usePaged } from '../ui/Pager';
 
 export interface DataTableColumn<T> {
   header: string;
@@ -12,10 +13,14 @@ interface DataTableProps<T> {
   keyFn: (row: T) => string;
   emptyLabel?: string;
   onRowClick?: (row: T) => void;
+  // Rows per page (25 by default; the reader can switch to 50 or 100). `pageKey` remembers their choice.
+  pageKey?: string;
+  noun?: string;
 }
 
-export default function DataTable<T>({ columns, rows, keyFn, emptyLabel = 'Nothing here yet.', onRowClick }: DataTableProps<T>) {
-  if (rows.length === 0) {
+export default function DataTable<T>({ columns, rows: allRows, keyFn, emptyLabel = 'Nothing here yet.', onRowClick, pageKey, noun }: DataTableProps<T>) {
+  const { rows, pager } = usePaged(allRows, { key: pageKey });
+  if (allRows.length === 0) {
     return (
       <div className="card p-10 text-center">
         <p className="text-small text-fg-subtle">{emptyLabel}</p>
@@ -24,6 +29,7 @@ export default function DataTable<T>({ columns, rows, keyFn, emptyLabel = 'Nothi
   }
 
   return (
+    <div>
     <div className="card overflow-x-auto p-0">
       <table className="w-full text-left border-collapse">
         <thead>
@@ -51,6 +57,8 @@ export default function DataTable<T>({ columns, rows, keyFn, emptyLabel = 'Nothi
           ))}
         </tbody>
       </table>
+    </div>
+    <Pager pager={pager} noun={noun} />
     </div>
   );
 }

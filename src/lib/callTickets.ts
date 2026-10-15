@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   supabase, CallTicket, CallTicketCallerType, CallTicketCategory, CallTicketChannel, CallTicketStatus, CallTicketUpdate, Profile, ScriptCard,
 } from './supabase';
+import { fetchAll } from './fetchAll';
 
 // Call Center tickets: shared labels, the overdue rule, and the data hook
 // used by both the Call Center's "Calls & Tickets" page and everyone's
@@ -132,7 +133,7 @@ export function useCallTickets() {
 
   const load = useCallback(async () => {
     const [t, u, p] = await Promise.all([
-      supabase.from('call_tickets').select('*, driver:drivers(full_name, vehicle:vehicles(plate_number)), platform_driver:platform_drivers(full_name, phone)').order('created_at', { ascending: false }),
+      fetchAll(() => supabase.from('call_tickets').select('*, driver:drivers(full_name, vehicle:vehicles(plate_number)), platform_driver:platform_drivers(full_name, phone)').order('created_at', { ascending: false })),
       supabase.from('call_ticket_updates').select('*').order('created_at'),
       supabase.from('profiles').select('id, full_name, responsibility_label, role, is_active, department:departments(name, slug)').order('full_name'),
     ]);

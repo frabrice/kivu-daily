@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, Driver, Vehicle, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, DriverDocument, DriverDocumentType, DriverStage, DriverContractStatus, DriverRestDay, DriverShift, DepositPaymentMethod, Profile } from './supabase';
+import { fetchAll } from './fetchAll';
 import { todayStr } from './utils';
 
 // Who may change Fleet data - kept in step with the RLS policies. Call
@@ -66,8 +67,8 @@ export function useFleetData() {
     const [d, v, dep, fin, finePay, contractEvts, docs] = await Promise.all([
       supabase.from('drivers').select('*, vehicle:vehicles(*), pauses:driver_pauses(*)').order('created_at', { ascending: false }),
       supabase.from('vehicles').select('*').order('created_at', { ascending: false }),
-      supabase.from('driver_deposits').select('*').order('paid_date', { ascending: false }),
-      supabase.from('driver_fines').select('*, driver:drivers(*), vehicle:vehicles(*)').order('fine_date', { ascending: false }),
+      fetchAll(() => supabase.from('driver_deposits').select('*').order('paid_date', { ascending: false }).order('id')),
+      fetchAll(() => supabase.from('driver_fines').select('*, driver:drivers(*), vehicle:vehicles(*)').order('fine_date', { ascending: false }).order('id')),
       supabase.from('driver_fine_payments').select('*').order('paid_date', { ascending: false }),
       supabase.from('driver_contract_events').select('*').order('event_date', { ascending: false }),
       supabase.from('driver_documents').select('*'),

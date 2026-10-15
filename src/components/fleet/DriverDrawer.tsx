@@ -10,6 +10,8 @@ import SearchableSelect from '../SearchableSelect';
 import FlagToITDrawer from '../FlagToITDrawer';
 import VehicleDrawer from './VehicleDrawer';
 import DriverDocumentsSection from './DriverDocumentsSection';
+import { LegalDocFields } from '../legal/LegalDocFields';
+import { LegalDraft, draftError, emptyDraft, uploadDraft, useLegalDocs } from '../../lib/legalDocs';
 
 // Editing only - clicking a driver on the Pipeline now opens the full
 // DriverProfilePage instead of a view mode here; this drawer's only job
@@ -52,6 +54,15 @@ export default function DriverDrawer({
   const [error, setError] = useState('');
   const [flagOpen, setFlagOpen] = useState(false);
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
+  // A driver put on a car must have their signed and stamped contract on
+  // file for this contract (MD, 15 Oct 2026). The id is fixed up front so
+  // the file and the driver are saved under the same id.
+  const [driverId] = useState(() => driver?.id ?? crypto.randomUUID());
+  const [inserted, setInserted] = useState(false);
+  const [contract, setContract] = useState<LegalDraft>(emptyDraft(todayStr()));
+  const { docs: legalDocs } = useLegalDocs();
+  const hasContract = legalDocs.some((x) => x.driver_id === driverId && x.kind === 'driver_contract' && (!x.period_start || x.period_start === startDate));
+  const needContract = editing && !!vehicleId && !!startDate && driver?.contract_status !== 'ended' && !hasContract;
 
   const replacementOptions = availableForReplacement(drivers, driver?.id).map((d) => ({ id: d.id, label: d.full_name, sublabel: d.phone }));
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
@@ -83,8 +94,14 @@ export default function DriverDrawer({
       setError('Every driver must be assigned a weekly rest day.');
       return;
     }
+    if (needContract) {
+      const cErr = draftError('driver_contract', contract);
+      if (cErr) { setError(cErr); return; }
+    }
     setSaving(true);
     setError('');
+    const up = needContract ? await uploadDraft('driver_contract', driverId, contract) : null;
+    if (up && 'error' in up) { setSaving(false); setError(up.error); return; }
     const payload = {
       full_name: fullName.trim(),
       phone: phone.trim(),
@@ -101,14 +118,25 @@ export default function DriverDrawer({
       replaced_driver_id: replacedDriverId || null,
       updated_at: new Date().toISOString(),
     };
-    const { error: err } = driver
-      ? await supabase.from('drivers').update(payload).eq('id', driver.id)
-      : await supabase.from('drivers').insert({ ...payload, created_by: profile!.id });
-    setSaving(false);
+    const { error: err } = driver || inserted
+      ? await supabase.from('drivers').update(payload).eq('id', driverId)
+      : await supabase.from('drivers').insert({ ...payload, id: driverId, created_by: profile!.id });
     if (err) {
+      setSaving(false);
       setError(err.message);
       return;
     }
+    if (!driver) setInserted(true);
+    if (up) {
+      const { error: docErr } = await supabase.rpc('add_driver_document', { p_driver: driverId, p_kind: 'driver_contract', d: up.doc });
+      if (docErr) {
+        setSaving(false);
+        onSaved();
+        setError(`The driver is saved, but the contract wasn't: ${docErr.message}. Press save again, or add it from their page (Contract papers).`);
+        return;
+      }
+    }
+    setSaving(false);
     onSaved();
     onClose();
   };
@@ -299,6 +327,10 @@ export default function DriverDrawer({
             />
           </div>
         )}
+
+        {needContract && <LegalDocFields kind="driver_contract" draft={contract} onChange={setContract} title="Signed and stamped contract *" />}
+        {editing && !vehicleId && <p className="text-caption text-fg-muted">The signed and stamped contract is asked for when the driver is put on a car.</p>}
+        {editing && vehicleId && hasContract && <p className="text-caption text-success">Signed and stamped contract on file for this contract.</p>}
 
         {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 

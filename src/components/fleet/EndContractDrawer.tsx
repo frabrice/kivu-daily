@@ -7,6 +7,8 @@ import {
 } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
+import { LegalDocFields } from '../legal/LegalDocFields';
+import { LegalDraft, draftError, emptyDraft, uploadDraft } from '../../lib/legalDocs';
 
 const GROUPS = [...new Set(CONTRACT_END_REASONS.map((r) => r.group))];
 
@@ -22,13 +24,15 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
   const [canReturn, setCanReturn] = useState<string>('yes');
   const [eventDate, setEventDate] = useState(todayStr());
   const [details, setDetails] = useState('');
+  const [letter, setLetter] = useState<LegalDraft>(emptyDraft(todayStr()));
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const isOther = reasonKey === 'other';
   const finalReason = isOther ? otherReason.trim() : CONTRACT_END_REASONS.find((r) => r.key === reasonKey)?.label ?? '';
-  const canContinue = !!reasonKey && !!eventDate && (!isOther || !!otherReason.trim());
+  const letterError = draftError('driver_termination_letter', letter);
+  const canContinue = !!reasonKey && !!eventDate && (!isOther || !!otherReason.trim()) && !letterError;
   const myDeposits = useMemo(() => deposits.filter((d) => d.driver_id === driver.id), [deposits, driver.id]);
   const settle = useMemo(() => contractSettlement(driver, myDeposits, eventDate), [driver, myDeposits, eventDate]);
   const finesUnpaid = fines.filter((f) => f.driver_id === driver.id).reduce((s, f) => s + Math.max(0, f.amount - fineAmountPaid(f.id, finePayments)), 0);
@@ -37,7 +41,12 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
     if (!canContinue) return;
     setSaving(true);
     setError('');
-    const { error: err } = await supabase.rpc('end_driver_contract', {
+    // The letter is uploaded first, then the contract ends and the letter is
+    // recorded in one step - one can't be saved without the other.
+    const up = await uploadDraft('driver_termination_letter', driver.id, letter);
+    if ('error' in up) { setSaving(false); setError(up.error); return; }
+    const { error: err } = await supabase.rpc('end_driver_contract_with_letter', {
+      doc: up.doc,
       p: {
         driver_id: driver.id, event_date: eventDate, reason_key: reasonKey, reason: finalReason, details: details.trim(),
         meta: { decided_by: decidedBy, can_return: canReturn, owed: settle.owes, credit: settle.credit, paid_through: settle.paidThrough, fines_unpaid: finesUnpaid },
@@ -98,7 +107,9 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
             <span className="block text-caption font-medium mb-1.5 text-fg-muted">Notes (optional)</span>
             <textarea value={details} onChange={(e) => setDetails(e.target.value)} rows={2} className="input resize-none" placeholder={canReturn === 'conditions' ? 'Under what conditions can they come back?' : 'Anything else worth knowing'} />
           </label>
+          <LegalDocFields kind="driver_termination_letter" draft={letter} onChange={setLetter} />
           {error && <div className="text-caption text-danger bg-danger-muted rounded-md px-3 py-2">{error}</div>}
+          {!error && reasonKey && letterError && <p className="text-caption text-fg-muted">{letterError}</p>}
           <div className="flex justify-end gap-2 pt-3 border-t border-line-muted">
             <button onClick={onClose} className="btn-ghost">Cancel</button>
             <button onClick={() => setConfirming(true)} disabled={!canContinue} className="btn-danger disabled:opacity-50">Continue</button>
@@ -112,6 +123,7 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
             <p className="text-small text-fg-muted">Reason: {finalReason} · {CONTRACT_END_DECIDED_BY.find((d) => d.key === decidedBy)?.label} · Come back: {CONTRACT_CAN_RETURN.find((c) => c.key === canReturn)?.label}</p>
           </div>
           {money}
+          <p className="text-small">Termination letter: <b>{letter.file?.name}</b></p>
           <p className="text-caption text-fg-muted">They move to Inactive and their seat on {driver.vehicle?.plate_number ?? 'their car'} becomes free for another driver. The contract can be renewed later from their page.</p>
           {error && <div className="text-caption text-danger bg-danger-muted rounded-md px-3 py-2">{error}</div>}
           <div className="flex justify-end gap-2 pt-3 border-t border-line-muted">

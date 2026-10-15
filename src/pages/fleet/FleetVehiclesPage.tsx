@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Pager, usePaged } from '../../ui/Pager';
 import { Search, Plus, Car, ShieldCheck, ShieldAlert, Smartphone, FileCheck2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFleetData, canEditFleet, shiftLabel } from '../../lib/fleet';
@@ -42,6 +43,7 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
     );
   }, [vehicles, drivers, search]);
 
+  const pgFilteredVehicles = usePaged(filteredVehicles, { key: 'cars-cards' });
   if (loading) return <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>;
 
   return (
@@ -67,7 +69,7 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
 
       {view === 'cards' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {filteredVehicles.map((v) => {
+          {pgFilteredVehicles.rows.map((v) => {
             const assigned = driversForVehicle(v.id);
             return (
               <div
@@ -120,6 +122,7 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
               </div>
             );
           })}
+          <Pager pager={pgFilteredVehicles.pager} noun="cars" className="col-span-full" />
           {filteredVehicles.length === 0 && (
             <div className="card p-10 text-center col-span-full">
               <Car size={26} className="text-fg-subtle mx-auto mb-2" />
