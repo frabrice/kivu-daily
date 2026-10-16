@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle, BadgeCheck, Car, CircleDollarSign, Clock, ExternalLink, Flag, MapPin, Navigation, RefreshCw, Route, Search, Star, Timer, User, XCircle,
+  AlertTriangle, BadgeCheck, Building2, Plus, Car, CircleDollarSign, Clock, ExternalLink, Flag, MapPin, Navigation, RefreshCw, Route, Search, Star, Timer, User, XCircle,
 } from 'lucide-react';
 import {
   DISPATCH_LABEL, FINAL_STATUSES, PAYMENT_LABEL, PlatformTrip, kigaliDayOf, kigaliTime, loadTripDetail, mapsRoute, minutesBetween, shortAddress, statusOf, useTrips,
@@ -11,6 +11,10 @@ import { Label, PageHeader, StatCard, StatGrid, UnderlineTabs, rwf } from '../..
 import { Pager, usePaged } from '../../ui/Pager';
 import { RangeTabs } from '../../components/charts/kit';
 import Modal from '../../components/Modal';
+import { Link } from 'react-router-dom';
+import { useAccess } from '../../os/access';
+import { useBusinessData } from '../../lib/business';
+import { AssignToCompanyModal } from '../../components/business/BusinessModals';
 
 // Every KivuRide trip, synced from the platform every 2 minutes: live
 // status, rider, driver and car (linked to ours when it's our fleet),
@@ -43,6 +47,14 @@ export default function TripsPage() {
   const [open, setOpen] = useState<PlatformTrip | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
+  // Trips done for a company (business clients): tag them from here.
+  const access = useAccess();
+  const canTag = access.in('finance', 'call_center');
+  const biz = useBusinessData();
+  const companyOf = useMemo(() => new Map(biz.clientTrips.map((x) => [x.trip_id, biz.clients.find((c) => c.id === x.client_id)])), [biz.clientTrips, biz.clients]);
+  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const [assigning, setAssigning] = useState<number[] | null>(null);
+  const [companyF, setCompanyF] = useState('');
 
   const isLive = (t: PlatformTrip) => !FINAL_STATUSES.includes(t.status);
   const filtered = useMemo(() => {
@@ -53,13 +65,15 @@ export default function TripsPage() {
       if (vehicleType && t.vehicle_type !== vehicleType) return false;
       if (payment && t.payment_method !== payment) return false;
       if (dispatch && t.dispatch_method !== dispatch) return false;
+      if (companyF === 'any' && !companyOf.has(t.id)) return false;
+      if (companyF && companyF !== 'any' && companyOf.get(t.id)?.id !== companyF) return false;
       if (!n) return true;
       if (String(t.id) === n.replace('#', '')) return true;
       const text = [t.rider_name, t.driver_name, t.vehicle_plate, t.pickup_address, t.destination_address].join(' ').toLowerCase();
       if (text.includes(n) || text.replace(/\s/g, '').includes(n.replace(/\s/g, ''))) return true;
       return digits.length >= 4 && [t.rider_phone, t.driver_phone].some((p) => (p ?? '').replace(/\D/g, '').includes(digits));
     });
-  }, [trips, q, vehicleType, payment, dispatch, ours]);
+  }, [trips, q, vehicleType, payment, dispatch, ours, companyF, companyOf]);
   const counts = {
     live: filtered.filter(isLive).length,
     completed: filtered.filter((t) => t.status === 'completed').length,
@@ -137,16 +151,29 @@ export default function TripsPage() {
         <select value={dispatch} onChange={(e) => setDispatch(e.target.value)} className="input !w-auto" aria-label="How it was dispatched">
           <option value="">Any dispatch</option>{methods.map((x) => <option key={x} value={x}>{DISPATCH_LABEL[x] ?? x}</option>)}
         </select>
+        {biz.clients.length > 0 && (
+          <select value={companyF} onChange={(e) => setCompanyF(e.target.value)} className="input !w-auto" aria-label="Company">
+            <option value="">Any rider</option><option value="any">Company trips</option>{biz.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
         <label className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-small cursor-pointer ${ours ? 'border-accent bg-accent/10' : 'border-line text-fg-muted'}`}>
           <input type="checkbox" checked={ours} onChange={(e) => setOurs(e.target.checked)} /> Our fleet only
         </label>
       </div>
 
+      {canTag && picked.size > 0 && (
+        <div className="sticky top-2 z-10 mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-accent/40 bg-surface-3 shadow-sm px-3 py-2">
+          <span className="text-small font-medium">{picked.size} trip{picked.size === 1 ? '' : 's'} selected</span>
+          <button onClick={() => setAssigning([...picked])} className="btn-primary text-caption"><Building2 size={13} /> Add to company</button>
+          <button onClick={() => setPicked(new Set())} className="btn-ghost text-caption">Clear</button>
+        </div>
+      )}
       {shown.length ? (
         <>
           <div className="card overflow-x-auto p-0">
             <table className="w-full text-body min-w-[1040px]">
               <thead><tr className="text-caption text-fg-muted text-left bg-inset">
+                {canTag && <th className={`${th} w-8`}><span className="sr-only">Select</span></th>}
                 {['Trip', 'Status', 'Rider', 'Driver & car', 'Route', 'Distance', 'Fare', 'Payment'].map((h, i) => <th key={h} className={`${th} ${i === 5 || i === 6 ? 'text-right' : ''}`}>{h}</th>)}
               </tr></thead>
               <tbody>
@@ -154,10 +181,18 @@ export default function TripsPage() {
                   const st = statusOf(t.status);
                   const km = t.actual_distance_km ?? t.estimated_distance_km;
                   return (
-                    <tr key={t.id} onClick={() => setOpen(t)} className="border-t border-line-muted cursor-pointer hover:bg-hover/60">
+                    <tr key={t.id} onClick={() => setOpen(t)} className={`border-t border-line-muted cursor-pointer hover:bg-hover/60 ${picked.has(t.id) ? 'bg-accent/5' : ''}`}>
+                      {canTag && (
+                        <td className={td} onClick={(e) => e.stopPropagation()}>
+                          {!companyOf.has(t.id) && t.status !== 'cancelled' && (
+                            <input type="checkbox" checked={picked.has(t.id)} aria-label={`Select trip ${t.id}`}
+                              onChange={() => setPicked((s) => { const x = new Set(s); if (x.has(t.id)) x.delete(t.id); else x.add(t.id); return x; })} />
+                          )}
+                        </td>
+                      )}
                       <td className={td}><span className="font-mono text-caption text-fg-muted">#{t.id}</span><span className="block whitespace-nowrap tabular-nums">{kigaliTime(t.created_at)}</span>{t.is_scheduled && <span className="text-caption text-link">Scheduled {kigaliTime(t.scheduled_pickup_time)}</span>}</td>
                       <td className={td}><Label tone={st.tone}>{st.label}</Label>{t.fraud_flag && <span className="block mt-1"><Label tone="danger" icon={Flag}>Flagged</Label></span>}</td>
-                      <td className={`${td} max-w-[180px]`}><span className="block truncate">{t.rider_name ?? '—'}</span><span className="block text-caption text-fg-muted">{t.rider_kind === 'guest' ? 'Booked for a guest' : t.rider_kind === 'app' ? 'Rider app' : ''}</span></td>
+                      <td className={`${td} max-w-[180px]`}><span className="block truncate">{t.rider_name ?? '—'}</span><span className="block text-caption text-fg-muted">{t.rider_kind === 'guest' ? 'Booked for a guest' : t.rider_kind === 'app' ? 'Rider app' : ''}</span>{companyOf.get(t.id) && <span className="mt-0.5 inline-block"><Label tone="info" icon={Building2}>{companyOf.get(t.id)!.name}</Label></span>}</td>
                       <td className={`${td} max-w-[220px]`} onClick={(e) => e.stopPropagation()}>
                         {t.kivu_driver_id ? <EntityLink type="driver" id={t.kivu_driver_id} label={t.driver_name ?? 'Driver'} /> : <span className="block truncate">{t.driver_name ?? <span className="text-fg-subtle">No driver yet</span>}</span>}
                         <span className="flex items-center gap-1.5 text-caption text-fg-muted">
@@ -181,12 +216,13 @@ export default function TripsPage() {
         <div className="card p-10 text-center text-body text-fg-muted">{trips.length ? 'No trip matches.' : 'No trips yet — the first sync may still be running.'}</div>
       )}
 
-      {open && <TripPanel trip={open} onClose={() => setOpen(null)} />}
+      {open && <TripPanel trip={open} company={companyOf.get(open.id) ?? null} canTag={canTag && open.status !== 'cancelled'} onAssign={() => setAssigning([open.id])} onClose={() => setOpen(null)} />}
+      {assigning && <AssignToCompanyModal tripIds={assigning} clients={biz.clients} onClose={() => setAssigning(null)} onSaved={() => { setPicked(new Set()); biz.reload(); }} />}
     </div>
   );
 }
 
-function TripPanel({ trip: t, onClose }: { trip: PlatformTrip; onClose: () => void }) {
+function TripPanel({ trip: t, company, canTag, onAssign, onClose }: { trip: PlatformTrip; company: { id: string; name: string } | null; canTag: boolean; onAssign: () => void; onClose: () => void }) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof loadTripDetail>> | null>(null);
   useEffect(() => { loadTripDetail(t.id).then(setDetail); }, [t.id]);
   const st = statusOf(t.status);
@@ -209,6 +245,7 @@ function TripPanel({ trip: t, onClose }: { trip: PlatformTrip; onClose: () => vo
           <Label tone={st.tone}>{st.label}</Label>
           {t.fraud_flag && <Label tone="danger" icon={Flag}>Flagged by the platform</Label>}
           {t.code_verified && <Label tone="success">Trip code checked</Label>}
+          {company ? <Link to={`/trips/companies?c=${company.id}`}><Label tone="info" icon={Building2}>{company.name}</Label></Link> : canTag && <button onClick={onAssign} className="btn-secondary text-caption"><Plus size={13} /> Add to company</button>}
           {t.rejected_driver_count > 0 && <Label tone="attention">{t.rejected_driver_count} driver{t.rejected_driver_count === 1 ? '' : 's'} declined</Label>}
           {route && <a href={route} target="_blank" rel="noreferrer" className="ml-auto btn-ghost text-caption"><ExternalLink size={13} /> Route on Google Maps</a>}
         </div>
