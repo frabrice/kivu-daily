@@ -1,7 +1,7 @@
 import { lazy, LazyExoticComponent, ComponentType } from 'react';
 import {
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
-  FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
+  Route, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
   Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText,
 } from 'lucide-react';
@@ -93,6 +93,12 @@ export const MODULES: ModuleDef[] = [
       { id: 'fleet-leaderboard', path: '/fleet/leaderboard', label: 'Leaderboard', icon: Trophy, component: L(() => import('../pages/fleet/DepositLeaderboardPage')), can: (a) => a.in('fleet', 'it', 'finance'), group: 'Money' },
       { id: 'fleet-branding', path: '/fleet/branding', label: 'Branding & devices', icon: Paintbrush, component: L(() => import('../pages/fleet/BrandingDevicesPage')), can: (a) => a.in('fleet', 'it'), badge: 'carFollowups', group: 'Partners' },
       { id: 'non-insider', path: '/non-insider', label: 'Non-Insider', icon: CarFront, component: L(() => import('../pages/nonInsider/NonInsiderPage')), can: (a) => a.in('fleet', 'it'), group: 'Partners', keywords: 'platform drivers cars partners' },
+    ],
+  },
+  {
+    id: 'trips', label: 'Trips', icon: Route, base: '/trips', shortcut: 'g r',
+    pages: [
+      { id: 'trips', path: '/trips', label: 'All trips', icon: Route, component: L(() => import('../pages/os/TripsPage')), can: (a) => a.in('call_center', 'fleet', 'finance', 'it'), keywords: 'rides kivuride platform trips status rider driver fare', description: 'Every KivuRide trip and its live status, synced from the platform every 2 minutes.' },
     ],
   },
   {
