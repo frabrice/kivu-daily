@@ -1,11 +1,11 @@
 import { ReactNode, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Building2, CalendarRange, CircleDollarSign, Download, FileText, Hourglass, LayoutGrid, Pencil, Plus, Receipt, Route, Search, Trash2, Users, Wallet,
+  ArrowLeft, BadgeCheck, Building2, CalendarRange, History, CircleDollarSign, Download, FileText, Hourglass, LayoutGrid, Pencil, Plus, Receipt, Route, Search, Trash2, Users, Wallet,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import {
-  BILLING_LABEL, BusinessClient, ClientTrip, INVOICE_STATUS, billingOf, clientStats, dayLabel, isOverdue, lastWeek, outstandingOf, statementOf, thisMonth, thisWeek, todayK, useBusinessData,
+  BILLING_LABEL, BusinessClient, ClientTrip, INVOICE_STATUS, LOG_ACTION, billingOf, clientStats, dayLabel, isOverdue, lastWeek, outstandingOf, statementOf, thisMonth, thisWeek, todayK, useBusinessData,
 } from '../../lib/business';
 import { statementPdfBlob, downloadBlob } from '../../lib/invoicePdf';
 import { kigaliTime, shortAddress } from '../../lib/trips';
@@ -15,7 +15,7 @@ import { EntityLink } from '../../os/EntityLink';
 import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, UnderlineTabs, rwf } from '../../ui/kit';
 import { Pager, usePaged } from '../../ui/Pager';
 import { ChartCard, DailyBars, RangeTabs, usePalette } from '../../components/charts/kit';
-import { AddTripsModal, CompanyFormModal, NewInvoiceModal, RidersEditor } from '../../components/business/BusinessModals';
+import { AddTripsModal, CompanyFormModal, NewInvoiceModal, RidersEditor, VerifyTripsModal } from '../../components/business/BusinessModals';
 import InvoicePanel from '../../components/business/InvoicePanel';
 
 // Companies that ride with Kivu Ride and are invoiced for their trips:
@@ -29,8 +29,10 @@ export default function CompaniesPage() {
   usePageTitle('Companies');
   const a = useAccess();
   const canBill = a.in('finance');
-  const canTag = a.in('finance', 'call_center');
+  const canTag = a.in('finance', 'call_center') || a.duties.has('company_trips');
   const data = useBusinessData();
+  const [verifying, setVerifying] = useState(false);
+  const pendingAll = data.clientTrips.filter((x) => x.status === 'pending' && !x.invoice_id);
   const [params, setParams] = useSearchParams();
   const open = params.get('c');
   const [creating, setCreating] = useState(false);
@@ -45,6 +47,7 @@ export default function CompaniesPage() {
       c,
       weekTrips: clientStats(mine, week.from, week.to).trips,
       monthAmount: clientStats(mine, month.from, month.to).amount,
+      pending: mine.filter((x) => x.status === 'pending' && !x.invoice_id).length,
       unbilled: unbilled.length, unbilledAmount: unbilled.reduce((s, x) => s + Number(x.trip?.total_fare ?? 0), 0),
       outstanding: invs.reduce((s, i) => s + outstandingOf(i), 0), overdue: invs.filter(isOverdue).length,
       last: invs.filter((i) => i.status !== 'void')[0] ?? null,
@@ -61,11 +64,15 @@ export default function CompaniesPage() {
   return (
     <div className="animate-fade-in">
       <PageHeader icon={Building2} title="Companies" subtitle="Companies whose people ride with Kivu Ride and are invoiced weekly for their trips."
-        actions={canBill && <button onClick={() => setCreating(true)} className="btn-primary"><Plus size={14} /> New company</button>} />
-      <StatGrid cols={4}>
+        actions={<>
+          {canBill && pendingAll.length > 0 && <button onClick={() => setVerifying(true)} className="btn-primary"><BadgeCheck size={14} /> Verify {pendingAll.length} trip{pendingAll.length === 1 ? '' : 's'}</button>}
+          {canBill && <button onClick={() => setCreating(true)} className={pendingAll.length ? 'btn-secondary' : 'btn-primary'}><Plus size={14} /> New company</button>}
+        </>} />
+      <StatGrid cols={5}>
         <StatCard icon={Building2} label="Companies" value={rows.filter((r) => r.c.status === 'active').length} sub={`${rows.length} in total`} />
+        <StatCard icon={BadgeCheck} label="Waiting for verification" value={pendingAll.length} tone={pendingAll.length ? 'attention' : undefined} sub={canBill ? (pendingAll.length ? 'Check and verify them' : 'All verified') : 'Finance or the MD verifies'} onClick={canBill && pendingAll.length ? () => setVerifying(true) : undefined} />
         <StatCard icon={Route} label="Their trips this week" value={totals.week} sub={`${dayLabel(week.from)} – ${dayLabel(week.to)}`} />
-        <StatCard icon={Hourglass} label="Not invoiced yet" value={rwf(totals.unbilled)} tone={totals.unbilled ? 'attention' : undefined} sub="Completed trips, before VAT" />
+        <StatCard icon={Hourglass} label="Verified, not invoiced" value={rwf(totals.unbilled)} tone={totals.unbilled ? 'attention' : undefined} sub="Completed trips, before VAT" />
         <StatCard icon={Wallet} label="Unpaid invoices" value={rwf(totals.outstanding)} tone={totals.overdue ? 'danger' : totals.outstanding ? 'attention' : undefined} sub={totals.overdue ? `${totals.overdue} overdue` : 'Nothing overdue'} />
       </StatGrid>
       {rows.length ? (
@@ -73,11 +80,12 @@ export default function CompaniesPage() {
           <label className="relative block max-w-xs mb-3"><Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" /><input value={q} onChange={(e) => setQ(e.target.value)} className="input !pl-8" placeholder="Search companies" /></label>
           <div className="card overflow-x-auto p-0">
             <table className="w-full text-body min-w-[860px]">
-              <thead><tr className="text-caption text-fg-muted text-left bg-inset">{['Company', 'Trips this week', 'This month', 'Not invoiced', 'Unpaid', 'Last invoice', ''].map((h, i) => <th key={h + i} className={`${th} ${i >= 1 && i <= 4 ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
+              <thead><tr className="text-caption text-fg-muted text-left bg-inset">{['Company', 'To verify', 'Trips this week', 'This month', 'Not invoiced', 'Unpaid', 'Last invoice', ''].map((h, i) => <th key={h + i} className={`${th} ${i >= 1 && i <= 5 ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
               <tbody>
                 {shown.map((r) => (
                   <tr key={r.c.id} onClick={() => setParams({ c: r.c.id })} className="border-t border-line-muted cursor-pointer hover:bg-hover/60">
                     <td className={td}><span className="font-medium">{r.c.name}</span><span className="block text-caption text-fg-muted">{r.c.contact_name ?? r.c.billing_emails[0] ?? r.c.agreement ?? ''}</span></td>
+                    <td className={`${td} text-right tabular-nums`}>{r.pending ? <span className="text-attention font-medium">{r.pending}</span> : '—'}</td>
                     <td className={`${td} text-right tabular-nums`}>{r.weekTrips}</td>
                     <td className={`${td} text-right tabular-nums`}>{rwf(r.monthAmount)}</td>
                     <td className={`${td} text-right tabular-nums`}>{r.unbilled ? <span className="text-attention">{r.unbilled} · {rwf(r.unbilledAmount)}</span> : '—'}</td>
@@ -92,11 +100,12 @@ export default function CompaniesPage() {
         </>
       ) : <EmptyState icon={Building2} title="No companies yet" body={canBill ? 'Create the first company, then add its trips from Trips or from the company page.' : 'Finance or the MD adds companies here.'} action={canBill && <button onClick={() => setCreating(true)} className="btn-primary"><Plus size={14} /> New company</button>} />}
       {creating && <CompanyFormModal client={null} onClose={() => setCreating(false)} onSaved={(id) => { data.reload(); setParams({ c: id }); }} />}
+      {verifying && <VerifyTripsModal items={pendingAll} clients={data.clients} nameOf={data.nameOf} onClose={() => setVerifying(false)} onDone={data.reload} />}
     </div>
   );
 }
 
-type Tab = 'overview' | 'trips' | 'invoices' | 'statement' | 'details';
+type Tab = 'overview' | 'trips' | 'invoices' | 'statement' | 'activity' | 'details';
 type Period = 'this_week' | 'last_week' | 'this_month' | 'custom';
 
 function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: BusinessClient; data: ReturnType<typeof useBusinessData>; canBill: boolean; canTag: boolean; onBack: () => void }) {
@@ -110,7 +119,8 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
   const [invoicing, setInvoicing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [openInvoice, setOpenInvoice] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'unbilled' | 'invoiced' | 'paid' | 'live'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'unbilled' | 'invoiced' | 'paid' | 'live'>('all');
+  const [verifying, setVerifying] = useState(false);
   const [q, setQ] = useState('');
 
   const mine = useMemo(() => data.clientTrips.filter((x) => x.client_id === client.id), [data.clientTrips, client.id]);
@@ -118,6 +128,7 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
   const payments = data.payments.filter((p) => invoices.some((i) => i.id === p.invoice_id));
   const riders = data.riders.filter((r) => r.client_id === client.id);
   const stats = useMemo(() => clientStats(mine, range.from, range.to), [mine, range.from, range.to]);
+  const pending = mine.filter((x) => x.status === 'pending' && !x.invoice_id);
   const unbilled = mine.filter((x) => billingOf(x, data.invoices) === 'unbilled');
   const unbilledAmount = unbilled.reduce((s, x) => s + Number(x.trip?.total_fare ?? 0), 0);
   const outstanding = invoices.reduce((s, i) => s + outstandingOf(i), 0);
@@ -153,15 +164,16 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
         labels={client.status !== 'active' ? <Label>{client.status === 'paused' ? 'Paused' : 'Ended'}</Label> : undefined}
         actions={<>
           {canTag && <button onClick={() => setAdding(true)} className="btn-secondary"><Plus size={14} /> Add trips</button>}
+          {canBill && pending.length > 0 && <button onClick={() => setVerifying(true)} className="btn-secondary"><BadgeCheck size={14} /> Verify {pending.length}</button>}
           {canBill && <button onClick={() => setInvoicing(true)} className="btn-primary"><Receipt size={14} /> New invoice</button>}
           {canBill && <button onClick={() => setEditing(true)} className="btn-ghost" aria-label="Edit company"><Pencil size={14} /></button>}
         </>} />
 
       <StatGrid cols={4}>
-        <StatCard icon={Hourglass} label="Not invoiced yet" value={rwf(unbilledAmount)} tone={unbilledAmount ? 'attention' : undefined} sub={`${unbilled.length} completed trip${unbilled.length === 1 ? '' : 's'} · ${rwf(Math.round(unbilledAmount * (1 + vat)))} with VAT`} onClick={() => { setTab('trips'); setFilter('unbilled'); }} />
+        <StatCard icon={BadgeCheck} label="Waiting for verification" value={pending.length} tone={pending.length ? 'attention' : undefined} sub={pending.length ? `${rwf(pending.reduce((s, x) => s + Number(x.trip?.total_fare ?? 0), 0))} · ${canBill ? 'verify to invoice' : 'Finance or the MD verifies'}` : 'All trips verified'} onClick={() => { if (canBill && pending.length) setVerifying(true); else { setTab('trips'); setFilter('pending'); } }} />
+        <StatCard icon={Hourglass} label="Verified, not invoiced" value={rwf(unbilledAmount)} tone={unbilledAmount ? 'attention' : undefined} sub={`${unbilled.length} completed trip${unbilled.length === 1 ? '' : 's'} · ${rwf(Math.round(unbilledAmount * (1 + vat)))} with VAT`} onClick={() => { setTab('trips'); setFilter('unbilled'); }} />
         <StatCard icon={Wallet} label="Unpaid invoices" value={rwf(outstanding)} tone={invoices.some(isOverdue) ? 'danger' : outstanding ? 'attention' : 'success'} sub={invoices.some(isOverdue) ? `${invoices.filter(isOverdue).length} overdue` : outstanding ? 'Nothing overdue' : 'All paid'} onClick={() => setTab('invoices')} />
         <StatCard icon={CircleDollarSign} label="Paid to date" value={rwf(payments.reduce((s, p) => s + Number(p.amount), 0))} sub={`${invoices.filter((i) => i.status !== 'void').length} invoice${invoices.length === 1 ? '' : 's'}`} onClick={() => setTab('statement')} />
-        <StatCard icon={Route} label="All their trips" value={mine.length} sub={`${riders.length} rider${riders.length === 1 ? '' : 's'} listed`} onClick={() => setTab('trips')} />
       </StatGrid>
 
       <UnderlineTabs<Tab> value={tab} onChange={setTab} tabs={[
@@ -169,6 +181,7 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
         { key: 'trips', label: 'Trips', icon: Route, count: mine.length },
         { key: 'invoices', label: 'Invoices', icon: Receipt, count: invoices.length },
         { key: 'statement', label: 'Statement', icon: FileText },
+        { key: 'activity', label: 'Activity', icon: History },
         { key: 'details', label: 'Details & riders', icon: Users },
       ]} />
 
@@ -204,7 +217,7 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
       {tab === 'trips' && (
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            {(['all', 'unbilled', 'invoiced', 'paid', 'live'] as const).map((k) => (
+            {(['all', 'pending', 'unbilled', 'invoiced', 'paid', 'live'] as const).map((k) => (
               <button key={k} onClick={() => setFilter(k)} aria-pressed={filter === k} className={`px-2.5 py-1.5 rounded-md text-caption border ${filter === k ? 'border-accent bg-accent/10' : 'border-line text-fg-muted'}`}>
                 {k === 'all' ? 'All' : BILLING_LABEL[k].label} ({k === 'all' ? mine.length : mine.filter((x) => billingOf(x, data.invoices) === k).length})
               </button>
@@ -215,7 +228,7 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
             <>
               <div className="card overflow-x-auto p-0">
                 <table className="w-full text-body min-w-[900px]">
-                  <thead><tr className="text-caption text-fg-muted text-left bg-inset">{['When', 'Rider', 'Route', 'Driver & car', 'Km', 'Fare', 'Billing', ''].map((h, i) => <th key={h + i} className={`${th} ${i === 4 || i === 5 ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
+                  <thead><tr className="text-caption text-fg-muted text-left bg-inset">{['When', 'Rider', 'Route', 'Driver & car', 'Km', 'Fare', 'Status', 'Added by', ''].map((h, i) => <th key={h + i} className={`${th} ${i === 4 || i === 5 ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
                   <tbody>
                     {pagedTrips.rows.map((x) => {
                       const t = x.trip;
@@ -231,8 +244,10 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
                           <td className={`${td} text-right tabular-nums font-medium`}>{t?.total_fare !== null && t?.total_fare !== undefined ? rwf(Number(t.total_fare)) : '—'}</td>
                           <td className={td}>
                             {invOf ? <button onClick={() => setOpenInvoice(invOf.id)}><Label tone={BILLING_LABEL[b].tone}>{BILLING_LABEL[b].label} · {invOf.number}</Label></button> : <Label tone={BILLING_LABEL[b].tone}>{BILLING_LABEL[b].label}</Label>}
+                            {x.verified_by && <span className="block text-caption text-fg-muted mt-0.5">Verified by {data.nameOf(x.verified_by)}</span>}
                           </td>
-                          <td className={`${td} text-right`}>{canTag && !x.invoice_id && <button onClick={() => remove(x)} className="btn-ghost p-1.5 text-fg-subtle hover:text-danger" aria-label="Take off this company" title="Take off this company"><Trash2 size={14} /></button>}</td>
+                          <td className={`${td} text-caption`}><span className="block font-medium text-fg">{data.nameOf(x.added_by)}</span><span className="text-fg-muted">{kigaliTime(x.added_at)}</span></td>
+                          <td className={`${td} text-right`}>{!x.invoice_id && (canBill || (canTag && x.status === 'pending')) && <button onClick={() => remove(x)} className="btn-ghost p-1.5 text-fg-subtle hover:text-danger" aria-label="Take off this company" title="Take off this company"><Trash2 size={14} /></button>}</td>
                         </tr>
                       );
                     })}
@@ -302,6 +317,27 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
         </Box>
       )}
 
+      {tab === 'activity' && (
+        <Box title="Who did what" icon={History} padded={false}>
+          {(() => {
+            const entries = data.log.filter((l) => l.client_id === client.id);
+            return entries.length ? (
+              <ul className="divide-y divide-line-muted">
+                {entries.slice(0, 300).map((l) => (
+                  <li key={l.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2 text-body">
+                    <span className="tabular-nums text-caption text-fg-muted w-28">{kigaliTime(l.at)}</span>
+                    <b>{data.nameOf(l.actor)}</b>
+                    <span className={l.action === 'rejected' || l.action === 'removed' ? 'text-danger' : l.action === 'verified' ? 'text-success' : ''}>{LOG_ACTION[l.action]}</span>
+                    <span className="font-mono text-caption">trip #{l.trip_id}</span>
+                    {l.note && <span className="text-caption text-fg-muted">· {l.note}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="p-6 text-center text-body text-fg-muted">Nothing yet.</p>;
+          })()}
+        </Box>
+      )}
+
       {tab === 'details' && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <Box title="Company" icon={Building2} right={canBill && <button onClick={() => setEditing(true)} className="btn-ghost text-caption"><Pencil size={13} /> Edit</button>}>
@@ -317,7 +353,8 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
         </div>
       )}
 
-      {adding && <AddTripsModal client={client} riders={riders} tagged={tagged} onClose={() => setAdding(false)} onSaved={data.reload} />}
+      {adding && <AddTripsModal client={client} riders={riders} tagged={tagged} canBill={canBill} onClose={() => setAdding(false)} onSaved={data.reload} />}
+      {verifying && <VerifyTripsModal items={pending} clients={data.clients} nameOf={data.nameOf} onClose={() => setVerifying(false)} onDone={data.reload} />}
       {invoicing && <NewInvoiceModal client={client} clientTrips={mine} settings={data.settings} onClose={() => setInvoicing(false)} onIssued={(id) => { setInvoicing(false); data.reload(); setTab('invoices'); setOpenInvoice(id); }} />}
       {editing && <CompanyFormModal client={client} onClose={() => setEditing(false)} onSaved={data.reload} />}
       {inv && <InvoicePanel invoice={inv} client={client} payments={data.payments} canBill={canBill} onClose={() => setOpenInvoice(null)} onChanged={data.reload} />}

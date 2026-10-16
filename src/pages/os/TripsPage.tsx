@@ -49,9 +49,11 @@ export default function TripsPage() {
   const [syncMsg, setSyncMsg] = useState('');
   // Trips done for a company (business clients): tag them from here.
   const access = useAccess();
-  const canTag = access.in('finance', 'call_center');
+  const canTag = access.in('finance', 'call_center') || access.duties.has('company_trips');
+  const canBill = access.in('finance');
   const biz = useBusinessData();
   const companyOf = useMemo(() => new Map(biz.clientTrips.map((x) => [x.trip_id, biz.clients.find((c) => c.id === x.client_id)])), [biz.clientTrips, biz.clients]);
+  const tagOf = useMemo(() => new Map(biz.clientTrips.map((x) => [x.trip_id, x])), [biz.clientTrips]);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [assigning, setAssigning] = useState<number[] | null>(null);
   const [companyF, setCompanyF] = useState('');
@@ -192,7 +194,7 @@ export default function TripsPage() {
                       )}
                       <td className={td}><span className="font-mono text-caption text-fg-muted">#{t.id}</span><span className="block whitespace-nowrap tabular-nums">{kigaliTime(t.created_at)}</span>{t.is_scheduled && <span className="text-caption text-link">Scheduled {kigaliTime(t.scheduled_pickup_time)}</span>}</td>
                       <td className={td}><Label tone={st.tone}>{st.label}</Label>{t.fraud_flag && <span className="block mt-1"><Label tone="danger" icon={Flag}>Flagged</Label></span>}</td>
-                      <td className={`${td} max-w-[180px]`}><span className="block truncate">{t.rider_name ?? '—'}</span><span className="block text-caption text-fg-muted">{t.rider_kind === 'guest' ? 'Booked for a guest' : t.rider_kind === 'app' ? 'Rider app' : ''}</span>{companyOf.get(t.id) && <span className="mt-0.5 inline-block"><Label tone="info" icon={Building2}>{companyOf.get(t.id)!.name}</Label></span>}</td>
+                      <td className={`${td} max-w-[180px]`}><span className="block truncate">{t.rider_name ?? '—'}</span><span className="block text-caption text-fg-muted">{t.rider_kind === 'guest' ? 'Booked for a guest' : t.rider_kind === 'app' ? 'Rider app' : ''}</span>{companyOf.get(t.id) && <span className="mt-0.5 inline-block" title={`Added by ${biz.nameOf(tagOf.get(t.id)?.added_by)}`}><Label tone={tagOf.get(t.id)?.status === 'pending' ? 'attention' : 'info'} icon={Building2}>{companyOf.get(t.id)!.name}{tagOf.get(t.id)?.status === 'pending' ? ' · to verify' : ''}</Label></span>}</td>
                       <td className={`${td} max-w-[220px]`} onClick={(e) => e.stopPropagation()}>
                         {t.kivu_driver_id ? <EntityLink type="driver" id={t.kivu_driver_id} label={t.driver_name ?? 'Driver'} /> : <span className="block truncate">{t.driver_name ?? <span className="text-fg-subtle">No driver yet</span>}</span>}
                         <span className="flex items-center gap-1.5 text-caption text-fg-muted">
@@ -216,13 +218,16 @@ export default function TripsPage() {
         <div className="card p-10 text-center text-body text-fg-muted">{trips.length ? 'No trip matches.' : 'No trips yet — the first sync may still be running.'}</div>
       )}
 
-      {open && <TripPanel trip={open} company={companyOf.get(open.id) ?? null} canTag={canTag && open.status !== 'cancelled'} onAssign={() => setAssigning([open.id])} onClose={() => setOpen(null)} />}
-      {assigning && <AssignToCompanyModal tripIds={assigning} clients={biz.clients} onClose={() => setAssigning(null)} onSaved={() => { setPicked(new Set()); biz.reload(); }} />}
+      {open && <TripPanel trip={open} company={companyOf.get(open.id) ?? null} tag={tagOf.get(open.id) ?? null} nameOf={biz.nameOf} canTag={canTag && open.status !== 'cancelled'} onAssign={() => setAssigning([open.id])} onClose={() => setOpen(null)} />}
+      {assigning && <AssignToCompanyModal tripIds={assigning} clients={biz.clients} canBill={canBill} onClose={() => setAssigning(null)} onSaved={() => { setPicked(new Set()); biz.reload(); }} />}
     </div>
   );
 }
 
-function TripPanel({ trip: t, company, canTag, onAssign, onClose }: { trip: PlatformTrip; company: { id: string; name: string } | null; canTag: boolean; onAssign: () => void; onClose: () => void }) {
+function TripPanel({ trip: t, company, tag, nameOf, canTag, onAssign, onClose }: {
+  trip: PlatformTrip; company: { id: string; name: string } | null; tag: { added_by: string | null; added_at: string; status: string; verified_by: string | null; verified_at: string | null } | null;
+  nameOf: (id: string | null | undefined) => string; canTag: boolean; onAssign: () => void; onClose: () => void;
+}) {
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof loadTripDetail>> | null>(null);
   useEffect(() => { loadTripDetail(t.id).then(setDetail); }, [t.id]);
   const st = statusOf(t.status);
@@ -250,6 +255,12 @@ function TripPanel({ trip: t, company, canTag, onAssign, onClose }: { trip: Plat
           {route && <a href={route} target="_blank" rel="noreferrer" className="ml-auto btn-ghost text-caption"><ExternalLink size={13} /> Route on Google Maps</a>}
         </div>
 
+        {company && tag && (
+          <p className="text-small rounded-lg bg-inset px-3 py-2">
+            <Building2 size={13} className="inline mr-1.5 text-fg-subtle" />Added to <b>{company.name}</b> by <b>{nameOf(tag.added_by)}</b> · {kigaliTime(tag.added_at)}
+            {tag.status === 'verified' ? <> · verified by <b>{nameOf(tag.verified_by)}</b>{tag.verified_at ? ` · ${kigaliTime(tag.verified_at)}` : ''}</> : <span className="text-attention"> · waiting for Finance / MD verification</span>}
+          </p>
+        )}
         <section>
           <h3 className="text-body font-semibold mb-2 flex items-center gap-1.5"><Clock size={14} /> Timeline</h3>
           <ol className="space-y-1.5">

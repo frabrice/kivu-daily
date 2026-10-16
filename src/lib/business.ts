@@ -13,7 +13,12 @@ export interface BusinessClient {
   agreement: string | null; notes: string | null; status: 'active' | 'paused' | 'ended'; created_at: string;
 }
 export interface ClientRider { id: string; client_id: string; name: string | null; phone: string; phone_key: string }
-export interface ClientTrip { trip_id: number; client_id: string; invoice_id: string | null; note: string | null; added_by: string | null; added_at: string; trip: PlatformTrip | null }
+export interface ClientTrip {
+  trip_id: number; client_id: string; invoice_id: string | null; note: string | null; added_by: string | null; added_at: string;
+  status: 'pending' | 'verified'; verified_by: string | null; verified_at: string | null; trip: PlatformTrip | null;
+}
+export interface TripLogEntry { id: number; trip_id: number; client_id: string | null; action: 'added' | 'verified' | 'rejected' | 'removed' | 'invoiced' | 'released'; actor: string | null; note: string | null; at: string }
+export const LOG_ACTION: Record<TripLogEntry['action'], string> = { added: 'added', verified: 'verified', rejected: 'rejected', removed: 'took off', invoiced: 'invoiced', released: 'released (invoice cancelled)' };
 export interface BusinessInvoice {
   id: string; number: string; client_id: string; period_from: string; period_to: string; issue_date: string; due_date: string;
   trip_count: number; distance_km: number; subtotal: number; vat_rate: number; vat_amount: number; total: number; amount_paid: number;
@@ -56,16 +61,18 @@ export const thisWeek = () => { const m = mondayOfK(todayK()); return { from: m,
 export const thisMonth = () => { const t = todayK(); return { from: `${t.slice(0, 7)}-01`, to: t }; };
 export const phoneKey = (p: string | null | undefined) => (p ?? '').replace(/\D/g, '').slice(-9);
 
-export type TripBilling = 'live' | 'unbilled' | 'invoiced' | 'paid' | 'cancelled';
+export type TripBilling = 'pending' | 'live' | 'unbilled' | 'invoiced' | 'paid' | 'cancelled';
 export function billingOf(ct: ClientTrip, invoices: BusinessInvoice[]): TripBilling {
   if (ct.trip?.status === 'cancelled') return 'cancelled';
   if (ct.invoice_id) return invoices.find((i) => i.id === ct.invoice_id)?.status === 'paid' ? 'paid' : 'invoiced';
+  if (ct.status === 'pending') return 'pending';
   return ct.trip?.status === 'completed' ? 'unbilled' : 'live';
 }
 export const BILLING_LABEL: Record<TripBilling, { label: string; tone: 'neutral' | 'attention' | 'accent' | 'success' | 'danger' }> = {
+  pending: { label: 'Waiting for verification', tone: 'attention' },
   live: { label: 'Trip in progress', tone: 'neutral' },
-  unbilled: { label: 'Not invoiced', tone: 'attention' },
-  invoiced: { label: 'Invoiced', tone: 'accent' },
+  unbilled: { label: 'Verified · not invoiced', tone: 'accent' },
+  invoiced: { label: 'Invoiced', tone: 'neutral' },
   paid: { label: 'Paid', tone: 'success' },
   cancelled: { label: 'Cancelled', tone: 'danger' },
 };
@@ -81,16 +88,20 @@ export function useBusinessData() {
   const [invoices, setInvoices] = useState<BusinessInvoice[]>([]);
   const [payments, setPayments] = useState<InvoicePayment[]>([]);
   const [settings, setSettings] = useState<InvoiceSettings | null>(null);
+  const [log, setLog] = useState<TripLogEntry[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const load = useCallback(async () => {
-    const [c, r, ct, inv, pay, set] = await Promise.all([
+    const [c, r, ct, inv, pay, set, lg, ppl] = await Promise.all([
       supabase.from('business_clients').select('*').order('name'),
       supabase.from('business_client_riders').select('*').order('name'),
       fetchAll<ClientTrip>(() => supabase.from('business_client_trips').select(`*, trip:platform_trips(${TRIP_COLS})`).order('added_at', { ascending: false }).order('trip_id')),
       fetchAll<BusinessInvoice>(() => supabase.from('business_invoices').select('id, number, client_id, period_from, period_to, issue_date, due_date, trip_count, distance_km, subtotal, vat_rate, vat_amount, total, amount_paid, status, notes, pdf_path, sent_at, sent_to, void_reason, voided_at, created_at, created_by').order('issue_date', { ascending: false }).order('number', { ascending: false })),
       fetchAll<InvoicePayment>(() => supabase.from('business_invoice_payments').select('*').order('paid_on', { ascending: false }).order('id')),
       supabase.from('invoice_settings').select('*').maybeSingle(),
+      fetchAll<TripLogEntry>(() => supabase.from('business_client_trip_log').select('*').order('at', { ascending: false }).order('id', { ascending: false })),
+      supabase.from('profiles').select('id, full_name'),
     ]);
     setClients((c.data as BusinessClient[]) ?? []);
     setRiders((r.data as ClientRider[]) ?? []);
@@ -98,6 +109,8 @@ export function useBusinessData() {
     setInvoices(inv.data ?? []);
     setPayments(pay.data ?? []);
     setSettings((set.data as InvoiceSettings | null) ?? null);
+    setLog(lg.data ?? []);
+    setNames(Object.fromEntries(((ppl.data as { id: string; full_name: string }[]) ?? []).map((p) => [p.id, p.full_name.trim()])));
     setLoading(false);
   }, []);
   useEffect(() => {
@@ -109,7 +122,8 @@ export function useBusinessData() {
       .subscribe();
     return () => { supabase.removeChannel(ch); if (timer.current) clearTimeout(timer.current); };
   }, [load]);
-  return { clients, riders, clientTrips, invoices, payments, settings, loading, reload: load };
+  const nameOf = useCallback((id: string | null | undefined) => (id ? names[id] ?? 'Someone' : '—'), [names]);
+  return { clients, riders, clientTrips, invoices, payments, settings, log, nameOf, loading, reload: load };
 }
 
 export async function loadInvoiceSnapshot(id: string): Promise<InvoiceSnapshot | null> {

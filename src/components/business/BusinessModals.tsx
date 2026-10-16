@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, Check, Plus, Search, Sparkles, Trash2, UserPlus } from 'lucide-react';
+import { BadgeCheck, Building2, Check, Plus, Search, Sparkles, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { useAuth } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 import { PlatformTrip, shortAddress, kigaliTime, statusOf } from '../../lib/trips';
 import {
@@ -117,7 +118,8 @@ export function RidersEditor({ client, riders, canEdit, onChanged }: { client: B
 const PICK_COLS = 'id, status, created_at, started_at, completed_at, pickup_address, destination_address, rider_name, rider_phone, rider_kind, driver_name, vehicle_plate, total_fare, actual_distance_km, estimated_distance_km, payment_method';
 type PickTrip = Pick<PlatformTrip, 'id' | 'status' | 'created_at' | 'started_at' | 'completed_at' | 'pickup_address' | 'destination_address' | 'rider_name' | 'rider_phone' | 'rider_kind' | 'driver_name' | 'vehicle_plate' | 'total_fare' | 'actual_distance_km' | 'estimated_distance_km' | 'payment_method'>;
 
-export function AddTripsModal({ client, riders, tagged, onClose, onSaved }: { client: BusinessClient; riders: ClientRider[]; tagged: Set<number>; onClose: () => void; onSaved: () => void }) {
+export function AddTripsModal({ client, riders, tagged, canBill, onClose, onSaved }: { client: BusinessClient; riders: ClientRider[]; tagged: Set<number>; canBill: boolean; onClose: () => void; onSaved: () => void }) {
+  const { profile } = useAuth();
   const [from, setFrom] = useState(addDaysK(todayK(), -13));
   const [to, setTo] = useState(todayK());
   const [trips, setTrips] = useState<PickTrip[]>([]);
@@ -192,6 +194,7 @@ export function AddTripsModal({ client, riders, tagged, onClose, onSaved }: { cl
             <Pager pager={pager} noun="trips" />
           </>
         ) : <p className="text-body text-fg-muted py-6 text-center">No trips in these dates that aren't already on a company.</p>}
+        <WhoNote name={profile?.full_name} canBill={canBill} />
         <Err msg={error} />
         <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-line-muted">
           <span className="text-small text-fg-muted">{picked.size ? `${picked.size} selected · ${rwf(pickedAmount)}` : 'Tick the trips to add'}</span>
@@ -204,7 +207,8 @@ export function AddTripsModal({ client, riders, tagged, onClose, onSaved }: { cl
 }
 
 // From the Trips page: put selected trips on a company.
-export function AssignToCompanyModal({ tripIds, clients, onClose, onSaved }: { tripIds: number[]; clients: BusinessClient[]; onClose: () => void; onSaved: () => void }) {
+export function AssignToCompanyModal({ tripIds, clients, canBill, onClose, onSaved }: { tripIds: number[]; clients: BusinessClient[]; canBill: boolean; onClose: () => void; onSaved: () => void }) {
+  const { profile } = useAuth();
   const active = clients.filter((c) => c.status !== 'ended');
   const [clientId, setClientId] = useState(active[0]?.id ?? '');
   const [busy, setBusy] = useState(false);
@@ -229,8 +233,93 @@ export function AssignToCompanyModal({ tripIds, clients, onClose, onSaved }: { t
             ))}
           </div>
         ) : <p className="text-body text-fg-muted">No company yet — Finance or the MD creates them under Trips → Companies.</p>}
+        <WhoNote name={profile?.full_name} canBill={canBill} />
         <Err msg={error} />
         <Foot onClose={onClose} busy={busy} label="Add to company" onSave={save} disabled={!clientId} />
+      </div>
+    </Modal>
+  );
+}
+
+const WhoNote = ({ name, canBill }: { name?: string; canBill: boolean }) => (
+  <p className="text-caption text-fg-muted flex items-start gap-1.5 rounded-md bg-inset px-3 py-2">
+    <BadgeCheck size={13} className="mt-0.5 shrink-0" />
+    {canBill
+      ? <span>Recorded as added and verified by <b className="text-fg">{name ?? 'you'}</b>.</span>
+      : <span>Recorded as added by <b className="text-fg">{name ?? 'you'}</b>. Finance or the MD verifies each trip before it can be invoiced.</span>}
+  </p>
+);
+
+// ------------------------------------------------------------ verify (Finance / MD)
+export function VerifyTripsModal({ items, clients, nameOf, onClose, onDone }: {
+  items: ClientTrip[]; clients: BusinessClient[]; nameOf: (id: string | null) => string; onClose: () => void; onDone: () => void;
+}) {
+  const [picked, setPicked] = useState<Set<number>>(new Set(items.map((x) => x.trip_id)));
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const when = (x: ClientTrip) => x.trip?.started_at ?? x.trip?.created_at ?? '';
+  const sorted = [...items].sort((a, b) => a.client_id.localeCompare(b.client_id) || when(a).localeCompare(when(b)));
+  const { rows, pager } = usePaged(sorted, { key: 'verify-trips' });
+  const amount = items.filter((x) => picked.has(x.trip_id)).reduce((sum, x) => sum + Number(x.trip?.total_fare ?? 0), 0);
+  const toggle = (id: number) => setPicked((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const run = async (kind: 'verify' | 'reject') => {
+    setBusy(true); setError('');
+    const ids = [...picked];
+    const { error: err } = kind === 'verify'
+      ? await supabase.rpc('verify_company_trips', { p_trip_ids: ids })
+      : await supabase.rpc('reject_company_trips', { p_trip_ids: ids, p_reason: reason });
+    setBusy(false);
+    if (err) { setError(err.message); return; }
+    onDone(); onClose();
+  };
+  return (
+    <Modal open onClose={onClose} title="Verify company trips" subtitle="Check each trip really was for that company. Verified trips can be invoiced; rejected ones are taken off and logged with your reason." maxWidth="max-w-2xl">
+      <div className="space-y-3">
+        {items.length ? (
+          <>
+            <ul className="divide-y divide-line-muted rounded-lg border border-line max-h-[52vh] overflow-y-auto">
+              {rows.map((x) => {
+                const t = x.trip;
+                const on = picked.has(x.trip_id);
+                return (
+                  <li key={x.trip_id}>
+                    <label className={`flex items-start gap-3 px-3 py-2 cursor-pointer ${on ? 'bg-accent/5' : 'hover:bg-hover'}`}>
+                      <input type="checkbox" checked={on} onChange={() => toggle(x.trip_id)} className="mt-1" />
+                      <span className="flex-1 min-w-0">
+                        <span className="flex flex-wrap items-center gap-x-2 text-body">
+                          <Label tone="info" icon={Building2}>{clients.find((c) => c.id === x.client_id)?.name ?? '—'}</Label>
+                          {t ? kigaliTime(t.started_at ?? t.created_at) : ''} · {t?.rider_name ?? 'Unknown rider'}
+                          <span className="font-mono text-caption text-fg-muted">#{x.trip_id}</span>
+                        </span>
+                        <span className="block text-caption text-fg-muted truncate">{shortAddress(t?.pickup_address)} → {shortAddress(t?.destination_address)} · {t?.driver_name ?? ''} {t?.vehicle_plate ?? ''}</span>
+                        <span className="block text-caption">Added by <b>{nameOf(x.added_by)}</b> · {kigaliTime(x.added_at)}</span>
+                      </span>
+                      <span className="tabular-nums font-medium whitespace-nowrap">{t?.total_fare !== null && t?.total_fare !== undefined ? rwf(Number(t.total_fare)) : '—'}</span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+            <Pager pager={pager} noun="trips" />
+          </>
+        ) : <p className="text-body text-fg-muted text-center py-6">Nothing waiting for verification.</p>}
+        {rejecting && (
+          <label className="block"><span className={lbl}>Why are they rejected? *</span>
+            <input value={reason} onChange={(e) => setReason(e.target.value)} className="input" placeholder="e.g. Not a CEVR rider / personal trip" autoFocus /></label>
+        )}
+        <Err msg={error} />
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-line-muted">
+          <span className="text-small text-fg-muted">{picked.size} selected · {rwf(amount)}</span>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="btn-ghost">Close</button>
+            {rejecting
+              ? <button onClick={() => run('reject')} disabled={busy || !picked.size || !reason.trim()} className="btn-danger disabled:opacity-50"><XCircle size={14} /> Reject {picked.size}</button>
+              : <button onClick={() => setRejecting(true)} disabled={busy || !picked.size} className="btn-secondary disabled:opacity-50"><XCircle size={14} /> Reject…</button>}
+            <button onClick={() => run('verify')} disabled={busy || !picked.size} className="btn-primary disabled:opacity-50"><BadgeCheck size={14} /> {busy ? 'Saving…' : `Verify ${picked.size}`}</button>
+          </div>
+        </div>
       </div>
     </Modal>
   );
@@ -243,7 +332,8 @@ export function NewInvoiceModal({ client, clientTrips, settings, onClose, onIssu
   const [period, setPeriod] = useState<'last' | 'this' | 'month' | 'custom'>('last');
   const [custom, setCustom] = useState(lastWeek());
   const range = period === 'last' ? lastWeek() : period === 'this' ? thisWeek() : period === 'month' ? thisMonth() : custom;
-  const unbilled = clientTrips.filter((c) => c.client_id === client.id && !c.invoice_id && c.trip?.status === 'completed');
+  const unbilled = clientTrips.filter((c) => c.client_id === client.id && !c.invoice_id && c.status === 'verified' && c.trip?.status === 'completed');
+  const waiting = clientTrips.filter((c) => c.client_id === client.id && !c.invoice_id && c.status === 'pending' && c.trip?.status === 'completed');
   const inPeriod = unbilled.filter((c) => tripDay(c.trip!) >= range.from && tripDay(c.trip!) <= range.to);
   const earlier = unbilled.filter((c) => tripDay(c.trip!) < range.from);
   const [includeEarlier, setIncludeEarlier] = useState(false);
@@ -283,6 +373,7 @@ export function NewInvoiceModal({ client, clientTrips, settings, onClose, onIssu
             <input type="date" value={custom.to} min={custom.from} onChange={(e) => setCustom((x) => ({ ...x, to: e.target.value }))} className="input !w-auto" aria-label="To" />
           </>}
         </div>
+        {waiting.length > 0 && <p className="text-small rounded-lg bg-attention-muted px-3 py-2">{waiting.length} trip{waiting.length === 1 ? ' is' : 's are'} still waiting for verification and can't be invoiced yet ({rwf(waiting.reduce((sum, c) => sum + Number(c.trip?.total_fare ?? 0), 0))}). Verify them first to include them.</p>}
         {earlier.length > 0 && (
           <label className="flex items-center gap-2 text-small rounded-lg bg-attention-muted px-3 py-2">
             <input type="checkbox" checked={includeEarlier} onChange={(e) => setIncludeEarlier(e.target.checked)} />
@@ -306,7 +397,7 @@ export function NewInvoiceModal({ client, clientTrips, settings, onClose, onIssu
               );
             })}
           </ul>
-        ) : <p className="text-body text-fg-muted text-center py-6">No completed, un-invoiced {client.name} trips in these dates.</p>}
+        ) : <p className="text-body text-fg-muted text-center py-6">No verified, completed, un-invoiced {client.name} trips in these dates.</p>}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-lg bg-inset p-3">
           <div><p className="text-caption text-fg-muted">Trips</p><p className="text-h3 font-semibold">{chosen.length}</p></div>
           <div><p className="text-caption text-fg-muted">Fares</p><p className="text-h3 font-semibold tabular-nums">{rwf(sub)}</p></div>

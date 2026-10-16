@@ -197,6 +197,23 @@ const LIST_KINDS: ListKind[] = [
     },
   },
   {
+    // Trips added to companies (by Janviere / Call Center) wait for Finance
+    // or the MD to verify them before they can be invoiced.
+    key: "company_trips_verify", priority: "normal", due: "16:00",
+    title: (n) => `Verify ${plural(n, "company trip")}`, doneTitle: "Company trips verified",
+    intro: "Trips added to business clients that need your check before they can be invoiced (Trips → Companies → Verify).",
+    compute: async (ctx) => {
+      const pending = await rows<{ trip_id: number; added_at: string; client: { name: string } | null; adder: { full_name: string } | null; trip: { total_fare: number | null; rider_name: string | null } | null }>(
+        ctx.db.from("business_client_trips").select("trip_id, added_at, client:business_clients(name), adder:profiles!business_client_trips_added_by_fkey(full_name), trip:platform_trips(total_fare, rider_name)").eq("status", "pending").is("invoice_id", null),
+      );
+      const items: SmartItem[] = pending.map((x) => ({
+        id: `verify:${x.trip_id}`, label: `${x.client?.name ?? "Company"} · trip #${x.trip_id}`,
+        detail: `${x.trip?.rider_name ?? "rider"} · ${x.trip?.total_fare != null ? rwf(Number(x.trip.total_fare)) : "—"} · added by ${x.adder?.full_name?.trim().split(/\s+/)[0] ?? "—"}`,
+      }));
+      return { assignments: [...assign(one(ctx, "route_finance"), items), ...assign(md(ctx), items)], open: setOf(items) };
+    },
+  },
+  {
     key: "md_approvals", priority: "high", due: "10:00",
     title: (n) => `Approve or reject ${plural(n, "item")}`, doneTitle: "Nothing waiting for your approval",
     intro: "Checked by Finance and waiting for you.",
