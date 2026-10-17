@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  AlertTriangle, ArrowLeft, Bug, CalendarCheck, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, Gavel, Inbox, ListChecks, Pencil, Plus, Rocket, Search, Undo2, Users2, X,
+  AlertTriangle, ArrowLeft, Bug, CalendarCheck, CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, Gavel, Inbox, ListChecks, Loader2, Pencil, Plus, Rocket, Search, Sparkles, Undo2, Users2, X,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 import { FORECAST, ItCheckin, ItIssue, TYPE_LABEL, dayLabel, keyOf, kigaliToday, addDays, useItData, when } from '../../lib/it';
 import { rwf, usePlanData } from '../../lib/itPlan';
+import { WeekDraft, askAi, useAiStatus } from '../../lib/itHealth';
 import {
   CheckItem, DECISION_STATUS, DecisionStatus, ItDecision, ItRelease, ItWeeklyReview, PLATFORM_LABEL, RELEASE_STATUS, draftNotes, loadCheckins, mondayOf,
   releaseLabel, snapshotOf, useShipData, weekLabel, weekReview,
@@ -293,6 +294,8 @@ export function ItReview() {
   const [deciding, setDeciding] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [error, setError] = useState('');
+  const ai = useAiStatus();
+  const [drafting, setDrafting] = useState(false);
   useEffect(() => { loadCheckins(week, addDays(week, 6)).then(setCheckins); }, [week]);
   const review = ship.reviews.find((x) => x.week_start === week) ?? null;
   const r = useMemo(() => weekReview(week, data, ship.releases, ship.decisions, checkins, plan.initiatives, plan.spend), [week, data, ship.releases, ship.decisions, checkins, plan.initiatives, plan.spend]);
@@ -316,6 +319,26 @@ export function ItReview() {
     } finally { setPdfBusy(false); }
   };
   const att = r.attention;
+  // AI drafts the notes from this page's facts; only empty fields are filled.
+  const draftMeetingNotes = async () => {
+    setDrafting(true); setError('');
+    try {
+      const facts = {
+        week: weekLabel(week), shipped: r.doneIssues.map((i) => `${keyOf(i.id)} ${i.title} (${TYPE_LABEL[i.type]}${i.planned ? '' : ', unplanned'})`),
+        numbers: snapshotOf(r), milestones: r.milestones.map(({ m, s }) => `M${m.number} ${m.name}: ${s.pct}% done, ${s.timePct}% of time gone, ${FORECAST[s.forecast].label}`),
+        urgent: att.urgent.map((i) => `${keyOf(i.id)} ${i.title} ${i.priority}`), blocked: att.blocked.map((i) => `${keyOf(i.id)} ${i.title}: ${i.blocked_reason ?? ''}`),
+        stalled: att.stale.map((i) => `${keyOf(i.id)} ${i.title}`), releases: r.releasesList.map(releaseLabel), decisions: r.decisionsList.map((d) => `${d.title}: ${d.decision ?? ''}`),
+        nextWeek: { milestonesEnding: r.nextWeek.milestones.map((m) => m.name), releasesPlanned: r.nextWeek.releases.map(releaseLabel), readyIssues: r.nextWeek.ready },
+      };
+      const d = await askAi<WeekDraft>('week_summary', { facts });
+      const patch: Partial<ItWeeklyReview> = {};
+      if (!review?.highlights && d.highlights) patch.highlights = d.highlights;
+      if (!review?.risks && d.risks) patch.risks = d.risks;
+      if (!review?.next_focus && d.next_focus) patch.next_focus = d.next_focus;
+      if (Object.keys(patch).length) await save(patch); else setError('The notes already have text — clear a field to let AI draft it.');
+    } catch (e) { setError(e instanceof Error ? e.message : 'AI failed'); }
+    setDrafting(false);
+  };
   return (
     <div className="animate-fade-in">
       <PageHeader icon={CalendarCheck} title="Weekly review" subtitle="The IT meeting on one page: numbers, milestones, what shipped, who did what, what needs attention, decisions and next week."
@@ -408,7 +431,7 @@ export function ItReview() {
         </div>
 
         <div className="space-y-4">
-          <Box title="Meeting notes" icon={FileText}>
+          <Box title="Meeting notes" icon={FileText} right={ai.data?.configured && <button onClick={draftMeetingNotes} disabled={drafting} className="btn-ghost text-caption">{drafting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Draft with AI</button>}>
             <p className="text-caption font-medium text-fg-muted mb-1.5">Who's here</p>
             <div className="flex flex-wrap gap-1.5 mb-3">
               {data.members.map((m) => {

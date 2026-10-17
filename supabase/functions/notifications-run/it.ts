@@ -167,7 +167,50 @@ async function weekly(ctx: Ctx, force: boolean): Promise<Built[]> {
   }];
 }
 
+// Product health (migration 20261020100000): yesterday against the goals.
+async function health(ctx: Ctx, force: boolean): Promise<Built[]> {
+  const y = shiftDay(ctx.today, -1);
+  const [settings] = await rows<{ min_completion_pct: number; max_no_driver_pct: number; max_accept_seconds: number; max_pickup_minutes: number; min_crash_free_pct: number }>(ctx.db.from("it_health_settings").select("*").eq("id", 1));
+  if (!settings) return [];
+  const { data: trip, error } = await ctx.db.rpc("it_trip_health", { p_from: y, p_to: y });
+  if (error) throw new Error(error.message);
+  const t = (trip as { totals: { requested: number; completed: number; no_driver: number; accept_median_s: number | null; pickup_avg_min: number | null } }).totals;
+  const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : null);
+  const done = pct(t.completed, t.requested), lost = pct(t.no_driver, t.requested);
+  const problems: string[][] = [];
+  const tones: ("danger" | "warning" | null)[] = [];
+  const add = (what: string, value: string, goal: string, bad: boolean, tone: "danger" | "warning" = "danger") => { problems.push([what, value, goal, bad ? "Below goal" : "OK"]); tones.push(bad ? tone : null); };
+  if (t.requested >= 5) {
+    add("Completed trips", `${done}% (${t.completed}/${t.requested})`, `≥ ${Number(settings.min_completion_pct)}%`, (done ?? 0) < Number(settings.min_completion_pct));
+    add("No driver found", `${lost}% (${t.no_driver})`, `≤ ${Number(settings.max_no_driver_pct)}%`, (lost ?? 0) > Number(settings.max_no_driver_pct));
+    if (t.accept_median_s !== null) add("Time to accept (median)", `${t.accept_median_s} s`, `≤ ${Number(settings.max_accept_seconds)} s`, t.accept_median_s > Number(settings.max_accept_seconds), "warning");
+    if (t.pickup_avg_min !== null) add("Pickup time", `${t.pickup_avg_min} min`, `≤ ${Number(settings.max_pickup_minutes)} min`, t.pickup_avg_min > Number(settings.max_pickup_minutes), "warning");
+  }
+  const [snap] = await rows<{ taken_at: string; data: { projects?: { slug: string; name?: string; ok: boolean; new24h?: number; sessions?: { crashFreeSessions: (number | null)[] } | null }[] } }>(
+    ctx.db.from("it_health_snapshots").select("taken_at, data").eq("source", "sentry").order("taken_at", { ascending: false }).limit(1));
+  for (const p of snap?.data?.projects ?? []) {
+    if (!p.ok) continue;
+    const series = (p.sessions?.crashFreeSessions ?? []).filter((x): x is number => x !== null);
+    const last = series.length ? series[series.length - 1] * 100 : null;
+    if (last !== null) add(`Crash-free sessions · ${p.name ?? p.slug}`, `${last.toFixed(2)}%`, `≥ ${Number(settings.min_crash_free_pct)}%`, last < Number(settings.min_crash_free_pct));
+    if ((p.new24h ?? 0) > 0) add(`New errors · ${p.name ?? p.slug}`, String(p.new24h), "0 new", true, "warning");
+  }
+  const bad = tones.filter(Boolean).length;
+  if (!bad && !force) return [];
+  const leads = (await loadMembers(ctx)).filter((m) => m.role === "head").map((m) => m.profile_id);
+  return [{
+    subject: bad ? `Product health: ${plural(bad, "thing")} off yesterday (${day(y)})` : `Product health: all on target (${day(y)})`,
+    heading: bad ? "Something was off yesterday" : "All on target yesterday",
+    intro: `${day(y)}: ${t.requested} trip requests, ${t.completed} completed, ${t.no_driver} with no driver found.${bad ? " Rows in colour missed the goal set on the Health page." : ""}`,
+    table: { head: ["What", "Yesterday", "Goal", ""], rows: problems, tones },
+    inApp: bad ? `Product health: ${plural(bad, "thing")} off yesterday` : "Product health: all on target",
+    recipients: [...new Set([...leads, ...ctx.profiles.filter((p) => p.role === "managing_director").map((p) => p.id)])],
+    cta: { label: "Open Health", query: "page=it_health" },
+  }];
+}
+
 export const itRules: Record<string, RuleDef> = {
+  it_health_daily: { kind: "scheduled", days: [1, 2, 3, 4, 5, 6, 7], at: hm(8), build: (ctx, force) => health(ctx, force) },
   it_release_shipped: {
     kind: "event",
     sample: async (ctx) => {

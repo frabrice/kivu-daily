@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Lightbulb, Plus, Search, Send, X } from 'lucide-react';
+import { CheckCircle2, Lightbulb, Loader2, Plus, Search, Send, Sparkles, X } from 'lucide-react';
+import { DraftIssue, askAi, useAiStatus } from '../../lib/itHealth';
 import { supabase } from '../../lib/supabase';
 import {
   ItArea, ItData, ItInboxItem, ItIssue, ItMilestone, IssueStatus, IssueType, PRIORITIES, Priority, SIZES, STATUSES, Size, TYPES, addDays, isOpen, keyOf, kigaliToday,
@@ -48,6 +49,24 @@ export function IssueFormModal({ data, issue, isLead, me, defaults, onClose, onS
   const [error, setError] = useState('');
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
   const openMilestones = data.milestones.filter((m) => m.status === 'planned' || m.status === 'active' || m.id === f.milestone_id);
+  const ai = useAiStatus();
+  const [drafting, setDrafting] = useState(false);
+  // AI turns a rough title/description into a full issue; everything stays editable.
+  const draft = async () => {
+    const text = [f.title, f.description].filter((x) => x.trim()).join('\n\n');
+    if (text.trim().length < 8) { setError('Write the request in a few words first (title or description), then let AI write it up.'); return; }
+    setDrafting(true); setError('');
+    try {
+      const d = await askAi<DraftIssue>('draft_issue', { text });
+      setF((x) => ({
+        ...x, title: d.title || x.title, description: d.description || x.description, type: (TYPES.some((t) => t.key === d.type) ? d.type : x.type) as IssueType,
+        size: (SIZES.some((z) => z.key === d.size) ? d.size : x.size) as Size | '', areas: d.areas?.length ? d.areas : x.areas,
+        priority: (isLead || !issue) && PRIORITIES.some((p) => p.key === d.priority) ? d.priority as Priority : x.priority,
+        criteria: d.acceptance_criteria?.length ? d.acceptance_criteria : x.criteria,
+      }));
+    } catch (e) { setError(e instanceof Error ? e.message : 'AI failed'); }
+    setDrafting(false);
+  };
   const save = async () => {
     if (!f.title.trim()) { setError('Give the issue a short title.'); return; }
     if (!f.areas.length) { setError('Choose at least one area it touches.'); return; }
@@ -67,7 +86,9 @@ export function IssueFormModal({ data, issue, isLead, me, defaults, onClose, onS
   return (
     <Modal open onClose={onClose} title={issue ? `Edit ${keyOf(issue.id)}` : 'New issue'} subtitle={issue ? issue.title : isLead ? 'Planned work' : 'Your own work is shown as unplanned until the head of IT plans it.'} maxWidth="max-w-2xl">
       <div className="space-y-3">
-        <label className="block"><span className={lbl}>Title *</span><input value={f.title} onChange={(e) => set('title', e.target.value)} className="input" placeholder="What needs to be done, in a few words" autoFocus /></label>
+        <label className="block"><span className={`${lbl} flex items-center justify-between`}><span>Title *</span>
+          {!issue && ai.data?.configured && <button type="button" onClick={draft} disabled={drafting} className="btn-ghost text-caption !py-0.5">{drafting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Write it up with AI</button>}</span>
+          <input value={f.title} onChange={(e) => set('title', e.target.value)} className="input" placeholder="What needs to be done, in a few words" autoFocus /></label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <label className="block"><span className={lbl}>Type</span><select value={f.type} onChange={(e) => set('type', e.target.value as IssueType)} className="input">{TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}</select></label>
           <label className="block"><span className={lbl}>Priority</span><select value={f.priority} disabled={!!issue && !isLead} onChange={(e) => set('priority', e.target.value as Priority)} className="input disabled:opacity-60">{PRIORITIES.map((p) => <option key={p.key} value={p.key} title={p.help}>{p.label}</option>)}</select></label>
