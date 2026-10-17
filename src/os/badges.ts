@@ -24,12 +24,13 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
     enabled: !!profile,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const [pendingPauses, openIssues, pendingFinance, myOpenTasks, pendingDeposits] = await Promise.all([
+      const [pendingPauses, openIssues, pendingFinance, myOpenTasks, pendingDeposits, itInbox] = await Promise.all([
         a.in('fleet', 'finance', 'it') ? head(supabase.from('driver_pauses').select('id', { count: 'exact', head: true }).eq('approval_status', 'pending')) : 0,
-        a.in('it') ? head(supabase.from('user_stories').select('id', { count: 'exact', head: true }).eq('source', 'flagged').neq('status', 'done')) : 0,
+        a.in('it') ? head(supabase.from('it_issues').select('id', { count: 'exact', head: true }).eq('priority', 'p0').not('status', 'in', '(done,wont_do)')) : 0,
         a.in('finance') ? head(supabase.from('finance_transactions').select('id', { count: 'exact', head: true }).in('status', ['pending', 'checked'])) : 0,
         head(supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('user_id', profile!.id).eq('date', today()).eq('completed', false)),
         a.in('fleet', 'finance', 'it') ? head(supabase.from('driver_deposits').select('id', { count: 'exact', head: true }).eq('status', 'pending')) : 0,
+        a.in('it') ? head(supabase.from('it_inbox').select('id', { count: 'exact', head: true }).eq('status', 'new')) : 0,
       ]);
       // Contract papers missing: drivers (Fleet/IT/MD) and owners (Finance/MD).
       let missingContracts = 0, missingAgreements = 0;
@@ -47,7 +48,7 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
           missingAgreements = [...new Set(v.map((x) => x.owner_id).filter(Boolean) as string[])].filter((o) => missingForOwner(o, v, d)).length;
         }
       }
-      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits, missingContracts, missingAgreements };
+      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits, missingContracts, missingAgreements, itInbox };
     },
   });
   return { myCases, unreadComments, carFollowups, ...(q.data ?? {}) };

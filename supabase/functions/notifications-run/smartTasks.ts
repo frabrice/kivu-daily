@@ -256,13 +256,14 @@ const LIST_KINDS: ListKind[] = [
     },
   },
   {
-    key: "it_issues", priority: "normal", due: "12:00",
-    title: (n) => `Work on ${plural(n, "flagged issue")}`, doneTitle: "Flagged issues handled",
-    intro: "Problems other departments flagged to IT (IT Hub → Issues).",
+    key: "it_triage", priority: "normal", due: "12:00",
+    title: (n) => `Triage ${plural(n, "request")} in IT's inbox`, doneTitle: "IT inbox triaged",
+    intro: "Requests and ideas sent to IT: accept as an issue, merge, park or decline (IT & Product → Inbox).",
     compute: async (ctx) => {
-      const items = (await loadFlaggedStories(ctx)).filter((s) => s.status !== "done")
-        .map((s) => ({ id: s.id, label: (s.title?.trim() || s.need?.trim() || "Issue").slice(0, 90), detail: s.status === "backlog" ? "not started" : s.status.replace("_", " ") }));
-      return { assignments: assign(one(ctx, "route_it"), items), open: setOf(items) };
+      const items = (await loadFlaggedStories(ctx)).filter((s) => s.status === "backlog")
+        .map((s) => ({ id: s.id, label: (s.title?.trim() || "Request").slice(0, 90), detail: `from ${ctx.profiles.find((p) => p.id === s.created_by)?.full_name.trim().split(/\s+/)[0] ?? "someone"}` }));
+      const heads = await rows<{ profile_id: string }>(ctx.db.from("it_members").select("profile_id").eq("role", "head"));
+      return { assignments: heads.flatMap((h) => assign(h.profile_id, items)), open: setOf(items) };
     },
   },
   {

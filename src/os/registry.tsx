@@ -1,7 +1,7 @@
 import { lazy, LazyExoticComponent, ComponentType } from 'react';
 import {
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
-  Route, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
+  Route, Flag, Inbox, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
   Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText,
 } from 'lucide-react';
@@ -11,7 +11,7 @@ import { Access } from './access';
 // sidebar, its address, and who may see it. The shell, the router, the
 // command palette, How to Use and the mobile menu all read from here.
 
-export type BadgeKey = 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks' | 'missingContracts' | 'missingAgreements';
+export type BadgeKey = 'itInbox' | 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks' | 'missingContracts' | 'missingAgreements';
 
 export interface PageDef {
   id: string;
@@ -147,10 +147,14 @@ export const MODULES: ModuleDef[] = [
     ],
   },
   {
-    id: 'product', label: 'Product Hub', icon: Package, base: '/product', shortcut: 'g p',
+    id: 'product', label: 'IT & Product', icon: Package, base: '/product', shortcut: 'g p',
     pages: [
-      { id: 'product-issues', path: '/product/issues', label: 'Issues', icon: AlertTriangle, component: LS(() => import('../pages/itHub/IssuesPage'), 'ProductStrip'), can: (a) => a.in('it'), badge: 'openIssues', keywords: 'it stories bugs' },
-      { id: 'product-products', path: '/product/products', label: 'Products', icon: Package, component: LS(() => import('../pages/itHub/ProductsPage'), 'ProductStrip'), can: (a) => a.in('it'), keywords: 'roadmap milestones features' },
+      { id: 'it-overview', path: '/product', label: 'Overview', icon: Gauge, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItOverview }))), can: (a) => a.in('it'), keywords: 'it product roadmap engineering', description: 'Milestones now, who is on what, what needs attention.' },
+      { id: 'product-issues', path: '/product/issues', label: 'Issues', icon: AlertTriangle, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItIssues }))), can: (a) => a.in('it'), keywords: 'it stories bugs tasks board kanban', description: 'All IT work on a board or a table.' },
+      { id: 'it-milestones', path: '/product/milestones', label: 'Milestones', icon: Flag, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItMilestones }))), can: (a) => a.in('it'), keywords: 'sprint milestone release plan', description: 'Time-boxed delivery with progress by area.' },
+      { id: 'it-inbox', path: '/product/inbox', label: 'Inbox', icon: Inbox, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItInbox }))), can: (a) => a.in('it'), badge: 'itInbox', keywords: 'requests flags ideas triage', description: 'Requests from the company, triaged by the head of IT.' },
+      { id: 'it-team', path: '/product/team', label: 'Team', icon: Users2, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItTeam }))), can: (a) => a.in('it'), keywords: 'check-in working on developers', description: 'What everyone is working on, and the daily check-ins.' },
+      { id: 'product-products', path: '/product/products', label: 'Products (old)', icon: Package, component: LS(() => import('../pages/itHub/ProductsPage'), 'ProductStrip'), can: (a) => a.in('it'), hidden: true },
     ],
   },
   {

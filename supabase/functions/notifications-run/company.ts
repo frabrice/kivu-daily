@@ -1,7 +1,7 @@
 import { shiftDay, sundayOf, SUNDAY_RULE_START } from "../_shared/depositRules.ts";
 import { activeStandings, car, loadDeposits, loadDrivers } from "./drivers.ts";
 import { KIVU_REVENUE_TYPES, loadTransactions, openTransactions, OPERATING_COST_TYPES, txTable, type TxRow } from "./finance.ts";
-import { carsWithoutDriver, loadCalls, loadFlaggedStories } from "./operations.ts";
+import { carsWithoutDriver, loadCalls, loadFlaggedStories, loadOpenItIssues } from "./operations.ts";
 import { loadRecentTasks } from "./workspace.ts";
 import { hours, IN_TYPES, loadShifts, OUT_TYPES } from "./shifts.ts";
 import { weeklyTips } from "./money.ts";
@@ -126,12 +126,13 @@ export const companyRules: Record<string, RuleDef> = {
       });
 
       const openFlags = flagged.filter((s) => s.status !== "done");
+      const itOpen = await loadOpenItIssues(ctx);
       const yCalls = calls.filter((c) => c.created_at.slice(0, 10) === yesterday).length;
       blocks.push({
         heading: "Operations",
         stats: [
           { label: "Cars without a driver", value: String(idle.length), tone: idle.length ? "warning" : "good" },
-          { label: "IT issues open", value: String(openFlags.length) },
+          { label: "IT issues open", value: String(itOpen.length), sub: `${itOpen.filter((i) => i.priority === "p0").length} urgent · ${openFlags.filter((s) => s.status === "backlog").length} requests to triage` },
           { label: "Driver calls yesterday", value: String(yCalls) },
         ],
         text: idle.length ? `Cars without a driver: ${idle.map((v) => esc(v.plate_number)).join(", ")}.` : undefined,

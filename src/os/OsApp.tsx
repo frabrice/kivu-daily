@@ -33,6 +33,9 @@ function LegacyLinks({ access }: { access: Access }) {
     if (loc.pathname !== '/' || (!ticket && !page)) return;
     if (page === 'fleet_branding') { nav('/fleet/branding', { replace: true }); return; }
     if (page === 'whats_new') { nav('/docs/whats-new', { replace: true }); return; }
+    if (page === 'it_checkin') { nav('/product/team?checkin=1', { replace: true }); return; }
+    if (page === 'it_inbox') { nav('/product/inbox', { replace: true }); return; }
+    if (page === 'it_issue') { nav(`/product/issues${p.get('issue') ? `?issue=${encodeURIComponent(p.get('issue')!)}` : ''}`, { replace: true }); return; }
     if (ticket) {
       const own = page === 'from_call_center' || access.dept !== 'call_center';
       nav(`${own ? '/me/cases' : '/call-center/cases'}?ticket=${encodeURIComponent(ticket)}`, { replace: true });

@@ -24,8 +24,22 @@ export function loadCalls(ctx: Ctx) {
   return cached(ctx, "calls", () => rows<CallRow>(ctx.db.from("call_logs").select("driver_id, created_at, caller_id, outcome:call_outcomes(label, needs_followup)").order("created_at", { ascending: false })));
 }
 
+// Requests sent to IT (it_inbox), shaped like the old flagged stories:
+// "done" once decided and, if it became an issue, that issue is closed.
 export function loadFlaggedStories(ctx: Ctx) {
-  return cached(ctx, "flagged", () => rows<StoryRow>(ctx.db.from("user_stories").select("id, title, need, persona, details, status, source, created_by, created_at, updated_at").eq("source", "flagged")));
+  return cached(ctx, "flagged", async () => {
+    const list = await rows<{ id: string; title: string; details: string | null; persona: string | null; status: string; submitted_by: string | null; submitted_at: string; decided_at: string | null; issue: { status: string; completed_at: string | null } | null }>(
+      ctx.db.from("it_inbox").select("id, title, details, persona, status, submitted_by, submitted_at, decided_at, issue:it_issues!it_inbox_issue_id_fkey(status, completed_at)"));
+    return list.map((x): StoryRow => ({
+      id: x.id, title: x.title, need: x.title, persona: x.persona, details: x.details, source: "flagged",
+      status: x.status === "declined" || x.status === "parked" || ["done", "wont_do"].includes(x.issue?.status ?? "") ? "done" : x.status === "new" ? "backlog" : "in_progress",
+      created_by: x.submitted_by, created_at: x.submitted_at, updated_at: x.issue?.completed_at ?? x.decided_at ?? x.submitted_at,
+    }));
+  });
+}
+
+export function loadOpenItIssues(ctx: Ctx) {
+  return cached(ctx, "it_open", () => rows<{ id: number; title: string; priority: string; status: string }>(ctx.db.from("it_issues").select("id, title, priority, status").not("status", "in", "(done,wont_do)")));
 }
 
 // Cars with nobody on an active contract driving them.
@@ -203,18 +217,19 @@ export const operationsRules: Record<string, RuleDef> = {
     kind: "event",
     sample: async (ctx) => {
       const latest = [...await loadFlaggedStories(ctx)].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
-      return latest ? { story_id: latest.id } : null;
+      return latest ? { inbox_id: latest.id } : null;
     },
     build: async (p, ctx) => {
-      const s = (await loadFlaggedStories(ctx)).find((x) => x.id === p.story_id);
+      const s = (await loadFlaggedStories(ctx)).find((x) => x.id === (p.inbox_id ?? p.story_id));
       if (!s) return null;
       return {
-        subject: `New issue flagged to IT: ${storyLabel(s)}`,
-        heading: "New issue flagged to IT",
+        cta: { label: "Open the inbox", query: "page=it_inbox" },
+        subject: `New request to IT: ${storyLabel(s)}`,
+        heading: "New request to IT",
         intro: `<b>${esc(personName(ctx, s.created_by))}</b> flagged: "${esc(storyLabel(s))}"`
           + `${s.details ? `<br><br>${esc(s.details).replace(/\n/g, "<br>")}` : ""}`
-          + "<br><br>It's in the Product Hub's flagged inbox. Reply by moving it along — the person who flagged it is emailed when it's done.",
-        inApp: `New issue flagged to IT: ${storyLabel(s)}`,
+          + "<br><br>It's in IT's inbox for the head of IT to triage. The person who sent it is told when it's done.",
+        inApp: `New request to IT: ${storyLabel(s)}`,
       };
     },
   },
@@ -223,17 +238,17 @@ export const operationsRules: Record<string, RuleDef> = {
     kind: "event",
     sample: async (ctx) => {
       const latest = [...await loadFlaggedStories(ctx)].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0];
-      return latest ? { story_id: latest.id } : null;
+      return latest ? { inbox_id: latest.id } : null;
     },
     build: async (p, ctx) => {
-      const s = (await loadFlaggedStories(ctx)).find((x) => x.id === p.story_id);
+      const s = (await loadFlaggedStories(ctx)).find((x) => x.id === (p.inbox_id ?? p.story_id));
       if (!s) return null;
       return {
-        subject: `Fixed: ${storyLabel(s)}`,
-        heading: "An issue you flagged is fixed",
-        intro: `IT marked the issue you flagged on ${day(s.created_at.slice(0, 10))} as done: "<b>${esc(storyLabel(s))}</b>".`
-          + "<br><br>If it's still happening, flag it again with what you saw.",
-        inApp: `Fixed: ${storyLabel(s)}`,
+        subject: `Done: ${storyLabel(s)}`,
+        heading: "What you asked IT for is done",
+        intro: `IT finished what you sent on ${day(s.created_at.slice(0, 10))}: "<b>${esc(storyLabel(s))}</b>"${p.issue_id ? ` (KR-${p.issue_id})` : ""}.`
+          + "<br><br>If it's still happening, send a new request with what you saw.",
+        inApp: `Done: ${storyLabel(s)}`,
       };
     },
   },

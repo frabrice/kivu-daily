@@ -181,16 +181,16 @@ export function GrowthStrip() {
 export function ProductStrip() {
   const q = useQuery({
     queryKey: ['strip-product'],
-    queryFn: async () => ((await supabase.from('user_stories').select('status, source, updated_at')).data as { status: string; source: string; updated_at: string }[]) ?? [],
+    queryFn: async () => ((await supabase.from('it_issues').select('status, source, updated_at')).data as { status: string; source: string; updated_at: string }[]) ?? [],
   });
   if (!q.data) return <Skeleton />;
   const s = q.data;
   const month = today().slice(0, 7);
   return (
     <StatGrid cols={4}>
-      <StatCard to="/product/issues" icon={AlertTriangle} label="Open issues from departments" value={s.filter((x) => x.source === 'flagged' && x.status !== 'done').length} tone={s.some((x) => x.source === 'flagged' && x.status !== 'done') ? 'attention' : undefined} />
+      <StatCard to="/product/issues" icon={AlertTriangle} label="Open requests from departments" value={s.filter((x) => x.source === 'department' && x.status !== 'done' && x.status !== 'wont_do').length} tone={s.some((x) => x.source === 'department' && x.status !== 'done' && x.status !== 'wont_do') ? 'attention' : undefined} />
       <StatCard icon={ListTodo} label="Backlog" value={s.filter((x) => x.status === 'backlog').length} />
-      <StatCard icon={Package} label="In progress or review" value={s.filter((x) => x.status === 'in_progress' || x.status === 'review').length} />
+      <StatCard icon={Package} label="In progress or review" value={s.filter((x) => x.status === 'in_progress' || x.status === 'in_review' || x.status === 'testing').length} />
       <StatCard icon={CheckCircle2} label="Done this month" value={s.filter((x) => x.status === 'done' && x.updated_at.slice(0, 7) === month).length} tone="success" />
     </StatGrid>
   );

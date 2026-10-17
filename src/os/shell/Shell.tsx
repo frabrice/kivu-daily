@@ -19,6 +19,7 @@ import { Popover, MenuItem, MenuDivider, MenuLabel, Tooltip } from '../../ui/Pop
 import CommandPalette from './CommandPalette';
 import PageBoundary from '../PageBoundary';
 
+const ItRequestHost = lazy(() => import('../../components/it/ItModals').then((m) => ({ default: m.SubmitToItModal })));
 const AssignTaskModalHost = lazy(() => import('./NewThingModals').then((m) => ({ default: m.AssignTaskHost })));
 const AnnouncementHost = lazy(() => import('./NewThingModals').then((m) => ({ default: m.AnnouncementHost })));
 const MeetingHost = lazy(() => import('./NewThingModals').then((m) => ({ default: m.MeetingHost })));
@@ -48,7 +49,7 @@ export default function Shell({ access, children }: { access: Access; children: 
   const [palette, setPalette] = useState(false);
   const [shortcuts, setShortcuts] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [newModal, setNewModal] = useState<null | 'task' | 'announcement' | 'meeting'>(null);
+  const [newModal, setNewModal] = useState<null | 'task' | 'announcement' | 'meeting' | 'it_request'>(null);
   const flyTimer = useRef<number>();
   const { stack: peekStack } = usePeek();
 
@@ -166,6 +167,7 @@ export default function Shell({ access, children }: { access: Access; children: 
         {newModal === 'task' && <AssignTaskModalHost onClose={() => setNewModal(null)} />}
         {newModal === 'announcement' && <AnnouncementHost onClose={() => setNewModal(null)} />}
         {newModal === 'meeting' && <MeetingHost onClose={() => setNewModal(null)} />}
+        {newModal === 'it_request' && <ItRequestHost onClose={() => setNewModal(null)} />}
       </Suspense>
     </div>
   );
@@ -193,7 +195,7 @@ export function PageSkeleton() {
 // ---------------------------------------------------------------- top bar
 function TopBar({ access, current, onPalette, onMenu, onNew, onShortcuts, signOut, shiftChip }: {
   access: Access; current: ModuleDef | undefined; onPalette: () => void; onMenu: () => void;
-  onNew: (k: 'task' | 'announcement' | 'meeting') => void; onShortcuts: () => void; signOut: () => void; shiftChip: ReactNode;
+  onNew: (k: 'task' | 'announcement' | 'meeting' | 'it_request') => void; onShortcuts: () => void; signOut: () => void; shiftChip: ReactNode;
 }) {
   const { profile } = useAuth();
   const { theme, toggle } = useTheme();
@@ -237,6 +239,7 @@ function TopBar({ access, current, onPalette, onMenu, onNew, onShortcuts, signOu
             {access.in('call_center') && <MenuItem icon={PhoneIncoming} label="New call or case" onClick={() => { close(); nav('/call-center/cases?new=call'); }} />}
             {access.isMd && <MenuItem icon={Megaphone} label="Announcement" onClick={() => { close(); onNew('announcement'); }} />}
             {access.isMd && <MenuItem icon={CalendarPlus} label="Meeting" onClick={() => { close(); onNew('meeting'); }} />}
+            <MenuItem icon={Rocket} label="Request to IT" hint="Idea, problem or need" onClick={() => { close(); onNew('it_request'); }} />
             {(access.isMd || access.duties.has('fleet_manager') || access.duties.has('driver_payment_followup')) && <MenuItem icon={CalendarOff} label="Driver days off" onClick={() => { close(); nav('/fleet/days-off'); }} />}
           </div>
         )}
