@@ -620,6 +620,7 @@ export interface FinanceTransaction {
   checked_at: string | null;
   approved_at: string | null;
   supporting_document_id: string | null;
+  it_initiative_id?: string | null;
   system_generated: boolean;
   created_by: string | null;
   created_at: string;

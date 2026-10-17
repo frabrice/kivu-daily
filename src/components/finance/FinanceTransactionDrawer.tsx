@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import {
   supabase, FinanceAccount, FinanceTransaction, FinanceTransactionType, FinanceDirection,
@@ -48,6 +48,9 @@ export default function FinanceTransactionDrawer({
   const [linkedVehicleId, setLinkedVehicleId] = useState(tx?.linked_vehicle_id ?? '');
   const [linkedDriverId, setLinkedDriverId] = useState(tx?.linked_driver_id ?? '');
   const [supportingDocId, setSupportingDocId] = useState(tx?.supporting_document_id ?? '');
+  const [itProjectId, setItProjectId] = useState(tx?.it_initiative_id ?? '');
+  const [itProjects, setItProjects] = useState<{ id: string; number: number; name: string }[]>([]);
+  useEffect(() => { supabase.from('it_initiatives').select('id, number, name').not('status', 'in', '(declined,cancelled,idea)').order('number').then(({ data }) => setItProjects(data ?? [])); }, []);
   const [status, setStatus] = useState<FinanceTransactionStatus>(tx?.status ?? 'pending');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -71,6 +74,7 @@ export default function FinanceTransactionDrawer({
       linked_vehicle_id: linkedVehicleId || null,
       linked_driver_id: linkedDriverId || null,
       supporting_document_id: supportingDocId || null,
+      it_initiative_id: !isTransfer && direction === 'out' ? itProjectId || null : null,
       status,
       updated_at: new Date().toISOString(),
       ...(status === 'checked' && tx?.status !== 'checked' ? { checked_by: profile!.id, checked_at: new Date().toISOString() } : {}),
@@ -216,6 +220,17 @@ export default function FinanceTransactionDrawer({
           <label className="block text-caption font-medium mb-1.5 text-fg-muted">Description</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="Purpose of this transaction…" />
         </div>
+
+        {!isTransfer && direction === 'out' && (itProjects.length > 0 || itProjectId) && (
+          <div>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">IT project</label>
+            <select value={itProjectId} onChange={(e) => setItProjectId(e.target.value)} disabled={!editing} className="input">
+              <option value="">Not an IT project expense</option>
+              {itProjects.map((p) => <option key={p.id} value={p.id}>I{p.number} · {p.name}</option>)}
+            </select>
+            <p className="text-micro text-fg-subtle mt-1">Counts against that project's approved budget (IT & Product → Budget).</p>
+          </div>
+        )}
 
         <div>
           <label className="block text-caption font-medium mb-1.5 text-fg-muted">Supporting Document</label>

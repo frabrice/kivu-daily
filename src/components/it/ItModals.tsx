@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Lightbulb, Plus, Search, Send, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import {
@@ -114,12 +114,15 @@ export function IssueFormModal({ data, issue, isLead, me, defaults, onClose, onS
 }
 
 // ------------------------------------------------------------ milestone
-export function MilestoneFormModal({ data, milestone, onClose, onSaved }: { data: ItData; milestone: ItMilestone | null; onClose: () => void; onSaved: (id: string) => void }) {
+export function MilestoneFormModal({ data, milestone, initiativeId, onClose, onSaved }: { data: ItData; milestone: ItMilestone | null; initiativeId?: string; onClose: () => void; onSaved: (id: string) => void }) {
+  const [projects, setProjects] = useState<{ id: string; number: number; name: string }[]>([]);
+  useEffect(() => { supabase.from('it_initiatives').select('id, number, name').not('status', 'in', '(declined,cancelled)').order('number').then(({ data: d }) => setProjects(d ?? [])); }, []);
   const last = data.milestones.filter((m) => m.status !== 'cancelled').sort((a, b) => b.end_date.localeCompare(a.end_date))[0];
   const start0 = milestone?.start_date ?? (last && last.end_date >= kigaliToday() ? addDays(last.end_date, 1) : kigaliToday());
   const [f, setF] = useState({
     name: milestone?.name ?? '', goal: milestone?.goal ?? '', start_date: start0, end_date: milestone?.end_date ?? addDays(start0, 13),
     status: milestone?.status ?? 'planned', owner_id: milestone?.owner_id ?? (data.members.find((m) => m.role === 'head')?.profile_id ?? ''),
+    initiative_id: milestone?.initiative_id ?? initiativeId ?? '',
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -129,7 +132,7 @@ export function MilestoneFormModal({ data, milestone, onClose, onSaved }: { data
     if (!f.name.trim()) { setError('Give the milestone a name.'); return; }
     if (f.end_date < f.start_date) { setError('The end date is before the start.'); return; }
     setBusy(true); setError('');
-    const payload = { name: f.name.trim(), goal: f.goal.trim() || null, start_date: f.start_date, end_date: f.end_date, status: f.status, owner_id: f.owner_id || null, updated_at: new Date().toISOString(),
+    const payload = { name: f.name.trim(), goal: f.goal.trim() || null, start_date: f.start_date, end_date: f.end_date, status: f.status, owner_id: f.owner_id || null, initiative_id: f.initiative_id || null, updated_at: new Date().toISOString(),
       ...(f.status === 'completed' && milestone?.status !== 'completed' ? { completed_at: new Date().toISOString() } : {}) };
     const res = milestone ? await supabase.from('it_milestones').update(payload).eq('id', milestone.id).select('id').single() : await supabase.from('it_milestones').insert(payload).select('id').single();
     setBusy(false);
@@ -147,6 +150,7 @@ export function MilestoneFormModal({ data, milestone, onClose, onSaved }: { data
           <label className="block"><span className={lbl}>Status</span><select value={f.status} onChange={(e) => set('status', e.target.value as ItMilestone['status'])} className="input"><option value="planned">Planned</option><option value="active">Active</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
           <label className="block"><span className={lbl}>Owner</span><select value={f.owner_id} onChange={(e) => set('owner_id', e.target.value)} className="input"><option value="">—</option>{data.members.map((m) => <option key={m.profile_id} value={m.profile_id}>{m.name}</option>)}</select></label>
         </div>
+        <label className="block"><span className={lbl}>Project (roadmap)</span><select value={f.initiative_id} onChange={(e) => set('initiative_id', e.target.value)} className="input"><option value="">Not part of a project</option>{projects.map((p) => <option key={p.id} value={p.id}>I{p.number} · {p.name}</option>)}</select></label>
         <p className="text-caption text-fg-muted">{days > 0 ? `${days} days · ${Math.round(days / 7 * 10) / 10} weeks` : ''}
           {[7, 14, 21, 28].map((n) => <button key={n} type="button" onClick={() => set('end_date', addDays(f.start_date, n - 1))} className="ml-2 link">{n / 7} wk</button>)}</p>
         <Err msg={error} />

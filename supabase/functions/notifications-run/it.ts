@@ -1,4 +1,4 @@
-import { Built, Ctx, esc, hm, RuleDef, rows } from "./core.ts";
+import { Built, Ctx, day, esc, hm, RuleDef, rows, rwf } from "./core.ts";
 
 // IT workspace (migration 20261017100000): the 10:00 and 14:00 "what are
 // you working on?" check-ins (Mon-Fri), and the morning nudge about work
@@ -84,7 +84,74 @@ async function stale(ctx: Ctx): Promise<Built[]> {
   return out;
 }
 
+// Projects on the roadmap (migration 20261018100000): the head of IT asks
+// the MD to approve a project and its budget; the owner hears the decision.
+interface InitiativeRow { id: string; number: number; name: string; problem: string | null; outcome: string | null; owner_id: string | null; start_date: string | null; target_date: string | null; status: string; approved_budget: number | null; decision_note: string | null; proposed_at: string | null; approved_at: string | null }
+interface LineRow { category: string; description: string; amount: number; recurrence: string; months: number }
+const CATEGORY: Record<string, string> = { people: "People & time", tools: "Tools & subscriptions", cloud: "Cloud & hosting", ai: "AI services", devices: "Devices & hardware", contractors: "Contractors", other: "Other" };
+const lineTotal = (l: LineRow) => Number(l.amount) * (l.recurrence === "monthly" ? l.months : 1);
+async function loadInitiative(ctx: Ctx, id: unknown) {
+  const [i] = await rows<InitiativeRow>(ctx.db.from("it_initiatives").select("id, number, name, problem, outcome, owner_id, start_date, target_date, status, approved_budget, decision_note, proposed_at, approved_at").eq("id", String(id)));
+  if (!i) return null;
+  const lines = await rows<LineRow>(ctx.db.from("it_budget_lines").select("category, description, amount, recurrence, months").eq("initiative_id", i.id).order("created_at"));
+  return { i, lines, planned: lines.reduce((s, l) => s + lineTotal(l), 0) };
+}
+const latestInitiative = async (ctx: Ctx, col: "proposed_at" | "approved_at") => {
+  const [x] = await rows<{ id: string }>(ctx.db.from("it_initiatives").select("id").not(col, "is", null).order(col, { ascending: false }).limit(1));
+  return x ? { initiative_id: x.id, approved: true } : null;
+};
+const who = (ctx: Ctx, id: unknown) => ctx.profiles.find((p) => p.id === id)?.full_name.trim() || "Someone";
+const projectName = (i: InitiativeRow) => `I${i.number} · ${i.name}`;
+
 export const itRules: Record<string, RuleDef> = {
+  it_initiative_proposed: {
+    kind: "event",
+    sample: (ctx) => latestInitiative(ctx, "proposed_at"),
+    build: async (p, ctx) => {
+      const x = await loadInitiative(ctx, p.initiative_id);
+      if (!x) return null;
+      const { i, lines, planned } = x;
+      const bigger = i.approved_budget !== null;
+      return {
+        subject: bigger ? `Bigger budget to approve: ${projectName(i)} (${rwf(planned)})` : `Project to approve: ${projectName(i)} (${rwf(planned)})`,
+        heading: bigger ? "A project needs a bigger budget" : "A project is waiting for your approval",
+        intro: `<b>${esc(who(ctx, p.actor_id))}</b> asks you to approve <b>${esc(projectName(i))}</b>`
+          + (bigger ? `: the budget grew from ${rwf(Number(i.approved_budget))} to <b>${rwf(planned)}</b>.` : ` with a budget of <b>${rwf(planned)}</b>.`)
+          + `<br><br><b>Problem:</b> ${esc(i.problem ?? "—").replace(/\n/g, "<br>")}`
+          + `<br><b>Outcome:</b> ${esc(i.outcome ?? "—").replace(/\n/g, "<br>")}`
+          + `<br><b>Dates:</b> ${day(i.start_date)} → ${day(i.target_date)} · <b>Owner:</b> ${esc(who(ctx, i.owner_id))}`,
+        table: lines.length ? { head: ["Budget line", "Category", "Total"], rows: [...lines.map((l) => [esc(l.description) + (l.recurrence === "monthly" ? ` (${rwf(Number(l.amount))} × ${l.months} months)` : ""), CATEGORY[l.category] ?? l.category, rwf(lineTotal(l))]), ["<b>Total</b>", "", `<b>${rwf(planned)}</b>`]] } : undefined,
+        inApp: `Approve or decline ${projectName(i)} (${rwf(planned)})`,
+        cta: { label: "Approve or decline", query: `page=it_roadmap&i=${i.id}` },
+      };
+    },
+  },
+  it_initiative_decided: {
+    kind: "event",
+    sample: (ctx) => latestInitiative(ctx, "approved_at"),
+    build: async (p, ctx) => {
+      const x = await loadInitiative(ctx, p.initiative_id);
+      if (!x) return null;
+      const { i } = x;
+      const yes = p.approved === true;
+      if (!yes && p.kept_budget === true) return {
+        subject: `Budget kept at ${rwf(Number(i.approved_budget ?? 0))}: ${projectName(i)}`,
+        heading: "The bigger budget was not approved",
+        intro: `<b>${esc(who(ctx, p.actor_id))}</b> kept <b>${esc(projectName(i))}</b> on its approved budget of <b>${rwf(Number(i.approved_budget ?? 0))}</b>. The project keeps running; trim the budget lines to fit.`
+          + (i.decision_note ? `<br><br>“${esc(i.decision_note)}”` : ""),
+        inApp: `Budget kept at ${rwf(Number(i.approved_budget ?? 0))}: ${projectName(i)}`,
+        cta: { label: "Open the project", query: `page=it_roadmap&i=${i.id}` },
+      };
+      return {
+        subject: yes ? `Approved: ${projectName(i)} — ${rwf(Number(i.approved_budget ?? 0))}` : `Declined: ${projectName(i)}`,
+        heading: yes ? "Your project is approved" : "Your project was declined",
+        intro: `<b>${esc(who(ctx, p.actor_id))}</b> ${yes ? `approved <b>${esc(projectName(i))}</b> with a budget of <b>${rwf(Number(i.approved_budget ?? 0))}</b>. You can start it: set it In progress on the roadmap and plan its milestones.` : `declined <b>${esc(projectName(i))}</b>.`}`
+          + (i.decision_note ? `<br><br>“${esc(i.decision_note)}”` : ""),
+        inApp: yes ? `Approved: ${projectName(i)} (${rwf(Number(i.approved_budget ?? 0))})` : `Declined: ${projectName(i)}`,
+        cta: { label: "Open the project", query: `page=it_roadmap&i=${i.id}` },
+      };
+    },
+  },
   it_checkin_morning: { kind: "scheduled", days: MON_FRI, at: hm(10), build: (ctx, force) => checkin(ctx, "morning", force), testAll: true },
   it_checkin_afternoon: { kind: "scheduled", days: MON_FRI, at: hm(14), build: (ctx, force) => checkin(ctx, "afternoon", force), testAll: true },
   it_stale_work: { kind: "scheduled", days: MON_FRI, at: hm(9), build: (ctx) => stale(ctx), testAll: true },

@@ -16,6 +16,7 @@ export interface ItArea { key: string; label: string; hint: string | null; sort:
 export interface ItMilestone {
   id: string; number: number; name: string; goal: string | null; start_date: string; end_date: string;
   status: 'planned' | 'active' | 'completed' | 'cancelled'; owner_id: string | null; created_at: string; completed_at: string | null;
+  initiative_id: string | null;
 }
 export interface ItIssue {
   id: number; title: string; description: string | null; type: IssueType; areas: string[]; priority: Priority; size: Size | null; status: IssueStatus;

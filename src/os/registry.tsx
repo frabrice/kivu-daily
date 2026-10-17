@@ -11,7 +11,7 @@ import { Access } from './access';
 // sidebar, its address, and who may see it. The shell, the router, the
 // command palette, How to Use and the mobile menu all read from here.
 
-export type BadgeKey = 'itInbox' | 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks' | 'missingContracts' | 'missingAgreements';
+export type BadgeKey = 'itInbox' | 'itProposed' | 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks' | 'missingContracts' | 'missingAgreements';
 
 export interface PageDef {
   id: string;
@@ -153,6 +153,9 @@ export const MODULES: ModuleDef[] = [
       { id: 'product-issues', path: '/product/issues', label: 'Issues', icon: AlertTriangle, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItIssues }))), can: (a) => a.in('it'), keywords: 'it stories bugs tasks board kanban', description: 'All IT work on a board or a table.' },
       { id: 'it-milestones', path: '/product/milestones', label: 'Milestones', icon: Flag, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItMilestones }))), can: (a) => a.in('it'), keywords: 'sprint milestone release plan', description: 'Time-boxed delivery with progress by area.' },
       { id: 'it-inbox', path: '/product/inbox', label: 'Inbox', icon: Inbox, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItInbox }))), can: (a) => a.in('it'), badge: 'itInbox', keywords: 'requests flags ideas triage', description: 'Requests from the company, triaged by the head of IT.' },
+      { id: 'it-roadmap', path: '/product/roadmap', label: 'Roadmap', icon: Route, component: L(() => import('../pages/it/ItPlanPages').then((m) => ({ default: m.ItRoadmap }))), can: (a) => a.in('it'), badge: 'itProposed', group: 'Plan', keywords: 'projects initiatives now next later timeline gantt', description: 'Big projects: now, next and later, with budgets and MD approval.' },
+      { id: 'it-objectives', path: '/product/objectives', label: 'Objectives', icon: Target, component: L(() => import('../pages/it/ItPlanPages').then((m) => ({ default: m.ItObjectives }))), can: (a) => a.in('it'), group: 'Plan', keywords: 'okr goals key results quarter', description: 'Quarterly objectives and the key results that measure them.' },
+      { id: 'it-budget', path: '/product/budget', label: 'Budget', icon: Wallet, component: L(() => import('../pages/it/ItPlanPages').then((m) => ({ default: m.ItBudget }))), can: (a) => a.in('it', 'finance'), group: 'Plan', keywords: 'it spending money approved planned', description: 'IT project budgets: approved, planned, committed and spent.' },
       { id: 'it-team', path: '/product/team', label: 'Team', icon: Users2, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItTeam }))), can: (a) => a.in('it'), keywords: 'check-in working on developers', description: 'What everyone is working on, and the daily check-ins.' },
       { id: 'product-products', path: '/product/products', label: 'Products (old)', icon: Package, component: LS(() => import('../pages/itHub/ProductsPage'), 'ProductStrip'), can: (a) => a.in('it'), hidden: true },
     ],

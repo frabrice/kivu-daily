@@ -197,16 +197,18 @@ Deno.serve(async (req) => {
       const row = toRow(t, { driver, vehicle });
       return { ...row, raw_hash: await sha(JSON.stringify(row)) };
     }));
-    const existing = new Map<number, { raw_hash: string; status: string }>();
+    const existing = new Map<number, { raw_hash: string; status: string; status_changed_at: string }>();
     for (let i = 0; i < rows.length; i += 300) {
       const ids = rows.slice(i, i + 300).map((r) => r.id);
-      const { data } = await db.from("platform_trips").select("id, raw_hash, status").in("id", ids);
-      for (const e of data ?? []) existing.set(Number(e.id), { raw_hash: e.raw_hash, status: e.status });
+      const { data } = await db.from("platform_trips").select("id, raw_hash, status, status_changed_at").in("id", ids);
+      for (const e of data ?? []) existing.set(Number(e.id), { raw_hash: e.raw_hash, status: e.status, status_changed_at: e.status_changed_at });
     }
     const now = new Date().toISOString();
     const changed = rows.filter((r) => existing.get(r.id)?.raw_hash !== r.raw_hash).map((r) => {
       const prev = existing.get(r.id);
-      return { ...r, synced_at: now, ...(prev && prev.status === r.status ? {} : { status_changed_at: now }) };
+      // Every row carries the same columns: a bulk upsert fills a missing
+      // column with NULL, not with its default.
+      return { ...r, synced_at: now, status_changed_at: prev && prev.status === r.status ? prev.status_changed_at : now };
     });
     for (let i = 0; i < changed.length; i += 200) {
       const { error } = await db.from("platform_trips").upsert(changed.slice(i, i + 200), { onConflict: "id" });
