@@ -3,7 +3,7 @@ import {
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
   Route, Flag, Inbox, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
-  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText,
+  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel,
 } from 'lucide-react';
 import { Access } from './access';
 
@@ -156,6 +156,9 @@ export const MODULES: ModuleDef[] = [
       { id: 'it-roadmap', path: '/product/roadmap', label: 'Roadmap', icon: Route, component: L(() => import('../pages/it/ItPlanPages').then((m) => ({ default: m.ItRoadmap }))), can: (a) => a.in('it'), badge: 'itProposed', group: 'Plan', keywords: 'projects initiatives now next later timeline gantt', description: 'Big projects: now, next and later, with budgets and MD approval.' },
       { id: 'it-objectives', path: '/product/objectives', label: 'Objectives', icon: Target, component: L(() => import('../pages/it/ItPlanPages').then((m) => ({ default: m.ItObjectives }))), can: (a) => a.in('it'), group: 'Plan', keywords: 'okr goals key results quarter', description: 'Quarterly objectives and the key results that measure them.' },
       { id: 'it-budget', path: '/product/budget', label: 'Budget', icon: Wallet, component: L(() => import('../pages/it/ItPlanPages').then((m) => ({ default: m.ItBudget }))), can: (a) => a.in('it', 'finance'), group: 'Plan', keywords: 'it spending money approved planned', description: 'IT project budgets: approved, planned, committed and spent.' },
+      { id: 'it-releases', path: '/product/releases', label: 'Releases', icon: Rocket, component: L(() => import('../pages/it/ItShipPages').then((m) => ({ default: m.ItReleases }))), can: (a) => a.in('it'), group: 'Ship', keywords: 'release version deploy store changelog notes', description: 'Versions going out, what they ship, the checklist and release notes.' },
+      { id: 'it-review', path: '/product/review', label: 'Weekly review', icon: CalendarCheck, component: L(() => import('../pages/it/ItShipPages').then((m) => ({ default: m.ItReview }))), can: (a) => a.in('it'), group: 'Ship', keywords: 'meeting weekly report retro pdf', description: 'The IT meeting on one page, with notes and a PDF.' },
+      { id: 'it-decisions', path: '/product/decisions', label: 'Decisions', icon: Gavel, component: L(() => import('../pages/it/ItShipPages').then((m) => ({ default: m.ItDecisions }))), can: (a) => a.in('it'), group: 'Ship', keywords: 'decision log adr why architecture', description: 'Why things are the way they are.' },
       { id: 'it-team', path: '/product/team', label: 'Team', icon: Users2, component: L(() => import('../pages/it/ItPages').then((m) => ({ default: m.ItTeam }))), can: (a) => a.in('it'), keywords: 'check-in working on developers', description: 'What everyone is working on, and the daily check-ins.' },
       { id: 'product-products', path: '/product/products', label: 'Products (old)', icon: Package, component: LS(() => import('../pages/itHub/ProductsPage'), 'ProductStrip'), can: (a) => a.in('it'), hidden: true },
     ],

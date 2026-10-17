@@ -22,7 +22,7 @@ export interface ItIssue {
   id: number; title: string; description: string | null; type: IssueType; areas: string[]; priority: Priority; size: Size | null; status: IssueStatus;
   assignee_id: string | null; milestone_id: string | null; milestone_added_at: string | null; parent_id: number | null; due_date: string | null;
   source: 'md' | 'head' | 'it' | 'department' | 'incident' | 'migrated'; planned: boolean; labels: string[]; acceptance_criteria: { text: string; done: boolean }[];
-  blocked: boolean; blocked_reason: string | null; github_url: string | null; inbox_id: string | null;
+  blocked: boolean; blocked_reason: string | null; github_url: string | null; inbox_id: string | null; release_id?: string | null;
   created_by: string | null; created_at: string; updated_at: string; started_at: string | null; completed_at: string | null; last_activity_at: string;
 }
 export interface ItInboxItem {

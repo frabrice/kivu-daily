@@ -198,7 +198,7 @@ export function ItIssues() {
   const [q, setQ] = useState('');
   const [milestone, setMilestone] = useState(params.get('milestone') ?? '');
   const [area, setArea] = useState('');
-  const [person, setPerson] = useState('');
+  const [person, setPerson] = useState(params.get('assignee') ?? '');
   const [priority, setPriority] = useState(params.get('priority') ?? '');
   const [type, setType] = useState('');
   const [closed, setClosed] = useState(false);
