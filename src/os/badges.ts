@@ -20,11 +20,11 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
   const unreadComments = useUnreadComments(a.isMd ? profile : null);
   const carFollowups = useCarFollowupCount(a.in('fleet', 'it'));
   const q = useQuery({
-    queryKey: ['os-badges', profile?.id, a.isMd, a.dept],
+    queryKey: ['os-badges', profile?.id, a.isMd, a.dept, a.plan],
     enabled: !!profile,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const [pendingPauses, openIssues, pendingFinance, myOpenTasks, pendingDeposits, itInbox, itProposed] = await Promise.all([
+      const [pendingPauses, openIssues, pendingFinance, myOpenTasks, pendingDeposits, itInbox, itProposed, planBudgets] = await Promise.all([
         a.in('fleet', 'finance', 'it') ? head(supabase.from('driver_pauses').select('id', { count: 'exact', head: true }).eq('approval_status', 'pending')) : 0,
         a.in('it') ? head(supabase.from('it_issues').select('id', { count: 'exact', head: true }).eq('priority', 'p0').not('status', 'in', '(done,wont_do)')) : 0,
         a.in('finance') ? head(supabase.from('finance_transactions').select('id', { count: 'exact', head: true }).in('status', ['pending', 'checked'])) : 0,
@@ -33,6 +33,8 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
         a.in('it') ? head(supabase.from('it_inbox').select('id', { count: 'exact', head: true }).eq('status', 'new')) : 0,
         // Projects waiting for the MD's decision.
         a.isMd ? head(supabase.from('it_initiatives').select('id', { count: 'exact', head: true }).eq('status', 'proposed')) : 0,
+        // Budgets waiting for approval (MD and full plan access).
+        a.plan === 'full' ? head(supabase.from('company_budgets').select('id', { count: 'exact', head: true }).eq('status', 'submitted')) : 0,
       ]);
       // Contract papers missing: drivers (Fleet/IT/MD) and owners (Finance/MD).
       let missingContracts = 0, missingAgreements = 0;
@@ -50,7 +52,7 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
           missingAgreements = [...new Set(v.map((x) => x.owner_id).filter(Boolean) as string[])].filter((o) => missingForOwner(o, v, d)).length;
         }
       }
-      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits, missingContracts, missingAgreements, itInbox, itProposed };
+      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits, missingContracts, missingAgreements, itInbox, itProposed, planBudgets };
     },
   });
   return { myCases, unreadComments, carFollowups, ...(q.data ?? {}) };

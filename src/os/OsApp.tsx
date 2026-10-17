@@ -35,6 +35,7 @@ function LegacyLinks({ access }: { access: Access }) {
     if (page === 'whats_new') { nav('/docs/whats-new', { replace: true }); return; }
     if (page === 'it_checkin') { nav('/product/team?checkin=1', { replace: true }); return; }
     if (page === 'it_inbox') { nav('/product/inbox', { replace: true }); return; }
+    if (page === 'company_budget') { nav(`/company/budgets${p.get('b') ? `?b=${encodeURIComponent(p.get('b')!)}` : ''}`, { replace: true }); return; }
     if (page === 'it_health') { nav(`/product/health${p.get('tab') ? `?tab=${encodeURIComponent(p.get('tab')!)}` : ''}`, { replace: true }); return; }
     if (page === 'it_review') { nav(`/product/review${p.get('week') ? `?week=${encodeURIComponent(p.get('week')!)}` : ''}`, { replace: true }); return; }
     if (page === 'it_release') { nav(`/product/releases${p.get('r') ? `?r=${encodeURIComponent(p.get('r')!)}` : ''}`, { replace: true }); return; }

@@ -3,7 +3,7 @@ import {
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
   Route, Flag, Inbox, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
-  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel,
+  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel, Compass,
 } from 'lucide-react';
 import { Access } from './access';
 
@@ -11,7 +11,7 @@ import { Access } from './access';
 // sidebar, its address, and who may see it. The shell, the router, the
 // command palette, How to Use and the mobile menu all read from here.
 
-export type BadgeKey = 'itInbox' | 'itProposed' | 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks' | 'missingContracts' | 'missingAgreements';
+export type BadgeKey = 'itInbox' | 'itProposed' | 'planBudgets' | 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks' | 'missingContracts' | 'missingAgreements';
 
 export interface PageDef {
   id: string;
@@ -187,6 +187,16 @@ export const MODULES: ModuleDef[] = [
       { id: 'docs-documents', path: '/docs/documents', label: 'Documents', icon: FileText, component: L(() => import('../pages/DocumentsPage')), can: md },
       { id: 'help', path: '/docs/help', label: 'How to use', icon: HelpCircle, component: A.Help },
       { id: 'whats-new', path: '/docs/whats-new', label: "What's new", icon: Rocket, component: L(() => import('../pages/os/WhatsNew')) },
+    ],
+  },
+  {
+    // The company plan: the MD and owners see everything, department heads their part.
+    id: 'company', label: 'Company plan', icon: Compass, base: '/company', shortcut: 'g v',
+    pages: [
+      { id: 'company-direction', path: '/company', label: 'Direction', icon: Compass, component: L(() => import('../pages/company/CompanyPages').then((m) => ({ default: m.CompanyDirection }))), can: (a) => !!a.plan, keywords: 'vision mission north star strategy plan company', description: 'Vision, the North Star and what matters this quarter.' },
+      { id: 'company-objectives', path: '/company/objectives', label: 'Objectives', icon: Target, component: L(() => import('../pages/company/CompanyPages').then((m) => ({ default: m.CompanyObjectives }))), can: (a) => !!a.plan, keywords: 'okr goals quarter key results company', description: 'Quarterly company objectives with live key results.' },
+      { id: 'company-priorities', path: '/company/priorities', label: 'Priorities', icon: Flag, component: L(() => import('../pages/company/CompanyPages').then((m) => ({ default: m.CompanyPriorities }))), can: (a) => !!a.plan, keywords: 'priorities bets roadmap now next later not doing', description: 'One ranked list of company bets.' },
+      { id: 'company-budgets', path: '/company/budgets', label: 'Budgets', icon: Wallet, component: L(() => import('../pages/company/CompanyPages').then((m) => ({ default: m.CompanyBudgets }))), can: (a) => !!a.plan, badge: 'planBudgets', keywords: 'budget money spending marketing plan approve', description: 'Budgets built one by one, approved by the MD, spending from Finance.' },
     ],
   },
   {

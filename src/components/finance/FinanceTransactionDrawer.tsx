@@ -50,6 +50,9 @@ export default function FinanceTransactionDrawer({
   const [supportingDocId, setSupportingDocId] = useState(tx?.supporting_document_id ?? '');
   const [itProjectId, setItProjectId] = useState(tx?.it_initiative_id ?? '');
   const [itProjects, setItProjects] = useState<{ id: string; number: number; name: string }[]>([]);
+  const [budgetId, setBudgetId] = useState(tx?.company_budget_id ?? '');
+  const [budgets, setBudgets] = useState<{ id: string; number: number; name: string }[]>([]);
+  useEffect(() => { supabase.from('company_budgets').select('id, number, name').in('status', ['approved', 'closed']).order('number').then(({ data }) => setBudgets(data ?? [])); }, []);
   useEffect(() => { supabase.from('it_initiatives').select('id, number, name').not('status', 'in', '(declined,cancelled,idea)').order('number').then(({ data }) => setItProjects(data ?? [])); }, []);
   const [status, setStatus] = useState<FinanceTransactionStatus>(tx?.status ?? 'pending');
   const [saving, setSaving] = useState(false);
@@ -75,6 +78,7 @@ export default function FinanceTransactionDrawer({
       linked_driver_id: linkedDriverId || null,
       supporting_document_id: supportingDocId || null,
       it_initiative_id: !isTransfer && direction === 'out' ? itProjectId || null : null,
+      company_budget_id: !isTransfer && direction === 'out' ? budgetId || null : null,
       status,
       updated_at: new Date().toISOString(),
       ...(status === 'checked' && tx?.status !== 'checked' ? { checked_by: profile!.id, checked_at: new Date().toISOString() } : {}),
@@ -220,6 +224,17 @@ export default function FinanceTransactionDrawer({
           <label className="block text-caption font-medium mb-1.5 text-fg-muted">Description</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} disabled={!editing} rows={2} className="input resize-none" placeholder="Purpose of this transaction…" />
         </div>
+
+        {!isTransfer && direction === 'out' && (budgets.length > 0 || budgetId) && (
+          <div>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted">Budget</label>
+            <select value={budgetId} onChange={(e) => setBudgetId(e.target.value)} disabled={!editing} className="input">
+              <option value="">Not from a budget</option>
+              {budgets.map((b) => <option key={b.id} value={b.id}>B{b.number} · {b.name}</option>)}
+            </select>
+            <p className="text-micro text-fg-subtle mt-1">Counts as spending of that approved budget (Company plan → Budgets).</p>
+          </div>
+        )}
 
         {!isTransfer && direction === 'out' && (itProjects.length > 0 || itProjectId) && (
           <div>
