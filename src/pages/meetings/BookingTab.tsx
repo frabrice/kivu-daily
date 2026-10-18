@@ -6,6 +6,7 @@ import { DAY_NAMES, MeetingsData, kigaliToday } from '../../lib/meetings';
 import { useAccess } from '../../os/access';
 import { Box, Label } from '../../ui/kit';
 import Modal from '../../components/Modal';
+import { ScheduleModal, ScheduledMeetings } from './ScheduleWithAnyone';
 
 // Booking meetings with the MD (migration 20261028100000): staff see what
 // they can book and pick a free time; the MD answers requests, sees who has
@@ -55,7 +56,16 @@ export function useBookings() {
 export function BookTab({ data, open }: { data: MeetingsData; open: (id: string) => void }) {
   const a = useAccess();
   const bk = useBookings();
-  return a.isMd ? <HostView data={data} bk={bk} open={open} /> : <StaffView bk={bk} open={open} />;
+  const [scheduling, setScheduling] = useState(false);
+  const [hours, setHours] = useState(false);
+  return (
+    <>
+      <ScheduledMeetings data={data} open={open} onSchedule={() => setScheduling(true)} onHours={() => setHours(true)} />
+      {a.isMd ? <HostView data={data} bk={bk} open={open} /> : <><h2 className="section-title mb-2">Meetings with the MD</h2><StaffView bk={bk} open={open} /></>}
+      {scheduling && <ScheduleModal data={data} onClose={() => setScheduling(false)} onDone={(id) => { data.reload(); open(id); }} />}
+      {hours && <SettingsModal bk={bk} types={a.isMd} onClose={() => setHours(false)} />}
+    </>
+  );
 }
 
 // ------------------------------------------------------------ staff
@@ -159,7 +169,7 @@ function HostView({ data, bk, open }: { data: MeetingsData; bk: ReturnType<typeo
   const audience = (t: BookingType) => data.people.filter((p) => p.id !== profile?.id && (t.audience === 'everyone' || t.departments.includes(p.dept ?? '')));
   return (
     <>
-      <div className="flex justify-end mb-3"><button onClick={() => setSettings(true)} className="btn-secondary"><Settings2 size={14} /> My availability & meeting types</button></div>
+      <div className="flex flex-wrap items-center gap-2 mb-3"><h2 className="section-title flex-1">Meetings people book with you</h2><button onClick={() => setSettings(true)} className="btn-secondary"><Settings2 size={14} /> My availability & meeting types</button></div>
       <Box title={`Requests to answer (${requests.length})`} icon={Clock} padded={false} className="mb-4">
         {requests.length ? <ul className="divide-y divide-line-muted">{requests.map((b) => (
           <li key={b.id} className="flex flex-wrap items-center gap-2 px-4 py-2.5 text-small">
@@ -218,22 +228,24 @@ function DecideModal({ b, accept, onClose, onDone }: { b: Booking; accept: boole
   );
 }
 
-function SettingsModal({ bk, onClose }: { bk: ReturnType<typeof useBookings>; onClose: () => void }) {
+function SettingsModal({ bk, types = true, onClose }: { bk: ReturnType<typeof useBookings>; types?: boolean; onClose: () => void }) {
   const { profile } = useAuth();
   const [row, setRow] = useState({ weekday: 1, start: '09:00', end: '12:00' });
   const [block, setBlock] = useState({ from: kigaliToday(), to: kigaliToday(), reason: '' });
   const [error, setError] = useState('');
   const act = async (p: PromiseLike<{ error: { message: string } | null }>) => { const { error: err } = await p; if (err) setError(err.message); bk.reload(); };
   const mine = bk.avail.filter((x) => x.host_id === profile?.id);
+  const blocked = bk.blocked.filter((x) => x.host_id === profile?.id);
   return (
-    <Modal open onClose={onClose} title="My availability & meeting types" subtitle="Free times are worked out from these hours, minus your meetings, bookings and blocked days." maxWidth="max-w-2xl">
+    <Modal open onClose={onClose} title={types ? 'My availability & meeting types' : 'My working hours'} subtitle="People can only book you inside these hours, and never over your meetings, bookings or days off." maxWidth="max-w-2xl">
       <div className="space-y-5">
         <section>
           <p className="text-small font-semibold mb-2">When people can book you</p>
+          {!mine.length && <p className="text-caption text-fg-muted mb-2 rounded-md bg-inset px-2 py-1.5">You haven't set hours, so the usual ones apply: Mon–Fri 08:00–17:00, Sat 08:00–12:00. Add your own hours to replace them.</p>}
           <div className="space-y-1">{[1, 2, 3, 4, 5, 6, 7].map((d) => (
             <div key={d} className="flex flex-wrap items-center gap-2 text-small"><span className="w-10 font-medium">{DAY_NAMES[d]}</span>
               {mine.filter((x) => x.weekday === d).map((x) => <span key={x.id} className="inline-flex items-center gap-1 rounded-md bg-inset px-2 py-0.5 tabular-nums">{x.start_time.slice(0, 5)}–{x.end_time.slice(0, 5)}<button onClick={() => act(supabase.from('host_availability').delete().eq('id', x.id))} className="text-fg-muted hover:text-danger" aria-label="Remove"><X size={11} /></button></span>)}
-              {!mine.some((x) => x.weekday === d) && <span className="text-caption text-fg-subtle">not available</span>}
+              {!mine.some((x) => x.weekday === d) && <span className="text-caption text-fg-subtle">{mine.length ? 'not available' : d <= 5 ? '08:00–17:00 (usual)' : d === 6 ? '08:00–12:00 (usual)' : 'not available'}</span>}
             </div>
           ))}</div>
           <div className="flex flex-wrap items-end gap-2 mt-2">
@@ -245,7 +257,7 @@ function SettingsModal({ bk, onClose }: { bk: ReturnType<typeof useBookings>; on
         </section>
         <section>
           <p className="text-small font-semibold mb-2">Days off / blocked</p>
-          {bk.blocked.map((b) => <p key={b.id} className="text-small flex items-center gap-2">{kDay(b.starts_at)} → {kDay(new Date(Date.parse(b.ends_at) - 1).toISOString())}{b.reason ? ` · ${b.reason}` : ''}<button onClick={() => act(supabase.from('host_blocked').delete().eq('id', b.id))} className="btn-ghost p-1" aria-label="Remove"><Trash2 size={12} /></button></p>)}
+          {blocked.map((b) => <p key={b.id} className="text-small flex items-center gap-2">{kDay(b.starts_at)} → {kDay(new Date(Date.parse(b.ends_at) - 1).toISOString())}{b.reason ? ` · ${b.reason}` : ''}<button onClick={() => act(supabase.from('host_blocked').delete().eq('id', b.id))} className="btn-ghost p-1" aria-label="Remove"><Trash2 size={12} /></button></p>)}
           <div className="flex flex-wrap items-end gap-2 mt-1">
             <input type="date" value={block.from} onChange={(e) => setBlock({ ...block, from: e.target.value })} className="input !w-auto !py-1 text-small" />
             <input type="date" value={block.to} onChange={(e) => setBlock({ ...block, to: e.target.value })} className="input !w-auto !py-1 text-small" />
@@ -253,6 +265,7 @@ function SettingsModal({ bk, onClose }: { bk: ReturnType<typeof useBookings>; on
             <button onClick={() => act(supabase.from('host_blocked').insert({ host_id: profile?.id, starts_at: `${block.from}T00:00:00+02:00`, ends_at: new Date(Date.parse(`${block.to}T00:00:00+02:00`) + 86400000).toISOString(), reason: block.reason || null }))} className="btn-secondary h-8"><Plus size={13} /> Block</button>
           </div>
         </section>
+        {types && (
         <section>
           <p className="text-small font-semibold mb-2">Kinds of meetings people can book</p>
           <div className="space-y-2">{bk.types.map((t) => (
@@ -265,6 +278,7 @@ function SettingsModal({ bk, onClose }: { bk: ReturnType<typeof useBookings>; on
             </div>
           ))}</div>
         </section>
+        )}
         {error && <p className="text-caption text-danger">{error}</p>}
         <div className="flex justify-end pt-3 border-t border-line-muted"><button onClick={onClose} className="btn-primary">Done</button></div>
       </div>

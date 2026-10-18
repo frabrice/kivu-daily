@@ -15,6 +15,7 @@ import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, UnderlineTabs }
 import Modal from '../../components/Modal';
 import { ShouldVsDid } from '../../components/company/ShouldVsDid';
 import { BookTab } from './BookingTab';
+import { DeclineModal, isScheduled } from './ScheduleWithAnyone';
 
 // Meetings, run systematically: today's meetings from the regular series,
 // the meeting room (attendance, one note-taker, numbers, decisions,
@@ -98,6 +99,7 @@ function MeetingRoom({ id, data, onBack }: { id: string; data: MeetingsData; onB
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [guest, setGuest] = useState('');
+  const [declining, setDeclining] = useState(false);
   const [item, setItem] = useState<{ kind: 'decision' | 'action'; text: string; owner_id: string; due_date: string }>({ kind: 'action', text: '', owner_id: '', due_date: '' });
   useEffect(() => { setNotes(o?.notes ?? ''); }, [o?.notes]);
   useEffect(() => { if (o) setManual(Object.fromEntries(metricsList(o).filter((m) => !m.auto).map((m) => [m.key, m.value === null ? '' : String(m.value)]))); }, [o?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -138,11 +140,17 @@ function MeetingRoom({ id, data, onBack }: { id: string; data: MeetingsData; onB
       <button onClick={onBack} className="text-caption text-fg-muted hover:text-fg flex items-center gap-1 mb-2"><ArrowLeft size={12} /> Meetings</button>
       <PageHeader icon={CalendarClock} title={o.title} labels={<><Label tone={STATUS_TONE[o.status]}>{STATUS_LABEL[o.status]}</Label>{late !== null && late > 2 && <Label tone="attention">started {late} min late</Label>}</>}
         meta={<><span>{dayTitle(o.day)} · planned {hhmm(o.scheduled_start)} ({o.duration_min} min)</span><span>Started {clock(o.started_at)}{o.ended_at ? ` · ended ${clock(o.ended_at)}` : ''}</span><span>Notes: {data.nameOf(o.note_taker_id)}</span></>}
-        actions={canRun && <>
-          {o.status === 'scheduled' && <button onClick={() => run(() => supabase.rpc('start_meeting', { p_id: id }))} disabled={busy} className="btn-primary"><Play size={14} /> Start meeting</button>}
-          {o.status === 'running' && <button onClick={end} disabled={busy} className="btn-primary"><Square size={14} /> End meeting</button>}
+        actions={<>
+          {isScheduled(o) && o.status === 'scheduled' && o.host_id !== profile?.id && o.expected.includes(profile?.id ?? '') && room.attendance.find((x) => x.profile_id === profile?.id)?.status !== 'excused'
+            && <button onClick={() => setDeclining(true)} className="btn-ghost text-danger">I can't make it</button>}
+          {isScheduled(o) && o.status === 'scheduled' && (o.host_id === profile?.id || a.isMd)
+            && <button onClick={() => confirm('Cancel this meeting? Everyone invited is told.') && run(() => supabase.rpc('cancel_meeting', { p_occ: id }))} disabled={busy} className="btn-ghost text-danger">Cancel meeting</button>}
+          {canRun && o.status === 'scheduled' && <button onClick={() => run(() => supabase.rpc('start_meeting', { p_id: id }))} disabled={busy} className="btn-primary"><Play size={14} /> Start meeting</button>}
+          {canRun && o.status === 'running' && <button onClick={end} disabled={busy} className="btn-primary"><Square size={14} /> End meeting</button>}
         </>} />
       {error && <p className="mb-3 text-caption text-danger bg-danger-muted rounded-md px-3 py-2">{error}</p>}
+      {declining && <DeclineModal o={o} onClose={() => setDeclining(false)} onDone={() => { room.reload(); data.reload(); }} />}
+      {o.status === 'cancelled' && <p className="mb-3 text-small rounded-lg bg-inset px-3 py-2">This meeting was cancelled.</p>}
       {done && <p className="mb-3 text-small rounded-lg bg-success-muted px-3 py-2">Done{o.recap_sent_at ? ' — the recap was emailed to everyone expected' : ''}.{actions.length ? ` ${actions.length} action${actions.length === 1 ? '' : 's'} added to people's tasks.` : ''}</p>}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="space-y-4 xl:col-span-2">
@@ -280,13 +288,21 @@ function SeriesTab({ data }: { data: MeetingsData }) {
 
 function SeriesModal({ data, series, onClose }: { data: MeetingsData; series: Series | null; onClose: () => void }) {
   const { profile } = useAuth();
-  const [f, setF] = useState({ name: series?.name ?? '', purpose: series?.purpose ?? '', days: series?.days ?? [1, 2, 3, 4, 5], start_time: hhmm(series?.start_time ?? '09:00'), duration_min: series?.duration_min ?? 30,
+  const [f, setF0] = useState({ name: series?.name ?? '', purpose: series?.purpose ?? '', days: series?.days ?? [1, 2, 3, 4, 5], start_time: hhmm(series?.start_time ?? '09:00'), duration_min: series?.duration_min ?? 30,
     expected: series?.expected ?? (profile ? [profile.id] : []), note_taker_id: series?.note_taker_id ?? profile?.id ?? '', agenda: (series?.agenda ?? []).join('\n'), metrics: series?.metrics ?? '', email_recap: series?.email_recap ?? true, active: series?.active ?? true });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const setF = (v: typeof f) => { setF0(v); setClashes(null); };
+  const [clashes, setClashes] = useState<{ person: string; clash: string }[] | null>(null);
   const save = async () => {
     if (!f.name.trim() || !f.days.length) { setError('Give it a name and at least one day.'); return; }
     setBusy(true); setError('');
+    // Nobody double-booked: list the clashes first, save only once they are seen.
+    if (f.active && clashes === null) {
+      const { data: rows } = await supabase.rpc('series_clashes', { p_series: series?.id ?? null, p_days: f.days, p_start: f.start_time, p_minutes: f.duration_min, p_people: f.expected });
+      const list = (rows ?? []) as { person: string; clash: string }[];
+      if (list.length) { setClashes(list); setBusy(false); return; }
+    }
     const row = { name: f.name.trim(), purpose: f.purpose.trim() || null, days: [...f.days].sort(), start_time: f.start_time, duration_min: f.duration_min, expected: f.expected, note_taker_id: f.note_taker_id || null, host_id: series?.host_id ?? profile?.id,
       agenda: f.agenda.split('\n').map((x) => x.trim()).filter(Boolean), metrics: f.metrics || null, email_recap: f.email_recap, active: f.active, updated_at: new Date().toISOString() };
     const res = series ? await supabase.from('meeting_series').update(row).eq('id', series.id) : await supabase.from('meeting_series').insert({ ...row, kind: 'other' });
@@ -309,8 +325,15 @@ function SeriesModal({ data, series, onClose }: { data: MeetingsData; series: Se
         <label className="block"><span className="text-caption text-fg-muted">Notes taken by</span><select value={f.note_taker_id} onChange={(e) => setF({ ...f, note_taker_id: e.target.value })} className="input">{f.expected.map((id) => <option key={id} value={id}>{data.nameOf(id)}</option>)}</select></label>
         <label className="block"><span className="text-caption text-fg-muted">Agenda (one point per line)</span><textarea value={f.agenda} onChange={(e) => setF({ ...f, agenda: e.target.value })} rows={4} className="input resize-none" /></label>
         <div className="flex gap-4 text-small"><label className="flex items-center gap-1.5"><input type="checkbox" checked={f.email_recap} onChange={(e) => setF({ ...f, email_recap: e.target.checked })} /> Email the recap</label><label className="flex items-center gap-1.5"><input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} /> Active</label></div>
+        {clashes && clashes.length > 0 && (
+          <div className="rounded-md bg-attention-muted px-3 py-2 text-small">
+            <p className="font-semibold">This time collides for {new Set(clashes.map((c) => c.person)).size} person{new Set(clashes.map((c) => c.person)).size === 1 ? '' : 's'}:</p>
+            <ul className="mt-1 space-y-0.5">{clashes.slice(0, 8).map((c, k) => <li key={k}><b>{c.person}</b> — {c.clash}</li>)}</ul>
+            <p className="mt-1 text-caption text-fg-muted">Change the day, time or people — or save anyway if both meetings really happen together.</p>
+          </div>
+        )}
         {error && <p className="text-caption text-danger">{error}</p>}
-        <div className="flex justify-end gap-2 pt-3 border-t border-line-muted"><button onClick={onClose} className="btn-ghost">Cancel</button><button onClick={save} disabled={busy} className="btn-primary disabled:opacity-50">Save</button></div>
+        <div className="flex justify-end gap-2 pt-3 border-t border-line-muted"><button onClick={onClose} className="btn-ghost">Cancel</button><button onClick={save} disabled={busy} className="btn-primary disabled:opacity-50">{clashes?.length ? 'Save anyway' : 'Save'}</button></div>
       </div>
     </Modal>
   );

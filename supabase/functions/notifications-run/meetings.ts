@@ -25,6 +25,19 @@ async function bookingOf(ctx: Ctx, id: unknown) {
 }
 const latestBooking = async (ctx: Ctx) => { const [b] = await rows<{ id: string; booked_by: string }>(ctx.db.from("bookings").select("id, booked_by").order("created_at", { ascending: false }).limit(1)); return b ? { booking_id: b.id, recipient_id: b.booked_by, accepted: true } : null; };
 
+// Meetings anyone schedules with anyone (migration 20261028110000).
+interface Sched { id: string; title: string; day: string; scheduled_start: string | null; duration_min: number; host_id: string | null; expected: string[]; agenda: string[]; status: string }
+async function schedOf(ctx: Ctx, id: unknown) {
+  const [o] = await rows<Sched>(ctx.db.from("meeting_occurrences").select("id, title, day, scheduled_start, duration_min, host_id, expected, agenda, status").eq("id", String(id)));
+  return o ?? null;
+}
+const latestScheduled = async (ctx: Ctx) => {
+  const [o] = await rows<{ id: string; host_id: string | null; expected: string[] }>(ctx.db.from("meeting_occurrences").select("id, host_id, expected").eq("kind", "other").is("series_id", null).order("created_at", { ascending: false }).limit(1));
+  return o ? { occurrence_id: o.id, recipient_id: o.expected.find((x) => x !== o.host_id) ?? o.host_id, actor_id: o.host_id } : null;
+};
+const slot = (o: Sched) => `${day(o.day)} at ${(o.scheduled_start ?? "").slice(0, 5)} (${o.duration_min} min)`;
+const others = (ctx: Ctx, o: Sched, me: unknown) => o.expected.filter((x) => x !== me).map((x) => name(ctx, x)).join(", ");
+
 async function reminders(ctx: Ctx, force: boolean): Promise<Built[]> {
   const types = await rows<TypeRow>(ctx.db.from("booking_types").select("*").eq("active", true));
   const due = types.filter((t) => (t.once_per_person || t.kind === "weekly") && (!t.deadline || t.deadline >= ctx.today));
@@ -78,6 +91,52 @@ export const meetingRules: Record<string, RuleDef> = {
         intro: `${yes ? `The MD confirmed <b>${esc(t.name)}</b> on <b>${when(b.starts_at)}</b>.` : `The MD declined <b>${esc(t.name)}</b> on ${when(b.starts_at)}.`}${b.decision_note ? `<br><br>“${esc(b.decision_note)}”` : ""}${yes ? "" : "<br><br>You can choose another time."}`,
         inApp: yes ? `Confirmed: ${t.name} · ${when(b.starts_at)}` : `Declined: ${t.name}`,
         cta: { label: "Open meetings", query: yes && b.occurrence_id ? `page=meeting&m=${b.occurrence_id}` : "page=meeting&tab=book" },
+      };
+    },
+  },
+  meeting_invite: {
+    kind: "event",
+    sample: latestScheduled,
+    build: async (p, ctx) => {
+      const o = await schedOf(ctx, p.occurrence_id);
+      if (!o || o.status === "cancelled") return null;
+      return {
+        subject: `Meeting: ${o.title} — ${slot(o)}`,
+        heading: "You are invited to a meeting",
+        intro: `<b>${esc(name(ctx, o.host_id))}</b> scheduled <b>${esc(o.title)}</b> on <b>${slot(o)}</b>.<br><br><b>With:</b> ${esc(others(ctx, o, p.recipient_id))}${o.agenda.length ? `<br><br><b>Agenda</b><br>${o.agenda.map(esc).join("<br>")}` : ""}<br><br>It was set at a time when everyone was free. If you can't make it, say so in the meeting — the organiser is told.`,
+        inApp: `${name(ctx, o.host_id)} invited you: ${o.title} · ${slot(o)}`,
+        cta: { label: "Open the meeting", query: `page=meeting&m=${o.id}` },
+      };
+    },
+  },
+  meeting_declined: {
+    kind: "event",
+    sample: latestScheduled,
+    build: async (p, ctx) => {
+      const o = await schedOf(ctx, p.occurrence_id);
+      if (!o) return null;
+      const who = name(ctx, (p.actor_id as string) ?? null);
+      return {
+        subject: `${who} can't make it: ${o.title}`,
+        heading: "Someone can't make your meeting",
+        intro: `<b>${esc(who)}</b> can't come to <b>${esc(o.title)}</b> on ${slot(o)}.${p.reason ? `<br><br>“${esc(String(p.reason))}”` : ""}<br><br>Keep the meeting, or cancel it and schedule a new time.`,
+        inApp: `${who} can't make ${o.title}${p.reason ? ` — ${p.reason}` : ""}`,
+        cta: { label: "Open the meeting", query: `page=meeting&m=${o.id}` },
+      };
+    },
+  },
+  meeting_cancelled: {
+    kind: "event",
+    sample: latestScheduled,
+    build: async (p, ctx) => {
+      const o = await schedOf(ctx, p.occurrence_id);
+      if (!o) return null;
+      return {
+        subject: `Cancelled: ${o.title} — ${slot(o)}`,
+        heading: "A meeting was cancelled",
+        intro: `<b>${esc(name(ctx, o.host_id))}</b> cancelled <b>${esc(o.title)}</b> on ${slot(o)}. That time is free again in your calendar.`,
+        inApp: `Cancelled: ${o.title} · ${slot(o)}`,
+        cta: { label: "Open meetings", query: "page=meeting" },
       };
     },
   },
