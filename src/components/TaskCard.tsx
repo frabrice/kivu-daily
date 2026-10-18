@@ -1,4 +1,5 @@
-import { Check, Trash2, Clock, CheckCircle2, ChevronRight, Zap } from 'lucide-react';
+import { Check, Trash2, Clock, CheckCircle2, ChevronRight, Zap, CalendarCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Task, ReviewStatus } from '../lib/supabase';
 import { formatTime } from '../lib/utils';
 
@@ -81,7 +82,14 @@ export default function TaskCard({ task, onToggle, onDelete, showTime = true, on
         >
           {task.title}
         </p>
-        {task.smart_key ? <SmartDetails task={task} /> : task.description && !task.completed && (
+        {task.origin?.kind === 'meeting' && (
+          <Link to={`/meetings?m=${task.origin.id}`} onClick={(e) => e.stopPropagation()}
+            className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-accent/30 bg-accent/5 px-2 py-1 text-micro text-fg hover:bg-accent/10 max-w-full">
+            <CalendarCheck size={11} className="text-accent-fg shrink-0" />
+            <span className="truncate"><b>{task.origin.title}</b> · {new Date(`${task.origin.day}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}{task.origin.start ? `, ${task.origin.start}` : ''}{task.origin.by_name ? ` · assigned by ${task.origin.by_name.split(' ')[0]}` : ''}</span>
+          </Link>
+        )}
+        {task.smart_key ? <SmartDetails task={task} /> : task.description && !task.completed && !task.origin && (
           <p className="text-xs mt-0.5 text-fg-muted ">
             {task.description}
           </p>

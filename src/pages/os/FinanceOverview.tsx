@@ -8,6 +8,7 @@ import {
 import { supabase, DriverCarAssignment, FinanceTransaction } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useFinanceData, TYPE_META, STATUS_META } from '../../lib/finance';
+import { useFreelance } from '../../lib/freelance';
 import { PerfEvent, today as kigaliToday } from '../../lib/performance';
 import { PAUSE_REASON_LABEL } from '../../lib/fleet';
 import {
@@ -40,6 +41,7 @@ export default function FinanceOverview() {
   const { profile } = useAuth();
   const c = usePalette();
   const fin = useFinanceData();
+  const freelance = useFreelance(400);
   const t = kigaliToday();
   const [extra, setExtra] = useState<{ events: PerfEvent[]; assignments: DriverCarAssignment[] } | null>(null);
   const loadExtra = useCallback(async () => {
@@ -60,8 +62,8 @@ export default function FinanceOverview() {
 
   const input = useMemo(() => ({
     vehicles: fin.vehicles, drivers: fin.drivers, deposits: fin.deposits, transactions: fin.transactions,
-    assignments: extra?.assignments ?? [], events: extra?.events ?? [], owners: fin.owners,
-  }), [fin.vehicles, fin.drivers, fin.deposits, fin.transactions, fin.owners, extra]);
+    assignments: extra?.assignments ?? [], events: extra?.events ?? [], owners: fin.owners, freelance: freelance.shifts,
+  }), [fin.vehicles, fin.drivers, fin.deposits, fin.transactions, fin.owners, extra, freelance.shifts]);
   const ready = !fin.loading && !!extra;
   const leak = useMemo(() => (ready ? computeLeakage(input, range, t) : null), [ready, input, range.from, range.to, t]); // eslint-disable-line react-hooks/exhaustive-deps
   const insights = useMemo(() => (leak ? insightsOf(leak) : []), [leak]);

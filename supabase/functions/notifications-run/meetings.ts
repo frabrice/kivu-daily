@@ -13,6 +13,26 @@ const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString("en
 const STATUS: Record<string, string> = { present: "Present", late: "Late", absent: "Absent", excused: "Excused", expected: "Not marked" };
 
 export const meetingRules: Record<string, RuleDef> = {
+  meeting_action_assigned: {
+    kind: "event",
+    sample: async (ctx) => {
+      const [t] = await rows<{ id: string; user_id: string }>(ctx.db.from("tasks").select("id, user_id").not("meeting_occurrence_id", "is", null).order("created_at", { ascending: false }).limit(1));
+      return t ? { task_id: t.id, recipient_id: t.user_id } : null;
+    },
+    build: async (p, ctx) => {
+      const [t] = await rows<{ title: string; date: string; origin: { title?: string; day?: string; start?: string; by_name?: string } | null; meeting_occurrence_id: string | null }>(
+        ctx.db.from("tasks").select("title, date, origin, meeting_occurrence_id").eq("id", String(p.task_id)));
+      if (!t) return null;
+      const o = t.origin ?? {};
+      return {
+        subject: `New task from the meeting: ${t.title}`,
+        heading: "You have a new task",
+        intro: `<b>${esc(t.title)}</b><br><br>Assigned by <b>${esc(o.by_name ?? name(ctx, (p.actor_id as string) ?? null))}</b> in <b>${esc(o.title ?? "a meeting")}</b>${o.day ? ` on ${day(o.day)}${o.start ? ` at ${o.start}` : ""}` : ""}. Due ${day(t.date)}.`,
+        inApp: `New task from ${o.title ?? "a meeting"}: ${t.title}`,
+        cta: { label: "Open my tasks", query: "page=tasks" },
+      };
+    },
+  },
   meeting_recap: {
     kind: "event",
     sample: async (ctx) => {

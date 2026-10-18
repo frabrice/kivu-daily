@@ -10,7 +10,7 @@ import { MODULES, visiblePages } from '../../os/registry';
 import { Ring } from '../../os/shell/Shell';
 import { Box, Counter, Label, StatCard, StatGrid } from '../../ui/kit';
 import { addDays, today } from '../../lib/performance';
-import { TodayMeetingsCard } from '../meetings/MeetingsPage';
+import { TodayMeetingsCard } from '../meetings/TodayMeetingsCard';
 
 // Everyone's home: what to start with, today's tasks (smart ones show their
 // progress), your rhythm, cases waiting on you, and your department's pages.

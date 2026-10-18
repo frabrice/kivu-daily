@@ -1,15 +1,25 @@
 import { Component, ReactNode } from 'react';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react';
+import { isChunkError, reloadOnce } from '../lib/chunkReload';
 
 // One page failing must never blank the whole app: show what happened
 // and keep the shell (menus, tabs, search) working.
 export default class PageBoundary extends Component<{ children: ReactNode; resetKey: string }, { error: Error | null }> {
   state = { error: null as Error | null };
   static getDerivedStateFromError(error: Error) { return { error }; }
-  componentDidCatch(error: Error) { console.error('Page error', error); }
+  // A page file from before the last deploy: load the new version by itself.
+  componentDidCatch(error: Error) { console.error('Page error', error); if (isChunkError(error)) reloadOnce(); }
   componentDidUpdate(prev: { resetKey: string }) { if (prev.resetKey !== this.props.resetKey && this.state.error) this.setState({ error: null }); }
   render() {
     if (!this.state.error) return this.props.children;
+    if (isChunkError(this.state.error)) return (
+      <div className="max-w-lg mx-auto mt-12 card p-6 text-center">
+        <RefreshCw size={24} className="mx-auto text-accent-fg mb-2 animate-spin" />
+        <p className="text-title font-semibold">Kivu Daily was just updated</p>
+        <p className="text-body text-fg-muted mt-1">Loading the new version…</p>
+        <button onClick={() => window.location.reload()} className="btn-primary mt-4"><RefreshCw size={14} /> Reload now</button>
+      </div>
+    );
     return (
       <div className="max-w-lg mx-auto mt-12 card p-6 text-center">
         <AlertTriangle size={26} className="mx-auto text-attention mb-2" />

@@ -109,14 +109,18 @@ export interface CarEconomics extends Money {
   vehicle: Vehicle; ownerName: string; weeklyPayout: number; days: number;
   oneSeatDays: number; noDriverDays: number; ownerPausedShifts: number;
   status: CarStatus; weeks: CarWeek[]; drivers: CarDriverRow[];
+  freelanceShifts: number; freelanceCollected: number;
 }
 export interface DriverLoss { driver: Driver; cause: Exclude<LossCause, 'empty'>; amount: number; days: number; cars: string[]; reasons: PauseReason[] }
 export interface UnlinkedRow { assignment: DriverCarAssignment; driver: Driver; days: number; lost: number }
 export interface Leakage extends Money { cars: CarEconomics[]; drivers: DriverLoss[]; unlinked: UnlinkedRow[]; range: Range }
 
+// A shift covered by a freelance driver (migration 20261027120000): what they paid counts for the car.
+export interface FreelanceShiftLike { vehicle_id: string; day: string; shift: 'day' | 'night' | 'full'; paid_amount: number | null; status: string }
 export interface OverviewInput {
   vehicles: Vehicle[]; drivers: Driver[]; deposits: DriverDeposit[]; transactions: FinanceTransaction[];
   assignments: DriverCarAssignment[]; events: PerfEvent[]; owners: { id: string; full_name: string }[];
+  freelance?: FreelanceShiftLike[];
 }
 
 const add = (a: Money, b: { expected?: number; collected?: number; ownerCost?: number; cause?: LossCause; lost?: number }) => {
@@ -159,7 +163,7 @@ export function computeLeakage(input: OverviewInput, range: Range, today: string
     if (from > to) continue;
     const plate = v.plate_number;
     const car: CarEconomics = {
-      ...money(), vehicle: v, weeklyPayout: weeklyPayoutOf(v), days: 0, oneSeatDays: 0, noDriverDays: 0, ownerPausedShifts: 0,
+      ...money(), vehicle: v, weeklyPayout: weeklyPayoutOf(v), days: 0, oneSeatDays: 0, noDriverDays: 0, ownerPausedShifts: 0, freelanceShifts: 0, freelanceCollected: 0,
       ownerName: input.owners.find((o) => o.id === v.owner_id)?.full_name ?? '—', status: 'on_target', weeks: [], drivers: [],
     };
     const carPayouts = payouts.filter((t) => t.linked_vehicle_id === v.id);
@@ -201,7 +205,20 @@ export function computeLeakage(input: OverviewInput, range: Range, today: string
         row.expected += st.rate; row.collected += st.paid; row.lost += short;
         if (short > 0) { row.cause = row.cause ?? cause; loss(d, cause, short, plate); }
       }
-      const empty = Math.max(0, 2 - seats);
+      // Freelancers cover seats nobody paid for: their payment counts for the
+      // car; a covered empty seat loses only what they paid below its value.
+      const fl = (input.freelance ?? []).filter((x) => x.vehicle_id === v.id && x.day === day && (x.status === 'paid' || x.status === 'short') && Number(x.paid_amount) > 0);
+      let empty = Math.max(0, 2 - seats);
+      if (fl.length) {
+        const flSeats = fl.reduce((n, x) => n + (x.shift === 'full' ? 2 : 1), 0);
+        const flPaid = fl.reduce((n, x) => n + Number(x.paid_amount), 0);
+        car.freelanceShifts += fl.length; car.freelanceCollected += flPaid;
+        const cover = Math.min(empty, flSeats);
+        const paidCover = flSeats ? flPaid * (cover / flSeats) : 0;
+        if (cover) both({ expected: cover * SEAT_DAY_EXPECTED, collected: paidCover, cause: 'empty', lost: Math.max(0, cover * SEAT_DAY_EXPECTED - paidCover) });
+        if (flPaid - paidCover > 0) both({ collected: flPaid - paidCover });
+        empty -= cover;
+      }
       if (empty) {
         both({ expected: empty * SEAT_DAY_EXPECTED, cause: 'empty', lost: empty * SEAT_DAY_EXPECTED });
         if (empty === 2) car.noDriverDays += 1; else car.oneSeatDays += 1;

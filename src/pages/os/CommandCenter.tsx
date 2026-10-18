@@ -15,7 +15,7 @@ import { EntityLink } from '../../os/EntityLink';
 import { Box, Label, StatCard, StatGrid, rwf, rwfShort } from '../../ui/kit';
 import ActivityFeed from '../../components/ActivityFeed';
 import TaskReviewModal from '../../components/TaskReviewModal';
-import { TodayMeetingsCard } from '../meetings/MeetingsPage';
+import { TodayMeetingsCard } from '../meetings/TodayMeetingsCard';
 
 const AssignTaskHost = lazy(() => import('../../os/shell/NewThingModals').then((m) => ({ default: m.AssignTaskHost })));
 const AnnouncementHost = lazy(() => import('../../os/shell/NewThingModals').then((m) => ({ default: m.AnnouncementHost })));

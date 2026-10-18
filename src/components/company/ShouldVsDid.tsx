@@ -7,6 +7,7 @@ import { PerfEvent, today as kigaliToday } from '../../lib/performance';
 import { mondayOf, shiftDay } from '../../lib/fleet';
 import { CAUSES, computeLeakage, isManaged, shareOf, targetShareOf } from '../../lib/financeOverview';
 import { Box } from '../../ui/kit';
+import { useFreelance } from '../../lib/freelance';
 
 // What the managed cars should earn Kivu Ride vs what they did, week by
 // week (each car: 360,000 a week collected, 240,000 to its owner, 120,000
@@ -17,6 +18,7 @@ const short = (n: number) => (Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : 
 
 export function ShouldVsDid({ weeks = 6, compact = false }: { weeks?: number; compact?: boolean }) {
   const fin = useFinanceData();
+  const freelance = useFreelance(120);
   const t = kigaliToday();
   const [extra, setExtra] = useState<{ events: PerfEvent[]; assignments: DriverCarAssignment[] } | null>(null);
   const load = useCallback(async () => {
@@ -29,14 +31,14 @@ export function ShouldVsDid({ weeks = 6, compact = false }: { weeks?: number; co
   useEffect(() => { load(); }, [load]);
   const rows = useMemo(() => {
     if (fin.loading || !extra) return [];
-    const input = { vehicles: fin.vehicles, drivers: fin.drivers, deposits: fin.deposits, transactions: fin.transactions, assignments: extra.assignments, events: extra.events, owners: fin.owners };
+    const input = { vehicles: fin.vehicles, drivers: fin.drivers, deposits: fin.deposits, transactions: fin.transactions, assignments: extra.assignments, events: extra.events, owners: fin.owners, freelance: freelance.shifts };
     const thisMonday = mondayOf(t);
     return Array.from({ length: weeks }, (_, k) => {
       const from = shiftDay(thisMonday, -7 * k), to = k === 0 ? t : shiftDay(from, 6);
       const l = computeLeakage(input, { from, to }, t);
       return { from, to, current: k === 0, should: targetShareOf(l), did: shareOf(l), lost: l.lost, byCause: l.byCause, cars: l.cars.length };
     });
-  }, [fin.loading, fin.vehicles, fin.drivers, fin.deposits, fin.transactions, fin.owners, extra, t, weeks]);
+  }, [fin.loading, fin.vehicles, fin.drivers, fin.deposits, fin.transactions, fin.owners, extra, freelance.shifts, t, weeks]);
   if (!rows.length) return <div className="h-32 skeleton rounded-card" />;
   const cars = fin.vehicles.filter(isManaged).length;
   const full = rows.filter((r) => !r.current);

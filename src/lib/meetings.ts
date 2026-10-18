@@ -35,7 +35,7 @@ export const minutesLate = (o: Occurrence) => (o.scheduled_start && o.started_at
 export const metricsList = (o: Occurrence): Metric[] => (Array.isArray(o.metrics) ? o.metrics : []);
 
 // ------------------------------------------------------------ numbers for each kind of meeting
-export interface FleetInput { drivers: Driver[]; vehicles: Vehicle[]; deposits: DriverDeposit[]; fines: DriverFine[]; finePayments: DriverFinePayment[]; contractEvents: DriverContractEvent[] }
+export interface FleetInput { drivers: Driver[]; vehicles: Vehicle[]; deposits: DriverDeposit[]; fines: DriverFine[]; finePayments: DriverFinePayment[]; contractEvents: DriverContractEvent[]; freelance?: { day: string; status: string; paid_amount: number | null }[] }
 export function fleetMetrics(day: string, f: FleetInput): Metric[] {
   const active = f.drivers.filter((d) => d.contract_status === 'active' && d.start_date && d.start_date <= day);
   const byDriver = new Map<string, DriverDeposit[]>();
@@ -73,6 +73,7 @@ export function fleetMetrics(day: string, f: FleetInput): Metric[] {
     { key: 'left_today', label: 'Drivers who left today', value: left.length, auto: true, group: 'Drivers' },
     { key: 'started_today', label: 'New drivers started today', value: started.length, auto: true, group: 'Drivers' },
     { key: 'replaced_same_day', label: 'Replacements found the same day', value: replacements.length, auto: true, group: 'Drivers' },
+    { key: 'freelance_today', label: 'Shifts covered by freelancers', value: (f.freelance ?? []).filter((x) => x.day === day && x.status !== 'cancelled').length, auto: true, note: (() => { const n = (f.freelance ?? []).filter((x) => x.day === day).reduce((s, x) => s + Number(x.paid_amount ?? 0), 0); return n ? `${n.toLocaleString('en-US')} RWF paid` : null; })(), group: 'Drivers' },
     { key: 'empty_seats', label: 'Empty seats for tomorrow', value: seats, auto: true, group: 'Drivers' },
     { key: 'in_garage', label: 'Cars in maintenance', value: garage.size, auto: true, group: 'Cars' },
     { key: 'accidents', label: 'Accidents today', value: accidentsToday, auto: true, group: 'Cars' },

@@ -293,6 +293,9 @@ export interface Task {
   reviewed_at: string | null;
   assigned_by: string | null;
   source_meeting_id: string | null;
+  // Set when the task was assigned in a meeting (migration 20261027100000).
+  meeting_occurrence_id?: string | null;
+  origin?: { kind: 'meeting'; id: string; title: string; day: string; start: string | null; by?: string | null; by_name?: string | null } | null;
   // Set when the task was created from a standing duty (recurring_tasks).
   recurring_task_id?: string | null;
   due_time?: string | null;

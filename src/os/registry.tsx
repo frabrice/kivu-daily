@@ -6,6 +6,7 @@ import {
   Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel, Compass, Coins,
 } from 'lucide-react';
 import { Access } from './access';
+import { withChunkReload } from '../lib/chunkReload';
 
 // The whole app in one table: every module (rail icon), every page in its
 // sidebar, its address, and who may see it. The shell, the router, the
@@ -36,11 +37,13 @@ export interface ModuleDef {
   shortcut?: string;       // "g f" etc.
 }
 
-const L = (f: () => Promise<{ default: ComponentType<never> }>) => lazy(f as () => Promise<{ default: ComponentType }>);
+// Every page loads through withChunkReload: right after a deploy, a stale
+// page file reloads the app with the new version instead of an error.
+const L = (f: () => Promise<{ default: ComponentType<never> }>) => lazy(withChunkReload(f as () => Promise<{ default: ComponentType }>));
 // A list page with its number strip on top (see strips.tsx).
 type StripName = 'DriversStrip' | 'CarsStrip' | 'DepositsStrip' | 'DaysOffStrip' | 'FinesStrip' | 'CasesStrip' | 'GrowthStrip' | 'ProductStrip' | 'PeopleStrip';
 const LS = (f: () => Promise<{ default: ComponentType<never> }>, strip: StripName) =>
-  lazy(() => Promise.all([f(), import('./strips')]).then(([page, s]) => ({ default: s.withStrip(page.default as ComponentType, s[strip]) })));
+  lazy(withChunkReload(() => Promise.all([f(), import('./strips')]).then(([page, s]) => ({ default: s.withStrip(page.default as ComponentType, s[strip]) }))));
 
 // ---- adapters for pages that need props from the old app shells
 const A = {
@@ -94,6 +97,8 @@ export const MODULES: ModuleDef[] = [
       { id: 'fleet-cars', path: '/fleet/cars', label: 'Cars', icon: Car, component: LS(() => import('../pages/fleet/FleetVehiclesPage'), 'CarsStrip'), can: (a) => a.in('fleet', 'it'), keywords: 'vehicles' },
       { id: 'fleet-deposits', path: '/fleet/deposits', label: 'Deposits', icon: Wallet, component: LS(() => import('../pages/fleet/FleetDepositsPage'), 'DepositsStrip'), can: (a) => a.in('fleet', 'it'), badge: 'overdueDeposits', group: 'Money' },
       { id: 'fleet-fines', path: '/fleet/fines', label: 'Fines', icon: Receipt, component: LS(() => import('../pages/fleet/FleetFinesPage'), 'FinesStrip'), can: (a) => a.in('fleet', 'it'), group: 'Money' },
+      { id: 'fleet-car-money', path: '/fleet/car-money', label: 'Cars: should vs did', icon: Car, component: L(() => import('../pages/fleet/CarMoneyPage')), can: (a) => a.in('fleet', 'finance', 'it'), group: 'Money', keywords: 'car by car expected collected lost defaulted replaced freelance every franc', description: 'Every car: what it should have brought, what it did, who defaulted and who replaced them.' },
+      { id: 'fleet-freelancers', path: '/fleet/freelancers', label: 'Freelance drivers', icon: UserCog, component: L(() => import('../pages/fleet/FreelancersPage')), can: (a) => a.in('fleet', 'finance', 'it'), group: 'Money', keywords: 'freelance part-time cover shift 30k pool replacement', description: 'The pool that covers a shift the same day a driver does not pay.' },
       { id: 'fleet-days-off', path: '/fleet/days-off', label: 'Days off', icon: CalendarOff, component: LS(() => import('../pages/fleet/DriverPausesPage'), 'DaysOffStrip'), can: (a) => a.in('fleet', 'it', 'finance'), badge: 'pendingPauses', group: 'Money', keywords: 'pauses sick garage' },
       { id: 'fleet-contracts', path: '/fleet/contracts', label: 'Contracts', icon: FileSignature, component: L(() => import('../pages/os/LegalDocsPage').then((m) => ({ default: m.FleetContractsPage }))), can: (a) => a.in('fleet', 'it'), badge: 'missingContracts', keywords: 'contract termination letter amendment signed stamped missing documents', description: 'Signed and stamped driver contracts, amendments and termination letters — and what is missing.' },
       { id: 'fleet-leaderboard', path: '/fleet/leaderboard', label: 'Leaderboard', icon: Trophy, component: L(() => import('../pages/fleet/DepositLeaderboardPage')), can: (a) => a.in('fleet', 'it', 'finance'), group: 'Money' },

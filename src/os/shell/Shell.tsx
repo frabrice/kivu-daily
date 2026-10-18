@@ -18,11 +18,12 @@ import { PeekPanel, usePeek } from '../peek';
 import { Popover, MenuItem, MenuDivider, MenuLabel, Tooltip } from '../../ui/Popover';
 import CommandPalette from './CommandPalette';
 import PageBoundary from '../PageBoundary';
+import { withChunkReload } from '../../lib/chunkReload';
 
-const ItRequestHost = lazy(() => import('../../components/it/ItModals').then((m) => ({ default: m.SubmitToItModal })));
-const AssignTaskModalHost = lazy(() => import('./NewThingModals').then((m) => ({ default: m.AssignTaskHost })));
-const AnnouncementHost = lazy(() => import('./NewThingModals').then((m) => ({ default: m.AnnouncementHost })));
-const MeetingHost = lazy(() => import('./NewThingModals').then((m) => ({ default: m.MeetingHost })));
+const ItRequestHost = lazy(withChunkReload(() => import('../../components/it/ItModals').then((m) => ({ default: m.SubmitToItModal }))));
+const AssignTaskModalHost = lazy(withChunkReload(() => import('./NewThingModals').then((m) => ({ default: m.AssignTaskHost }))));
+const AnnouncementHost = lazy(withChunkReload(() => import('./NewThingModals').then((m) => ({ default: m.AnnouncementHost }))));
+const MeetingHost = lazy(withChunkReload(() => import('./NewThingModals').then((m) => ({ default: m.MeetingHost }))));
 
 type Badges = Partial<Record<BadgeKey, number>>;
 const badgeOf = (p: PageDef, b: Badges) => (p.badge ? b[p.badge] ?? 0 : 0);

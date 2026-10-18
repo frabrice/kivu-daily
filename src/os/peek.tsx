@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Maximize2, X } from 'lucide-react';
 import { EntityType } from './workspace';
 import PageBoundary from './PageBoundary';
+import { withChunkReload } from '../lib/chunkReload';
 
 // Objects open in a side panel next to the page you're on ("peek"), and
 // peeks stack: driver -> their car -> its owner. "Open full page" turns
@@ -22,13 +23,13 @@ export const ENTITY_PATH: Record<EntityType, (id: string) => string> = {
 };
 
 export const ENTITY_VIEW: Record<EntityType, LazyExoticComponent<ComponentType<EntityViewProps>>> = {
-  driver: lazy(() => import('../pages/entities/DriverEntity')),
-  car: lazy(() => import('../pages/entities/CarEntity')),
-  owner: lazy(() => import('../pages/entities/OwnerEntity')),
-  person: lazy(() => import('../pages/entities/PersonEntity')),
-  agent: lazy(() => import('../pages/entities/AgentEntity')),
-  case: lazy(() => import('../pages/entities/CaseEntity')),
-  partner: lazy(() => import('../pages/entities/PartnerEntity')),
+  driver: lazy(withChunkReload(() => import('../pages/entities/DriverEntity'))),
+  car: lazy(withChunkReload(() => import('../pages/entities/CarEntity'))),
+  owner: lazy(withChunkReload(() => import('../pages/entities/OwnerEntity'))),
+  person: lazy(withChunkReload(() => import('../pages/entities/PersonEntity'))),
+  agent: lazy(withChunkReload(() => import('../pages/entities/AgentEntity'))),
+  case: lazy(withChunkReload(() => import('../pages/entities/CaseEntity'))),
+  partner: lazy(withChunkReload(() => import('../pages/entities/PartnerEntity'))),
 };
 
 interface Ctx { stack: EntityRef[]; open: (r: EntityRef) => void; back: () => void; close: () => void }

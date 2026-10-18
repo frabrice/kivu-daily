@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CalendarClock, CalendarPlus, Check, CheckCircle2, ClipboardList, Clock, History, Pencil, Play, Plus, Settings2, Square, Trash2, UserPlus, Users2, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 import { useFleetData } from '../../lib/fleet';
+import { useFreelance } from '../../lib/freelance';
 import {
-  ATTENDANCE, AttendanceStatus, DAY_NAMES, MANUAL_METRICS, MeetingsData, Metric, Occurrence, Series, clock, fleetMetrics, hhmm, kigaliToday, metricsList, minutesLate, useMeetingRoom, useMeetings,
+  ATTENDANCE, AttendanceStatus, DAY_NAMES, MANUAL_METRICS, MeetingsData, Metric, Series, clock, fleetMetrics, hhmm, kigaliToday, metricsList, minutesLate, useMeetingRoom, useMeetings,
 } from '../../lib/meetings';
 import { addDays } from '../../lib/it';
 import { useAccess } from '../../os/access';
@@ -89,6 +90,7 @@ function MeetingRoom({ id, data, onBack }: { id: string; data: MeetingsData; onB
   const o = room.occ;
   usePageTitle(o ? o.title : 'Meeting');
   const fleet = useFleetData();
+  const freelance = useFreelance(30);
   const [notes, setNotes] = useState('');
   const [manual, setManual] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
@@ -99,9 +101,9 @@ function MeetingRoom({ id, data, onBack }: { id: string; data: MeetingsData; onB
   useEffect(() => { if (o) setManual(Object.fromEntries(metricsList(o).filter((m) => !m.auto).map((m) => [m.key, m.value === null ? '' : String(m.value)]))); }, [o?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const auto: Metric[] = useMemo(() => {
     if (!o) return [];
-    if (o.metrics_kind === 'fleet') return fleet.loading ? [] : fleetMetrics(o.day, fleet);
+    if (o.metrics_kind === 'fleet') return fleet.loading ? [] : fleetMetrics(o.day, { ...fleet, freelance: freelance.shifts });
     return MANUAL_METRICS[o.metrics_kind ?? ''] ?? [];
-  }, [o, fleet]);
+  }, [o, fleet, freelance.shifts]);
   if (room.loading || !o) return <Loading />;
   const done = o.status === 'done';
   const canRun = a.isMd || o.host_id === profile?.id || o.note_taker_id === profile?.id;
@@ -116,7 +118,16 @@ function MeetingRoom({ id, data, onBack }: { id: string; data: MeetingsData; onB
   const addGuest = () => guest && run(() => supabase.from('meeting_attendance').insert({ occurrence_id: id, profile_id: guest, status: 'present', guest: true, marked_at: new Date().toISOString() })).then(() => setGuest(''));
   const saveNotes = () => notes !== (o.notes ?? '') && run(() => supabase.from('meeting_occurrences').update({ notes }).eq('id', id));
   const handOver = (pid: string) => run(() => supabase.from('meeting_occurrences').update({ note_taker_id: pid }).eq('id', id));
-  const addItem = () => { if (!item.text.trim()) return; run(() => supabase.from('meeting_items').insert({ occurrence_id: id, kind: item.kind, text: item.text.trim(), owner_id: item.kind === 'action' ? item.owner_id || null : null, due_date: item.kind === 'action' ? item.due_date || null : null, sort: room.items.length })).then(() => setItem({ ...item, text: '' })); };
+  // An action with an owner becomes their task at once (with the meeting as its origin).
+  const addItem = () => {
+    if (!item.text.trim()) return;
+    if (item.kind === 'action' && !item.owner_id) { setError('Choose who will do it.'); return; }
+    const call = item.kind === 'action'
+      ? () => supabase.rpc('add_meeting_action', { p_occ: id, p_text: item.text.trim(), p_owner: item.owner_id, p_due: item.due_date || null })
+      : () => supabase.from('meeting_items').insert({ occurrence_id: id, kind: 'decision', text: item.text.trim(), sort: room.items.length });
+    run(call).then(() => setItem({ ...item, text: '' }));
+  };
+  const removeItem = (itemId: string) => run(() => supabase.rpc('remove_meeting_item', { p_item: itemId }));
   const end = () => { if (!confirm('End the meeting? The numbers are saved, actions become tasks and everyone expected gets the recap.')) return; run(() => supabase.rpc('end_meeting', { p_id: id, p_metrics: metrics })); };
   const groups = [...new Set(metrics.map((m) => m.group ?? ''))];
   const decisions = room.items.filter((i) => i.kind === 'decision'), actions = room.items.filter((i) => i.kind === 'action'), checks = room.items.filter((i) => i.kind === 'check');
@@ -158,8 +169,8 @@ function MeetingRoom({ id, data, onBack }: { id: string; data: MeetingsData; onB
               : <p className="text-body whitespace-pre-line min-h-[60px]">{o.notes || <span className="text-fg-subtle">No notes yet.</span>}</p>}
           </Box>
           <Box title="Decisions and actions" icon={CheckCircle2}>
-            {decisions.length > 0 && <><p className="text-caption font-semibold text-fg-muted mb-1">Decisions</p><ul className="mb-3 space-y-1">{decisions.map((d) => <li key={d.id} className="text-small flex gap-2"><Check size={14} className="text-success mt-0.5" /><span className="flex-1">{d.text}</span>{canRun && !done && <button onClick={() => run(() => supabase.from('meeting_items').delete().eq('id', d.id))} className="btn-ghost p-1" aria-label="Remove"><X size={12} /></button>}</li>)}</ul></>}
-            {actions.length > 0 && <><p className="text-caption font-semibold text-fg-muted mb-1">Actions</p><ul className="mb-3 space-y-1">{actions.map((x) => <li key={x.id} className="text-small flex flex-wrap gap-2"><span className="flex-1">{x.text}</span><span className="text-caption text-fg-muted">{data.nameOf(x.owner_id).split(' ')[0]}{x.due_date ? ` · by ${x.due_date.slice(5)}` : ''}{x.task_id ? ' · in tasks' : ''}</span>{canRun && !done && <button onClick={() => run(() => supabase.from('meeting_items').delete().eq('id', x.id))} className="btn-ghost p-1" aria-label="Remove"><X size={12} /></button>}</li>)}</ul></>}
+            {decisions.length > 0 && <><p className="text-caption font-semibold text-fg-muted mb-1">Decisions</p><ul className="mb-3 space-y-1">{decisions.map((d) => <li key={d.id} className="text-small flex gap-2"><Check size={14} className="text-success mt-0.5" /><span className="flex-1">{d.text}</span>{canRun && !done && <button onClick={() => removeItem(d.id)} className="btn-ghost p-1" aria-label="Remove"><X size={12} /></button>}</li>)}</ul></>}
+            {actions.length > 0 && <><p className="text-caption font-semibold text-fg-muted mb-1">Actions</p><ul className="mb-3 space-y-1">{actions.map((x) => <li key={x.id} className="text-small flex flex-wrap gap-2"><span className="flex-1">{x.text}</span><span className="text-caption text-fg-muted">{data.nameOf(x.owner_id).split(' ')[0]}{x.due_date ? ` · by ${x.due_date.slice(5)}` : ''}{x.task_id ? ' · ✓ in their tasks' : ''}</span>{canRun && !done && <button onClick={() => removeItem(x.id)} className="btn-ghost p-1" aria-label="Remove"><X size={12} /></button>}</li>)}</ul></>}
             {canRun && !done ? (
               <div className="flex flex-wrap gap-2 pt-2 border-t border-line-muted">
                 <select value={item.kind} onChange={(e) => setItem({ ...item, kind: e.target.value as 'decision' | 'action' })} className="input !w-auto !py-1 text-small"><option value="action">Action</option><option value="decision">Decision</option></select>
@@ -387,54 +398,5 @@ function SeriesModal({ data, series, onClose }: { data: MeetingsData; series: Se
         <div className="flex justify-end gap-2 pt-3 border-t border-line-muted"><button onClick={onClose} className="btn-ghost">Cancel</button><button onClick={save} disabled={busy} className="btn-primary disabled:opacity-50">Save</button></div>
       </div>
     </Modal>
-  );
-}
-
-// ------------------------------------------------------------ today's meetings on Home
-// Always shown, so nobody misses the daily meetings: today's meetings with
-// a button to open (or start) each, or a clear "none today".
-export function TodayMeetingsCard() {
-  const { profile } = useAuth();
-  const today = kigaliToday();
-  const [list, setList] = useState<Occurrence[] | null>(null);
-  const [slot, setSlot] = useState<{ booked: boolean; open: number } | null>(null);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    if (!profile) return;
-    (async () => {
-      await supabase.rpc('ensure_meeting_occurrences', { p_day: today });
-      const [o, s] = await Promise.all([
-        supabase.from('meeting_occurrences').select('*').eq('day', today).neq('status', 'cancelled').order('scheduled_start'),
-        supabase.from('meeting_slots').select('booked_by, starts_at'),
-      ]);
-      if (o.error) { setError(o.error.message); setList([]); return; }
-      setList(((o.data as Occurrence[]) ?? []).filter((x) => x.expected.includes(profile.id) || x.note_taker_id === profile.id || x.host_id === profile.id));
-      const slots = (s.data as { booked_by: string | null; starts_at: string }[]) ?? [];
-      setSlot({ booked: slots.some((x) => x.booked_by === profile.id), open: slots.filter((x) => !x.booked_by && x.starts_at > new Date().toISOString()).length });
-    })();
-  }, [profile, today]);
-  if (!profile) return null;
-  return (
-    <section className="card p-4 border-accent/40">
-      <div className="flex items-center gap-2 mb-2">
-        <CalendarClock size={18} className="text-accent-fg" />
-        <p className="text-body font-semibold flex-1">Your meetings today</p>
-        <Link to="/meetings" className="btn-ghost text-caption">All meetings</Link>
-      </div>
-      {list === null ? <div className="h-8 skeleton rounded" /> : list.length ? (
-        <ul className="divide-y divide-line-muted">{list.map((o) => {
-          const runs = o.note_taker_id === profile.id || o.host_id === profile.id;
-          return (
-            <li key={o.id} className="flex flex-wrap items-center gap-3 py-2">
-              <span className="font-mono text-body font-semibold w-14">{hhmm(o.scheduled_start)}</span>
-              <span className="flex-1 min-w-[160px] text-body">{o.title}</span>
-              <Label tone={STATUS_TONE[o.status]}>{STATUS_LABEL[o.status]}</Label>
-              <Link to={`/meetings?m=${o.id}`} className={runs && o.status !== 'done' ? 'btn-primary h-8' : 'btn-secondary h-8'}>{runs && o.status === 'scheduled' ? <><Play size={13} /> Open to start</> : 'Open'}</Link>
-            </li>
-          );
-        })}</ul>
-      ) : <p className="text-small text-fg-muted">{error ? `Couldn't load meetings: ${error}` : 'No meeting for you today.'}</p>}
-      {slot && !slot.booked && slot.open > 0 && <p className="mt-2 text-small"><Link to="/meetings?tab=slots" className="link">Book your one-to-one with the MD</Link> — {slot.open} slots open.</p>}
-    </section>
   );
 }
