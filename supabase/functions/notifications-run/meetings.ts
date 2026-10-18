@@ -1,4 +1,4 @@
-import { Ctx, day, esc, RuleDef, rows } from "./core.ts";
+import { Built, Ctx, day, esc, hm, RuleDef, rows } from "./core.ts";
 
 // Meetings (migration 20261026100000): the recap everyone expected gets when
 // a meeting ends, and the host's note when someone books a one-to-one slot.
@@ -12,7 +12,76 @@ const name = (ctx: Ctx, id: string | null) => (id ? ctx.profiles.find((p) => p.i
 const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Africa/Kigali", hour: "2-digit", minute: "2-digit" }) : "—");
 const STATUS: Record<string, string> = { present: "Present", late: "Late", absent: "Absent", excused: "Excused", expected: "Not marked" };
 
+
+// Bookings (migration 20261028100000).
+interface BookingRow { id: string; type_id: string; booked_by: string; starts_at: string; topic: string | null; status: string; decision_note: string | null; occurrence_id: string | null }
+interface TypeRow { id: string; key: string | null; name: string; kind: string; audience: string; departments: string[]; once_per_person: boolean; needs_approval: boolean; deadline: string | null; active: boolean; host_id: string }
+const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { timeZone: "Africa/Kigali", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+async function bookingOf(ctx: Ctx, id: unknown) {
+  const [b] = await rows<BookingRow>(ctx.db.from("bookings").select("id, type_id, booked_by, starts_at, topic, status, decision_note, occurrence_id").eq("id", String(id)));
+  if (!b) return null;
+  const [t] = await rows<TypeRow>(ctx.db.from("booking_types").select("*").eq("id", b.type_id));
+  return t ? { b, t } : null;
+}
+const latestBooking = async (ctx: Ctx) => { const [b] = await rows<{ id: string; booked_by: string }>(ctx.db.from("bookings").select("id, booked_by").order("created_at", { ascending: false }).limit(1)); return b ? { booking_id: b.id, recipient_id: b.booked_by, accepted: true } : null; };
+
+async function reminders(ctx: Ctx, force: boolean): Promise<Built[]> {
+  const types = await rows<TypeRow>(ctx.db.from("booking_types").select("*").eq("active", true));
+  const due = types.filter((t) => (t.once_per_person || t.kind === "weekly") && (!t.deadline || t.deadline >= ctx.today));
+  if (!due.length) return [];
+  const bookings = await rows<{ type_id: string; booked_by: string; status: string }>(ctx.db.from("bookings").select("type_id, booked_by, status").in("status", ["requested", "confirmed"]));
+  const out: Built[] = [];
+  for (const p of ctx.profiles.filter((x) => x.is_active && x.role !== "managing_director")) {
+    const missing = due.filter((t) => t.host_id !== p.id && (t.audience === "everyone" || t.departments.includes(p.department?.slug ?? "")) && !bookings.some((b) => b.type_id === t.id && b.booked_by === p.id));
+    if (!missing.length) continue;
+    out.push({
+      subject: missing.length === 1 ? `Book: ${missing[0].name}` : `Book your ${missing.length} meetings with the MD`,
+      heading: "A meeting to book",
+      intro: missing.map((t) => `<b>${esc(t.name)}</b>${t.deadline ? ` — before ${day(t.deadline)}` : ""}${t.kind === "weekly" ? " — choose your day; it repeats every week" : ""}`).join("<br>") + "<br><br>Pick a free time in Kivu Daily: Meetings → Book a meeting.",
+      inApp: `Book: ${missing.map((t) => t.name).join(", ")}`,
+      recipients: [p.id],
+      cta: { label: "Book now", query: "page=meeting&tab=book" },
+    });
+  }
+  return force ? out.slice(0, 1) : out;
+}
+
 export const meetingRules: Record<string, RuleDef> = {
+  booking_made: {
+    kind: "event",
+    sample: latestBooking,
+    build: async (p, ctx) => {
+      const x = await bookingOf(ctx, p.booking_id);
+      if (!x) return null;
+      const { b, t } = x;
+      const req = b.status === "requested";
+      return {
+        subject: req ? `Meeting request: ${name(ctx, b.booked_by)} — ${b.topic ?? t.name}` : `${name(ctx, b.booked_by)} booked ${t.name}`,
+        heading: req ? "Someone asks to meet you" : "A meeting was booked",
+        intro: `<b>${esc(name(ctx, b.booked_by))}</b> ${req ? "asks for" : "booked"} <b>${esc(t.name)}</b> on <b>${when(b.starts_at)}</b>${t.kind === "weekly" ? " — every week from then" : ""}.${b.topic ? `<br><br><b>About:</b> ${esc(b.topic)}` : ""}${req ? "<br><br>Accept it or decline it in Meetings → Book a meeting." : ""}`,
+        inApp: req ? `${name(ctx, b.booked_by)} asks to meet: ${b.topic ?? t.name}` : `${name(ctx, b.booked_by)} booked ${t.name} · ${when(b.starts_at)}`,
+        cta: { label: req ? "Accept or decline" : "Open meetings", query: "page=meeting&tab=book" },
+      };
+    },
+  },
+  booking_decided: {
+    kind: "event",
+    sample: latestBooking,
+    build: async (p, ctx) => {
+      const x = await bookingOf(ctx, p.booking_id);
+      if (!x) return null;
+      const { b, t } = x;
+      const yes = p.accepted === true;
+      return {
+        subject: yes ? `Confirmed: ${t.name} on ${when(b.starts_at)}` : `Not this time: ${t.name}`,
+        heading: yes ? "Your meeting is confirmed" : "Your meeting request was declined",
+        intro: `${yes ? `The MD confirmed <b>${esc(t.name)}</b> on <b>${when(b.starts_at)}</b>.` : `The MD declined <b>${esc(t.name)}</b> on ${when(b.starts_at)}.`}${b.decision_note ? `<br><br>“${esc(b.decision_note)}”` : ""}${yes ? "" : "<br><br>You can choose another time."}`,
+        inApp: yes ? `Confirmed: ${t.name} · ${when(b.starts_at)}` : `Declined: ${t.name}`,
+        cta: { label: "Open meetings", query: yes && b.occurrence_id ? `page=meeting&m=${b.occurrence_id}` : "page=meeting&tab=book" },
+      };
+    },
+  },
+  booking_reminder: { kind: "scheduled", days: [1, 2, 3, 4, 5, 6], at: hm(8, 30), build: (ctx, force) => reminders(ctx, force), testAll: false },
   meeting_action_assigned: {
     kind: "event",
     sample: async (ctx) => {

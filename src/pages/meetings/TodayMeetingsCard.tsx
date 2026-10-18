@@ -17,20 +17,26 @@ export function TodayMeetingsCard() {
   const { profile } = useAuth();
   const today = kigaliToday();
   const [list, setList] = useState<Occurrence[] | null>(null);
-  const [slot, setSlot] = useState<{ booked: boolean; open: number } | null>(null);
+  const [toBook, setToBook] = useState<{ name: string; deadline: string | null; weekly: boolean }[]>([]);
   const [error, setError] = useState('');
   useEffect(() => {
     if (!profile) return;
     (async () => {
       await supabase.rpc('ensure_meeting_occurrences', { p_day: today });
-      const [o, s] = await Promise.all([
+      const [o, ty, bk] = await Promise.all([
         supabase.from('meeting_occurrences').select('*').eq('day', today).neq('status', 'cancelled').order('scheduled_start'),
-        supabase.from('meeting_slots').select('booked_by, starts_at'),
+        supabase.from('booking_types').select('id, name, deadline, kind, once_per_person, audience, departments, host_id, active'),
+        supabase.from('bookings').select('type_id, status').eq('booked_by', profile.id),
       ]);
       if (o.error) { setError(o.error.message); setList([]); return; }
       setList(((o.data as Occurrence[]) ?? []).filter((x) => x.expected.includes(profile.id) || x.note_taker_id === profile.id || x.host_id === profile.id));
-      const slots = (s.data as { booked_by: string | null; starts_at: string }[]) ?? [];
-      setSlot({ booked: slots.some((x) => x.booked_by === profile.id), open: slots.filter((x) => !x.booked_by && x.starts_at > new Date().toISOString()).length });
+      // Meetings this person still has to book (the walkthrough, the weekly one-to-one).
+      const dept = (profile as unknown as { department?: { slug?: string } | null }).department?.slug ?? '';
+      const mine = ((bk.data ?? []) as { type_id: string; status: string }[]);
+      setToBook(((ty.data ?? []) as { id: string; name: string; deadline: string | null; kind: string; once_per_person: boolean; audience: string; departments: string[]; host_id: string; active: boolean }[])
+        .filter((t) => t.active && t.host_id !== profile.id && (t.once_per_person || t.kind === 'weekly') && (!t.deadline || t.deadline >= today) && (t.audience === 'everyone' || t.departments.includes(dept)))
+        .filter((t) => !mine.some((b) => b.type_id === t.id && b.status !== 'declined' && b.status !== 'cancelled'))
+        .map((t) => ({ name: t.name, deadline: t.deadline, weekly: t.kind === 'weekly' })));
     })();
   }, [profile, today]);
   if (!profile) return null;
@@ -54,7 +60,13 @@ export function TodayMeetingsCard() {
           );
         })}</ul>
       ) : <p className="text-small text-fg-muted">{error ? `Couldn't load meetings: ${error}` : 'No meeting for you today.'}</p>}
-      {slot && !slot.booked && slot.open > 0 && <p className="mt-2 text-small"><Link to="/meetings?tab=slots" className="link">Book your one-to-one with the MD</Link> — {slot.open} slots open.</p>}
+      {toBook.length > 0 && (
+        <div className="mt-3 rounded-md bg-attention-muted px-3 py-2 text-small flex flex-wrap items-center gap-2">
+          <span className="flex-1">To book: {toBook.map((t) => <b key={t.name} className="mr-1">{t.name}{t.deadline ? ` (before ${t.deadline.slice(5)})` : ''}{t.weekly ? ' — choose your day' : ''}</b>)}</span>
+          <Link to="/meetings?tab=book" className="btn-primary h-8">Book now</Link>
+        </div>
+      )}
+      <p className="mt-2 text-caption text-fg-muted">Need the MD? <Link to="/meetings?tab=book" className="link">Ask for a meeting</Link>.</p>
     </section>
   );
 }

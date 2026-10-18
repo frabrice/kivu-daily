@@ -36,7 +36,7 @@ function LegacyLinks({ access }: { access: Access }) {
     if (page === 'it_checkin') { nav('/product/team?checkin=1', { replace: true }); return; }
     if (page === 'it_inbox') { nav('/product/inbox', { replace: true }); return; }
     if (page === 'tasks') { nav('/me/tasks', { replace: true }); return; }
-    if (page === 'meeting') { nav(`/meetings${p.get('m') ? `?m=${encodeURIComponent(p.get('m')!)}` : ''}`, { replace: true }); return; }
+    if (page === 'meeting') { nav(`/meetings${p.get('m') ? `?m=${encodeURIComponent(p.get('m')!)}` : p.get('tab') ? `?tab=${encodeURIComponent(p.get('tab')!)}` : ''}`, { replace: true }); return; }
     if (page === 'company_review') { nav(`/company/review${p.get('month') ? `?month=${encodeURIComponent(p.get('month')!)}` : ''}`, { replace: true }); return; }
     if (page === 'company_budget') { nav(`/company/budgets${p.get('b') ? `?b=${encodeURIComponent(p.get('b')!)}` : ''}`, { replace: true }); return; }
     if (page === 'it_health') { nav(`/product/health${p.get('tab') ? `?tab=${encodeURIComponent(p.get('tab')!)}` : ''}`, { replace: true }); return; }

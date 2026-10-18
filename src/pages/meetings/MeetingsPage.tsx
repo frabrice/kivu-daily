@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CalendarClock, CalendarPlus, Check, CheckCircle2, ClipboardList, Clock, History, Pencil, Play, Plus, Settings2, Square, Trash2, UserPlus, Users2, X } from 'lucide-react';
+import { ArrowLeft, CalendarClock, CalendarPlus, Check, CheckCircle2, ClipboardList, Clock, History, Pencil, Play, Plus, Settings2, Square, UserPlus, Users2, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
 import { useFleetData } from '../../lib/fleet';
@@ -14,13 +14,14 @@ import { usePageTitle } from '../../os/workspace';
 import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, UnderlineTabs } from '../../ui/kit';
 import Modal from '../../components/Modal';
 import { ShouldVsDid } from '../../components/company/ShouldVsDid';
+import { BookTab } from './BookingTab';
 
 // Meetings, run systematically: today's meetings from the regular series,
 // the meeting room (attendance, one note-taker, numbers, decisions,
 // actions), onboarding one-to-ones booked from open slots, history, and the
 // settings of the regular meetings (MD).
 
-type Tab = 'today' | 'slots' | 'history' | 'series';
+type Tab = 'today' | 'book' | 'history' | 'series';
 const Loading = () => <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-24 skeleton rounded-card" />)}</div>;
 const dayTitle = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
 const STATUS_TONE = { scheduled: 'neutral', running: 'accent', done: 'success', cancelled: 'neutral' } as const;
@@ -33,7 +34,8 @@ export default function MeetingsPage() {
   const days = useMemo(() => Array.from({ length: 7 }, (_, k) => addDays(today, k)), [today]);
   const data = useMeetings(days);
   const [params, setParams] = useSearchParams();
-  const tab = (params.get('tab') as Tab) || 'today';
+  const raw = params.get('tab');
+  const tab = ((raw === 'slots' ? 'book' : raw) as Tab) || 'today';
   const open = params.get('m');
   if (open) return <MeetingRoom id={open} data={data} onBack={() => setParams({})} />;
   if (data.loading) return <Loading />;
@@ -41,11 +43,11 @@ export default function MeetingsPage() {
     <div className="animate-fade-in">
       <PageHeader icon={CalendarClock} title="Meetings" subtitle="Regular meetings are ready every day: start them, tick who came, record the numbers and decisions — everyone expected gets the recap." />
       <UnderlineTabs<Tab> value={tab} onChange={(t) => setParams({ tab: t })} tabs={[
-        { key: 'today', label: 'Today & coming', icon: CalendarClock }, { key: 'slots', label: 'One-to-ones', icon: CalendarPlus }, { key: 'history', label: 'History', icon: History },
+        { key: 'today', label: 'Today & coming', icon: CalendarClock }, { key: 'book', label: 'Book a meeting', icon: CalendarPlus }, { key: 'history', label: 'History', icon: History },
         ...(a.isMd ? [{ key: 'series' as Tab, label: 'Regular meetings', icon: Settings2 }] : []),
       ]} />
       {tab === 'today' && <TodayTab data={data} days={days} open={(id) => setParams({ m: id })} />}
-      {tab === 'slots' && <SlotsTab data={data} open={(id) => setParams({ m: id })} />}
+      {tab === 'book' && <BookTab data={data} open={(id) => setParams({ m: id })} />}
       {tab === 'history' && <HistoryTab data={data} open={(id) => setParams({ m: id })} />}
       {tab === 'series' && a.isMd && <SeriesTab data={data} />}
     </div>
@@ -209,93 +211,6 @@ function MeetingRoom({ id, data, onBack }: { id: string; data: MeetingsData; onB
         </Box>
       </div>
     </div>
-  );
-}
-
-// ------------------------------------------------------------ one-to-ones (slots)
-function SlotsTab({ data, open }: { data: MeetingsData; open: (id: string) => void }) {
-  const { profile } = useAuth();
-  const a = useAccess();
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState('');
-  const now = new Date().toISOString();
-  const mine = data.slots.find((s) => s.booked_by === profile?.id);
-  const free = data.slots.filter((s) => !s.booked_by && s.starts_at > now);
-  const booked = data.slots.filter((s) => s.booked_by);
-  const book = async (id: string) => { setError(''); const { error: err } = await supabase.rpc('book_meeting_slot', { p_slot: id }); if (err) setError(err.message); data.reload(); };
-  const cancel = async (id: string) => { if (!confirm('Cancel this booking?')) return; const { error: err } = await supabase.rpc('cancel_meeting_slot', { p_slot: id }); if (err) setError(err.message); data.reload(); };
-  const fmt = (iso: string) => new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Kigali', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const notBooked = data.people.filter((p) => p.id !== profile?.id && !booked.some((s) => s.booked_by === p.id));
-  return (
-    <>
-      {error && <p className="mb-3 text-caption text-danger bg-danger-muted rounded-md px-3 py-2">{error}</p>}
-      {a.isMd && <div className="flex justify-end mb-3"><button onClick={() => setCreating(true)} className="btn-primary"><Plus size={14} /> Open slots</button></div>}
-      {mine ? (
-        <div className="card p-4 mb-4 flex flex-wrap items-center gap-3"><CheckCircle2 size={18} className="text-success" /><span className="flex-1">Your one-to-one: <b>{fmt(mine.starts_at)}</b> ({mine.duration_min} min) with {data.nameOf(mine.host_id)}.</span>
-          {mine.occurrence_id && <button onClick={() => open(mine.occurrence_id!)} className="btn-secondary">Open</button>}<button onClick={() => cancel(mine.id)} className="btn-ghost text-caption">Cancel</button></div>
-      ) : !a.isMd && <p className="mb-3 text-small">Book a 30-minute slot to go through your dashboard and the new way of working with the MD.</p>}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Box title={`Open slots (${free.length})`} icon={CalendarPlus} padded={false}>
-          {free.length ? <ul className="divide-y divide-line-muted">{free.map((s) => (
-            <li key={s.id} className="flex items-center gap-3 px-4 py-2 text-small"><span className="flex-1">{fmt(s.starts_at)} · {s.duration_min} min</span>
-              {!a.isMd && !mine && <button onClick={() => book(s.id)} className="btn-primary h-7">Book</button>}
-              {a.isMd && <button onClick={async () => { await supabase.from('meeting_slots').delete().eq('id', s.id); data.reload(); }} className="btn-ghost p-1" aria-label="Remove slot"><Trash2 size={13} /></button>}</li>
-          ))}</ul> : <p className="p-5 text-small text-fg-muted">No open slots{a.isMd ? ' — open some for the team.' : ' right now.'}</p>}
-        </Box>
-        <Box title={`Booked (${booked.length})`} icon={Users2} padded={false}>
-          {booked.length ? <ul className="divide-y divide-line-muted">{booked.map((s) => (
-            <li key={s.id} className="flex items-center gap-3 px-4 py-2 text-small"><span className="flex-1"><b>{data.nameOf(s.booked_by)}</b> · {fmt(s.starts_at)}</span>{s.occurrence_id && (a.isMd || s.booked_by === profile?.id) && <button onClick={() => open(s.occurrence_id!)} className="btn-ghost text-caption">Open</button>}</li>
-          ))}</ul> : <p className="p-5 text-small text-fg-muted">Nobody yet.</p>}
-          {a.isMd && notBooked.length > 0 && <p className="px-4 py-2 text-caption text-fg-muted border-t border-line-muted">Not booked yet: {notBooked.map((p) => p.name.split(' ')[0]).join(', ')}</p>}
-        </Box>
-      </div>
-      {creating && <OpenSlotsModal onClose={() => setCreating(false)} onDone={data.reload} />}
-    </>
-  );
-}
-
-function OpenSlotsModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const { profile } = useAuth();
-  const [from, setFrom] = useState(addDays(kigaliToday(), 1));
-  const [to, setTo] = useState(addDays(kigaliToday(), 3));
-  const [start, setStart] = useState('09:00');
-  const [end, setEnd] = useState('12:00');
-  const [len, setLen] = useState(30);
-  const [skipSun, setSkipSun] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const slots = useMemo(() => {
-    const out: string[] = [];
-    for (let d = from; d <= to && out.length < 200; d = addDays(d, 1)) {
-      if (skipSun && new Date(`${d}T12:00:00Z`).getUTCDay() === 0) continue;
-      const [sh, sm] = start.split(':').map(Number), [eh, em] = end.split(':').map(Number);
-      for (let m = sh * 60 + sm; m + len <= eh * 60 + em; m += len) out.push(`${d}T${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:00+02:00`);
-    }
-    return out;
-  }, [from, to, start, end, len, skipSun]);
-  const save = async () => {
-    setBusy(true); setError('');
-    const { error: err } = await supabase.from('meeting_slots').insert(slots.map((s) => ({ starts_at: new Date(s).toISOString(), duration_min: len, host_id: profile?.id })));
-    setBusy(false);
-    if (err) { setError(err.message); return; }
-    onDone(); onClose();
-  };
-  return (
-    <Modal open onClose={onClose} title="Open one-to-one slots" subtitle="Everyone can book one slot to go through their dashboard with you." maxWidth="max-w-md">
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block"><span className="text-caption text-fg-muted">From day</span><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input" /></label>
-          <label className="block"><span className="text-caption text-fg-muted">To day</span><input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input" /></label>
-          <label className="block"><span className="text-caption text-fg-muted">From</span><input type="time" value={start} onChange={(e) => setStart(e.target.value)} className="input" /></label>
-          <label className="block"><span className="text-caption text-fg-muted">To</span><input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className="input" /></label>
-          <label className="block"><span className="text-caption text-fg-muted">Each slot</span><select value={len} onChange={(e) => setLen(Number(e.target.value))} className="input"><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>1 hour</option></select></label>
-          <label className="flex items-end gap-2 text-small pb-2"><input type="checkbox" checked={skipSun} onChange={(e) => setSkipSun(e.target.checked)} /> Skip Sundays</label>
-        </div>
-        <p className="text-small"><b>{slots.length}</b> slots will open.</p>
-        {error && <p className="text-caption text-danger">{error}</p>}
-        <div className="flex justify-end gap-2 pt-3 border-t border-line-muted"><button onClick={onClose} className="btn-ghost">Cancel</button><button onClick={save} disabled={busy || !slots.length} className="btn-primary disabled:opacity-50">Open {slots.length} slots</button></div>
-      </div>
-    </Modal>
   );
 }
 
