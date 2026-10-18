@@ -286,6 +286,20 @@ export function depositStandingLabel(s: DepositStanding, today: string = todaySt
 
 // The red line: working days already driven and not paid for. Null when
 // nothing is owed (even if the driver is still behind on the week).
+// The next payment, said the same way everywhere: Sunday is the last day,
+// "due today" on that Sunday, and "not cleared" once Monday has come unpaid.
+export function nextPaymentText(s: DepositStanding, today: string = todayStr()): { text: string; tone: 'danger' | 'attention' | 'muted' | 'good' } | null {
+  if (!s.hasStarted) return s.nextDueDate ? { text: `First payment ${formatRwf(s.nextDueAmount)} on ${dayShort(s.nextDueDate)}`, tone: 'muted' } : null;
+  if (s.ruleInForce && !s.isCleared) return { text: `Not cleared: ${formatRwf(s.owedNow)} was due by Sunday — no car until paid`, tone: 'danger' };
+  if (s.nextDueAmount > 0 && s.nextDueDate) {
+    return s.nextDueDate === today
+      ? { text: `Due today (Sunday, last day): ${formatRwf(s.nextDueAmount)}`, tone: 'attention' }
+      : { text: `Next payment: ${formatRwf(s.nextDueAmount)} by Sunday ${dayShort(s.nextDueDate)}`, tone: 'muted' };
+  }
+  return s.nextDueDate ? { text: `Paid for the week after Sunday ${dayShort(s.nextDueDate)}`, tone: 'good' } : null;
+}
+const dayShort = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
 export function depositOwesLabel(s: DepositStanding): string | null {
   return s.hasStarted && s.owes > 0 ? `Owes ${formatRwf(s.owes)}` : null;
 }

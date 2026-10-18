@@ -12,6 +12,7 @@ import { usePageTitle } from '../../os/workspace';
 import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, UnderlineTabs } from '../../ui/kit';
 import { ChartCard, DailyBars, usePalette } from '../../components/charts/kit';
 import { CashCheckModal, FundingModal, MoneySettingsModal } from '../../components/company/MoneyModals';
+import { ShouldVsDid } from '../../components/company/ShouldVsDid';
 
 // Company plan, phase 2: money. Runway (cash, costs, income), the funding
 // pipeline, sources & uses, scenarios and all budgets together.
@@ -120,6 +121,7 @@ function Runway({ money, plan }: { money: MoneyData; plan: Plan }) {
           </ChartCard>
         </div>
       </div>
+      <div className="mb-4"><ShouldVsDid /></div>
       {box.list.length > 0 && (
         <Box title="Latest balances" icon={Banknote} padded={false}>
           <table className="w-full text-body"><tbody>{box.list.map((x) => (

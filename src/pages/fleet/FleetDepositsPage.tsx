@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Pager, usePaged } from '../../ui/Pager';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, depositRemainingColor, foldDepositTier, DEPOSIT_TIER_STYLE, formatRwf, formatDateLabelSafe, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, nextPaymentText, foldDepositTier, DEPOSIT_TIER_STYLE, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import { EntityLink } from '../../os/EntityLink';
@@ -87,11 +87,10 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                 {!row.isEnded && depositOwesLabel(row.standing) && (
                   <p className="text-micro font-semibold mt-0.5 text-red-600 dark:text-red-400">{depositOwesLabel(row.standing)} for days already worked</p>
                 )}
-                {!row.isEnded && !depositOwesLabel(row.standing) && row.standing.weekBehind === 0 && row.standing.nextDueAmount > 0 && (
-                  <p className={`text-micro font-medium mt-0.5 ${depositRemainingColor(row.tier)}`}>
-                    {formatRwf(row.standing.nextDueAmount)} due Sunday {row.standing.nextDueDate ? formatDateLabelSafe(row.standing.nextDueDate) : ''}
-                  </p>
-                )}
+                {!row.isEnded && (() => {
+                  const next = nextPaymentText(row.standing);
+                  return next && <p className={`text-micro font-medium mt-0.5 ${next.tone === 'danger' ? 'text-red-600 dark:text-red-400' : next.tone === 'attention' ? 'text-amber-700 dark:text-amber-300' : next.tone === 'good' ? 'text-emerald-700 dark:text-emerald-300' : 'text-fg-muted'}`}>{next.text}</p>;
+                })()}
               </div>
               {row.lastDeposit?.status === 'pending' && (
                 <span className="text-micro font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">

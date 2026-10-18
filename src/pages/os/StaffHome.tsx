@@ -10,6 +10,7 @@ import { MODULES, visiblePages } from '../../os/registry';
 import { Ring } from '../../os/shell/Shell';
 import { Box, Counter, Label, StatCard, StatGrid } from '../../ui/kit';
 import { addDays, today } from '../../lib/performance';
+import { TodayMeetingsCard } from '../meetings/MeetingsPage';
 
 // Everyone's home: what to start with, today's tasks (smart ones show their
 // progress), your rhythm, cases waiting on you, and your department's pages.
@@ -55,6 +56,8 @@ export default function StaffHome() {
         </div>
         <Link to="/me/tasks" className="btn-primary"><ListTodo size={14} /> Open my tasks</Link>
       </section>
+
+      <TodayMeetingsCard />
 
       <StatGrid cols={4}>
         <StatCard to="/me/tasks" icon={ListTodo} label="Today" value={`${done.length}/${mine.length}`} sub={open.filter((x) => x.priority === 'high').length ? `${open.filter((x) => x.priority === 'high').length} urgent left` : 'Nothing urgent left'} tone={open.some((x) => x.priority === 'high') ? 'attention' : undefined} />

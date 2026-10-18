@@ -3,7 +3,7 @@ import {
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
   Route, Flag, Inbox, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
-  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel, Compass,
+  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel, Compass, Coins,
 } from 'lucide-react';
 import { Access } from './access';
 
@@ -130,6 +130,7 @@ export const MODULES: ModuleDef[] = [
       { id: 'calls-overview', path: '/call-center', label: 'Live board', icon: Gauge, component: L(() => import('../pages/os/CallCenterOverview')), can: (a) => a.in('call_center', 'finance'), description: 'Who is on shift, open cases by age, call-backs due and today\'s numbers.' },
       { id: 'calls-cases', path: '/call-center/cases', label: 'Calls & cases', icon: PhoneIncoming, component: A.CallCasesStripped, can: (a) => a.in('call_center'), keywords: 'tickets' },
       { id: 'calls-queue', path: '/call-center/queue', label: 'Call queue', icon: PhoneCall, component: L(() => import('../pages/callCenter/CallQueuePage')), can: (a) => a.in('call_center') },
+      { id: 'calls-commissions', path: '/call-center/commissions', label: 'Commission follow-up', icon: Coins, component: L(() => import('../pages/callCenter/CommissionFollowupPage')), can: (a) => a.in('call_center', 'finance') || a.plan === 'full', keywords: 'commission unpaid drivers follow-up collect', description: "Call every driver with yesterday's unpaid commission and record the outcome." },
       { id: 'calls-outreach', path: '/call-center/outreach', label: 'Outreach', icon: Megaphone, component: L(() => import('../pages/callCenter/OutreachPage')), can: (a) => a.in('call_center') , keywords: 'non-insider rounds calls log' },
       { id: 'calls-non-insider', path: '/non-insider', label: 'Non-Insider', icon: CarFront, component: L(() => import('../pages/nonInsider/NonInsiderPage')), can: (a) => a.dept === 'call_center', keywords: 'platform drivers cars partners' },
       { id: 'calls-directory', path: '/call-center/directory', label: 'Directory', icon: BookMarked, component: L(() => import('../pages/callCenter/CallDirectoryPage')), can: (a) => a.in('call_center') },
@@ -183,7 +184,8 @@ export const MODULES: ModuleDef[] = [
     id: 'docs', label: 'Docs', icon: FileText, base: '/docs', shortcut: 'g d',
     pages: [
       { id: 'docs-announcements', path: '/docs/announcements', label: 'Announcements', icon: Megaphone, component: L(() => import('../pages/AnnouncementsPage')), can: md },
-      { id: 'docs-meetings', path: '/docs/meetings', label: 'Meetings', icon: Calendar, component: L(() => import('../pages/MeetingsPage')), can: md },
+      { id: 'docs-meetings', path: '/docs/meetings', label: 'Meetings', icon: Calendar, component: L(() => import('../pages/meetings/MeetingsPage')), keywords: 'meeting attendance notes one-to-one booking daily fleet it call center', description: 'Regular meetings, attendance, notes, numbers, actions — and one-to-one bookings.' },
+      { id: 'docs-meeting-notes', path: '/docs/meeting-notes', label: 'Old meeting notes', icon: Calendar, component: L(() => import('../pages/MeetingsPage')), can: md, hidden: true },
       { id: 'docs-documents', path: '/docs/documents', label: 'Documents', icon: FileText, component: L(() => import('../pages/DocumentsPage')), can: md },
       { id: 'help', path: '/docs/help', label: 'How to use', icon: HelpCircle, component: A.Help },
       { id: 'whats-new', path: '/docs/whats-new', label: "What's new", icon: Rocket, component: L(() => import('../pages/os/WhatsNew')) },

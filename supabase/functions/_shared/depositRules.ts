@@ -49,6 +49,12 @@ export const shiftLabel = (shift: string | null | undefined, long = false) =>
 // history - only the running balance carries across.
 export const SUNDAY_RULE_START = '2026-10-12';
 
+// From this Monday on, the week must be paid by Sunday: a payment dated
+// Monday is late and Monday counts as a lost day (MD, 18 Oct 2026 - "the
+// first day of the week you start working when you've already paid").
+// Before it, a Monday payment was assumed made before the shift.
+export const MONDAY_LATE_FROM = '2026-10-19';
+
 // Every working day lost to an unpaid week costs 30 points - there's no
 // reward for paying on time, only a cost for being late. Counted only
 // from the switch-over week onward.
@@ -284,14 +290,20 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     raw.push({ start: m, end: shiftDay(m, 6), required: costThrough(shiftDay(m, 6)), isStartSegment: false });
   }
 
-  // A payment logged on Monday counts as on time - deposits carry a date,
-  // not a time, so it's assumed made before that day's shift. Only working
-  // days count as lost; a rest day missed while unpaid costs nothing.
+  // The week must be paid by its Sunday. From MONDAY_LATE_FROM a payment
+  // dated on or after the Monday is late: the day it comes in is lost too
+  // (the car wasn't given that morning), and so is today while unpaid.
+  // Earlier weeks, and a new driver's own first days (paid on the start
+  // day), keep the old reading: paying on the first day is on time. Only
+  // working days count as lost; a rest day missed while unpaid costs nothing.
   const periods: DepositPeriod[] = raw.map((p) => {
     const cleared = clearedOn(p.required);
     const clearedDate = cleared && cleared <= today ? cleared : null;
-    const lostEnd = [clearedDate ?? today, today, shiftDay(p.end, 1)].sort()[0];
-    const daysLost = countWorkingDays(p.start, shiftDay(lostEnd, -1), rest, pauses);
+    const strict = !p.isStartSegment && p.start >= MONDAY_LATE_FROM;
+    const lostEnd = strict
+      ? shiftDay([clearedDate ?? today, today, p.end].sort()[0], 1)
+      : [clearedDate ?? today, today, shiftDay(p.end, 1)].sort()[0];
+    const daysLost = clearedDate && clearedDate < p.start ? 0 : countWorkingDays(p.start, shiftDay(lostEnd, -1), rest, pauses);
     const state: DepositPeriodState = clearedDate ? (daysLost > 0 ? 'late' : 'on_time') : 'open';
     return { ...p, clearedDate, daysLost, state };
   });

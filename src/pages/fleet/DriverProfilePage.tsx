@@ -10,7 +10,7 @@ import {
   STAGES, effectiveStage, REST_DAYS, DEPOSIT_TIER_STYLE, depositRemainingColor, formatDateLabelSafe,
   computeDepositStanding, depositStandingTier, depositStandingLabel, depositPeriodLabel, paidThroughDate, formatRwf, SUNDAY_RULE_START,
   fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, canSeeDriverPayments, canRecordPause, canReviewPause, PAUSE_REASON_LABEL,
-  CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN, dailyRateOn, shiftLabel } from '../../lib/fleet';
+  CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN, dailyRateOn, shiftLabel, nextPaymentText } from '../../lib/fleet';
 import { useAuth } from '../../lib/auth';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
@@ -340,13 +340,10 @@ export default function DriverProfilePage({
                 Behind {formatRwf(standing.weekBehind)} on this week{standing.ruleInForce ? ' — needs to be paid in full to be cleared to drive' : ''}
               </p>
             )}
-            {standing.nextDueDate && (
-              <p className="text-caption text-fg-muted ">
-                {standing.nextDueAmount > 0
-                  ? <>Due by Sunday <span className="font-medium text-fg-muted ">{formatDateLabelSafe(standing.nextDueDate)}</span>: <span className="font-medium text-fg-muted ">{formatRwf(standing.nextDueAmount)}</span>{!standing.ruleInForce && ' (switch-over)'}</>
-                  : <>Already paid for the week after Sunday {formatDateLabelSafe(standing.nextDueDate)}</>}
-              </p>
-            )}
+            {(() => {
+              const next = nextPaymentText(standing);
+              return next && <p className={`text-caption font-medium ${next.tone === 'danger' ? 'text-red-600 dark:text-red-400' : next.tone === 'attention' ? 'text-amber-700 dark:text-amber-300' : next.tone === 'good' ? 'text-emerald-700 dark:text-emerald-300' : 'text-fg-muted'}`}>{next.text}</p>;
+            })()}
             {standing.paidThrough && (
               <p className="text-micro text-fg-subtle">Paid through {formatDateLabelSafe(standing.paidThrough)}</p>
             )}

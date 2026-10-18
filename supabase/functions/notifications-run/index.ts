@@ -16,6 +16,7 @@ import { announceRules } from "./announce.ts";
 import { launchRules } from "./launch.ts";
 import { itRules } from "./it.ts";
 import { planRules } from "./plan.ts";
+import { meetingRules } from "./meetings.ts";
 import { syncSmartTasks } from "./smartTasks.ts";
 import { BundledPart, composeUrgentNudge, composeYourDay, DigestLine } from "./yourDay.ts";
 
@@ -34,7 +35,7 @@ const COMPOSED: Record<string, ScheduledRule> = {
   your_day: { kind: "scheduled", days: ALL_DAYS, at: hm(7), build: async () => [] },
   urgent_nudge: { kind: "scheduled", days: ALL_DAYS, at: hm(16), build: async () => [] },
 };
-const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules, ...outreachRules, ...announceRules, ...launchRules, ...itRules, ...planRules, ...COMPOSED };
+const RULES: Record<string, RuleDef> = { ...driverRules, ...financeRules, ...companyRules, ...operationsRules, ...workspaceRules, ...ticketRules, ...shiftRules, ...moneyRules, ...outreachRules, ...announceRules, ...launchRules, ...itRules, ...planRules, ...meetingRules, ...COMPOSED };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

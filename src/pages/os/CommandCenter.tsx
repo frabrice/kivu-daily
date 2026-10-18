@@ -15,6 +15,7 @@ import { EntityLink } from '../../os/EntityLink';
 import { Box, Label, StatCard, StatGrid, rwf, rwfShort } from '../../ui/kit';
 import ActivityFeed from '../../components/ActivityFeed';
 import TaskReviewModal from '../../components/TaskReviewModal';
+import { TodayMeetingsCard } from '../meetings/MeetingsPage';
 
 const AssignTaskHost = lazy(() => import('../../os/shell/NewThingModals').then((m) => ({ default: m.AssignTaskHost })));
 const AnnouncementHost = lazy(() => import('../../os/shell/NewThingModals').then((m) => ({ default: m.AnnouncementHost })));
@@ -90,6 +91,8 @@ export default function CommandCenter() {
           <Link to="/insights" className="btn-secondary"><Activity size={14} /> Insights</Link>
         </div>
       </section>
+
+      <TodayMeetingsCard />
 
       <Box title="Waiting on you" icon={BadgeCheck} padded={waiting.length === 0}>
         {waiting.length === 0 ? <p className="text-body text-fg-muted flex items-center gap-2"><BellOff size={14} /> Nothing is waiting on you.</p> : (

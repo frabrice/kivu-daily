@@ -5,7 +5,7 @@ import { useAuth } from '../../lib/auth';
 import { useFinanceData, STATUS_META, fmt, sumWhere } from '../../lib/finance';
 import { todayStr, startOfWeek, addDays, dateStr, formatDateLabel } from '../../lib/utils';
 import { FinanceTransaction, FinanceTransactionStatus } from '../../lib/supabase';
-import { computeDepositStanding, depositStandingTier, depositStandingLabel, depositPeriodLabel, DEPOSIT_TIER_STYLE, formatDateLabelSafe, formatRwf, SUNDAY_RULE_START } from '../../lib/fleet';
+import { computeDepositStanding, depositStandingTier, depositStandingLabel, depositPeriodLabel, DEPOSIT_TIER_STYLE, formatDateLabelSafe, formatRwf, SUNDAY_RULE_START, nextPaymentText } from '../../lib/fleet';
 import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import KpiTile from '../../components/KpiTile';
@@ -240,7 +240,7 @@ export default function FinanceFleetCollectionsPage() {
             <p className="text-micro text-fg-muted ">
               {s.owes > 0 && <span className="text-red-500 font-semibold">Owes {formatRwf(s.owes)} for days worked · </span>}
               {s.weekBehind > 0 && <span className="text-amber-600 dark:text-amber-400 font-medium">Behind {formatRwf(s.weekBehind)} on the week · </span>}
-              {s.nextDueDate && (s.nextDueAmount > 0 ? `${formatRwf(s.nextDueAmount)} due by Sunday ${formatDateLabelSafe(s.nextDueDate)}` : `Paid for the week after Sunday ${formatDateLabelSafe(s.nextDueDate)}`)}
+              {nextPaymentText(s)?.text}
               {s.paidThrough && ` · paid through ${formatDateLabelSafe(s.paidThrough)}`}
             </p>
             {s.periods.length === 0 ? (
