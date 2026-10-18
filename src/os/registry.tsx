@@ -81,6 +81,12 @@ export const MODULES: ModuleDef[] = [
     ],
   },
   {
+    id: 'meetings', label: 'Meetings', icon: CalendarCheck, base: '/meetings', shortcut: 'g e',
+    pages: [
+      { id: 'meetings', path: '/meetings', label: 'Meetings', icon: CalendarCheck, component: L(() => import('../pages/meetings/MeetingsPage')), keywords: 'meeting attendance notes one-to-one booking daily fleet it call center 19:00', description: 'Regular meetings, attendance, notes, numbers, actions — and one-to-one bookings.' },
+    ],
+  },
+  {
     id: 'fleet', label: 'Fleet', icon: Truck, base: '/fleet', shortcut: 'g f',
     pages: [
       { id: 'fleet-overview', path: '/fleet', label: 'Overview', icon: Gauge, component: L(() => import('../pages/os/FleetOverview')), can: (a) => a.in('fleet', 'it', 'finance') },
@@ -184,7 +190,7 @@ export const MODULES: ModuleDef[] = [
     id: 'docs', label: 'Docs', icon: FileText, base: '/docs', shortcut: 'g d',
     pages: [
       { id: 'docs-announcements', path: '/docs/announcements', label: 'Announcements', icon: Megaphone, component: L(() => import('../pages/AnnouncementsPage')), can: md },
-      { id: 'docs-meetings', path: '/docs/meetings', label: 'Meetings', icon: Calendar, component: L(() => import('../pages/meetings/MeetingsPage')), keywords: 'meeting attendance notes one-to-one booking daily fleet it call center', description: 'Regular meetings, attendance, notes, numbers, actions — and one-to-one bookings.' },
+      { id: 'docs-meetings', path: '/docs/meetings', label: 'Meetings', icon: Calendar, component: L(() => import('../pages/meetings/MeetingsPage')), hidden: true },
       { id: 'docs-meeting-notes', path: '/docs/meeting-notes', label: 'Old meeting notes', icon: Calendar, component: L(() => import('../pages/MeetingsPage')), can: md, hidden: true },
       { id: 'docs-documents', path: '/docs/documents', label: 'Documents', icon: FileText, component: L(() => import('../pages/DocumentsPage')), can: md },
       { id: 'help', path: '/docs/help', label: 'How to use', icon: HelpCircle, component: A.Help },
@@ -251,6 +257,6 @@ export const LEGACY_PATH: Record<string, string> = {
   non_insider: '/non-insider', finance: '/finance', finance_dashboard: '/finance', finance_vehicle_owners: '/finance/owners',
   finance_newsletters: '/finance/newsletters', finance_ledger: '/finance/ledger', finance_deposit_confirmations: '/finance/confirmations', call_center: '/call-center', call_center_tickets: '/call-center/cases', call_analytics: '/call-center/analytics',
   marketing: '/growth/campaigns', social: '/growth/content', it_hub: '/product/issues', performance: '/insights', departments: '/people',
-  leaderboard: '/people/leaderboard', search: '/people/search', activity_log: '/people/activity', meetings: '/docs/meetings',
+  leaderboard: '/people/leaderboard', search: '/people/search', activity_log: '/people/activity', meetings: '/meetings',
   documents: '/docs/documents', announcements: '/docs/announcements', help: '/docs/help', admin: '/admin', settings: '/settings',
 };
