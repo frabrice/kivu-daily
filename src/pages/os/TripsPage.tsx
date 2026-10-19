@@ -49,7 +49,7 @@ export default function TripsPage() {
   const [syncMsg, setSyncMsg] = useState('');
   // Trips done for a company (business clients): tag them from here.
   const access = useAccess();
-  const canTag = access.in('finance', 'call_center') || access.duties.has('company_trips');
+  const canTag = access.in('finance', 'call_center') || access.duties.has('company_trips') || access.grants.has('business');
   const canBill = access.in('finance');
   const biz = useBusinessData();
   const companyOf = useMemo(() => new Map(biz.clientTrips.map((x) => [x.trip_id, biz.clients.find((c) => c.id === x.client_id)])), [biz.clientTrips, biz.clients]);

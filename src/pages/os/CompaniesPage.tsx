@@ -1,7 +1,7 @@
 import { ReactNode, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, BadgeCheck, Building2, CalendarRange, History, CircleDollarSign, Download, FileText, Hourglass, LayoutGrid, Pencil, Plus, Receipt, Route, Search, Trash2, Users, Wallet,
+  ArrowLeft, BadgeCheck, Building2, CalendarRange, History, CircleDollarSign, Download, FileDown, FileText, Hourglass, LayoutGrid, Pencil, Plus, Receipt, Route, Search, Trash2, Users, Wallet,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import {
@@ -17,6 +17,7 @@ import { Pager, usePaged } from '../../ui/Pager';
 import { ChartCard, DailyBars, RangeTabs, usePalette } from '../../components/charts/kit';
 import { AddTripsModal, CompanyFormModal, NewInvoiceModal, RidersEditor, VerifyTripsModal } from '../../components/business/BusinessModals';
 import InvoicePanel from '../../components/business/InvoicePanel';
+import ReportModal from '../../components/business/ReportModal';
 
 // Companies that ride with Kivu Ride and are invoiced for their trips:
 // the list, and one company's workspace (analytics, trips, invoices,
@@ -29,7 +30,9 @@ export default function CompaniesPage() {
   usePageTitle('Companies');
   const a = useAccess();
   const canBill = a.in('finance');
-  const canTag = a.in('finance', 'call_center') || a.duties.has('company_trips');
+  const canTag = a.in('finance', 'call_center') || a.duties.has('company_trips') || a.grants.has('business');
+  // The report (pre-invoice): the MD, Finance and the people given 'business' access.
+  const canReport = a.in('finance') || a.grants.has('business');
   const data = useBusinessData();
   const [verifying, setVerifying] = useState(false);
   const pendingAll = data.clientTrips.filter((x) => x.status === 'pending' && !x.invoice_id);
@@ -56,7 +59,7 @@ export default function CompaniesPage() {
 
   if (data.loading) return <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-24 skeleton rounded-card" />)}</div>;
   const client = open ? data.clients.find((c) => c.id === open) : null;
-  if (open && client) return <CompanyWorkspace client={client} data={data} canBill={canBill} canTag={canTag} onBack={() => setParams({})} />;
+  if (open && client) return <CompanyWorkspace client={client} data={data} canBill={canBill} canTag={canTag} canReport={canReport} onBack={() => setParams({})} />;
 
   const shown = rows.filter((r) => !q.trim() || r.c.name.toLowerCase().includes(q.trim().toLowerCase()));
   const totals = rows.reduce((s, r) => ({ week: s.week + r.weekTrips, unbilled: s.unbilled + r.unbilledAmount, outstanding: s.outstanding + r.outstanding, overdue: s.overdue + r.overdue }), { week: 0, unbilled: 0, outstanding: 0, overdue: 0 });
@@ -108,7 +111,7 @@ export default function CompaniesPage() {
 type Tab = 'overview' | 'trips' | 'invoices' | 'statement' | 'activity' | 'details';
 type Period = 'this_week' | 'last_week' | 'this_month' | 'custom';
 
-function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: BusinessClient; data: ReturnType<typeof useBusinessData>; canBill: boolean; canTag: boolean; onBack: () => void }) {
+function CompanyWorkspace({ client, data, canBill, canTag, canReport, onBack }: { client: BusinessClient; data: ReturnType<typeof useBusinessData>; canBill: boolean; canTag: boolean; canReport: boolean; onBack: () => void }) {
   usePageTitle(client.name);
   const c = usePalette();
   const [tab, setTab] = useState<Tab>('overview');
@@ -121,6 +124,7 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
   const [openInvoice, setOpenInvoice] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'unbilled' | 'invoiced' | 'paid' | 'live'>('all');
   const [verifying, setVerifying] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [q, setQ] = useState('');
 
   const mine = useMemo(() => data.clientTrips.filter((x) => x.client_id === client.id), [data.clientTrips, client.id]);
@@ -163,6 +167,7 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
         subtitle={[client.legal_name && client.legal_name !== client.name ? client.legal_name : null, client.tin ? `TIN ${client.tin}` : null, client.agreement].filter(Boolean).join(' · ') || undefined}
         labels={client.status !== 'active' ? <Label>{client.status === 'paused' ? 'Paused' : 'Ended'}</Label> : undefined}
         actions={<>
+          {canReport && <button onClick={() => setReporting(true)} className="btn-secondary"><FileDown size={14} /> Export report</button>}
           {canTag && <button onClick={() => setAdding(true)} className="btn-secondary"><Plus size={14} /> Add trips</button>}
           {canBill && pending.length > 0 && <button onClick={() => setVerifying(true)} className="btn-secondary"><BadgeCheck size={14} /> Verify {pending.length}</button>}
           {canBill && <button onClick={() => setInvoicing(true)} className="btn-primary"><Receipt size={14} /> New invoice</button>}
@@ -353,6 +358,7 @@ function CompanyWorkspace({ client, data, canBill, canTag, onBack }: { client: B
         </div>
       )}
 
+      {reporting && <ReportModal client={client} trips={mine} invoices={data.invoices} settings={data.settings} onClose={() => setReporting(false)} />}
       {adding && <AddTripsModal client={client} riders={riders} tagged={tagged} canBill={canBill} onClose={() => setAdding(false)} onSaved={data.reload} />}
       {verifying && <VerifyTripsModal items={pending} clients={data.clients} nameOf={data.nameOf} onClose={() => setVerifying(false)} onDone={data.reload} />}
       {invoicing && <NewInvoiceModal client={client} clientTrips={mine} settings={data.settings} onClose={() => setInvoicing(false)} onIssued={(id) => { setInvoicing(false); data.reload(); setTab('invoices'); setOpenInvoice(id); }} />}
