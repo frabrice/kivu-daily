@@ -110,8 +110,8 @@ export const MODULES: ModuleDef[] = [
     id: 'trips', label: 'Trips', icon: Route, base: '/trips', shortcut: 'g r',
     pages: [
       { id: 'trips', path: '/trips', label: 'All trips', icon: Route, component: L(() => import('../pages/os/TripsPage')), can: (a) => a.in('call_center', 'fleet', 'finance', 'it'), keywords: 'rides kivuride platform trips status rider driver fare', description: 'Every KivuRide trip and its live status, synced from the platform every 2 minutes.' },
-      { id: 'trips-companies', path: '/trips/companies', label: 'Companies', icon: Building2, component: L(() => import('../pages/os/CompaniesPage')), can: (a) => a.in('finance', 'call_center') || a.duties.has('company_trips'), group: 'Business', keywords: 'business clients corporate company cevr billing riders', description: 'Companies whose people ride with Kivu Ride: their trips, weekly analytics, invoices and statement.' },
-      { id: 'trips-invoices', path: '/trips/invoices', label: 'Invoices', icon: Receipt, component: L(() => import('../pages/os/InvoicesPage')), can: (a) => a.in('finance'), group: 'Business', keywords: 'invoice billing vat payments unpaid overdue statement', description: 'Every company invoice: unpaid and overdue first, payments, and the details printed on invoices.' },
+      { id: 'trips-companies', path: '/trips/companies', label: 'Companies', icon: Building2, component: L(() => import('../pages/os/CompaniesPage')), can: (a) => a.in('finance', 'call_center') || a.duties.has('company_trips') || a.grants.has('business'), group: 'Business', keywords: 'business clients corporate company cevr billing riders', description: 'Companies whose people ride with Kivu Ride: their trips, weekly analytics, invoices and statement.' },
+      { id: 'trips-invoices', path: '/trips/invoices', label: 'Invoices', icon: Receipt, component: L(() => import('../pages/os/InvoicesPage')), can: (a) => a.in('finance') || a.grants.has('business'), group: 'Business', keywords: 'invoice billing vat payments unpaid overdue statement', description: 'Every company invoice: unpaid and overdue first, payments, and the details printed on invoices.' },
     ],
   },
   {
