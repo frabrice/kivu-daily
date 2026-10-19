@@ -43,7 +43,7 @@ export default function Shell({ access, children }: { access: Access; children: 
   const badges = useBadges(access);
   const mods = useMemo(() => visibleModules(access), [access]);
   const current = moduleOfPath(loc.pathname, access) ?? mods[0];
-  const [pinned, setPinned] = useLocalBool('kivu-os-sidebar-pinned', true);
+  const [pinned, setPinned] = useLocalBool('kivu-os-sidebar-shown', true);
   const [railOpen, setRailOpen] = useLocalBool('kivu-os-rail-expanded', false);
   const { theme, toggle: toggleTheme } = useTheme();
   const [flyout, setFlyout] = useState<string | null>(null);
@@ -63,7 +63,8 @@ export default function Shell({ access, children }: { access: Access; children: 
 
   useEffect(() => { setMobileMenu(false); setFlyout(null); }, [loc.pathname]);
 
-  // Keyboard: Ctrl/Cmd K or / = search, ? = shortcuts, [ = sidebar, g + letter = go to module.
+  // Keyboard: Ctrl/Cmd K or / = search, ? = shortcuts, g + letter = go to module.
+  // (No single key hides the menu any more: people hid it by accident and lost the sub-pages.)
   useEffect(() => {
     let g = false; let gt = 0;
     const onKey = (e: KeyboardEvent) => {
@@ -72,7 +73,6 @@ export default function Shell({ access, children }: { access: Access; children: 
       if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === '/') { e.preventDefault(); setPalette(true); return; }
       if (e.key === '?') { setShortcuts(true); return; }
-      if (e.key === '[') { setPinned((p) => !p); return; }
       if (g) {
         g = false; window.clearTimeout(gt);
         const m = mods.find((x) => x.shortcut === `g ${e.key}`);
@@ -83,7 +83,7 @@ export default function Shell({ access, children }: { access: Access; children: 
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mods, access, nav, setPinned]);
+  }, [mods, access, nav]);
 
   const openFly = (id: string) => { window.clearTimeout(flyTimer.current); flyTimer.current = window.setTimeout(() => setFlyout(id), 120); };
   const closeFly = () => { window.clearTimeout(flyTimer.current); flyTimer.current = window.setTimeout(() => setFlyout(null), 220); };
@@ -105,7 +105,7 @@ export default function Shell({ access, children }: { access: Access; children: 
             const active = current?.id === m.id;
             const n = moduleBadge(m, access, badges);
             const btn = (
-              <button key={m.id} onClick={() => nav(visiblePages(m, access)[0].path)} onMouseEnter={() => (!railOpen && (!showSidebar || !active) ? openFly(m.id) : undefined)}
+              <button key={m.id} onClick={() => { setPinned(true); setFlyout(null); nav(visiblePages(m, access)[0].path); }} onMouseEnter={() => (!railOpen && (!showSidebar || !active) ? openFly(m.id) : undefined)}
                 aria-label={m.label} aria-current={active ? 'page' : undefined}
                 className={`relative h-9 rounded-lg flex items-center gap-2.5 transition-colors ${railOpen ? 'w-full px-2.5' : 'w-9 justify-center'} ${active ? 'bg-accent/15 text-accent-fg' : 'text-fg-subtle hover:text-fg hover:bg-hover'}`}>
                 {active && <span className="absolute -left-1.5 top-2 bottom-2 w-[3px] rounded-r bg-accent" />}
@@ -122,8 +122,7 @@ export default function Shell({ access, children }: { access: Access; children: 
           </div>
         </nav>
 
-        {/* Left-edge hover zone when the module menu is hidden */}
-        {!showSidebar && current && current.id !== 'home' && visiblePages(current, access).length > 1 && <div style={{ left: railW }} className="hidden md:block fixed top-12 bottom-0 w-2 z-30" onMouseEnter={() => openFly(current.id)} />}
+
 
         {/* Pinned module menu */}
         {showSidebar && (
@@ -147,6 +146,13 @@ export default function Shell({ access, children }: { access: Access; children: 
               {ending && shift && (
                 <EndShiftDrawer shift={shift} onClose={() => setEnding(null)}
                   onEnded={() => { const thenSignOut = ending === 'signout'; setEnding(null); if (thenSignOut) plainSignOut(); else reloadShift(); }} />
+              )}
+              {current && current.id !== 'home' && <MobilePages module={current} access={access} badges={badges} />}
+              {/* The module menu was hidden: a visible way back to its pages */}
+              {!showSidebar && current && current.id !== 'home' && visiblePages(current, access).length > 1 && (
+                <button onClick={() => { setPinned(true); setFlyout(null); }} className="hidden md:inline-flex btn-secondary h-8 mb-3" aria-label={`Show the ${current.label} menu`}>
+                  <PanelLeftOpen size={14} /> Show the {current.label} pages
+                </button>
               )}
               <PageBoundary resetKey={loc.pathname}>
                 <Suspense fallback={<PageSkeleton />}>
@@ -284,7 +290,7 @@ function ModuleSidebar({ module, access, badges, onPin, onHide }: { module: Modu
         <module.icon size={16} className="text-fg-muted" />
         <p className="text-ui font-semibold flex-1 truncate">{module.label}</p>
         {onPin && <button onClick={onPin} className="btn-ghost p-1" aria-label="Keep this menu open" title="Keep open"><Pin size={13} /></button>}
-        {onHide && <Tooltip label="Hide this menu  ["><button onClick={onHide} className="btn-ghost p-1" aria-label="Hide this menu"><PanelLeftClose size={14} /></button></Tooltip>}
+        {onHide && <Tooltip label="Hide this menu (click the module again to bring it back)"><button onClick={onHide} className="btn-ghost p-1" aria-label="Hide this menu"><PanelLeftClose size={14} /></button></Tooltip>}
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-3">
         {groups.map((g) => (
@@ -369,9 +375,29 @@ export function Ring({ pct, size = 56 }: { pct: number; size?: number }) {
 }
 
 // ---------------------------------------------------------------- mobile
+// On a phone there is no side menu: the module's pages scroll across the top.
+function MobilePages({ module, access, badges }: { module: ModuleDef; access: Access; badges: Badges }) {
+  const pages = visiblePages(module, access).filter((p, i, arr) => arr.findIndex((x) => x.path === p.path) === i);
+  if (pages.length < 2) return null;
+  return (
+    <nav aria-label={`${module.label} pages`} className="md:hidden -mx-4 px-4 mb-3 flex gap-1.5 overflow-x-auto pb-1">
+      {pages.map((p) => {
+        const n = badgeOf(p, badges);
+        return (
+          <NavLink key={p.id} to={p.path} end className={({ isActive }) => `shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-small ${isActive ? 'border-accent bg-accent/10 text-accent-fg font-medium' : 'border-line text-fg-muted'}`}>
+            <p.icon size={14} />{p.label}{n > 0 && <span className="counter">{n}</span>}
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
+}
+
 function MobileBar({ access, badges, onMenu, onSearch }: { access: Access; badges: Badges; onMenu: () => void; onSearch: () => void }) {
   const mods = visibleModules(access);
-  const work = mods.find((m) => !['home', 'me', 'people', 'insights', 'docs', 'admin'].includes(m.id));
+  // The third button is the person's own department (Fleet for Fleet, Call Center for agents...).
+  const own = ({ fleet: 'fleet', call_center: 'calls', finance: 'finance', it: 'product', marketing_sales_bd: 'growth', social_media: 'growth' } as Record<string, string>)[access.dept ?? ''];
+  const work = mods.find((m) => m.id === own) ?? mods.find((m) => !['home', 'me', 'meetings', 'people', 'insights', 'docs', 'admin'].includes(m.id));
   const items = [mods.find((m) => m.id === 'home'), mods.find((m) => m.id === 'me'), work].filter(Boolean) as ModuleDef[];
   const loc = useLocation();
   return (
@@ -431,7 +457,7 @@ function ShortcutsDialog({ mods, onClose }: { mods: ModuleDef[]; onClose: () => 
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   const rows: [string, string][] = [
-    ['Ctrl K  or  /', 'Search and jump anywhere'], ['?', 'This list'], ['[', 'Show or hide the sidebar'], ['Esc', 'Close a panel or dialog'],
+    ['Ctrl K  or  /', 'Search and jump anywhere'], ['?', 'This list'], ['Esc', 'Close a panel or dialog'],
     ...mods.filter((m) => m.shortcut).map((m) => [m.shortcut!, `Go to ${m.label}`] as [string, string]),
   ];
   return (
