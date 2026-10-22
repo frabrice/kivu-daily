@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlarmClock, Clock, Headphones, Megaphone, PhoneCall, PhoneIncoming, Radio, Siren, Timer, UserCheck } from 'lucide-react';
+import { AlarmClock, Clock, Headphones, Megaphone, PhoneCall, PhoneIncoming, Radio, Siren, Timer, UserCheck, Wifi, WifiOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { useCallTickets, isOverdue, isResponseOverdue, isUnresolved, CATEGORY_LABEL, STATUS_META } from '../../lib/callTickets';
@@ -9,6 +9,7 @@ import { DAILY_GOAL, OutreachCall } from '../../lib/outreach';
 import { EntityLink } from '../../os/EntityLink';
 import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid } from '../../ui/kit';
 import { today } from '../../lib/performance';
+import { needsCall, presenceOf, stateOf, toExpected, useOnShift } from '../../lib/onShift';
 
 const AGE = [
   { key: 'h2', label: 'Under 2 hours', max: 120 },
@@ -63,6 +64,8 @@ export default function CallCenterOverview() {
         <StatCard to={isCC ? '/call-center/cases' : undefined} icon={Clock} label="Call-backs due" value={callbacks.length} tone={callbacks.length ? 'attention' : undefined} sub="Tell callers their case is resolved" />
         <StatCard icon={Siren} label="Emergencies to acknowledge" value={emergencies.length} tone={emergencies.length ? 'danger' : undefined} sub="Waiting for the MD" />
       </StatGrid>
+
+      <OursOnShiftCard to={isCC ? '/call-center/on-shift' : '/fleet/on-shift'} />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
         <Box title="On shift now" icon={UserCheck} padded={false}>
@@ -130,5 +133,29 @@ export default function CallCenterOverview() {
         )}
       </Box>
     </div>
+  );
+}
+
+// Our drivers who should be driving now, and who is offline in the app: checking
+// it is one of the agents' daily tasks (Ours On Shift).
+function OursOnShiftCard({ to }: { to: string }) {
+  const d = useOnShift();
+  if (d.loading) return <div className="h-20 skeleton rounded-card mb-4" />;
+  const rows = d.roster.filter((r) => !r.blocked && Date.parse(r.starts_at) <= d.now && d.now < Date.parse(r.ends_at)).map((r) => {
+    const e = toExpected(r);
+    return { r, p: presenceOf(e, stateOf(e, d.states), d.now) };
+  });
+  const unique = [...new Map(rows.map((x) => [x.r.driver_id ?? x.r.key, x])).values()];
+  const online = unique.filter((x) => x.p.presence === 'online').length;
+  const call = unique.filter((x) => needsCall(x.p));
+  return (
+    <section className={`card p-4 mb-4 ${call.length ? 'border-danger/50' : ''}`}>
+      <div className="flex flex-wrap items-center gap-3">
+        {call.length ? <WifiOff size={18} className="text-danger" /> : <Wifi size={18} className="text-success" />}
+        <p className="text-body flex-1 min-w-[220px]"><b>Ours On Shift:</b> {unique.length} of our drivers should be driving now · <b className="text-success">{online} online</b>{call.length ? <> · <b className="text-danger">{call.length} offline — call them</b></> : ' · nobody to call'}</p>
+        <Link to={to} className={call.length ? 'btn-primary h-8' : 'btn-secondary h-8'}>Open Ours On Shift</Link>
+      </div>
+      {call.length > 0 && <p className="mt-2 text-small text-fg-muted">{call.slice(0, 6).map((x) => `${x.r.name} (${x.r.plate ?? '—'})`).join(' · ')}{call.length > 6 ? ` · +${call.length - 6} more` : ''}</p>}
+    </section>
   );
 }

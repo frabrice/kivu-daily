@@ -4,6 +4,7 @@ import { activeStandings, car, loadDeposits, loadDrivers, PAUSE_REASON } from ".
 import { openTransactions, TYPE_LABEL } from "./finance.ts";
 import { carsWithoutDriver, loadFlaggedStories } from "./operations.ts";
 import { isOverdue, isResponseOverdue, loadTickets, UNRESOLVED } from "./tickets.ts";
+import { DriverState, needsCall, presenceOf, stateOf } from "../_shared/onShift.ts";
 
 // Smart tasks: created from live data, only when there is real work, with
 // the specifics (who, how much) in the task, and completed automatically
@@ -264,6 +265,32 @@ const LIST_KINDS: ListKind[] = [
         .map((s) => ({ id: s.id, label: (s.title?.trim() || "Request").slice(0, 90), detail: `from ${ctx.profiles.find((p) => p.id === s.created_by)?.full_name.trim().split(/\s+/)[0] ?? "someone"}` }));
       const heads = await rows<{ profile_id: string }>(ctx.db.from("it_members").select("profile_id").eq("role", "head"));
       return { assignments: heads.flatMap((h) => assign(h.profile_id, items)), open: setOf(items) };
+    },
+  },
+  {
+    key: "drivers_offline", priority: "high", due: null,
+    title: (n) => `Call ${plural(n, "driver")} offline during their shift`, doneTitle: "Every driver on shift is online",
+    intro: "Our drivers must be online in the Kivu Ride app for their whole shift. Call each one below (Ours On Shift). They tick off by themselves when they come back online.",
+    compute: async (ctx) => {
+      const now = Date.now();
+      const [roster, states] = await Promise.all([
+        rows<{ key: string; kind: "driver" | "freelancer"; driver_id: string | null; freelancer_id: string | null; name: string; phone: string | null; plate: string | null; vehicle_id: string | null; shift: "day" | "night"; day: string; starts_at: string; ends_at: string; blocked: string | null }>(
+          ctx.db.from("driver_shift_roster").select("*").is("blocked", null).lte("starts_at", new Date(now).toISOString()).gt("ends_at", new Date(now).toISOString())),
+        rows<DriverState>(ctx.db.from("platform_driver_status").select("platform_driver_id, kivu_driver_id, freelancer_id, is_online, driver_status, logged_in, last_seen_at, last_location_at, status_since, app_version, vehicle_plate").or("kivu_driver_id.not.is.null,freelancer_id.not.is.null")),
+      ]);
+      const offline = roster.filter((r) => {
+        const e = { key: r.key, kind: r.kind, driverId: r.driver_id, freelancerId: r.freelancer_id, name: r.name, phone: r.phone, plate: r.plate, vehicleId: r.vehicle_id, shift: r.shift, day: r.day, start: Date.parse(r.starts_at), end: Date.parse(r.ends_at), blocked: r.blocked };
+        return needsCall(presenceOf(e, stateOf(e, states), now));
+      }).sort((a, b) => a.name.localeCompare(b.name));
+      // Shared between the agents on shift, like call-backs.
+      const agents = await onShiftAgents(ctx);
+      const by = new Map<string, SmartItem[]>();
+      offline.forEach((r, i) => {
+        if (!agents.length) return;
+        const a = agents[i % agents.length];
+        by.set(a, [...(by.get(a) ?? []), { id: r.key, label: `${r.name} · ${r.plate ?? "no car"}`, detail: `${r.phone ?? "no phone"} · ${r.shift === "day" ? "day" : "night"} shift until ${new Date(r.ends_at).toLocaleTimeString("en-GB", { timeZone: "Africa/Kigali", hour: "2-digit", minute: "2-digit" })}` }]);
+      });
+      return { assignments: [...by].map(([userId, items]) => ({ userId, items })), open: new Set(offline.map((r) => r.key)) };
     },
   },
   {

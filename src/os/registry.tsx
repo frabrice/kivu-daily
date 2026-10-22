@@ -93,6 +93,7 @@ export const MODULES: ModuleDef[] = [
     id: 'fleet', label: 'Fleet', icon: Truck, base: '/fleet', shortcut: 'g f',
     pages: [
       { id: 'fleet-overview', path: '/fleet', label: 'Overview', icon: Gauge, component: L(() => import('../pages/os/FleetOverview')), can: (a) => a.in('fleet', 'it', 'finance') },
+      { id: 'fleet-on-shift', path: '/fleet/on-shift', label: 'Ours On Shift', icon: Radio, component: L(() => import('../pages/fleet/OnShiftPage')), can: (a) => a.in('fleet', 'it', 'finance'), keywords: 'online offline app drivers shift driving now live', description: 'Our drivers who should be driving now, and whether they are online in the app.' },
       { id: 'fleet-drivers', path: '/fleet/drivers', label: 'Drivers', icon: Truck, component: LS(() => import('../pages/fleet/FleetPipelinePage'), 'DriversStrip'), can: (a) => a.in('fleet', 'it'), keywords: 'pipeline' },
       { id: 'fleet-cars', path: '/fleet/cars', label: 'Cars', icon: Car, component: LS(() => import('../pages/fleet/FleetVehiclesPage'), 'CarsStrip'), can: (a) => a.in('fleet', 'it'), keywords: 'vehicles' },
       { id: 'fleet-deposits', path: '/fleet/deposits', label: 'Deposits', icon: Wallet, component: LS(() => import('../pages/fleet/FleetDepositsPage'), 'DepositsStrip'), can: (a) => a.in('fleet', 'it'), badge: 'overdueDeposits', group: 'Money' },
@@ -139,6 +140,7 @@ export const MODULES: ModuleDef[] = [
     id: 'calls', label: 'Call Center', icon: PhoneCall, base: '/call-center', shortcut: 'g c',
     pages: [
       { id: 'calls-overview', path: '/call-center', label: 'Live board', icon: Gauge, component: L(() => import('../pages/os/CallCenterOverview')), can: (a) => a.in('call_center', 'finance'), description: 'Who is on shift, open cases by age, call-backs due and today\'s numbers.' },
+      { id: 'calls-on-shift', path: '/call-center/on-shift', label: 'Ours On Shift', icon: Radio, component: L(() => import('../pages/fleet/OnShiftPage')), can: (a) => a.dept === 'call_center', keywords: 'online offline app drivers shift driving now live', description: 'Our drivers who should be driving now: call anyone offline during their shift.' },
       { id: 'calls-cases', path: '/call-center/cases', label: 'Calls & cases', icon: PhoneIncoming, component: A.CallCasesStripped, can: (a) => a.in('call_center'), keywords: 'tickets' },
       { id: 'calls-queue', path: '/call-center/queue', label: 'Call queue', icon: PhoneCall, component: L(() => import('../pages/callCenter/CallQueuePage')), can: (a) => a.in('call_center') },
       { id: 'calls-commissions', path: '/call-center/commissions', label: 'Commission follow-up', icon: Coins, component: L(() => import('../pages/callCenter/CommissionFollowupPage')), can: (a) => a.in('call_center', 'finance') || a.plan === 'full', keywords: 'commission unpaid drivers follow-up collect', description: "Call every driver with yesterday's unpaid commission and record the outcome." },
