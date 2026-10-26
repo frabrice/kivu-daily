@@ -9,7 +9,8 @@ import { shortAddress } from '../../lib/trips';
 // The report (a pre-invoice) for one company: the trips so far in a period
 // the person chooses - by default this week, Monday 00:00 until now. Trips
 // already paid are left out; the rest can be put in order and unticked
-// before exporting. Same look as the invoice, without VAT.
+// before exporting. Same look as the invoice, without VAT. Waiting time
+// can be left uncharged (taken off each fare) and a discount given on the total.
 
 type Order = 'oldest' | 'newest' | 'rider' | 'driver';
 const ORDERS: { key: Order; label: string }[] = [
@@ -31,6 +32,8 @@ export default function ReportModal({ client, trips, invoices, settings, onClose
   const [order, setOrder] = useState<Order>('oldest');
   const [out, setOut] = useState<Set<number>>(new Set());
   const [notes, setNotes] = useState('');
+  const [noWaiting, setNoWaiting] = useState(false);
+  const [discount, setDiscount] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const from = isoK(p.fromDay, p.fromTime), to = isoK(p.toDay, p.toTime);
@@ -52,7 +55,13 @@ export default function ReportModal({ client, trips, invoices, settings, onClose
     return { rows, paid };
   }, [trips, invoices, from, to, order]);
   const chosen = rows.filter((x) => !out.has(x.trip_id));
-  const total = chosen.reduce((s, x) => s + Number(x.trip?.total_fare ?? 0), 0);
+  const waitOf = (x: ClientTrip) => Math.max(0, Number(x.trip?.waiting_fee ?? 0));
+  const fareOf = (x: ClientTrip) => Number(x.trip?.total_fare ?? 0) - (noWaiting ? waitOf(x) : 0);
+  const waived = noWaiting ? chosen.reduce((s, x) => s + waitOf(x), 0) : 0;
+  const withWaiting = chosen.filter((x) => waitOf(x) > 0).length;
+  const pct = Math.max(0, Math.min(100, Number(discount) || 0));
+  const fares = chosen.reduce((s, x) => s + fareOf(x), 0);
+  const total = fares - Math.round((fares * pct) / 100);
   const markOf = (x: ClientTrip) => (x.status === 'pending' ? 'to verify' : x.invoice_id ? `on ${invoices.find((i) => i.id === x.invoice_id)?.number ?? 'an invoice'}` : null);
   const toggle = (id: number) => setOut((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
@@ -65,13 +74,14 @@ export default function ReportModal({ client, trips, invoices, settings, onClose
       for (const x of chosen) { const m = markOf(x); if (m) marks.set(x.trip_id, m); }
       const blob = await reportPdfBlob({
         client, issuer: settings, from, to, preparedBy: profile?.full_name?.trim() ?? null, notes: notes.trim() || null, marks, leftOutPaid: paid.length,
+        waivedWaiting: waived, discountPct: pct,
         lines: chosen.map((x) => {
           const t = x.trip!;
           return {
             trip_id: t.id, date: t.started_at ?? t.created_at ?? '', completed_at: t.completed_at, rider: t.rider_name, rider_phone: t.rider_phone,
             from: t.pickup_address, to: t.destination_address, driver: t.driver_name, plate: t.vehicle_plate, vehicle_type: t.vehicle_type,
             km: t.actual_distance_km ?? t.estimated_distance_km, minutes: t.actual_duration_minutes ?? t.estimated_duration_minutes,
-            waiting_minutes: t.waiting_minutes, waiting_fee: t.waiting_fee, extras: t.extras_total, extra_items: [], fare: Number(t.total_fare ?? 0),
+            waiting_minutes: t.waiting_minutes, waiting_fee: noWaiting ? 0 : t.waiting_fee, extras: t.extras_total, extra_items: [], fare: fareOf(x),
           };
         }),
       });
@@ -103,7 +113,7 @@ export default function ReportModal({ client, trips, invoices, settings, onClose
 
         <section>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <p className="text-small flex-1"><b>{chosen.length}</b> trip{chosen.length === 1 ? '' : 's'} · <b>{rwf(total)}</b> before VAT{out.size ? <span className="text-fg-muted"> · {out.size} left out by you</span> : null}{paid.length ? <span className="text-fg-muted"> · {paid.length} already paid, not listed</span> : null}</p>
+            <p className="text-small flex-1"><b>{chosen.length}</b> trip{chosen.length === 1 ? '' : 's'} · <b>{rwf(total)}</b> before VAT{waived || pct ? <span className="text-fg-muted"> (after {[waived ? `− ${rwf(waived)} waiting` : '', pct ? `− ${pct}%` : ''].filter(Boolean).join(', ')})</span> : null}{out.size ? <span className="text-fg-muted"> · {out.size} left out by you</span> : null}{paid.length ? <span className="text-fg-muted"> · {paid.length} already paid, not listed</span> : null}</p>
             <select value={order} onChange={(e) => setOrder(e.target.value as Order)} className="input !w-auto !py-1 text-small" aria-label="Order">{ORDERS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}</select>
           </div>
           {rows.length ? (
@@ -115,12 +125,25 @@ export default function ReportModal({ client, trips, invoices, settings, onClose
                     <input type="checkbox" checked={on} onChange={() => toggle(x.trip_id)} />
                     <span className="w-32 shrink-0 tabular-nums text-fg-muted">{whenK(startOf(x))}</span>
                     <span className="flex-1 min-w-0 truncate"><b>{t.rider_name ?? '—'}</b> · {shortAddress(t.pickup_address)} → {shortAddress(t.destination_address)}<span className="text-caption text-fg-muted"> · {t.driver_name ?? '—'}</span>{m && <span className="ml-1 text-caption text-attention">· {m}</span>}</span>
-                    <span className="tabular-nums font-medium">{Math.round(Number(t.total_fare ?? 0)).toLocaleString('en-US')}</span>
+                    <span className="tabular-nums font-medium text-right">{Math.round(fareOf(x)).toLocaleString('en-US')}{noWaiting && waitOf(x) > 0 && <span className="block text-caption text-fg-muted line-through">{Math.round(Number(t.total_fare ?? 0)).toLocaleString('en-US')}</span>}</span>
                   </label>
                 );
               })}
             </div>
           ) : <p className="text-small text-fg-muted rounded-md bg-inset px-3 py-2">No completed trip for this company in this period.</p>}
+        </section>
+
+        <section className="rounded-md border border-line-muted px-3 py-2.5 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <label className="flex items-center gap-2 text-small cursor-pointer">
+            <input type="checkbox" checked={noWaiting} onChange={(e) => setNoWaiting(e.target.checked)} />
+            Don't charge waiting time
+            <span className="text-caption text-fg-muted">{withWaiting ? `${withWaiting} trip${withWaiting === 1 ? '' : 's'} · ${rwf(chosen.reduce((s, x) => s + waitOf(x), 0))}` : 'no waiting in these trips'}</span>
+          </label>
+          <label className="flex items-center gap-2 text-small">
+            Discount
+            <input type="number" min={0} max={100} step={0.5} value={discount} onChange={(e) => setDiscount(e.target.value)} className="input !w-20 !py-1 text-small" placeholder="0" aria-label="Discount in percent" />
+            %{pct > 0 && <span className="text-caption text-fg-muted">− {rwf(Math.round((fares * pct) / 100))}</span>}
+          </label>
         </section>
 
         <label className="block"><span className="text-caption text-fg-muted">Note on the report (optional)</span><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input resize-none" placeholder="e.g. Report for the week so far, the invoice follows on Monday." /></label>

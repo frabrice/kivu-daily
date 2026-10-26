@@ -230,6 +230,8 @@ export interface ReportInput {
   preparedBy: string | null; notes: string | null;
   marks?: Map<number, string>;             // e.g. trip waiting for verification
   leftOutPaid?: number;                    // trips in the period already paid, not listed
+  waivedWaiting?: number;                  // waiting time taken off the fares (lines already without it)
+  discountPct?: number;                    // a discount on the total, e.g. 5
 }
 const dateTimeK = (iso: string) => `${dayLabel(kigaliDayOf(iso), true)}, ${timeK(iso)}`;
 
@@ -239,6 +241,11 @@ export async function reportPdfBlob(r: ReportInput): Promise<Blob> {
   const W = 515;
   const { days, dayRows } = daysOf(lines);
   const subtotal = lines.reduce((s, l) => s + Number(l.fare ?? 0), 0);
+  const waived = Math.round(r.waivedWaiting ?? 0);
+  const pct = Math.max(0, Math.min(100, r.discountPct ?? 0));
+  const discount = Math.round((subtotal * pct) / 100);
+  const total = subtotal - discount;
+  const pctText = `${Number.isInteger(pct) ? pct : pct.toFixed(1)}%`;
   const km = lines.reduce((s, l) => s + Number(l.km ?? 0), 0);
   const now = new Date().toISOString();
   const doc = {
@@ -277,7 +284,7 @@ export async function reportPdfBlob(r: ReportInput): Promise<Blob> {
             { stack: [label('Trips'), { text: String(lines.length), fontSize: 16, bold: true, color: NAVY }] },
             { stack: [label('Distance'), { text: `${km.toLocaleString('en-US', { maximumFractionDigits: 1 })} km`, fontSize: 16, bold: true, color: NAVY }] },
             { stack: [label('Days'), { text: String(days.size), fontSize: 16, bold: true, color: NAVY }] },
-            { stack: [label('Total so far'), { text: rwf(subtotal), fontSize: 16, bold: true, color: TEAL }, { text: 'Before VAT', fontSize: 7, color: MUTED }], fillColor: '#F0F7F6' },
+            { stack: [label('Total so far'), { text: rwf(total), fontSize: 16, bold: true, color: TEAL }, { text: ['Before VAT', waived ? 'waiting time not charged' : '', pct ? `${pctText} discount` : ''].filter(Boolean).join(' · '), fontSize: 7, color: MUTED }], fillColor: '#F0F7F6' },
           ]],
         },
         layout: { hLineWidth: () => 0, vLineWidth: () => 0, paddingLeft: () => 10, paddingRight: () => 10, paddingTop: () => 9, paddingBottom: () => 9, fillColor: () => ZEBRA },
@@ -294,10 +301,14 @@ export async function reportPdfBlob(r: ReportInput): Promise<Blob> {
           {
             width: 200,
             stack: [
-              { table: { widths: ['*', 'auto'], body: [kv('Subtotal (trip fares)', rwf(subtotal)), ...(r.leftOutPaid ? [kv(`Already paid (${r.leftOutPaid} trip${r.leftOutPaid === 1 ? '' : 's'})`, 'not listed')] : [])] }, layout: hairline },
+              { table: { widths: ['*', 'auto'], body: [
+                ...(waived ? [kv('Trip fares', rwf(subtotal + waived)), kv('Waiting time not charged', `− ${rwf(waived)}`)] : [kv('Subtotal (trip fares)', rwf(subtotal))]),
+                ...(pct ? [kv(`Discount ${pctText}`, `− ${rwf(discount)}`)] : []),
+                ...(r.leftOutPaid ? [kv(`Already paid (${r.leftOutPaid} trip${r.leftOutPaid === 1 ? '' : 's'})`, 'not listed')] : []),
+              ] }, layout: hairline },
               {
                 margin: [0, 6, 0, 0],
-                table: { widths: ['*', 'auto'], body: [[{ text: 'Total so far', bold: true, color: '#FFFFFF', fontSize: 10 }, { text: rwf(subtotal), bold: true, color: '#FFFFFF', fontSize: 12, alignment: 'right' }]] },
+                table: { widths: ['*', 'auto'], body: [[{ text: 'Total so far', bold: true, color: '#FFFFFF', fontSize: 10 }, { text: rwf(total), bold: true, color: '#FFFFFF', fontSize: 12, alignment: 'right' }]] },
                 layout: { hLineWidth: () => 0, vLineWidth: () => 0, fillColor: () => NAVY, paddingLeft: () => 10, paddingRight: () => 10, paddingTop: () => 8, paddingBottom: () => 8 },
               },
             ],
@@ -306,7 +317,7 @@ export async function reportPdfBlob(r: ReportInput): Promise<Blob> {
         columnGap: 24,
       },
       ...(r.notes ? [{ ...label('Notes'), margin: [0, 16, 0, 4] }, { text: r.notes, fontSize: 8.5 }] : []),
-      { text: `This report lists the trips so far for the period above. It is not an invoice: VAT is added on the invoice.${r.marks?.size ? ' Trips marked "to verify" are still being checked by Kivu Ride.' : ''}  Fares are the amounts calculated by the Kivu Ride app for each trip (distance, time, waiting and extras).`, fontSize: 7.5, color: MUTED, margin: [0, 20, 0, 0] },
+      { text: `This report lists the trips so far for the period above. It is not an invoice: VAT is added on the invoice.${r.marks?.size ? ' Trips marked "to verify" are still being checked by Kivu Ride.' : ''}  Fares are the amounts calculated by the Kivu Ride app for each trip (${waived ? 'distance, time and extras; waiting time is not charged' : 'distance, time, waiting and extras'}).${pct ? ` A ${pctText} discount is applied to the total.` : ''}`, fontSize: 7.5, color: MUTED, margin: [0, 20, 0, 0] },
     ],
   };
   return new Promise((resolve) => pdfMake.createPdf(doc).getBlob((b: Blob) => resolve(b)));
