@@ -27,7 +27,7 @@ export function useOnShift() {
   const load = useCallback(async () => {
     const [r, s, h, st] = await Promise.all([
       supabase.from('driver_shift_roster').select('*').order('starts_at'),
-      supabase.from('platform_driver_status').select('platform_driver_id, kivu_driver_id, freelancer_id, is_online, driver_status, logged_in, last_seen_at, last_location_at, status_since, app_version, vehicle_plate').or('kivu_driver_id.not.is.null,freelancer_id.not.is.null'),
+      supabase.from('platform_driver_status').select('platform_driver_id, kivu_driver_id, freelancer_id, is_online, driver_status, logged_in, last_seen_at, last_location_at, status_since, app_version, vehicle_plate, match_method, phone, full_name').or('kivu_driver_id.not.is.null,freelancer_id.not.is.null'),
       supabase.from('fleet_shift_hours').select('shift, starts, ends'),
       supabase.from('platform_sync_state').select('last_run_at, last_ok_at, last_error').eq('key', 'drivers').maybeSingle(),
     ]);

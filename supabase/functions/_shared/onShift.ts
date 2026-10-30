@@ -25,6 +25,7 @@ export interface Expected {
 export interface DriverState {
   platform_driver_id: number; kivu_driver_id: string | null; freelancer_id: string | null; is_online: boolean; driver_status: string | null;
   logged_in: boolean | null; last_seen_at: string | null; last_location_at: string | null; status_since: string; app_version: string | null; vehicle_plate: string | null;
+  match_method?: 'link' | 'phone' | 'plate_name' | null; phone?: string | null; full_name?: string | null;
 }
 export interface LogEntry { platform_driver_id: number; is_online: boolean; at: string }
 

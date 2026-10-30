@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Ban, Clock, Phone, Radio, RefreshCw, Settings2, Wifi, WifiOff, HelpCircle } from 'lucide-react';
+import { Ban, Clock, Link2, Phone, Radio, RefreshCw, Search, Settings2, Wifi, WifiOff, HelpCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { APP_STATUS, Presence, RosterRow, ShiftKey, needsCall, onlineMinutes, presenceOf, shiftLabelOf, stateOf, toExpected, useOnShift, OFFLINE_GRACE_MIN } from '../../lib/onShift';
 import { useAccess } from '../../os/access';
@@ -28,6 +28,9 @@ export default function OnShiftPage() {
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
   const canEditHours = a.isMd || a.dept === 'fleet';
+  // Linking a driver to their app account by hand: Fleet, IT and the MD.
+  const canLink = a.isMd || a.dept === 'fleet' || a.dept === 'it';
+  const [linking, setLinking] = useState<RosterRow | null>(null);
   const inFleet = a.in('fleet', 'it', 'finance');
 
   const rows = useMemo(() => {
@@ -87,7 +90,7 @@ export default function OnShiftPage() {
               <thead><tr className="text-caption text-fg-muted text-left bg-inset">
                 <th className="px-3 py-2">Driver</th><th className="px-3 py-2">Car · shift</th><th className="px-3 py-2">In the app</th><th className="px-3 py-2">Online this shift</th><th className="px-3 py-2">Last seen</th><th className="px-3 py-2" />
               </tr></thead>
-              <tbody>{driving.map((x) => <Row key={x.r.key} x={x} now={d.now} inFleet={inFleet} />)}</tbody>
+              <tbody>{driving.map((x) => <Row key={x.r.key} x={x} now={d.now} inFleet={inFleet} onLink={canLink ? () => setLinking(x.r) : undefined} />)}</tbody>
             </table>
           </div>
         ) : <EmptyState icon={Radio} title={view === 'now' ? 'Nobody should be driving right now' : 'Nobody on this shift'} body="Drivers appear here from their car, shift, rest day and approved days off, plus freelancers covering a seat." />}
@@ -112,15 +115,17 @@ export default function OnShiftPage() {
         "No sign of the app" = shown online, but the phone hasn't reached the app for 15+ minutes (phone off, no data).
         {missing.length > 0 && inFleet && <> To match someone not found, make their phone in <Link to="/fleet/drivers" className="link">Drivers</Link> the same as in the app.</>}
       </p>
+      {linking && <LinkModal row={linking} onClose={() => setLinking(null)} onLinked={async () => { setLinking(null); await refresh(); }} />}
       {editing && <HoursModal hours={d.hours} onClose={() => setEditing(false)} onSaved={async () => { setEditing(false); await refresh(); }} />}
     </div>
   );
 }
 
-function Row({ x, now, inFleet }: { x: { r: RosterRow; s: ReturnType<typeof stateOf>; p: { presence: Presence; minutes: number }; online: number; length: number; started: boolean; call: boolean }; now: number; inFleet: boolean }) {
+function Row({ x, now, inFleet, onLink }: { x: { r: RosterRow; s: ReturnType<typeof stateOf>; p: { presence: Presence; minutes: number }; online: number; length: number; started: boolean; call: boolean }; now: number; inFleet: boolean; onLink?: () => void }) {
   const { r, s, p } = x;
   const pct = x.length ? Math.min(100, Math.round((x.online / x.length) * 100)) : 0;
-  const chip = !x.started ? <Label tone="neutral">Starts {clock(Date.parse(r.starts_at))}</Label>
+  const chip = !s ? <Label tone="neutral" icon={HelpCircle}>Not found in the app</Label>
+    : !x.started ? <Label tone="neutral">Starts {clock(Date.parse(r.starts_at))}</Label>
     : p.presence === 'online' ? <Label tone="success" icon={Wifi}>{APP_STATUS[s?.driver_status ?? 'online'] ?? 'Online'}{p.minutes >= 1 ? ` · ${dur(p.minutes)}` : ''}</Label>
     : p.presence === 'stale' ? <Label tone="attention" icon={WifiOff}>No sign of the app for {dur(p.minutes)}</Label>
     : p.presence === 'offline' ? <Label tone={x.call ? 'danger' : 'attention'} icon={WifiOff}>Offline · {dur(p.minutes)}</Label>
@@ -132,7 +137,11 @@ function Row({ x, now, inFleet }: { x: { r: RosterRow; s: ReturnType<typeof stat
         {r.phone && <span className="block text-caption text-fg-muted tabular-nums">{r.phone}</span>}
       </td>
       <td className="px-3 py-2 whitespace-nowrap">{inFleet && r.vehicle_id ? <Link to={`/fleet/cars`} className="link">{r.plate ?? '—'}</Link> : r.plate ?? '—'}<span className="block text-caption text-fg-muted">{r.shift === 'day' ? 'Day' : 'Night'} {clock(Date.parse(r.starts_at))}–{clock(Date.parse(r.ends_at))}</span></td>
-      <td className="px-3 py-2">{chip}</td>
+      <td className="px-3 py-2">{chip}
+        {!s && onLink && <button onClick={onLink} className="ml-1.5 btn-ghost h-6 text-caption inline-flex items-center gap-1"><Link2 size={12} /> Link</button>}
+        {s?.match_method === 'plate_name' && <span className="block mt-0.5 text-caption text-attention" title={`Phone in the app: ${s.phone ?? '—'}`}>Found by car &amp; name — the phone differs from the app ({s.phone ?? '—'}){onLink && <button onClick={onLink} className="ml-1 link">Check</button>}</span>}
+        {s?.match_method === 'link' && <span className="block mt-0.5 text-caption text-fg-muted">Linked by hand{onLink && <> · <button onClick={onLink} className="link">change</button></>}</span>}
+      </td>
       <td className="px-3 py-2 w-48">{x.started && s ? (
         <div>
           <div className="h-1.5 rounded-full bg-inset overflow-hidden"><div className={`h-full rounded-full ${pct >= 90 ? 'bg-success' : pct >= 60 ? 'bg-attention' : 'bg-danger'}`} style={{ width: `${pct}%` }} /></div>
@@ -168,6 +177,80 @@ function HoursModal({ hours, onClose, onSaved }: { hours: ReturnType<typeof useO
         ))}
         {error && <p className="text-caption text-danger">{error}</p>}
         <div className="flex justify-end gap-2 pt-3 border-t border-line-muted"><button onClick={onClose} className="btn-ghost">Cancel</button><button onClick={save} className="btn-primary">Save</button></div>
+      </div>
+    </Modal>
+  );
+}
+
+// Link a driver (or freelancer) to their account in the Kivu Ride app, when
+// the phone doesn't match. Accounts on the same car, with the same name or
+// the same phone come first.
+interface Account { platform_driver_id: number; full_name: string | null; phone: string | null; vehicle_plate: string | null; is_online: boolean; driver_status: string | null; kivu_driver_id: string | null; freelancer_id: string | null; match_method: string | null }
+const words = (n: string | null | undefined) => new Set((n ?? '').toLowerCase().normalize('NFD').replace(/[^a-z\s]/g, ' ').split(/\s+/).filter((w) => w.length >= 3));
+const digits9 = (p: string | null | undefined) => (p ?? '').replace(/\D/g, '').slice(-9);
+const plateK = (p: string | null | undefined) => (p ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+function LinkModal({ row, onClose, onLinked }: { row: RosterRow; onClose: () => void; onLinked: () => void }) {
+  const [accounts, setAccounts] = useState<Account[] | null>(null);
+  const [current, setCurrent] = useState<number | null>(null);
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const who = row.driver_id ? { driver_id: row.driver_id } : { freelancer_id: row.freelancer_id };
+  useEffect(() => {
+    (async () => {
+      const [acc, link] = await Promise.all([
+        supabase.from('platform_driver_status').select('platform_driver_id, full_name, phone, vehicle_plate, is_online, driver_status, kivu_driver_id, freelancer_id, match_method').order('full_name'),
+        row.driver_id ? supabase.from('driver_app_links').select('platform_driver_id').eq('driver_id', row.driver_id).maybeSingle() : supabase.from('driver_app_links').select('platform_driver_id').eq('freelancer_id', row.freelancer_id ?? '').maybeSingle(),
+      ]);
+      setAccounts((acc.data as Account[]) ?? []);
+      setCurrent((link.data as { platform_driver_id: number } | null)?.platform_driver_id ?? null);
+    })();
+  }, [row.driver_id, row.freelancer_id]);
+  const mine = words(row.name);
+  const score = (x: Account) => (digits9(x.phone) && digits9(x.phone) === digits9(row.phone) ? 4 : 0) + (row.plate && plateK(x.vehicle_plate) === plateK(row.plate) ? 2 : 0) + 2 * [...words(x.full_name)].filter((w) => mine.has(w)).length;
+  const list = (accounts ?? [])
+    .filter((x) => { const n = q.trim().toLowerCase(); return n ? [x.full_name, x.phone, x.vehicle_plate].join(' ').toLowerCase().includes(n) : score(x) > 0; })
+    .sort((a, b) => score(b) - score(a) || Number(b.is_online) - Number(a.is_online) || (a.full_name ?? '').localeCompare(b.full_name ?? ''))
+    .slice(0, 30);
+  const link = async (x: Account) => {
+    setBusy(true); setError('');
+    // One link per person: replace any earlier one.
+    const del = row.driver_id ? await supabase.from('driver_app_links').delete().eq('driver_id', row.driver_id) : await supabase.from('driver_app_links').delete().eq('freelancer_id', row.freelancer_id ?? '');
+    const res = del.error ? del : await supabase.from('driver_app_links').insert({ ...who, platform_driver_id: x.platform_driver_id });
+    setBusy(false);
+    if (res.error) { setError(res.error.message); return; }
+    onLinked();
+  };
+  const unlink = async () => {
+    setBusy(true); setError('');
+    const res = row.driver_id ? await supabase.from('driver_app_links').delete().eq('driver_id', row.driver_id) : await supabase.from('driver_app_links').delete().eq('freelancer_id', row.freelancer_id ?? '');
+    setBusy(false);
+    if (res.error) { setError(res.error.message); return; }
+    onLinked();
+  };
+  return (
+    <Modal open onClose={onClose} title={`Link ${row.name} to the app`} subtitle={`Choose their account in the Kivu Ride app. Phone in Kivu Daily: ${row.phone ?? '—'} · car ${row.plate ?? '—'}.`} maxWidth="max-w-xl">
+      <div className="space-y-3">
+        <div className="relative"><Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-muted" /><input value={q} onChange={(e) => setQ(e.target.value)} className="input !pl-8" placeholder="Search the app: name, phone or plate" /></div>
+        {accounts === null ? <div className="h-24 skeleton rounded" /> : list.length ? (
+          <ul className="max-h-[340px] overflow-y-auto rounded-md border border-line-muted divide-y divide-line-muted">{list.map((x) => {
+            const taken = (x.kivu_driver_id && x.kivu_driver_id !== row.driver_id) || (x.freelancer_id && x.freelancer_id !== row.freelancer_id);
+            return (
+              <li key={x.platform_driver_id} className="flex items-center gap-3 px-3 py-2 text-small">
+                <span className="flex-1 min-w-0"><b>{x.full_name ?? '—'}</b> <span className="text-caption text-fg-muted">#{x.platform_driver_id}</span>
+                  <span className="block text-caption text-fg-muted">{x.phone ?? 'no phone'} · {x.vehicle_plate ?? 'no car'}{taken ? ' · linked to someone else in Kivu Daily' : ''}</span></span>
+                {x.is_online ? <Label tone="success" icon={Wifi}>{APP_STATUS[x.driver_status ?? 'online'] ?? 'Online'}</Label> : <Label tone="neutral">Offline</Label>}
+                {current === x.platform_driver_id ? <Label tone="accent">Linked</Label> : <button onClick={() => link(x)} disabled={busy} className="btn-secondary h-8 disabled:opacity-50"><Link2 size={13} /> Link</button>}
+              </li>
+            );
+          })}</ul>
+        ) : <p className="text-small text-fg-muted rounded-md bg-inset px-3 py-2">{q ? 'No account in the app matches.' : 'No account on the same car, with the same name or phone. Search by name, phone or plate.'}</p>}
+        {error && <p className="text-caption text-danger">{error}</p>}
+        <div className="flex justify-between gap-2 pt-3 border-t border-line-muted">
+          {current !== null ? <button onClick={unlink} disabled={busy} className="btn-ghost text-danger">Remove the link</button> : <span />}
+          <button onClick={onClose} className="btn-ghost">Close</button>
+        </div>
       </div>
     </Modal>
   );
