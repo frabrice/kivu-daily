@@ -11,7 +11,8 @@ import Modal from '../../components/Modal';
 // Ours On Shift: every one of our drivers (and freelancers) who should be
 // driving, and whether they are online in the Kivu Ride app. Fleet and the
 // Call Center check it all day; a driver offline during their shift gets
-// a call. Shown under Fleet and under Call Center.
+// a call. Shown under Call Center, and as the "On shift now" tab of Fleet ->
+// Under Management (embedded: no page header of its own).
 
 type View = 'now' | 'day' | 'night';
 const clock = (ms: number) => new Date(ms).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali', hour: '2-digit', minute: '2-digit' });
@@ -19,8 +20,8 @@ const dur = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)}
 const ago = (iso: string | null, now: number) => { if (!iso) return '—'; const m = Math.round((now - Date.parse(iso)) / 60000); return m < 1 ? 'just now' : `${dur(m)} ago`; };
 const ORDER: Record<Presence, number> = { offline: 0, stale: 1, not_in_app: 2, online: 3, blocked: 4 };
 
-export default function OnShiftPage() {
-  usePageTitle('Ours On Shift');
+export default function OnShiftPage({ embedded = false }: { embedded?: boolean }) {
+  usePageTitle(embedded ? 'Under Management' : 'Ours On Shift');
   const a = useAccess();
   const d = useOnShift();
   const [view, setView] = useState<View>('now');
@@ -61,13 +62,21 @@ export default function OnShiftPage() {
   if (d.loading) return <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-24 skeleton rounded-card" />)}</div>;
   return (
     <div className="animate-fade-in">
-      <PageHeader icon={Radio} title="Ours On Shift"
+      {embedded ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3 text-caption text-fg-muted">
+          <span className={late ? 'text-danger' : ''}>Online status checked {ago(lastOk, d.now)}{late ? ' — the check is late' : ' · every 2 minutes'}</span><span>{shiftLabelOf(d.hours, 'day')} · {shiftLabelOf(d.hours, 'night')}</span>
+          <span className="ml-auto flex gap-2">
+            {canEditHours && <button onClick={() => setEditing(true)} className="btn-ghost"><Settings2 size={14} /> Shift hours</button>}
+            <button onClick={refresh} disabled={busy} className="btn-secondary"><RefreshCw size={14} className={busy ? 'animate-spin' : ''} /> {busy ? 'Checking…' : 'Check now'}</button>
+          </span>
+        </div>
+      ) : <PageHeader icon={Radio} title="Ours On Shift"
         subtitle="Our drivers who should be driving, and whether they are online in the Kivu Ride app. Anyone offline during their shift gets a call."
         meta={<><span className={late ? 'text-danger' : ''}>App checked {ago(lastOk, d.now)}{late ? ' — the check is late' : ' · every 2 minutes'}</span><span>{shiftLabelOf(d.hours, 'day')} · {shiftLabelOf(d.hours, 'night')}</span></>}
         actions={<>
           {canEditHours && <button onClick={() => setEditing(true)} className="btn-ghost"><Settings2 size={14} /> Shift hours</button>}
           <button onClick={refresh} disabled={busy} className="btn-secondary"><RefreshCw size={14} className={busy ? 'animate-spin' : ''} /> {busy ? 'Checking…' : 'Check now'}</button>
-        </>} />
+        </>} />}
       {(error || d.sync?.last_error) && <p className="mb-3 text-caption text-danger bg-danger-muted rounded-md px-3 py-2">Couldn't read the app: {error || d.sync?.last_error}</p>}
 
       <UnderlineTabs<View> value={view} onChange={setView} tabs={[

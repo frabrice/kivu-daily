@@ -1,14 +1,16 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { computeDepositStanding } from "../_shared/depositRules.ts";
 import { DEFAULT_HOURS, RosterDriver, RosterFreelance, ShiftHours, ShiftKey, currentShiftDay, expectedFor, kigaliDay } from "../_shared/onShift.ts";
+import { driverMatcher, phoneKey, plateKey } from "../_shared/appMatch.ts";
 
 // Copies every platform driver's state in the Kivu Ride app (online or
 // not, status, logged in, last seen) into platform_driver_status, matched
 // to our drivers and freelancers (phone) and our cars (plate), and logs
 // each change online <-> offline in driver_online_log (see migration
 // 20261030100000). Runs every 2 minutes from pg_cron (x-cron-secret), or
-// on demand from "Ours On Shift" (Check now). Matching: a link made by
-// hand (driver_app_links), else the phone, else our car's plate + the name. The location itself is never
+// on demand from "Ours On Shift" (Check now). Matching (_shared/appMatch.ts):
+// a link made by hand, else the phone (main or second), else our car's
+// plate + the name. The location itself is never
 // stored, only when it was last updated.
 //
 // It then works out driver_shift_roster: who should be driving on the
@@ -33,22 +35,19 @@ const CAN_SEE = ["call_center", "fleet", "finance", "it"];
 const SEEN_STEP_MS = 5 * 60_000;
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-const phoneKey = (p: string | null | undefined) => (p ?? "").replace(/\D/g, "").slice(-9);
-const plateKey = (p: string | null | undefined) => (p ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-// Words of a name (3+ letters), to tell whether two names are the same person.
-const nameWords = (n: string | null | undefined) => new Set((n ?? "").toLowerCase().normalize("NFD").replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length >= 3));
-const sameName = (a: string | null | undefined, b: string | null | undefined) => { const x = nameWords(a); return [...nameWords(b)].some((w) => x.has(w)); };
 
 interface Upstream {
   id: number; full_name: string | null; phone: string | null; vehicle_plate: string | null;
   is_online: boolean | null; driver_status: string | null; is_currently_logged_in: boolean | null;
   session_last_seen_at: string | null; last_location_update: string | null; app_version: string | null; is_deleted: boolean | null;
+  is_approved: boolean | null; is_rejected: boolean | null; license_number: string | null;
 }
 interface Row {
   platform_driver_id: number; full_name: string | null; phone: string | null; vehicle_plate: string | null; is_online: boolean; driver_status: string | null;
   logged_in: boolean | null; last_seen_at: string | null; last_location_at: string | null; app_version: string | null;
   kivu_driver_id: string | null; freelancer_id: string | null; kivu_vehicle_id: string | null; status_since: string; synced_at: string;
   match_method: "link" | "phone" | "plate_name" | null;
+  is_approved: boolean | null; is_rejected: boolean | null; license_number: string | null;
 }
 
 async function api(path: string, attempt = 0): Promise<Record<string, unknown>> {
@@ -148,42 +147,24 @@ Deno.serve(async (req) => {
   const started = new Date().toISOString();
   await db.from("platform_sync_state").upsert({ key: "drivers", last_run_at: started });
   try {
-    const [listed, { data: ds }, { data: fs }, { data: vs }, { data: prevRows }, { data: links }] = await Promise.all([
+    const [listed, { data: ds }, { data: fs }, { data: vs }, { data: prevRows }, { data: links }, { data: rejects }] = await Promise.all([
       allDrivers(),
-      db.from("drivers").select("id, full_name, phone, contract_status, vehicle_id"),
+      db.from("drivers").select("id, full_name, phone, phone_alt, contract_status, vehicle_id"),
       db.from("freelance_drivers").select("id, full_name, phone"),
       db.from("vehicles").select("id, plate_number"),
       db.from("platform_driver_status").select("*"),
       db.from("driver_app_links").select("driver_id, freelancer_id, platform_driver_id"),
+      db.from("app_match_rejects").select("driver_id, platform_driver_id"),
     ]);
     const upstream = [...listed];
-    // Our drivers by phone: an active contract wins over an ended one.
-    const driver = new Map<string, string>();
-    for (const d of (ds ?? []).sort((a, b) => (a.contract_status === "active" ? 1 : 0) - (b.contract_status === "active" ? 1 : 0))) if (phoneKey(d.phone)) driver.set(phoneKey(d.phone), d.id);
-    const freelancer = new Map<string, string>((fs ?? []).filter((f) => phoneKey(f.phone)).map((f) => [phoneKey(f.phone), f.id]));
     const vehicle = new Map<string, string>((vs ?? []).map((v) => [plateKey(v.plate_number), v.id]));
     const prev = new Map<number, Row>(((prevRows ?? []) as Row[]).map((r) => [r.platform_driver_id, r]));
-    const linked = new Map<number, { driver_id: string | null; freelancer_id: string | null }>(((links ?? []) as { driver_id: string | null; freelancer_id: string | null; platform_driver_id: number }[]).map((l) => [l.platform_driver_id, l]));
-    const active = ((ds ?? []) as { id: string; full_name: string; phone: string | null; contract_status: string; vehicle_id: string | null }[]).filter((d) => d.contract_status === "active");
-    // Same car (plate) and a name that shares a word: one of our active drivers on that car.
-    const byPlateName = (u: Upstream) => {
-      const v = u.vehicle_plate ? vehicle.get(plateKey(u.vehicle_plate)) : null;
-      if (!v) return null;
-      const hits = active.filter((d) => d.vehicle_id === v && sameName(d.full_name, u.full_name));
-      return hits.length === 1 ? hits[0].id : null;
-    };
-    const matchOf = (u: Upstream): { kivu_driver_id: string | null; freelancer_id: string | null; match_method: Row["match_method"] } => {
-      const l = linked.get(u.id);
-      if (l) return { kivu_driver_id: l.driver_id, freelancer_id: l.freelancer_id, match_method: "link" };
-      const d = driver.get(phoneKey(u.phone)) ?? null, f = freelancer.get(phoneKey(u.phone)) ?? null;
-      if (d || f) return { kivu_driver_id: d, freelancer_id: f, match_method: "phone" };
-      const pn = byPlateName(u);
-      return pn ? { kivu_driver_id: pn, freelancer_id: null, match_method: "plate_name" } : { kivu_driver_id: null, freelancer_id: null, match_method: null };
-    };
+    const active = ((ds ?? []) as { id: string; phone: string | null; phone_alt: string | null; contract_status: string }[]).filter((d) => d.contract_status === "active");
+    const matchOf = driverMatcher({ drivers: ds ?? [], freelancers: fs ?? [], vehicles: vs ?? [], links: links ?? [], rejects: rejects ?? [] });
     // The list reorders while we page through it (drivers going online), so someone can be
     // skipped: search the app directly for any of our people not seen in this run.
     const seen = new Set(upstream.map((u) => matchOf(u)).flatMap((m) => [m.kivu_driver_id, m.freelancer_id]).filter(Boolean));
-    const missing = [...active.map((d) => ({ id: d.id, phone: d.phone })), ...((fs ?? []) as { id: string; phone: string | null }[])].filter((x) => !seen.has(x.id) && phoneKey(x.phone).length === 9);
+    const missing = [...active.flatMap((d) => [{ id: d.id, phone: d.phone }, { id: d.id, phone: d.phone_alt }]), ...((fs ?? []) as { id: string; phone: string | null }[])].filter((x) => !seen.has(x.id) && phoneKey(x.phone).length === 9);
     for (const x of missing.slice(0, 20)) {
       const body = await api(`/admin/drivers?search=${phoneKey(x.phone)}&limit=10`).catch(() => null);
       const items = ((body?.data as { items?: Upstream[] } | undefined)?.items ?? []);
@@ -199,6 +180,7 @@ Deno.serve(async (req) => {
       const row: Row = {
         platform_driver_id: u.id, full_name: u.full_name, phone: u.phone, vehicle_plate: u.vehicle_plate, is_online: online, driver_status: u.driver_status,
         logged_in: u.is_currently_logged_in, last_seen_at: u.session_last_seen_at, last_location_at: u.last_location_update, app_version: u.app_version,
+        is_approved: u.is_approved ?? null, is_rejected: u.is_rejected ?? null, license_number: u.license_number ?? null,
         ...matchOf(u),
         kivu_vehicle_id: (u.vehicle_plate && vehicle.get(plateKey(u.vehicle_plate))) || null,
         status_since: before && before.is_online === online ? before.status_since : started, synced_at: started,
@@ -208,6 +190,7 @@ Deno.serve(async (req) => {
       const changed = !before || before.is_online !== online || before.driver_status !== row.driver_status || before.logged_in !== row.logged_in
         || before.full_name !== row.full_name || before.phone !== row.phone || before.vehicle_plate !== row.vehicle_plate || before.app_version !== row.app_version
         || before.kivu_driver_id !== row.kivu_driver_id || before.freelancer_id !== row.freelancer_id || before.kivu_vehicle_id !== row.kivu_vehicle_id || (before.match_method ?? null) !== row.match_method
+        || (before.is_approved ?? null) !== row.is_approved || (before.is_rejected ?? null) !== row.is_rejected || (before.license_number ?? null) !== row.license_number
         || moved(row.last_seen_at, before.last_seen_at) || moved(row.last_location_at, before.last_location_at);
       if (changed) writes.push(row);
     }

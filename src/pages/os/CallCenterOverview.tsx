@@ -65,7 +65,7 @@ export default function CallCenterOverview() {
         <StatCard icon={Siren} label="Emergencies to acknowledge" value={emergencies.length} tone={emergencies.length ? 'danger' : undefined} sub="Waiting for the MD" />
       </StatGrid>
 
-      <OursOnShiftCard to={isCC ? '/call-center/on-shift' : '/fleet/on-shift'} />
+      <OursOnShiftCard to={isCC ? '/call-center/on-shift' : '/fleet/under-management?tab=now'} />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
         <Box title="On shift now" icon={UserCheck} padded={false}>
