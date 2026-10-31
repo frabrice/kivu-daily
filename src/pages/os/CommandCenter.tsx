@@ -122,7 +122,7 @@ export default function CommandCenter() {
       ) : <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{Array.from({ length: 8 }, (_, i) => <div key={i} className="h-24 skeleton rounded-card" />)}</div>}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Box title="Team today" icon={Users2} padded={false} className="xl:col-span-2" right={<Link to="/people" className="text-caption link">People</Link>}>
+        <Box title="Team today" icon={Users2} padded={false} className="xl:col-span-2" right={<Link to="/people/today" className="text-caption link">Everyone's tasks</Link>}>
           <ul className="divide-y divide-line-muted">
             {team.map((e) => (
               <li key={e.id} className="grid grid-cols-[minmax(120px,190px)_1fr_auto] items-center gap-3 px-4 py-2">
