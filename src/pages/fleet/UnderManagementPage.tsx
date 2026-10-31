@@ -6,6 +6,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { edgeFunctionError } from '../../lib/edgeFunctions';
 import { APP_STATUS, LogEntry, kigaliDay, onlineMinutes } from '../../lib/onShift';
+import { REST_DAYS } from '../../lib/fleet';
 import { useAccess } from '../../os/access';
 import { usePageTitle } from '../../os/workspace';
 import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, Tone, UnderlineTabs, fmtWhen } from '../../ui/kit';
@@ -39,12 +40,13 @@ interface Case {
   kd_value: string | null; app_value: string | null; details: Record<string, unknown>; status: 'open' | 'dismissed' | 'resolved'; first_seen_at: string; resolution: string | null;
 }
 interface LogRow { id: string; at: string; action: string; summary: string; ok: boolean; steps: { call: string; status: number; ok: boolean; message?: string }[]; who: { full_name: string } | null }
+interface AdminRequest { id: string; text: string; created_at: string; done_at: string | null }
 interface SyncState { last_run_at: string | null; last_ok_at: string | null; last_error: string | null }
 interface Dupe { id: number; full_name?: string; phone?: string | null; vehicle_plate?: string | null; plate?: string; make?: string | null; model?: string | null }
 interface Result { ok: boolean; error?: string; message?: string; duplicates?: Dupe[]; steps?: { call: string; status: number; ok: boolean; message?: string }[] }
 
 const MANAGED_STAGES = ['ready', 'active'];
-const KIND: Record<Company['kind'], string> = { managed: 'Owner: we manage its cars', operator: 'Runs its own drivers', ignore: 'Not a fleet (test)' };
+const KIND: Record<Company['kind'], string> = { managed: 'Owner: we manage its cars', operator: 'Runs its own drivers', ignore: 'Training or test (not managed)' };
 const CASE_GROUP: Record<string, 'drivers' | 'cars' | 'driving'> = {
   driver_not_in_app: 'drivers', phone_differs: 'drivers', name_differs: 'drivers', not_approved: 'drivers', driver_only_in_app: 'drivers', ended_still_in_app: 'drivers',
   car_not_in_app: 'cars', car_only_in_app: 'cars', car_wrong_owner: 'cars', not_on_car_in_app: 'driving', extra_on_car_in_app: 'driving',
@@ -64,12 +66,12 @@ let seq = 0;
 function useUnderManagement() {
   const [d, setD] = useState<{
     companies: Company[]; appCars: AppCar[]; accounts: Account[]; members: Map<number, number>; cars: KdCar[]; drivers: KdDriver[];
-    cases: Case[]; log: LogEntry[]; history: LogRow[]; sync: SyncState | null; owners: { id: string; full_name: string }[];
+    cases: Case[]; log: LogEntry[]; history: LogRow[]; sync: SyncState | null; owners: { id: string; full_name: string }[]; requests: AdminRequest[];
   } | null>(null);
   const [now, setNow] = useState(Date.now());
   const load = useCallback(async () => {
     const today = Date.parse(`${kigaliDay(Date.now())}T00:00:00+02:00`);
-    const [co, ac, acc, mem, cars, drv, cs, lg, hist, st, own] = await Promise.all([
+    const [co, ac, acc, mem, cars, drv, cs, lg, hist, st, own, req] = await Promise.all([
       supabase.from('platform_fleet_companies').select('id, name, fleet_code, driver_count, kind, owner_id, owner_confirmed').order('name'),
       supabase.from('platform_vehicles').select('id, plate, make, model, year, color, status, is_approved, fleet_company_id, current_driver_id, current_driver_name, roster, kivu_vehicle_id, match_method'),
       supabase.from('platform_driver_status').select('platform_driver_id, full_name, phone, vehicle_plate, is_online, driver_status, last_seen_at, kivu_driver_id, freelancer_id, match_method, is_approved, is_rejected'),
@@ -82,12 +84,14 @@ function useUnderManagement() {
       supabase.from('platform_sync_state').select('last_run_at, last_ok_at, last_error').eq('key', 'fleet').maybeSingle(),
       // Owners are Finance's: the MD sees their names, Fleet sees the company only.
       supabase.from('vehicle_owners').select('id, full_name').order('full_name'),
+      supabase.from('fleet_admin_requests').select('id, text, created_at, done_at').order('created_at'),
     ]);
     setD({
       companies: (co.data as Company[]) ?? [], appCars: (ac.data as AppCar[]) ?? [], accounts: (acc.data as Account[]) ?? [],
       members: new Map(((mem.data ?? []) as { platform_driver_id: number; fleet_company_id: number }[]).map((m) => [m.platform_driver_id, m.fleet_company_id])),
       cars: (cars.data as KdCar[]) ?? [], drivers: (drv.data as KdDriver[]) ?? [], cases: (cs.data as Case[]) ?? [], log: (lg.data as LogEntry[]) ?? [],
       history: (hist.data as unknown as LogRow[]) ?? [], sync: (st.data as SyncState | null) ?? null, owners: (own.data as { id: string; full_name: string }[]) ?? [],
+      requests: (req.data as AdminRequest[]) ?? [],
     });
     setNow(Date.now());
   }, []);
@@ -327,8 +331,26 @@ function ConfirmTab({ d, cases, canAct, car, clearCar, onDone }: { d: Data; case
   const list = scoped.filter((c) => (showDismissed ? c.status === 'dismissed' : c.status === 'open') && (group === 'all' || CASE_GROUP[c.kind] === group));
   const count = (g: string) => scoped.filter((c) => c.status === 'open' && (g === 'all' || CASE_GROUP[c.kind] === g)).length;
   const plateOf = car ? (car.startsWith('app:') ? d.appCars.find((x) => x.id === Number(car.slice(4)))?.plate : d.cars.find((x) => x.id === car)?.plate_number) : null;
+  const ended = cases.filter((c) => c.status === 'open' && c.kind === 'ended_still_in_app' && c.driver_id);
+  const removeAll = () => setModal(<ConfirmModal title={`Take ${ended.length} ended drivers out of the app`} app onClose={close}
+    body={<>Their contracts have ended: each one comes off any car and out of their fleet company in the Kivu Ride app, so they get no more requests. Their app accounts stay, and they stay in Kivu Daily with no car.<span className="block mt-1 text-fg-muted">{[...new Set(ended.map((c) => clean(d.drivers.find((x) => x.id === c.driver_id)?.full_name ?? '')))].join(', ')}</span></>}
+    onRun={async () => {
+      let last: Result = { ok: true, message: 'Done' };
+      const failed: string[] = [];
+      for (const id of [...new Set(ended.map((c) => c.driver_id as string))]) { const r = await run('offboard', { driver_id: id }); if (!r.ok) { failed.push(r.error ?? 'failed'); last = r; } }
+      const r: Result = failed.length ? { ...last, ok: false, error: `${failed.length} not done: ${failed.join(' · ')}` } : { ok: true, message: `${ended.length} ended drivers taken out of the app` };
+      await finish(r);
+      return r;
+    }} />);
   return (
     <>
+      <AdminRequestsBox d={d} canAct={canAct} onDone={onDone} />
+      {canAct && ended.length > 1 && !showDismissed && (
+        <div className="mb-3 rounded-card border border-line bg-surface px-4 py-3 flex flex-wrap items-center gap-2">
+          <span className="text-small flex-1 min-w-[220px]"><b>{ended.length}</b> drivers whose contract ended are still in a fleet company in the app, so they can still get requests.</span>
+          <button onClick={removeAll} className="btn-primary h-8 text-small"><UserMinus size={13} /> Take them all out of the app<span className="ml-1 text-[10px] uppercase tracking-wide opacity-70">changes the app</span></button>
+        </div>
+      )}
       {car && <p className="mb-3 text-small bg-inset rounded-md px-3 py-2 flex items-center gap-2">Showing {plateOf ?? 'one car'} only <button onClick={clearCar} className="link ml-auto">Show all</button></p>}
       <div className="flex flex-wrap items-center gap-2 mb-3">
         {([['all', 'All'], ['drivers', 'Drivers'], ['cars', 'Cars'], ['driving', 'Who drives which car']] as const).map(([g, l]) => (
@@ -386,6 +408,14 @@ function CaseCard({ c, d, canAct, open, finish, close }: { c: Case; d: Data; can
           {kdCar && <B app onClick={() => open(<CreateCarModal kdCar={kdCar} d={d} companyId={(det.company_id as number | null) ?? null} caseId={c.id} onClose={close} onDone={finish} />)}><Plus size={13} /> Add to the app</B>}
         </>;
         break;
+      case 'car_wrong_owner': {
+        const pid = appCar?.current_driver_id ?? null;
+        const known = pid ? d.accounts.find((x) => x.platform_driver_id === pid)?.kivu_driver_id : null;
+        actions = pid && !known
+          ? <B onClick={() => open(<AddToKdModal d={d} pid={pid} vehicleId={c.vehicle_id} caseId={null} onClose={close} onDone={finish} />)}><UserPlus size={13} /> Add {clean(appCar?.current_driver_name ?? 'the driver')} to Kivu Daily</B>
+          : null;
+        break;
+      }
       case 'car_only_in_app':
         actions = <B primary onClick={() => open(<PickKdCar d={d} appCar={appCar} onClose={close} onPick={async (vid) => { const r = await run('link_vehicle', { case_id: c.id, vehicle_id: vid, platform_vehicle_id: c.platform_vehicle_id }); await finish(r); return r; }} />)}><Link2 size={13} /> Link to a Kivu Daily car</B>;
         break;
@@ -396,17 +426,21 @@ function CaseCard({ c, d, canAct, open, finish, close }: { c: Case; d: Data; can
         actions = <>
           <B app onClick={() => open(<TakeOffModal c={c} appCar={appCar} kd={kd} onClose={close} onDone={finish} />)}><UserMinus size={13} /> Take off the car in the app</B>
           {!c.driver_id && <B onClick={() => open(<PickKdDriver d={d} pid={c.platform_driver_id!} onClose={close} onPick={async (did) => { const r = await run('link_driver', { case_id: c.id, driver_id: did, platform_driver_id: c.platform_driver_id }); await finish(r); return r; }} />)}><Link2 size={13} /> Link to a Kivu Daily driver</B>}
+          {!c.driver_id && <B onClick={() => open(<AddToKdModal d={d} pid={c.platform_driver_id!} vehicleId={c.vehicle_id} caseId={c.id} onClose={close} onDone={finish} />)}><UserPlus size={13} /> Add to Kivu Daily</B>}
         </>;
         break;
       case 'driver_only_in_app':
         actions = <>
+          <B primary onClick={() => open(<AddToKdModal d={d} pid={c.platform_driver_id!} vehicleId={null} caseId={c.id} onClose={close} onDone={finish} />)}><UserPlus size={13} /> Add to Kivu Daily</B>
           <B onClick={() => open(<PickKdDriver d={d} pid={c.platform_driver_id!} onClose={close} onPick={async (did) => { const r = await run('link_driver', { case_id: c.id, driver_id: did, platform_driver_id: c.platform_driver_id }); await finish(r); return r; }} />)}><Link2 size={13} /> Link to a Kivu Daily driver</B>
           <B app onClick={() => confirm(`Remove from ${String(det.company ?? 'the company')}`, <>App account #{c.platform_driver_id} leaves {String(det.company ?? 'the company')} in the app. Their account stays; they become a driver without a fleet.</>, 'remove_from_company', { case_id: c.id, platform_driver_id: c.platform_driver_id, fleet_company_id: det.company_id })}><UserMinus size={13} /> Remove from the company</B>
         </>;
         break;
       case 'ended_still_in_app': {
         const onCar = d.appCars.find((x) => x.current_driver_id === c.platform_driver_id || x.roster.some((r) => r.driver_id === c.platform_driver_id));
-        actions = onCar
+        actions = c.driver_id
+          ? <B primary app onClick={() => confirm('Take out of the app', <>{kd?.full_name}'s contract has ended: in the Kivu Ride app they come off {onCar ? onCar.plate : 'any car'} (refused while on a trip) and out of {String(det.company ?? 'the company')}, so they get no more requests. Their account stays, and they stay in Kivu Daily with no car.</>, 'offboard', { driver_id: c.driver_id })}><UserMinus size={13} /> Take out of the app</B>
+          : onCar
           ? <B app onClick={() => confirm(`Take off ${onCar.plate} and out of ${String(det.company ?? 'the company')}`, <>{kd?.full_name}'s contract has ended: they stop driving {onCar.plate} in the app (refused while on a trip), come off its roster and leave {String(det.company ?? 'the company')}. Their account stays.</>, 'take_off_car', { case_id: c.id, platform_driver_id: c.platform_driver_id, platform_vehicle_id: onCar.id, leave_company: true })}><UserMinus size={13} /> Take off the car and the company</B>
           : <B app onClick={() => confirm(`Remove from ${String(det.company ?? 'the company')}`, <>{kd?.full_name}'s contract has ended: they leave {String(det.company ?? 'the company')} in the app. Their account stays; they become a driver without a fleet.</>, 'remove_from_company', { case_id: c.id, platform_driver_id: c.platform_driver_id, fleet_company_id: det.company_id })}><UserMinus size={13} /> Remove from the company</B>;
         break;
@@ -414,7 +448,7 @@ function CaseCard({ c, d, canAct, open, finish, close }: { c: Case; d: Data; can
     }
   }
   const hint = c.kind === 'not_approved' ? 'Approval is done by KivuRide in their dashboard; this closes by itself once approved.'
-    : c.kind === 'car_wrong_owner' ? 'Moving a car to another company is done in the KivuRide dashboard (not open to our key). Or correct the owner in Kivu Daily.'
+    : c.kind === 'car_wrong_owner' ? 'Moving a car to another owner or company is done in the KivuRide admin dashboard (never open to API keys): put it on the "For the admin dashboard" list above. Or correct the owner in Kivu Daily.'
     : c.kind === 'not_on_car_in_app' && det.roster_full ? `The car already has 2 drivers in the app (${(det.roster as string[] | undefined)?.join(', ')}): take one off first.`
     : null;
   return (
@@ -718,8 +752,28 @@ function CompaniesTab({ d, canAct, onDone }: { d: Data; canAct: boolean; onDone:
   const save = async (id: number, patch: Record<string, unknown>) => { setBusy(id); setError(''); const r = await run('set_company', { id, ...patch }); setBusy(null); if (!r.ok) setError(r.error ?? 'Not saved'); await onDone({ ...r, message: r.ok ? 'Saved' : r.message }); };
   const cars = (id: number) => d.appCars.filter((x) => x.fleet_company_id === id && x.status !== 'decommissioned').length;
   const ownerName = new Map(d.owners.map((o) => [o.id, o.full_name]));
+  const [modal, setModal] = useState<ReactNode>(null);
+  // Owners of our cars with no company of theirs in the app yet.
+  const withCompany = new Set(d.companies.filter((c) => c.kind === 'managed' && c.owner_id).map((c) => c.owner_id));
+  const missing = [...new Set(d.cars.map((c) => c.owner_id).filter((x): x is string => !!x && !withCompany.has(x)))]
+    .map((id) => ({ id, name: ownerName.get(id) ?? null, plates: d.cars.filter((c) => c.owner_id === id).map((c) => c.plate_number) }));
+  const create = (o: (typeof missing)[number]) => setModal(<CreateCompanyModal owner={o} onClose={() => setModal(null)} onDone={async (r) => { if (r.ok) setModal(null); await onDone(r); }} />);
   return (
     <>
+      {missing.length > 0 && (
+        <Box title="Owners with no company in the app" icon={Building2} className="mb-3">
+          <div className="space-y-2">
+            {missing.map((o) => (
+              <div key={o.id} className="flex flex-wrap items-center gap-2 text-small">
+                <span className="flex-1 min-w-[220px]"><b>{o.name ?? 'Owner'}</b> <span className="text-fg-muted">· {o.plates.join(', ')}</span></span>
+                {canAct && <button onClick={() => create(o)} className="btn-primary h-8 text-small"><Plus size={13} /> Create their company in the app<span className="ml-1 text-[10px] uppercase tracking-wide opacity-70">changes the app</span></button>}
+              </div>
+            ))}
+          </div>
+          <p className="text-caption text-fg-muted mt-2">Their cars can then be added to the app under it, and their drivers put on them, from To confirm.</p>
+        </Box>
+      )}
+      {modal}
       <Box padded={false} className="mb-3">
         <div className="overflow-x-auto">
           <table className="w-full text-small min-w-[720px]">
@@ -741,7 +795,7 @@ function CompaniesTab({ d, canAct, onDone }: { d: Data; canAct: boolean; onDone:
         </div>
       </Box>
       {error && <p className="text-caption text-danger mb-2">{error}</p>}
-      <p className="text-caption text-fg-muted">Cars of companies marked "Owner: we manage its cars" are under management. "Runs its own drivers" (Secure) and "Not a fleet" are left out. The owner links a company to the car owner in Finance → Vehicle owners, so a car in the wrong company shows in To confirm.{!d.owners.length && ' Owner names are visible to the MD and Finance.'}</p>
+      <p className="text-caption text-fg-muted">Cars of companies marked "Owner: we manage its cars" are under management. "Runs its own drivers" (Secure) and "Training or test" are left out; a driver whose contract ended is still taken out of a training or test company. The owner links a company to the car owner in Finance → Vehicle owners, so a car in the wrong company shows in To confirm.{!d.owners.length && ' Owner names are visible to the MD and Finance.'}</p>
     </>
   );
 }
@@ -761,6 +815,104 @@ function HistoryTab({ rows }: { rows: LogRow[] }) {
           {openId === r.id && !!r.steps?.length && <ul className="mt-1.5 ml-6 space-y-0.5 text-caption text-fg-muted">{r.steps.map((s, i) => <li key={i}>{s.ok ? '✓' : '✗'} {s.call} · {s.status}{s.message ? ` — ${s.message}` : ''}</li>)}</ul>}
         </li>
       ))}</ul>
+    </Box>
+  );
+}
+
+// A driver who is only in the app becomes a Kivu Daily driver (linked to that account).
+function AddToKdModal({ d, pid, vehicleId, caseId, onClose, onDone }: { d: Data; pid: number; vehicleId: string | null; caseId: string | null; onClose: () => void; onDone: (r: Result) => Promise<void> }) {
+  const acc = d.accounts.find((x) => x.platform_driver_id === pid) ?? null;
+  const [car, setCar] = useState<string>(vehicleId ?? '');
+  const [shift, setShift] = useState('');
+  const [start, setStart] = useState(kigaliDay(Date.now()));
+  const [rest, setRest] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const save = async () => {
+    setBusy(true); setErr('');
+    const r = await run('add_to_kd', { case_id: caseId, platform_driver_id: pid, vehicle_id: car || null, shift: shift || null, start_date: car ? start : null, rest_day: rest || null });
+    setBusy(false);
+    if (r.ok) await onDone(r); else setErr(r.error ?? 'Not added');
+  };
+  const onCar = (id: string) => d.drivers.filter((x) => x.vehicle_id === id && x.contract_status === 'active').map((x) => `${clean(x.full_name)} (${shiftOf(x.shift)})`).join(', ');
+  return (
+    <Modal open onClose={onClose} title={`Add ${clean(acc?.full_name ?? `app account #${pid}`)} to Kivu Daily`} subtitle="Name, phone and licence come from the app; Kivu Daily links them to this app account." maxWidth="max-w-lg">
+      <div className="space-y-3 text-small">
+        <p className="rounded-md bg-inset px-3 py-2">{clean(acc?.full_name ?? '—')} · {acc?.phone ?? 'no phone'}{acc?.vehicle_plate ? ` · drives ${acc.vehicle_plate} in the app` : ''}</p>
+        <label className="block"><span className="text-caption text-fg-muted">Car in Kivu Daily</span>
+          <select value={car} onChange={(e) => setCar(e.target.value)} className="input">
+            <option value="">No car yet (stays in the pipeline as raw)</option>
+            {d.cars.map((c) => <option key={c.id} value={c.id}>{c.plate_number}{onCar(c.id) ? ` · ${onCar(c.id)}` : ' · no driver'}</option>)}
+          </select></label>
+        {car && (
+          <div className="grid sm:grid-cols-3 gap-3">
+            <label className="block"><span className="text-caption text-fg-muted">Shift</span>
+              <select value={shift} onChange={(e) => setShift(e.target.value)} className="input"><option value="">Choose…</option><option value="day">Day</option><option value="night">Night</option><option value="full">Day & night</option></select></label>
+            <label className="block"><span className="text-caption text-fg-muted">Start date (payments count from it)</span><input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="input" /></label>
+            <label className="block"><span className="text-caption text-fg-muted">Rest day</span>
+              <select value={rest} onChange={(e) => setRest(e.target.value)} className="input"><option value="">Choose…</option>{REST_DAYS.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}</select></label>
+          </div>
+        )}
+        {car && <p className="text-caption text-attention">From the start date the driver owes 30,000 a working day (60,000 on day & night), like every driver on a car.</p>}
+        {err && <p className="text-caption text-danger">{err}</p>}
+        <div className="flex justify-end gap-2 pt-3 border-t border-line-muted"><button onClick={onClose} className="btn-ghost">Cancel</button>
+          <button onClick={save} disabled={busy || (!!car && (!shift || !rest || !start))} className="btn-primary disabled:opacity-50">{busy ? 'Adding…' : 'Add to Kivu Daily'}</button></div>
+      </div>
+    </Modal>
+  );
+}
+
+// The owner's fleet company in the app, from the owner's name, email and phone in Kivu Daily.
+function CreateCompanyModal({ owner, onClose, onDone }: { owner: { id: string; name: string | null; plates: string[] }; onClose: () => void; onDone: (r: Result) => Promise<void> }) {
+  const [address, setAddress] = useState('Kigali');
+  const [busy, setBusy] = useState(false);
+  const [r, setR] = useState<Result | null>(null);
+  const go = async () => { setBusy(true); const x = await run('create_company', { owner_id: owner.id, address }); setBusy(false); setR(x); if (x.ok) await onDone(x); };
+  return (
+    <Modal open onClose={onClose} title={`Create ${owner.name ?? 'the owner'}'s company in the app`} subtitle={`For ${owner.plates.join(', ')}`} maxWidth="max-w-md">
+      <div className="space-y-3 text-small">
+        <p>The company is named after the owner and uses the owner's <b>email and phone from Kivu Daily</b> (Finance → Vehicle owners). It is linked to the owner here, so their cars count as under management.</p>
+        <label className="block"><span className="text-caption text-fg-muted">Address</span><input value={address} onChange={(e) => setAddress(e.target.value)} className="input" /></label>
+        {r && !r.ok && <p className="text-caption text-danger">{r.error}</p>}
+        <Steps r={r} />
+        <p className="text-caption text-attention flex items-center gap-1.5"><AlertTriangle size={13} /> This creates a fleet company in the Kivu Ride app.</p>
+        <div className="flex justify-end gap-2 pt-3 border-t border-line-muted"><button onClick={onClose} className="btn-ghost">Cancel</button><button onClick={go} disabled={busy} className="btn-primary disabled:opacity-50">{busy ? 'Creating…' : 'Create the company'}</button></div>
+      </div>
+    </Modal>
+  );
+}
+
+// Changes only the KivuRide admin dashboard can make (API keys never may):
+// a list for Baptiste / an admin, ticked when done.
+function AdminRequestsBox({ d, canAct, onDone }: { d: Data; canAct: boolean; onDone: (r: Result) => Promise<void> }) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const open = d.requests.filter((x) => !x.done_at);
+  const done = d.requests.filter((x) => x.done_at).slice(-3);
+  if (!open.length && !canAct) return null;
+  const add = async () => { setBusy(true); const { error } = await supabase.from('fleet_admin_requests').insert({ text: text.trim() }); setBusy(false); if (!error) setText(''); await onDone(error ? { ok: false, error: error.message } : { ok: true, message: 'Added to the list' }); };
+  const tick = async (id: string) => { const { error } = await supabase.from('fleet_admin_requests').update({ done_at: new Date().toISOString(), done_by: (await supabase.auth.getUser()).data.user?.id }).eq('id', id); await onDone(error ? { ok: false, error: error.message } : { ok: true, message: 'Marked done' }); };
+  const copy = async () => { try { await navigator.clipboard.writeText(`Kivu Ride app changes for the admin dashboard:\n${open.map((x, i) => `${i + 1}. ${x.text}`).join('\n')}`); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ } };
+  return (
+    <Box title={`For the admin dashboard${open.length ? ` · ${open.length}` : ''}`} icon={ListChecks} className="mb-3"
+      right={open.length ? <button onClick={copy} className="btn-ghost text-caption">{copied ? 'Copied' : 'Copy for Baptiste'}</button> : undefined}>
+      <p className="text-caption text-fg-muted mb-2">Moving a car to another owner or company and decommissioning a car are never open to API keys: Baptiste or an admin does them in the KivuRide dashboard. Tick each one when it is done; the next sync shows the result.</p>
+      {open.length === 0 ? <p className="text-small text-fg-muted">Nothing waiting.</p> : (
+        <ul className="space-y-1.5">{open.map((x) => (
+          <li key={x.id} className="flex items-start gap-2 text-small">
+            {canAct && <button onClick={() => tick(x.id)} className="btn-ghost h-7 px-2 text-caption shrink-0 inline-flex items-center gap-1 whitespace-nowrap" title="Mark done"><CheckCircle2 size={13} /> Done</button>}
+            <span className="pt-1">{x.text}</span>
+          </li>
+        ))}</ul>
+      )}
+      {done.length > 0 && <p className="text-caption text-fg-subtle mt-2">Done lately: {done.map((x) => x.text).join(' · ')}</p>}
+      {canAct && (
+        <div className="flex gap-2 mt-2">
+          <input value={text} onChange={(e) => setText(e.target.value)} className="input flex-1" placeholder="e.g. Move RAX 123 A into NAYA SOLUTIONS LTD" />
+          <button onClick={add} disabled={busy || text.trim().length < 4} className="btn-secondary h-9 text-small disabled:opacity-50"><Plus size={13} /> Add</button>
+        </div>
+      )}
     </Box>
   );
 }

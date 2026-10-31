@@ -81,7 +81,7 @@ interface AppVehicle {
   insurance_expiry: string | null; registration_expiry: string | null;
   active_assignment: { driver_id: number; driver_name: string | null; driver_phone: string | null; assigned_at: string | null } | null;
 }
-interface AppDriver { id: number; full_name: string | null; phone: string | null; vehicle_plate: string | null; is_approved: boolean | null; is_rejected: boolean | null; is_deleted: boolean | null; license_number: string | null; is_online: boolean | null }
+interface AppDriver { id: number; full_name: string | null; phone: string | null; email?: string | null; vehicle_plate: string | null; is_approved: boolean | null; is_rejected: boolean | null; is_deleted: boolean | null; license_number: string | null; license_expiry?: string | null; is_online: boolean | null }
 interface RosterEntry { driver_id: number; name: string | null; phone: string | null; label: string | null }
 
 async function pagedDrivers(query: string): Promise<AppDriver[]> {
@@ -284,14 +284,17 @@ async function sync(db: Any) {
     if (c.current_driver_id) onManagedCar.add(c.current_driver_id);
     if (!c.kivu_vehicle_id) cases.push({ key: `car_app_only:${c.id}`, kind: "car_only_in_app", title: `${c.plate} is in the app only`, platform_vehicle_id: c.id, app_value: `${c.plate} · ${[c.make, c.model].filter(Boolean).join(" ")} · ${companyName(c.fleet_company_id)}`, details: { now_driving: c.current_driver_name, company: companyName(c.fleet_company_id) } });
   }
+  // A driver whose contract ended must leave any fleet company (training
+  // and test too: still in one, they get requests), except the operator's.
   for (const [pid, cid] of app.memberOf) {
-    if (!managed(cid)) continue;
+    const kindOf = company.get(cid)?.kind;
+    if (!kindOf || kindOf === "operator") continue;
     const a = app.drivers.get(pid);
     if (!a || a.is_deleted) continue;
     const m = matched.get(pid);
     if (m?.freelancer_id) continue;
     const kd = m?.kivu_driver_id ? kdDriver.get(m.kivu_driver_id) : null;
-    if (!kd && !onManagedCar.has(pid)) cases.push({ key: `drv_app_only:${pid}`, kind: "driver_only_in_app", title: `${nm(a)} is in ${companyName(cid)} in the app, not in Kivu Daily`, platform_driver_id: pid, app_value: [a.phone, a.vehicle_plate].filter(Boolean).join(" · "), details: { company_id: cid, company: companyName(cid) } });
+    if (managed(cid) && !kd && !onManagedCar.has(pid)) cases.push({ key: `drv_app_only:${pid}`, kind: "driver_only_in_app", title: `${nm(a)} is in ${companyName(cid)} in the app, not in Kivu Daily`, platform_driver_id: pid, app_value: [a.phone, a.vehicle_plate].filter(Boolean).join(" · "), details: { company_id: cid, company: companyName(cid) } });
     if (kd && kd.contract_status === "ended") cases.push({ key: `drv_ended:${pid}`, kind: "ended_still_in_app", title: `${nm(kd)}: contract ended, still in ${companyName(cid)} in the app`, driver_id: kd.id, platform_driver_id: pid, kd_value: "Contract ended", app_value: `In ${companyName(cid)}${a.vehicle_plate ? ` · drives ${a.vehicle_plate}` : ""}`, details: { company_id: cid, company: companyName(cid), on_car: onManagedCar.has(pid) } });
   }
 
@@ -566,6 +569,88 @@ async function act(db: Any, actor: string | null, body: Any) {
       need(await call("DELETE", `/v2/fleet/companies/${cid}/drivers/${pid}`, undefined, `Leave company #${cid}`), "Removing from the company");
       await closeCase(body.case_id, `Removed from company #${cid} in the app`);
       summary = `Driver #${pid} removed from company #${cid} in the app (the account stays)`;
+      break;
+    }
+    case "create_company": {
+      // The owner's fleet company in the app, from the owner's details in Kivu Daily.
+      writes();
+      const { data: o } = await db.from("vehicle_owners").select("id, full_name, email, phone").eq("id", body.owner_id).maybeSingle();
+      if (!o) throw new Stop("This owner is not in Kivu Daily.");
+      const name = String(body.name ?? o.full_name ?? "").replace(/\s+/g, " ").trim();
+      const email = String(body.contact_email ?? o.email ?? "").trim();
+      const phone = localPhone(String(body.contact_phone ?? o.phone ?? ""));
+      const address = String(body.address ?? "Kigali").trim() || "Kigali";
+      if (name.length < 3) throw new Stop("The company needs a name.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Stop("The company needs a valid email (the owner's email in Kivu Daily is missing or wrong).");
+      if (!phone) throw new Stop("The company needs a Rwanda phone number (the owner's phone in Kivu Daily is missing or wrong).");
+      const { data: has } = await db.from("platform_fleet_companies").select("id, name").eq("owner_id", o.id).eq("kind", "managed").maybeSingle();
+      if (has) throw new Stop(`${o.full_name} already has a company in the app: ${has.name} (#${has.id}).`);
+      const sameName = (c: AppCompany) => c.name.replace(/\s+/g, " ").trim().toLowerCase() === name.toLowerCase();
+      const list = (need(await call("GET", "/v2/fleet/companies?limit=100", undefined, "List the app's companies"), "Reading the companies").body?.data?.items ?? []) as AppCompany[];
+      const same = list.find(sameName);
+      if (same) throw new Stop(`A company named "${same.name}" (#${same.id}) is already in the app: choose it as ${o.full_name}'s company in Fleet companies instead.`);
+      const made = need(await call("POST", "/v2/fleet/companies", { name, contact_email: email, contact_phone: phone, address }, `Create the company "${name}"`), "Creating the company").body?.data as AppCompany | undefined;
+      const id = made?.id ?? ((need(await call("GET", "/v2/fleet/companies?limit=100", undefined, "Find the new company"), "Reading the companies").body?.data?.items ?? []) as AppCompany[]).find(sameName)?.id;
+      if (!id) throw new Stop("Created, but the new company was not found: it shows after the next sync.");
+      await db.from("platform_fleet_companies").upsert({ id, name, fleet_code: made?.fleet_code ?? null, status: made?.status ?? null, driver_count: 0, kind: "managed", owner_id: o.id, owner_confirmed: true, synced_at: new Date().toISOString() });
+      result = { fleet_company_id: id };
+      summary = `Company "${name}" (#${id}) created in the app for ${o.full_name}`;
+      break;
+    }
+    case "add_to_kd": {
+      // A driver who is in the app only becomes a Kivu Daily driver, linked to that account.
+      const pid = n(body.platform_driver_id);
+      const ad = await appDriver(pid);
+      const { data: linkedTo } = await db.from("driver_app_links").select("driver_id").eq("platform_driver_id", pid).maybeSingle();
+      if (linkedTo?.driver_id) throw new Stop("This app account is already linked to a driver in Kivu Daily.");
+      const { data: all } = await db.from("drivers").select("id, full_name, phone, phone_alt");
+      const same = ((all ?? []) as Any[]).find((d) => [d.phone, d.phone_alt].some((x) => phoneKey(x) && phoneKey(x) === phoneKey(ad.phone)));
+      if (same) throw new Stop(`${same.full_name} in Kivu Daily has this phone: link them instead of adding a new driver.`);
+      const shift = ["day", "night", "full"].includes(body.shift) ? body.shift : null;
+      const rest = typeof body.rest_day === "string" && body.rest_day ? body.rest_day : null;
+      const start = /^\d{4}-\d{2}-\d{2}$/.test(String(body.start_date ?? "")) ? body.start_date : null;
+      const vehicleId = body.vehicle_id || null;
+      if (vehicleId && (!shift || !start || !rest)) throw new Stop("A driver on a car needs the shift, the start date and the rest day.");
+      const { data: made, error } = await db.from("drivers").insert({
+        full_name: nmTrim(ad.full_name), phone: localPhone(ad.phone) ?? ad.phone, email: ad.email || null, license_number: ad.license_number ?? null,
+        license_expiry: ad.license_expiry ? String(ad.license_expiry).slice(0, 10) : null, stage: vehicleId ? "ready" : "raw", contract_status: "active",
+        vehicle_id: vehicleId, shift, start_date: start, rest_day: rest, initial_deposit_paid: false, created_by: actor,
+        notes: `Added from the Kivu Ride app (account #${pid}) on Under Management.`,
+      }).select("id, full_name").single();
+      if (error) throw new Stop(error.message);
+      await linkDriver(made.id, pid);
+      await closeCase(body.case_id, "Added to Kivu Daily");
+      result = { driver_id: made.id };
+      summary = `${made.full_name} added to Kivu Daily from app account #${pid}`;
+      break;
+    }
+    case "offboard": {
+      // Contract ended: off every car and out of the fleet company in the app.
+      // The account stays, and the driver stays in Kivu Daily with no car.
+      writes();
+      const d = await driverOf(body.driver_id);
+      const { data: st } = await db.from("platform_driver_status").select("platform_driver_id").eq("kivu_driver_id", d.id);
+      const { data: ln } = await db.from("driver_app_links").select("platform_driver_id").eq("driver_id", d.id);
+      const pids = [...new Set([...((st ?? []) as Any[]), ...((ln ?? []) as Any[])].map((x) => Number(x.platform_driver_id)).filter(Boolean))];
+      if (!pids.length) { summary = `${nmTrim(d.full_name)}: no app account, nothing to remove`; break; }
+      const { data: cars } = await db.from("platform_vehicles").select("id, plate, current_driver_id, roster");
+      const { data: mem } = await db.from("platform_fleet_members").select("platform_driver_id, fleet_company_id").in("platform_driver_id", pids);
+      const { data: kinds } = await db.from("platform_fleet_companies").select("id, kind");
+      const kindOf = new Map(((kinds ?? []) as Any[]).map((c) => [c.id, c.kind]));
+      const done: string[] = [];
+      for (const pid of pids) {
+        for (const c of (cars ?? []) as Any[]) {
+          if (c.current_driver_id === pid) { need(await call("POST", `/v2/admin/vehicles/${c.id}/unassign`, undefined, `Stop driving ${c.plate}`), "Taking them off the car (refused during a trip)"); done.push(`off ${c.plate}`); }
+          if (((c.roster ?? []) as RosterEntry[]).some((r) => r.driver_id === pid)) { need(await call("DELETE", `/v2/admin/vehicles/${c.id}/dedicated-drivers/${pid}`, undefined, `Remove from ${c.plate}'s roster`), "Removing from the roster"); done.push(`off ${c.plate}'s roster`); }
+        }
+        for (const m of ((mem ?? []) as Any[]).filter((x) => x.platform_driver_id === pid)) {
+          if (kindOf.get(m.fleet_company_id) === "operator") continue;
+          need(await call("DELETE", `/v2/fleet/companies/${m.fleet_company_id}/drivers/${pid}`, undefined, `Leave company #${m.fleet_company_id}`), "Removing from the company");
+          done.push(`out of company #${m.fleet_company_id}`);
+        }
+      }
+      await db.from("fleet_sync_cases").update({ status: "resolved", resolved_by: actor, resolved_at: new Date().toISOString(), resolution: "Contract ended: removed in the app" }).eq("kind", "ended_still_in_app").eq("driver_id", d.id).eq("status", "open");
+      summary = `${nmTrim(d.full_name)} (contract ended): ${done.length ? done.join(", ") : "nothing to remove"} in the app`;
       break;
     }
     default:

@@ -54,6 +54,10 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
     });
     setSaving(false);
     if (err) { setError(err.message); return; }
+    // Also out of the Kivu Ride app: off the car and out of the fleet company,
+    // so no more requests. If it fails (or the person isn't Fleet/MD), it
+    // stays on Under Management > To confirm for Fleet.
+    supabase.functions.invoke('fleet-sync', { body: { action: 'offboard', driver_id: driver.id } }).catch(() => null);
     onSaved();
     onClose();
   };
@@ -124,7 +128,7 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
           </div>
           {money}
           <p className="text-small">Termination letter: <b>{letter.file?.name}</b></p>
-          <p className="text-caption text-fg-muted">They move to Inactive and their seat on {driver.vehicle?.plate_number ?? 'their car'} becomes free for another driver. The contract can be renewed later from their page.</p>
+          <p className="text-caption text-fg-muted">They move to Inactive and their seat on {driver.vehicle?.plate_number ?? 'their car'} becomes free for another driver. In the Kivu Ride app they are taken off the car and out of the fleet company (their account stays, so they get no requests). The contract can be renewed later from their page.</p>
           {error && <div className="text-caption text-danger bg-danger-muted rounded-md px-3 py-2">{error}</div>}
           <div className="flex justify-end gap-2 pt-3 border-t border-line-muted">
             <button onClick={() => setConfirming(false)} disabled={saving} className="btn-ghost">Back</button>
