@@ -11,7 +11,7 @@ import { CallCenterShift, durationLabel, SLOT_LABEL, ShiftSlot } from '../../lib
 import { fmtRwf, kTime, localPhone } from '../../lib/dispatch';
 import {
   AgentRow, Booking, BookingStats, Outcome, OUTCOME_LABEL, OUTCOME_SHORT, ReportData, SOURCE_LABEL, addDays, agentRows, bookingStats, carRate, dayOf, daysBetween,
-  fmtWait, hourOf, inShift, loadReport, shiftStats, todayK, wrongSlot,
+  FIRST_DAY, fmtWait, hourOf, inShift, loadReport, shiftStats, todayK, wrongSlot,
 } from '../../lib/ccReports';
 import { ChartCard, DailyBars, DailyLines, Delta, Empty, Kpi, MiniTable, RankBars, STATUS, dayList, longDay, usePalette } from '../../components/charts/kit';
 import { Label, PageHeader, UnderlineTabs } from '../../ui/kit';
@@ -54,8 +54,10 @@ export default function ReportsPage() {
   }, { replace: true });
 
   // This period and the one just before it, for the comparisons.
+  // All time has no period before it.
+  const allTime = from <= FIRST_DAY;
   const len = daysBetween(from, to);
-  const prevFrom = addDays(from, -len);
+  const prevFrom = allTime ? from : addDays(from, -len);
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [reload, setReload] = useState(0);
@@ -81,7 +83,7 @@ export default function ReportsPage() {
   const nameOf = (id: string | null) => (id ? people.find((p) => p.id === id)?.full_name ?? '—' : '—');
   const agents = people.filter((p) => p.dept === 'call_center' || (data?.shifts ?? []).some((s) => s.agent_id === p.id))
     .sort((x, y) => Number(y.is_active) - Number(x.is_active) || x.full_name.localeCompare(y.full_name));
-  const quick: [string, string, string][] = [['Today', today, today], ['Yesterday', addDays(today, -1), addDays(today, -1)], ['Last 7 days', addDays(today, -6), today], ['This month', `${today.slice(0, 8)}01`, today]];
+  const quick: [string, string, string][] = [['Today', today, today], ['Yesterday', addDays(today, -1), addDays(today, -1)], ['Last 7 days', addDays(today, -6), today], ['This month', `${today.slice(0, 8)}01`, today], ['All time', FIRST_DAY, today]];
   const tabs = [
     { key: 'overview' as Tab, label: 'Overview', icon: BarChart3 },
     ...(a.isMd ? [{ key: 'agents' as Tab, label: 'Agents', icon: Users }] : []),
@@ -102,7 +104,7 @@ export default function ReportsPage() {
           ))}
           <span className="flex items-center gap-1.5 sm:ml-auto flex-wrap">
             <CalendarDays size={14} className="text-fg-subtle" />
-            <input type="date" className="input !w-auto py-1" value={from} max={today} aria-label="From" onChange={(e) => e.target.value && setQ({ from: e.target.value, to: e.target.value > to ? e.target.value : to })} />
+            <input type="date" className="input !w-auto py-1" value={from} min={FIRST_DAY} max={today} aria-label="From" onChange={(e) => e.target.value && setQ({ from: e.target.value, to: e.target.value > to ? e.target.value : to })} />
             <span className="text-fg-subtle">to</span>
             <input type="date" className="input !w-auto py-1" value={to} min={from} max={today} aria-label="To" onChange={(e) => e.target.value && setQ({ to: e.target.value })} />
           </span>

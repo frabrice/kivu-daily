@@ -44,6 +44,8 @@ interface TripRow {
 const APP_METHODS = ['app', 'auto', 'passenger_triggered'];
 const TRIP_COLS = 'id, status, requested_at, created_at, accepted_at, dispatch_method, dispatched_by_admin_id, rejected_driver_count, rider_name, rider_phone, pickup_address, destination_address, driver_name, vehicle_plate, total_fare, vehicle_type';
 
+// The first trip on the platform: "All time" starts here.
+export const FIRST_DAY = '2026-05-31';
 export const todayK = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
 export const addDays = (day: string, n: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 export const dayStart = (day: string) => `${day}T00:00:00+02:00`;
@@ -64,6 +66,17 @@ const secsBetween = (a: string | null, b: string | null) => { if (!a || !b) retu
 
 export interface ReportData { people: Person[]; accounts: AdminAccount[]; shifts: CallCenterShift[]; bookings: Booking[] }
 
+// The server returns at most 1000 rows a request: read page after page.
+async function all<T>(page: (lo: number, hi: number) => PromiseLike<{ data: T[] | null }>): Promise<{ data: T[] }> {
+  const out: T[] = [];
+  for (let lo = 0; lo < 50_000; lo += 1000) {
+    const { data } = await page(lo, lo + 999);
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  return { data: out };
+}
+
 // Everything from `from` to `to` (Kigali days). Shifts start one day early:
 // a night shift that began the evening before covers the first hours.
 export async function loadReport(from: string, to: string): Promise<ReportData> {
@@ -71,9 +84,9 @@ export async function loadReport(from: string, to: string): Promise<ReportData> 
   const [p, a, s, t, d] = await Promise.all([
     supabase.from('profiles').select('id, full_name, is_active, department:departments(slug)'),
     supabase.from('kivuride_admin_accounts').select('admin_id, profile_id, kind, note'),
-    supabase.from('call_center_shifts').select('*').gte('started_at', dayStart(addDays(from, -1))).lt('started_at', end).order('started_at').limit(5000),
-    supabase.from('platform_trips').select(TRIP_COLS).gte('requested_at', start).lt('requested_at', end).in('dispatch_method', [...APP_METHODS, 'manual']).limit(10000),
-    supabase.from('dispatches').select('*').eq('sandbox', false).gte('created_at', start).lt('created_at', end).limit(5000),
+    all((lo, hi) => supabase.from('call_center_shifts').select('*').gte('started_at', dayStart(addDays(from, -1))).lt('started_at', end).order('started_at').order('id').range(lo, hi)),
+    all((lo, hi) => supabase.from('platform_trips').select(TRIP_COLS).gte('requested_at', start).lt('requested_at', end).in('dispatch_method', [...APP_METHODS, 'manual']).order('id').range(lo, hi)),
+    all((lo, hi) => supabase.from('dispatches').select('*').eq('sandbox', false).gte('created_at', start).lt('created_at', end).order('id').range(lo, hi)),
   ]);
   const people = ((p.data ?? []) as unknown as { id: string; full_name: string; is_active: boolean; department: { slug: string } | null }[])
     .map((x) => ({ id: x.id, full_name: x.full_name.trim(), is_active: x.is_active, dept: x.department?.slug ?? null }));
