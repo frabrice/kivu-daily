@@ -599,7 +599,28 @@ export type FinanceTransactionType =
   | 'onboarding_fee'
   | 'management_margin'
   | 'driver_payroll'
-  | 'app_commission';
+  | 'app_commission'
+  | 'adjustment';
+
+// One adjustment of a main Finance number (migration 20261101150000).
+export interface FinanceAdjustment {
+  id: string;
+  target: 'account' | 'owner' | 'driver';
+  account_id: string | null;
+  owner_id: string | null;
+  driver_id: string | null;
+  label: string;
+  from_amount: number;
+  to_amount: number;
+  change: number;
+  note: string | null;
+  reason: string;
+  effective_date: string;
+  transaction_id: string | null;
+  created_by: string | null;
+  by_name: string | null;
+  created_at: string;
+}
 
 export type FinanceDirection = 'in' | 'out';
 export type FinanceTransactionStatus = 'pending' | 'checked' | 'approved' | 'posted' | 'rejected';

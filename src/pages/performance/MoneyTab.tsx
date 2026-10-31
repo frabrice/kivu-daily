@@ -42,7 +42,7 @@ export default function MoneyTab({ data, period: p }: { data: PerfData; period: 
 
   const expected = weeks.reduce((s, w) => s + w.expected, 0);
   const got = weeks.reduce((s, w) => s + w.collected, 0);
-  const spending = Object.entries(tx.filter((t) => (t.status === 'posted' || t.status === 'approved') && t.direction === 'out' && t.type !== 'transfer' && within(t.transaction_date, p.from, p.to))
+  const spending = Object.entries(tx.filter((t) => (t.status === 'posted' || t.status === 'approved') && t.direction === 'out' && t.type !== 'transfer' && t.type !== 'adjustment' && within(t.transaction_date, p.from, p.to))
     .reduce<Record<string, number>>((acc, t) => ({ ...acc, [t.type]: (acc[t.type] ?? 0) + Number(t.amount) }), {}))
     .map(([k, n]) => ({ key: k, label: TYPE_META[k as FinanceTransactionType]?.label ?? k, n })).sort((a, b) => b.n - a.n);
   const income = Object.entries(tx.filter((t) => (t.status === 'posted' || t.status === 'approved') && t.direction === 'in' && CASH_IN_TYPES.includes(t.type) && within(t.transaction_date, p.from, p.to))

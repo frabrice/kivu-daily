@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   supabase, FinanceAccount, FinanceTransaction, FinanceTransactionType, FinanceDirection,
-  FinanceReconciliation, PayrollRun, PayrollEmployee, PayrollSettings, Driver, DriverDeposit, Vehicle, VehicleOwner, Profile, Document as Doc,
+  FinanceReconciliation, FinanceAdjustment, PayrollRun, PayrollEmployee, PayrollSettings, Driver, DriverDeposit, Vehicle, VehicleOwner, Profile, Document as Doc,
 } from './supabase';
 import { fetchAll } from './fetchAll';
 import { todayStr } from './utils';
@@ -24,6 +24,7 @@ export function useFinanceData() {
   const [owners, setOwners] = useState<VehicleOwner[]>([]);
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [documents, setDocuments] = useState<Doc[]>([]);
+  const [adjustments, setAdjustments] = useState<FinanceAdjustment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -37,7 +38,7 @@ export function useFinanceData() {
     // start date) is generated the same schedule-driven way.
     try { await supabase.rpc('sync_driver_payroll'); } catch { /* ignore */ }
 
-    const [acc, tx, rec, pr, pe, ps, d, dep, v, own, emp, docs] = await Promise.all([
+    const [acc, tx, rec, pr, pe, ps, d, dep, v, own, emp, docs, adj] = await Promise.all([
       supabase.from('finance_accounts').select('*').order('key'),
       fetchAll(() => supabase
         .from('finance_transactions')
@@ -54,6 +55,7 @@ export function useFinanceData() {
       supabase.from('vehicle_owners').select('*').order('full_name'),
       supabase.from('profiles').select('*').eq('is_active', true).order('full_name'),
       supabase.from('documents').select('*').order('created_at', { ascending: false }),
+      supabase.from('finance_adjustments').select('*').order('created_at', { ascending: false }),
     ]);
     setAccounts((acc.data as FinanceAccount[]) ?? []);
     setTransactions((tx.data as FinanceTransaction[]) ?? []);
@@ -67,6 +69,7 @@ export function useFinanceData() {
     setOwners((own.data as VehicleOwner[]) ?? []);
     setEmployees((emp.data as Profile[]) ?? []);
     setDocuments((docs.data as Doc[]) ?? []);
+    setAdjustments((adj.data as FinanceAdjustment[]) ?? []);
     setLoading(false);
   }, []);
 
@@ -82,6 +85,7 @@ export function useFinanceData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_settings' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicle_owners' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_deposits' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'finance_adjustments' }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load]);
@@ -90,9 +94,9 @@ export function useFinanceData() {
     (accountId: string) => {
       const acc = accounts.find((a) => a.id === accountId);
       if (!acc) return 0;
-      let bal = acc.opening_balance;
+      let bal = Number(acc.opening_balance);
       for (const t of transactions) {
-        if (t.account_id !== accountId) continue;
+        if (t.account_id !== accountId || !movedMoney(t)) continue;
         bal += t.direction === 'in' ? t.amount : -t.amount;
       }
       return bal;
@@ -105,10 +109,17 @@ export function useFinanceData() {
 
   return {
     accounts, transactions, reconciliations, payrollRuns, payrollEmployees, payrollSettings,
-    drivers, deposits, vehicles, owners, employees, documents,
+    drivers, deposits, vehicles, owners, employees, documents, adjustments,
     loading, reload: load, accountBalance, balances,
   };
 }
+
+// A row is in an account's balance once the money really moved: money out
+// once approved or paid, money in once received (checked or later). Pending
+// and rejected rows don't change a balance (MD, 31 Oct 2026: balances must
+// match the bank statement, so they can be adjusted to it).
+export const movedMoney = (t: Pick<FinanceTransaction, 'direction' | 'status'>) =>
+  t.status === 'approved' || t.status === 'posted' || (t.direction === 'in' && t.status === 'checked');
 
 export const TYPE_META: Record<FinanceTransactionType, { label: string; defaultDirection: FinanceDirection }> = {
   revenue: { label: 'Revenue', defaultDirection: 'in' },
@@ -123,7 +134,24 @@ export const TYPE_META: Record<FinanceTransactionType, { label: string; defaultD
   management_margin: { label: 'Management Margin', defaultDirection: 'in' },
   driver_payroll: { label: 'Driver Payroll', defaultDirection: 'out' },
   app_commission: { label: 'App Commissions', defaultDirection: 'in' },
+  adjustment: { label: 'Adjustment', defaultDirection: 'in' },
 };
+
+export const ADJ_TARGET: Record<FinanceAdjustment['target'], string> = { account: 'Bank balance', owner: 'Owed to owner', driver: 'Driver owes' };
+
+// What Kivu owes an owner now (same sum as owner_owed() in the database):
+// weekly payouts not paid yet + adjustments - owner payments logged by hand.
+export function ownerOwed(ownerId: string, vehicles: Vehicle[], transactions: FinanceTransaction[], adjustments: FinanceAdjustment[]) {
+  const cars = new Set(vehicles.filter((v) => v.owner_id === ownerId).map((v) => v.id));
+  let unpaid = 0, byHand = 0;
+  for (const t of transactions) {
+    if (t.type !== 'vehicle_owner_payment' || !t.linked_vehicle_id || !cars.has(t.linked_vehicle_id)) continue;
+    if (t.system_generated && (t.status === 'pending' || t.status === 'checked')) unpaid += Number(t.amount);
+    if (!t.system_generated && (t.status === 'approved' || t.status === 'posted')) byHand += Number(t.amount);
+  }
+  const adjusted = adjustments.filter((a) => a.target === 'owner' && a.owner_id === ownerId).reduce((s, a) => s + Number(a.change), 0);
+  return { owed: unpaid + adjusted - byHand, unpaid, adjusted, byHand };
+}
 
 // What actually counts as Kivu's own income for a "revenue" figure -
 // fleet_collection is deliberately excluded even though it's cash 'in':

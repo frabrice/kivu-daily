@@ -283,7 +283,7 @@ export function moneyIn(list: FinanceTransaction[], from: string, to: string) {
   return list.filter((t) => counted(t) && t.direction === 'in' && CASH_IN_TYPES.includes(t.type) && within(t.transaction_date, from, to)).reduce((s, t) => s + Number(t.amount), 0);
 }
 export function moneyOut(list: FinanceTransaction[], from: string, to: string) {
-  return list.filter((t) => counted(t) && t.direction === 'out' && t.type !== 'transfer' && within(t.transaction_date, from, to)).reduce((s, t) => s + Number(t.amount), 0);
+  return list.filter((t) => counted(t) && t.direction === 'out' && t.type !== 'transfer' && t.type !== 'adjustment' && within(t.transaction_date, from, to)).reduce((s, t) => s + Number(t.amount), 0);
 }
 export function kivuRevenue(list: FinanceTransaction[], from: string, to: string) {
   return list.filter((t) => counted(t) && t.direction === 'in' && KIVU_REVENUE_TYPES.includes(t.type) && within(t.transaction_date, from, to)).reduce((s, t) => s + Number(t.amount), 0);

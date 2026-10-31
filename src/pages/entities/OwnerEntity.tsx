@@ -4,7 +4,7 @@ import { Car, Landmark, UserRound, Wallet, Hourglass, FileSignature } from 'luci
 import { EntityViewProps } from '../../os/peek';
 import { EntityLink, useEntityMeta } from '../../os/EntityLink';
 import { useAuth } from '../../lib/auth';
-import { useFinanceData } from '../../lib/finance';
+import { ownerOwed, useFinanceData } from '../../lib/finance';
 import { Box, Details, EmptyState, Label, PageHeader, StatCard, StatGrid, rwf } from '../../ui/kit';
 import VehicleOwnerProfilePage from '../finance/VehicleOwnerProfilePage';
 import VehicleOwnerDrawer from '../../components/finance/VehicleOwnerDrawer';
@@ -15,7 +15,7 @@ import { missingForOwner, useLegalDocs } from '../../lib/legalDocs';
 export default function OwnerEntity({ id, mode }: EntityViewProps) {
   const { profile } = useAuth();
   const nav = useNavigate();
-  const { vehicles, owners, transactions, loading, reload } = useFinanceData();
+  const { vehicles, owners, transactions, adjustments, loading, reload } = useFinanceData();
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
   const legal = useLegalDocs();
@@ -40,6 +40,7 @@ export default function OwnerEntity({ id, mode }: EntityViewProps) {
   const paid = tx.filter((t) => t.status === 'posted').reduce((s, t) => s + t.amount, 0);
   const waiting = tx.filter((t) => t.status === 'pending' || t.status === 'checked');
   const weekly = cars.reduce((s, c) => s + Number(c.weekly_owner_payout_amount ?? 0), 0);
+  const owed = ownerOwed(id, vehicles, transactions, adjustments);
 
   const carsBox = (
     <Box title="Cars" icon={Car} padded={false}>
@@ -61,7 +62,8 @@ export default function OwnerEntity({ id, mode }: EntityViewProps) {
       <StatCard label="Cars" icon={Car} value={cars.length} />
       <StatCard label="Owed each week" icon={Wallet} value={rwf(weekly)} />
       <StatCard label="Paid so far" icon={Landmark} value={rwf(paid)} tone="success" sub={`${tx.filter((t) => t.status === 'posted').length} payments`} />
-      <StatCard label="Waiting to be paid" icon={Hourglass} value={rwf(waiting.reduce((s, t) => s + t.amount, 0))} tone={waiting.length ? 'attention' : undefined} sub={`${waiting.length} payments`} />
+      <StatCard label="Waiting to be paid" icon={Hourglass} value={rwf(owed.owed)} tone={owed.owed ? 'attention' : undefined}
+        sub={`${waiting.length} payments${owed.adjusted ? ` · adjusted ${owed.adjusted > 0 ? '+' : '−'}${rwf(Math.abs(owed.adjusted))}` : ''}${owed.byHand ? ` · ${rwf(owed.byHand)} paid by hand` : ''}`} />
     </StatGrid>
   );
 

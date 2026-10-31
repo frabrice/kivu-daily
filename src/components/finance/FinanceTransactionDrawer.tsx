@@ -135,7 +135,7 @@ export default function FinanceTransactionDrawer({
               disabled={!editing || !!tx}
               className="input"
             >
-              {(Object.keys(TYPE_META) as FinanceTransactionType[]).map((t) => <option key={t} value={t}>{TYPE_META[t].label}</option>)}
+              {(Object.keys(TYPE_META) as FinanceTransactionType[]).filter((t) => t !== 'adjustment' || tx?.type === t).map((t) => <option key={t} value={t}>{TYPE_META[t].label}</option>)}
             </select>
           </div>
         )}
@@ -290,7 +290,7 @@ export default function FinanceTransactionDrawer({
         ) : (
           <div className="flex justify-end gap-2 pt-3 border-t border-line-muted ">
             <button onClick={onClose} className="btn-ghost">Close</button>
-            {canEdit && !tx?.system_generated && (
+            {canEdit && !tx?.system_generated && tx?.type !== 'adjustment' && (
               <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-1.5">
                 <Pencil size={13} /> Edit
               </button>

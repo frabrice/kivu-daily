@@ -344,7 +344,8 @@ export const OUT_GROUPS: { key: OutGroup; label: string }[] = [
   { key: 'other', label: 'Other costs' },
 ];
 export function outGroupOf(t: FinanceTransaction): OutGroup | null {
-  if (t.direction !== 'out' || t.type === 'transfer') return null;
+  // Adjustments only correct a balance: not a cost (like transfers).
+  if (t.direction !== 'out' || t.type === 'transfer' || t.type === 'adjustment') return null;
   if (t.type === 'vehicle_owner_payment') return 'owners';
   if (t.type === 'driver_payroll') return 'drivers';
   if (t.type === 'payroll') return 'staff';
@@ -361,7 +362,7 @@ export const IN_GROUPS: { key: InGroup; label: string }[] = [
 ];
 // Kivu's own bookkeeping entries (the weekly margin) aren't money coming in.
 export function inGroupOf(t: FinanceTransaction): InGroup | null {
-  if (t.direction !== 'in' || t.type === 'transfer' || t.type === 'management_margin') return null;
+  if (t.direction !== 'in' || t.type === 'transfer' || t.type === 'management_margin' || t.type === 'adjustment') return null;
   if (t.type === 'fleet_collection') return 'collections';
   if (t.type === 'onboarding_fee') return 'onboarding';
   if (t.type === 'app_commission') return 'commissions';

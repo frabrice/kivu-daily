@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowDownLeft, ArrowUpRight, Download, Hourglass, Plus, Scale, ScrollText, Search, X } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Download, Hourglass, Plus, Scale, ScrollText, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFinanceData, TYPE_META, STATUS_META } from '../../lib/finance';
-import { FinanceTransaction, FinanceTransactionType } from '../../lib/supabase';
+import { useFinanceData, TYPE_META, STATUS_META, ADJ_TARGET } from '../../lib/finance';
+import { FinanceAdjustment, FinanceTransaction, FinanceTransactionType } from '../../lib/supabase';
 import { EntityLink } from '../../os/EntityLink';
 import { Pager, usePaged } from '../../ui/Pager';
 import { Label, PageHeader, StatCard, StatGrid, Tone, UnderlineTabs, rwf, rwfShort } from '../../ui/kit';
 import FinanceTransactionDrawer from '../../components/finance/FinanceTransactionDrawer';
 import { addDays, today } from '../../lib/performance';
 
-type View = 'all' | 'waiting' | 'approved' | 'posted' | 'rejected';
+type View = 'all' | 'waiting' | 'approved' | 'posted' | 'rejected' | 'adjustments';
 type Period = 'all' | 'month' | 'last_month' | '30d' | '7d';
 const STATUS_TONE: Record<string, Tone> = { pending: 'attention', checked: 'info', approved: 'accent', posted: 'success', rejected: 'danger' };
 const PAGE = 50;
@@ -20,10 +20,10 @@ const PAGE = 50;
 // and the same drawer to view, check, approve or edit.
 export default function FinanceLedger() {
   const { profile } = useAuth();
-  const { accounts, transactions, drivers, vehicles, documents, loading, reload } = useFinanceData();
+  const { accounts, transactions, drivers, vehicles, documents, adjustments, loading, reload } = useFinanceData();
   const canEdit = profile?.role === 'managing_director' || profile?.department?.slug === 'finance';
-  const [view, setView] = useState<View>('all');
   const [params] = useSearchParams();
+  const [view, setView] = useState<View>(() => (params.get('view') === 'adjustments' ? 'adjustments' : 'all'));
   const [type, setType] = useState<FinanceTransactionType | ''>(() => ((params.get('type') ?? '') in TYPE_META ? (params.get('type') as FinanceTransactionType) : ''));
   const [direction, setDirection] = useState<'' | 'in' | 'out'>('');
   const [account, setAccount] = useState('');
@@ -56,7 +56,7 @@ export default function FinanceLedger() {
   const rows = base.filter((x) => inView(x, view));
   const { rows: shown, pager } = usePaged(rows, { key: 'ledger', size: PAGE, reset: `${view}|${type}|${direction}|${account}|${period}|${q}` });
 
-  const counted = base.filter((x) => (x.status === 'posted' || x.status === 'approved') && x.type !== 'transfer' && x.type !== 'management_margin');
+  const counted = base.filter((x) => (x.status === 'posted' || x.status === 'approved') && x.type !== 'transfer' && x.type !== 'management_margin' && x.type !== 'adjustment');
   const totalIn = counted.filter((x) => x.direction === 'in').reduce((s, x) => s + x.amount, 0);
   const totalOut = counted.filter((x) => x.direction === 'out').reduce((s, x) => s + x.amount, 0);
   const waiting = base.filter((x) => inView(x, 'waiting'));
@@ -84,7 +84,7 @@ export default function FinanceLedger() {
       <StatGrid cols={4}>
         <StatCard icon={ArrowDownLeft} label="Money in" value={rwfShort(totalIn)} sub={`${rwf(totalIn)} · approved and posted`} tone="success" />
         <StatCard icon={ArrowUpRight} label="Money out" value={rwfShort(totalOut)} sub={rwf(totalOut)} />
-        <StatCard icon={Scale} label="Net" value={rwfShort(totalIn - totalOut)} tone={totalIn - totalOut < 0 ? 'danger' : undefined} sub="Transfers and margin entries left out" />
+        <StatCard icon={Scale} label="Net" value={rwfShort(totalIn - totalOut)} tone={totalIn - totalOut < 0 ? 'danger' : undefined} sub="Transfers, margin entries and adjustments left out" />
         <StatCard icon={Hourglass} label="Waiting for approval" value={waiting.length} tone={waiting.length ? 'attention' : undefined} sub={rwf(waiting.reduce((s, x) => s + x.amount, 0))} onClick={() => setView('waiting')} />
       </StatGrid>
 
@@ -96,8 +96,10 @@ export default function FinanceLedger() {
             { key: 'approved', label: 'Approved', count: base.filter((x) => x.status === 'approved').length },
             { key: 'posted', label: 'Posted', count: base.filter((x) => x.status === 'posted').length },
             { key: 'rejected', label: 'Rejected', count: base.filter((x) => x.status === 'rejected').length },
+            ...(adjustments.length ? [{ key: 'adjustments' as View, label: 'Adjustments', count: adjustments.length }] : []),
           ]} />
         </div>
+        {view === 'adjustments' ? <AdjustmentsTable rows={adjustments} transactions={transactions} q={q} onSearch={setQ} onOpen={(tx) => setDrawer({ tx, editing: false })} /> : <>
         <div className="flex flex-wrap items-center gap-2 px-4 pb-3 -mt-1">
           <div className="relative flex-1 min-w-[200px] max-w-xs">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
@@ -145,6 +147,7 @@ export default function FinanceLedger() {
           </table>
         </div>
         <Pager pager={pager} noun="transactions" className="px-4 border-t border-line-muted" />
+        </>}
       </div>
 
       {drawer && (
@@ -152,5 +155,48 @@ export default function FinanceLedger() {
           canEdit={canEdit} onClose={() => setDrawer(null)} onSaved={reload} />
       )}
     </div>
+  );
+}
+
+// Every adjustment of a main number (bank balances, owed to owners, drivers'
+// "owes"), with the number before and after, why, who and when.
+function AdjustmentsTable({ rows, transactions, q, onSearch, onOpen }: { rows: FinanceAdjustment[]; transactions: FinanceTransaction[]; q: string; onSearch: (v: string) => void; onOpen: (tx: FinanceTransaction) => void }) {
+  const term = q.trim().toLowerCase();
+  const list = rows.filter((a) => !term || [a.label, a.reason, a.note, a.by_name, ADJ_TARGET[a.target]].some((v) => v?.toLowerCase().includes(term)));
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2 px-4 pb-3 -mt-1">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
+          <input value={q} onChange={(e) => onSearch(e.target.value)} placeholder="Name, reason, who" className="input pl-8 py-1 text-small" />
+        </div>
+        <span className="ml-auto text-caption text-fg-muted flex items-center gap-1.5"><SlidersHorizontal size={12} /> Not money in or out: each one sets a number to what it really is</span>
+      </div>
+      <div className="overflow-x-auto border-t border-line-muted">
+        <table className="w-full text-body min-w-[900px]">
+          <thead><tr className="text-caption text-fg-muted text-left bg-inset">{['When', 'What', 'From', 'To', 'Change', 'Why', 'By'].map((h, i) => <th key={h} className={`px-4 py-2 font-medium ${i >= 2 && i <= 4 ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
+          <tbody>
+            {list.map((a) => {
+              const tx = a.transaction_id ? transactions.find((t) => t.id === a.transaction_id) : null;
+              return (
+                <tr key={a.id} onClick={() => tx && onOpen(tx)} className={`border-t border-line-muted align-top ${tx ? 'cursor-pointer hover:bg-hover/60' : ''}`}>
+                  <td className="px-4 py-2 whitespace-nowrap tabular-nums">{new Date(a.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit', timeZone: 'Africa/Kigali' })}{a.effective_date !== a.created_at.slice(0, 10) && <span className="block text-caption text-fg-muted">for {new Date(`${a.effective_date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    <span className="block text-caption text-fg-muted">{ADJ_TARGET[a.target]}{tx && <span className="font-mono"> · {tx.reference}</span>}</span>
+                    {a.target === 'driver' && a.driver_id ? <EntityLink type="driver" id={a.driver_id} label={a.label} /> : a.target === 'owner' && a.owner_id ? <EntityLink type="owner" id={a.owner_id} label={a.label} /> : a.label}
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums text-fg-muted">{rwf(a.from_amount)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums font-medium">{rwf(a.to_amount)}</td>
+                  <td className={`px-4 py-2 text-right tabular-nums font-medium ${a.change > 0 ? 'text-success' : a.change < 0 ? 'text-danger' : 'text-fg-muted'}`}>{a.change > 0 ? '+' : a.change < 0 ? '−' : ''}{rwf(Math.abs(a.change))}</td>
+                  <td className="px-4 py-2 max-w-[320px]"><span className="block">{a.reason}</span>{a.note && <span className="block text-caption text-fg-muted">{a.note}</span>}</td>
+                  <td className="px-4 py-2 whitespace-nowrap text-fg-muted">{a.by_name ?? '—'}</td>
+                </tr>
+              );
+            })}
+            {list.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-fg-muted">No adjustments match.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

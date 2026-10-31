@@ -1,9 +1,9 @@
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle, ArrowDownCircle, ArrowUpCircle, BadgeCheck, Car, CircleSlash, Coins, Gauge, HandCoins, Info, Landmark, Plus, Receipt,
-  ScrollText, Scale, Smartphone, TrendingDown, TrendingUp, Wallet, Wrench,
+  ScrollText, Scale, SlidersHorizontal, Smartphone, TrendingDown, TrendingUp, Wallet, Wrench,
 } from 'lucide-react';
 import { supabase, DriverCarAssignment, FinanceTransaction } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
@@ -17,6 +17,8 @@ import {
 } from '../../lib/financeOverview';
 import { RangeTabs, usePalette } from '../../components/charts/kit';
 import Modal from '../../components/Modal';
+import FinanceAdjustPanel from '../../components/finance/FinanceAdjustPanel';
+import { useAccess } from '../../os/access';
 import { EntityLink } from '../../os/EntityLink';
 import { usePageTitle } from '../../os/workspace';
 import { Box, Label, PageHeader, StatCard, StatGrid, rwf } from '../../ui/kit';
@@ -59,6 +61,12 @@ export default function FinanceOverview() {
   const range = rangeOf(pk, t, custom, firstDay ?? undefined);
   const [panel, setPanel] = useState<Panel | null>(null);
   const [statusFilter, setStatusFilter] = useState<CarStatus | null>(null);
+  // Adjust is deliberately out of sight: a faint icon by "Bank balances now" (or ?adjust=1).
+  const access = useAccess();
+  const canAdjust = access.isMd || access.in('finance') || access.grants.has('adjust_balances');
+  const [params, setParams] = useSearchParams();
+  const adjusting = canAdjust && params.get('adjust') === '1';
+  const setAdjusting = (on: boolean) => setParams((p) => { const n = new URLSearchParams(p); if (on) n.set('adjust', '1'); else n.delete('adjust'); return n; }, { replace: true });
 
   const input = useMemo(() => ({
     vehicles: fin.vehicles, drivers: fin.drivers, deposits: fin.deposits, transactions: fin.transactions,
@@ -241,13 +249,22 @@ export default function FinanceOverview() {
       </StatGrid>
 
       {fin.accounts.length > 0 && <>
-        <h2 className="section-title mb-2.5 flex items-center gap-2"><Landmark size={15} /> Bank balances now</h2>
+        <h2 className="section-title mb-2.5 flex items-center gap-2"><Landmark size={15} /> Bank balances now
+          {canAdjust && <button onClick={() => setAdjusting(true)} title="Adjust" aria-label="Adjust Finance's numbers" className="ml-auto p-1 rounded text-fg-subtle opacity-30 hover:opacity-100 focus-visible:opacity-100"><SlidersHorizontal size={12} /></button>}
+        </h2>
         <StatGrid cols={4}>
-          {fin.accounts.map((a) => <StatCard key={a.id} icon={Landmark} label={a.name} value={rwf(fin.balances[a.key] ?? 0)} to="/finance/accounts" />)}
+          {fin.accounts.map((a) => {
+            const adj = fin.adjustments.filter((x) => x.target === 'account' && x.account_id === a.id);
+            const adjSum = adj.reduce((s, x) => s + Number(x.change), 0);
+            const toPay = fin.transactions.filter((x) => x.account_id === a.id && x.direction === 'out' && (x.status === 'pending' || x.status === 'checked')).reduce((s, x) => s + Number(x.amount), 0);
+            const sub = [toPay ? `${rwf(toPay)} still to pay from it` : '', adj.length ? `includes ${adj.length} adjustment${adj.length === 1 ? '' : 's'} (${adjSum >= 0 ? '+' : '−'}${rwf(Math.abs(adjSum))})` : ''].filter(Boolean).join(' · ');
+            return <StatCard key={a.id} icon={Landmark} label={a.name} value={rwf(fin.balances[a.key] ?? 0)} to="/finance/accounts" sub={sub ? sub[0].toUpperCase() + sub.slice(1) : undefined} />;
+          })}
         </StatGrid>
       </>}
 
       {/* ------------------------------------------------ panels */}
+      {adjusting && <FinanceAdjustPanel data={fin} onClose={() => setAdjusting(false)} onSaved={reload} />}
       {panel?.kind === 'fees' && <FeesPanel fees={fees} range={range} onClose={() => setPanel(null)} />}
       {panel?.kind === 'onboarding' && <OnboardingPanel items={onboarding} onClose={() => setPanel(null)} />}
       {panel?.kind === 'commissions' && <CommissionsPanel weeks={allWeeks} onLog={(week) => setPanel({ kind: 'log', week })} onClose={() => setPanel(null)} />}

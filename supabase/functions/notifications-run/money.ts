@@ -69,7 +69,9 @@ async function snapshot(ctx: Ctx) {
   const balance = (key: string) => {
     const acc = accounts.find((a) => a.key === key);
     if (!acc) return 0;
-    return Number(acc.opening_balance) + tx.filter((t) => t.account_id === acc.id && t.status !== "rejected").reduce((s, t) => s + (t.direction === "in" ? 1 : -1) * Number(t.amount), 0);
+    // Money that really moved only (same rule as movedMoney in src/lib/finance.ts); what's still to pay is counted below.
+    const moved = (t: TxRow) => t.status === "approved" || t.status === "posted" || (t.direction === "in" && t.status === "checked");
+    return Number(acc.opening_balance) + tx.filter((t) => t.account_id === acc.id && moved(t)).reduce((s, t) => s + (t.direction === "in" ? 1 : -1) * Number(t.amount), 0);
   };
   const cash = accounts.map((a) => ({ name: a.name, amount: balance(a.key) }));
   const open = tx.filter((t) => ["pending", "checked"].includes(t.status) && !(t.type === "transfer" && t.direction === "in"));
