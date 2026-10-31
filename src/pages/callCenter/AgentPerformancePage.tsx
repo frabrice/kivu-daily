@@ -158,7 +158,7 @@ export default function AgentPerformancePage({ agentId, onBack }: { agentId: str
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button className="btn-secondary" onClick={() => nav(`/call-center/daily-report?agent=${agentId}`)}><FileText size={14} /> Daily report</button>
+          <button className="btn-secondary" onClick={() => nav(`/call-center/reports?agent=${agentId}&tab=shifts`)}><FileText size={14} /> Reports</button>
           <RangeTabs value={range} onChange={setRange} options={RANGES} />
         </div>
       </div>

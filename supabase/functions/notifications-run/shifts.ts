@@ -8,7 +8,7 @@ export interface ShiftRow {
   status: string; late_minutes: number; report: Record<string, unknown>; stats: Record<string, number>;
 }
 
-const SLOT_LABEL: Record<string, string> = { morning: "Morning 06:00–14:00", afternoon: "Afternoon 14:00–22:00", night: "Night 22:00–06:00" };
+const SLOT_LABEL: Record<string, string> = { morning: "Morning 07:00–15:00", afternoon: "Afternoon 15:00–23:00", night: "Night 23:00–07:00" };
 const kigaliTime = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Kigali" });
 const kigaliDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Africa/Kigali" });
 export const hours = (m: number) => `${Math.floor(m / 60)}h ${String(Math.round(m % 60)).padStart(2, "0")}m`;

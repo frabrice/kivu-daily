@@ -8,20 +8,20 @@ import { supabase } from './supabase';
 export type ShiftSlot = 'morning' | 'afternoon' | 'night';
 
 export const SLOTS: { key: ShiftSlot; label: string; hours: string }[] = [
-  { key: 'morning', label: 'Morning', hours: '06:00–14:00' },
-  { key: 'afternoon', label: 'Afternoon', hours: '14:00–22:00' },
-  { key: 'night', label: 'Night', hours: '22:00–06:00' },
+  { key: 'morning', label: 'Morning', hours: '07:00–15:00' },
+  { key: 'afternoon', label: 'Afternoon', hours: '15:00–23:00' },
+  { key: 'night', label: 'Night', hours: '23:00–07:00' },
 ];
-export const SLOT_LABEL: Record<ShiftSlot, string> = { morning: 'Morning 06:00–14:00', afternoon: 'Afternoon 14:00–22:00', night: 'Night 22:00–06:00' };
+export const SLOT_LABEL: Record<ShiftSlot, string> = { morning: 'Morning 07:00–15:00', afternoon: 'Afternoon 15:00–23:00', night: 'Night 23:00–07:00' };
 export const STATIONS = ['Computer 1', 'Computer 2'];
 
 // The shift running now - or the next one if it starts within the hour
-// (an agent arriving 05:30 is on the morning shift; one signing in at
-// 10:45 is on the morning shift too, just late).
+// (an agent arriving 06:30 is on the morning shift; one signing in at
+// 11:45 is on the morning shift too, just late).
 export function suggestSlot(now = new Date()): ShiftSlot {
   const mins = (now.getHours() * 60 + now.getMinutes() + 60) % 1440;
-  if (mins >= 360 && mins < 840) return 'morning';
-  if (mins >= 840 && mins < 1320) return 'afternoon';
+  if (mins >= 420 && mins < 900) return 'morning';
+  if (mins >= 900 && mins < 1380) return 'afternoon';
   return 'night';
 }
 

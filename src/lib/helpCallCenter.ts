@@ -56,7 +56,7 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
       {
         heading: 'Shifts: start, end, hand over',
         body: [
-          `There are three shifts a day — Morning 06:00–14:00, Afternoon 14:00–22:00, Night 22:00–06:00 — in teams of two on Computer 1 and Computer 2. When you sign in, press "Start shift" (pick the shift, your computer and who you're working with). Your time starts then; arriving more than 10 minutes after the shift starts shows as late.`,
+          `There are three shifts a day — Morning 07:00–15:00, Afternoon 15:00–23:00, Night 23:00–07:00 — in teams of two on Computer 1 and Computer 2. When you sign in, press "Start shift" (pick the shift, your computer and who you're working with). Your time starts then; arriving more than 10 minutes after the shift starts shows as late.`,
           `You can't sign out without ending your shift. Press "End shift" (top of the screen, or Sign Out) and fill in the shift report. Check your phone's call log and enter your calls by type — received from passengers, our drivers, Non-Insider drivers, owners & partners and others; made to our drivers, Non-Insider drivers, call-backs to passengers and others (0 where you had none) — then missed calls, WhatsApp/SMS handled, what you worked on, what was resolved and what's still open, problems you hit, what drivers and passengers told you, and your suggestions. Kivu Daily shows what you logged during the shift next to it.`,
           `The same form is your handover: a note for the next shift, plus the last action and exact next action for each open case. The next shift sees it at the top of Calls & Tickets and presses "Got it". The MD receives every shift report by email.`,
           `Quiet shift? Use the time: work the Call Queue (follow-ups, onboarding, check-ins), then Non-Insider Outreach — call Non-Insider drivers about what's new, our device and branding. It all counts in your shift report and on the Call Analytics page.`,
@@ -219,7 +219,7 @@ export const CALL_CENTER_HELP: Partial<Record<NavKey, HelpEntry>> = {
       {
         heading: 'Agent performance',
         body: [
-          `On time = the shift was started within 10 minutes of its start (06:00, 14:00 or 22:00). "Not ended" = the agent signed off without a shift report and the shift was closed automatically.`,
+          `On time = the shift was started within 10 minutes of its start (07:00, 15:00 or 23:00). "Not ended" = the agent signed off without a shift report and the shift was closed automatically.`,
           `"Made / hour" is outgoing calls per hour on shift — the best measure of how quiet time is used. Outreach shows Non-Insider calls and how many drivers said yes.`,
         ],
       },
