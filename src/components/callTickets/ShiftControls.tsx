@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Clock, LogOut, Monitor, PlayCircle, Users2 } from 'lucide-react';
 import { supabase, CallTicket, Profile } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import { CallCenterShift, CallCountKey, durationLabel, INCOMING_TYPES, OUTGOING_TYPES, ShiftReport, ShiftSlot, ShiftStats, SLOT_LABEL, SLOTS, STATIONS, suggestSlot } from '../../lib/shifts';
+import { CallCenterShift, CallCountKey, durationLabel, INCOMING_TYPES, OUTGOING_TYPES, ShiftReport, ShiftStats, SLOT_LABEL, SLOTS, STATIONS, suggestSlot } from '../../lib/shifts';
 import { STATUS_META } from '../../lib/callTickets';
 import Modal from '../Modal';
 
@@ -10,7 +10,10 @@ import Modal from '../Modal';
 export function StartShiftScreen({ onStarted }: { onStarted: () => void }) {
   const { profile, signOut } = useAuth();
   const [station, setStation] = useState(STATIONS[0]);
-  const [slot, setSlot] = useState<ShiftSlot>(suggestSlot());
+  // Set from the time it starts (the server decides; this shows the same rule).
+  const [slot, setSlot] = useState(suggestSlot());
+  useEffect(() => { const t = setInterval(() => setSlot(suggestSlot()), 30_000); return () => clearInterval(t); }, []);
+  const slotInfo = SLOTS.find((s) => s.key === slot)!;
   const [partnerId, setPartnerId] = useState('');
   const [colleagues, setColleagues] = useState<Profile[]>([]);
   const [busy, setBusy] = useState(false);
@@ -41,13 +44,8 @@ export function StartShiftScreen({ onStarted }: { onStarted: () => void }) {
         </div>
         <div>
           <p className="text-caption font-medium text-fg-muted mb-1.5 flex items-center gap-1"><Clock size={12} /> Shift</p>
-          <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Shift">
-            {SLOTS.map((s) => (
-              <button key={s.key} type="button" role="radio" aria-checked={slot === s.key} onClick={() => setSlot(s.key)} className={chip(slot === s.key)}>
-                {s.label}<span className="block text-micro font-normal opacity-70">{s.hours}</span>
-              </button>
-            ))}
-          </div>
+          <div className={chip(true)}>{slotInfo.label} <span className="font-normal opacity-70">{slotInfo.hours}</span></div>
+          <p className="text-micro text-fg-subtle mt-1">Set from the time you start: 07:00–15:00, 15:00–23:00, 23:00–07:00.</p>
         </div>
         <div>
           <p className="text-caption font-medium text-fg-muted mb-1.5 flex items-center gap-1"><Monitor size={12} /> Computer</p>

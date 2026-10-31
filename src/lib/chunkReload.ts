@@ -22,14 +22,25 @@ export function isChunkError(err: unknown): boolean {
   return PATTERNS.some((p) => msg.includes(p));
 }
 
-// Reloads the page unless we already did in the last 30 seconds. Returns
-// true when a reload is under way.
+// When we last reloaded for this, kept across the reload: sessionStorage,
+// or the tab's window.name where storage is blocked (it used to reload on
+// every error then - an endless loop when the problem wasn't a deploy).
+function lastReload(): number {
+  try { return Number(sessionStorage.getItem(KEY) ?? 0); } catch { /* blocked */ }
+  const m = /kivu-chunk-reload:(\d+)/.exec(window.name);
+  return m ? Number(m[1]) : 0;
+}
+function markReload() {
+  try { sessionStorage.setItem(KEY, String(Date.now())); return; } catch { /* blocked */ }
+  window.name = `kivu-chunk-reload:${Date.now()}`;
+}
+
+// Reloads the page unless we already did in the last 2 minutes. Returns
+// true when a reload is under way; false means a reload didn't fix it, so
+// the problem is something else and the page should say what failed.
 export function reloadOnce(): boolean {
-  try {
-    const last = Number(sessionStorage.getItem(KEY) ?? 0);
-    if (Date.now() - last < 30_000) return false;
-    sessionStorage.setItem(KEY, String(Date.now()));
-  } catch { /* storage blocked: still reload, the browser cache is fresh after a deploy */ }
+  if (Date.now() - lastReload() < 120_000) return false;
+  markReload();
   window.location.reload();
   return true;
 }

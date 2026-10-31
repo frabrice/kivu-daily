@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
+import { kigaliHour } from './kigali';
 
 // Call Center shifts: three a day, teams of two, two shared computers.
 // An agent starts a shift on sign-in and must end it (with a shift
@@ -15,13 +16,15 @@ export const SLOTS: { key: ShiftSlot; label: string; hours: string }[] = [
 export const SLOT_LABEL: Record<ShiftSlot, string> = { morning: 'Morning 07:00–15:00', afternoon: 'Afternoon 15:00–23:00', night: 'Night 23:00–07:00' };
 export const STATIONS = ['Computer 1', 'Computer 2'];
 
-// The shift running now - or the next one if it starts within the hour
-// (an agent arriving 06:30 is on the morning shift; one signing in at
-// 11:45 is on the morning shift too, just late).
+// The shift is set by the Kigali time it starts, never picked by hand (MD,
+// 31 Oct 2026: agents kept picking the wrong one). Same rule as
+// shift_slot_at() in the database: from 2 hours before a shift's start it
+// is that shift (13:15 = afternoon, early); after that, the running shift,
+// late (11:00 = morning, 4 hours late).
 export function suggestSlot(now = new Date()): ShiftSlot {
-  const mins = (now.getHours() * 60 + now.getMinutes() + 60) % 1440;
-  if (mins >= 420 && mins < 900) return 'morning';
-  if (mins >= 900 && mins < 1380) return 'afternoon';
+  const mins = kigaliHour(now) * 60 + now.getUTCMinutes();
+  if (mins >= 300 && mins < 780) return 'morning';
+  if (mins >= 780 && mins < 1260) return 'afternoon';
   return 'night';
 }
 
