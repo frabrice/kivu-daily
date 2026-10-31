@@ -73,6 +73,14 @@ export interface ShiftStats {
   outreach_interested: number;
   open_cases_at_end: number;
   dispatches?: number;
+  // Calls after trips and commission follow-up (migration 20261101170000).
+  trip_calls?: number;
+  trip_calls_reached?: number;
+  branding_yes?: number;
+  commission_calls?: number;
+  commission_collected?: number;
+  commission_promised?: number;
+  commission_reminded?: number;
 }
 
 export interface CallCenterShift {

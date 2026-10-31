@@ -352,12 +352,13 @@ export function outGroupOf(t: FinanceTransaction): OutGroup | null {
   if (t.type === 'supplier_payment' && isOnboardingCost(t)) return 'onboarding';
   return 'other';
 }
-export type InGroup = 'collections' | 'fees' | 'onboarding' | 'commissions' | 'other';
+export type InGroup = 'collections' | 'fees' | 'onboarding' | 'commissions' | 'branding' | 'other';
 export const IN_GROUPS: { key: InGroup; label: string }[] = [
   { key: 'collections', label: 'Fleet collections' },
   { key: 'fees', label: 'Management fees' },
   { key: 'onboarding', label: 'Onboarding fees' },
   { key: 'commissions', label: 'App commissions' },
+  { key: 'branding', label: 'Non-Insider branding & devices' },
   { key: 'other', label: 'Other income' },
 ];
 // Kivu's own bookkeeping entries (the weekly margin) aren't money coming in.
@@ -367,6 +368,8 @@ export function inGroupOf(t: FinanceTransaction): InGroup | null {
   if (t.type === 'onboarding_fee') return 'onboarding';
   if (t.type === 'app_commission') return 'commissions';
   if (isFeeRow(t)) return 'fees';
+  // Paid branding sign-ups (Trips > Branding sign-ups, migration 20261101170000).
+  if (t.type === 'revenue' && t.description?.startsWith('Non-Insider ')) return 'branding';
   return 'other';
 }
 

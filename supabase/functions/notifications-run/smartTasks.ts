@@ -270,7 +270,7 @@ const LIST_KINDS: ListKind[] = [
   {
     key: "drivers_offline", priority: "high", due: null,
     title: (n) => `Call ${plural(n, "driver")} offline during their shift`, doneTitle: "Every driver on shift is online",
-    intro: "Our drivers must be online in the Kivu Ride app for their whole shift. Call each one below (Ours On Shift). They tick off by themselves when they come back online.",
+    intro: "You put every driver online at the start of your shift; the app puts a driver offline after 1 hour without opening it. Call each one below to open the app again (Ours On Shift). They tick off by themselves when they come back online.",
     compute: async (ctx) => {
       const now = Date.now();
       const [roster, states] = await Promise.all([
@@ -294,6 +294,45 @@ const LIST_KINDS: ListKind[] = [
     },
   },
   {
+    // Calls after trips (migration 20261101170000): a Non-Insider driver who
+    // completed a trip and is due a call. Shared between the agents on
+    // shift, only 07:00-21:00 (no calls to drivers at night).
+    key: "trip_calls", priority: "high", due: null,
+    title: (n) => `Call ${plural(n, "Non-Insider driver")} after their trip`, doneTitle: "Every driver called after their trip",
+    intro: "Ask how the app works for them, then: branded cars with our device get more passengers (the app prioritises them) and fares are more accurate. Branding 20,000 RWF, device 120,000 RWF. Record each call in Calls after trips; a yes goes to Rodrigue.",
+    compute: async (ctx) => {
+      const calls = await rows<{ id: string; driver_name: string | null; driver_phone: string | null; vehicle_plate: string | null; reason: string; attempts: number; created_at: string }>(
+        ctx.db.from("trip_calls").select("id, driver_name, driver_phone, vehicle_plate, reason, attempts, created_at").eq("status", "open").order("created_at"));
+      const hour = Number(new Date().toLocaleString("en-GB", { timeZone: "Africa/Kigali", hour: "2-digit", hour12: false }));
+      const daytime = hour >= 7 && hour < 21;
+      const agents = daytime ? await onShiftAgents(ctx) : [];
+      const why: Record<string, string> = { first_trip: "first trip", first_call: "first call", seven_days: "7 days since last call", four_trips: "4 trips since last call" };
+      const by = new Map<string, SmartItem[]>();
+      calls.forEach((c, i) => {
+        if (!agents.length) return;
+        const a = agents[i % agents.length];
+        by.set(a, [...(by.get(a) ?? []), { id: c.id, label: `${c.driver_name ?? "Driver"} · ${c.vehicle_plate ?? "no plate"}`, detail: `${c.driver_phone ?? "no phone"} · ${why[c.reason] ?? c.reason}${c.attempts ? ` · ${c.attempts}× no answer` : ""}` }]);
+      });
+      return { assignments: [...by].map(([userId, items]) => ({ userId, items })), open: new Set(calls.map((c) => c.id)) };
+    },
+  },
+  {
+    // Branding sign-ups for Rodrigue (duty branding_signups): contact the
+    // ones who agreed, then finish the paid ones.
+    key: "branding_signups", priority: "high", due: "12:00",
+    title: (n) => `Follow up ${plural(n, "branding sign-up")}`, doneTitle: "Branding sign-ups followed up",
+    intro: "Non-Insider drivers who said yes on a Call Center call (Trips → Branding sign-ups): call the new ones to agree the payment and a date; mark the paid ones completed once branded and the device is installed.",
+    compute: async (ctx) => {
+      const list = await rows<{ id: string; driver_name: string; driver_phone: string | null; vehicle_plate: string | null; status: string; wants_branding: boolean; wants_device: boolean; price: number }>(
+        ctx.db.from("branding_signups").select("id, driver_name, driver_phone, vehicle_plate, status, wants_branding, wants_device, price").in("status", ["agreed", "paid"]).order("created_at"));
+      const items = list.map((x) => ({
+        id: `${x.id}:${x.status}`, label: `${x.driver_name} · ${x.vehicle_plate ?? "no plate"}`,
+        detail: `${x.status === "agreed" ? "call to agree payment and date" : "paid: brand and install, then mark completed"} · ${[x.wants_branding && "branding", x.wants_device && "device"].filter(Boolean).join(" + ")} · ${rwf(x.price)}${x.driver_phone ? ` · ${x.driver_phone}` : ""}`,
+      }));
+      return { assignments: assign(one(ctx, "branding_signups"), items), open: setOf(items) };
+    },
+  },
+  {
     key: "callbacks", priority: "high", due: null,
     title: (n) => `Call back ${plural(n, "caller")}`, doneTitle: "Every caller called back",
     intro: "Their case is resolved — tell them, record how they felt, and close it (Calls & Tickets → Call back).",
@@ -311,22 +350,10 @@ const LIST_KINDS: ListKind[] = [
   },
 ];
 
-const TARGET_KINDS: TargetKind[] = [
-  {
-    key: "outreach_target", priority: "normal", due: null, target: 15,
-    title: (done, target) => `Make ${target} Non-Insider outreach calls (${Math.min(done, target)}/${target})`,
-    intro: "Use quiet time on Non-Insider Outreach: updated app, our device (120,000 RWF) and branding (20,000 RWF). Counts by itself as you log calls.",
-    compute: async (ctx) => {
-      const agents = await onShiftAgents(ctx);
-      const startUtc = new Date(`${ctx.today}T00:00:00+02:00`).toISOString();
-      const calls = await rows<{ agent_id: string | null }>(ctx.db.from("platform_outreach_calls").select("agent_id").gte("created_at", startUtc));
-      // Agents on shift now, plus anyone who already has today's task (shift ended) keeps counting.
-      const ids = new Set([...agents, ...calls.map((c) => c.agent_id).filter((x): x is string => !!x)]);
-      return [...ids].map((userId) => ({ userId, done: calls.filter((c) => c.agent_id === userId).length, onShift: agents.includes(userId) }))
-        .filter((r) => (r as { onShift: boolean }).onShift || r.done > 0);
-    },
-  },
-];
+// Daily call targets: none any more. "15 Non-Insider outreach calls a day"
+// was stopped (MD, 31 Oct 2026: drivers were irritated); Non-Insiders are
+// now called after their trips (trip_calls above).
+const TARGET_KINDS: TargetKind[] = [];
 
 const describe = (intro: string, items: StoredItem[]) => {
   const open = items.filter((i) => !i.done), done = items.filter((i) => i.done);

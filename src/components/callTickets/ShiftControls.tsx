@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, LogOut, Monitor, PlayCircle, Users2 } from 'lucide-react';
+import { Clock, Coins, LogOut, Monitor, PlayCircle, Plus, Users2 } from 'lucide-react';
 import { supabase, CallTicket, Profile } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { CallCenterShift, CallCountKey, durationLabel, INCOMING_TYPES, OUTGOING_TYPES, ShiftReport, ShiftStats, SLOT_LABEL, SLOTS, STATIONS, suggestSlot } from '../../lib/shifts';
@@ -93,16 +93,18 @@ export function EndShiftDrawer({ shift, onClose, onEnded }: { shift: CallCenterS
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  const loadStats = () => supabase.rpc('shift_stats', { p_shift_id: shift.id }).then(({ data }) => {
+    const st = (data as Partial<ShiftStats>) ?? {};
+    setStats(st);
+    // Calls to Non-Insiders (outreach + after trips) are logged one by one, so start from that number.
+    const noninsider = (st.outreach_calls ?? 0) + (st.trip_calls ?? 0);
+    if (noninsider) setReport((r) => (r.out_noninsider === undefined ? { ...r, out_noninsider: noninsider } : r));
+  });
   useEffect(() => {
-    supabase.rpc('shift_stats', { p_shift_id: shift.id }).then(({ data }) => {
-      const st = (data as Partial<ShiftStats>) ?? {};
-      setStats(st);
-      // Outreach calls are logged one by one, so start from that number.
-      if (st.outreach_calls) setReport((r) => (r.out_noninsider === undefined ? { ...r, out_noninsider: st.outreach_calls } : r));
-    });
+    loadStats();
     supabase.from('call_tickets').select('*').in('status', ['open', 'in_progress', 'waiting_on_caller', 'resolved']).order('created_at')
       .then(({ data }) => setOpenCases((data as CallTicket[]) ?? []));
-  }, [shift.id]);
+  }, [shift.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const num = (k: keyof ShiftReport) => (
     <input type="number" min={0} inputMode="numeric" value={(report[k] as number | undefined) ?? ''} aria-label={k}
@@ -123,7 +125,8 @@ export function EndShiftDrawer({ shift, onClose, onEnded }: { shift: CallCenterS
     setBusy(true);
     setError('');
     const items = openCases.map((t) => ({ ticket_id: t.id, reference: t.reference, caller: t.caller_name, status: t.status, next_action: (actions[t.id] ?? '').trim() }));
-    const { error: err } = await supabase.rpc('end_call_center_shift', { p_shift_id: shift.id, p_report: { ...report, calls_received: totalIn, calls_made: totalOut, messages_handled: report.messages_handled ?? 0 }, p_handover_note: handoverNote, p_items: items });
+    const commission = { commission_calls: stats?.commission_calls ?? 0, commission_collected: stats?.commission_collected ?? 0, commission_promised: stats?.commission_promised ?? 0, commission_reminded: stats?.commission_reminded ?? 0 };
+    const { error: err } = await supabase.rpc('end_call_center_shift', { p_shift_id: shift.id, p_report: { ...report, ...commission, calls_received: totalIn, calls_made: totalOut, messages_handled: report.messages_handled ?? 0 }, p_handover_note: handoverNote, p_items: items });
     setBusy(false);
     if (err) { setError(err.message); return; }
     onEnded();
@@ -146,9 +149,12 @@ export function EndShiftDrawer({ shift, onClose, onEnded }: { shift: CallCenterS
             {statTile(stats?.handed_on, 'Handed on')}
             {statTile(stats?.cases_closed, 'Closed')}
             {statTile(stats?.driver_calls, 'Driver calls')}
-            {statTile(stats?.outreach_calls, 'Outreach')}
+            {statTile(stats?.trip_calls, 'After-trip calls')}
           </div>
+          {!!stats?.trip_calls && <p className="text-micro text-fg-muted mt-1.5">Calls after trips: {stats.trip_calls_reached ?? 0} reached, {stats.branding_yes ?? 0} said yes to branding or the device.</p>}
         </section>
+
+        <CommissionSection stats={stats} onAdded={loadStats} />
 
         <section className="space-y-2">
           <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle">Your calls this shift * <span className="normal-case font-normal">— check your phone's call log, put 0 where you had none</span></p>
@@ -163,7 +169,7 @@ export function EndShiftDrawer({ shift, onClose, onEnded }: { shift: CallCenterS
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {OUTGOING_TYPES.map((t) => <div key={t.key}><span className={label}>{t.label}</span>{num(t.key)}</div>)}
             </div>
-            {!!stats?.outreach_calls && <p className="text-micro text-fg-muted mt-1.5">You logged {stats.outreach_calls} Non-Insider outreach calls ({stats.outreach_interested ?? 0} interested) — add any you didn't log.</p>}
+            {!!((stats?.outreach_calls ?? 0) + (stats?.trip_calls ?? 0)) && <p className="text-micro text-fg-muted mt-1.5">You logged {(stats?.outreach_calls ?? 0) + (stats?.trip_calls ?? 0)} calls to Non-Insider drivers — add any you didn't log.</p>}
           </fieldset>
           <div className="grid grid-cols-2 gap-2">
             <div><span className={label}>Missed calls</span>{num('calls_missed')}</div>
@@ -202,5 +208,59 @@ export function EndShiftDrawer({ shift, onClose, onEnded }: { shift: CallCenterS
         </div>
       </div>
     </Modal>
+  );
+}
+
+// Commission this shift: the calls logged in Commission follow-up (from the
+// Kivu Ride dashboard's commission page), with a quick way to add any not
+// logged yet. Saved with the shift report.
+function CommissionSection({ stats, onAdded }: { stats: Partial<ShiftStats> | null; onAdded: () => void }) {
+  const [adding, setAdding] = useState(false);
+  const [f, setF] = useState({ driver_name: '', driver_phone: '', amount_owed: '', outcome: 'paid', amount_paid: '' });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const digits = (v: string) => Number(v.replace(/[^\d]/g, '')) || 0;
+  const add = async () => {
+    if (!f.driver_name.trim()) { setErr("Type the driver's name."); return; }
+    setBusy(true); setErr('');
+    const { error } = await supabase.from('commission_followups').insert({
+      driver_name: f.driver_name.trim(), driver_phone: f.driver_phone.trim() || null, amount_owed: digits(f.amount_owed),
+      outcome: f.outcome, amount_paid: f.outcome === 'paid' ? digits(f.amount_paid) : null,
+    });
+    setBusy(false);
+    if (error) { setErr(error.message); return; }
+    setF({ driver_name: '', driver_phone: '', amount_owed: '', outcome: 'paid', amount_paid: '' });
+    onAdded();
+  };
+  const tile = (n: string | number | undefined, l: string) => (
+    <div className="rounded-lg bg-inset p-2 text-center"><p className="text-title font-bold">{n ?? '…'}</p><p className="text-micro text-fg-muted">{l}</p></div>
+  );
+  return (
+    <section className="space-y-2">
+      <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle flex items-center gap-1.5"><Coins size={12} /> Commission this shift</p>
+      <div className="grid grid-cols-4 gap-1.5">
+        {tile(stats?.commission_calls, 'Drivers called')}
+        {tile(stats ? Math.round(stats.commission_collected ?? 0).toLocaleString('en-US') : undefined, 'Collected (RWF)')}
+        {tile(stats?.commission_promised, 'Promised')}
+        {tile(stats?.commission_reminded, 'Reminded')}
+      </div>
+      {!adding ? (
+        <button onClick={() => setAdding(true)} className="btn-ghost text-caption"><Plus size={12} /> Add a commission call you didn't log</button>
+      ) : (
+        <div className="rounded-lg border border-line-muted p-2.5 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <input className="input" placeholder="Driver name" value={f.driver_name} onChange={(e) => setF({ ...f, driver_name: e.target.value })} aria-label="Driver name" />
+            <input className="input" placeholder="Phone" value={f.driver_phone} onChange={(e) => setF({ ...f, driver_phone: e.target.value })} aria-label="Phone" />
+            <input className="input" inputMode="numeric" placeholder="Owed (RWF)" value={f.amount_owed} onChange={(e) => setF({ ...f, amount_owed: e.target.value })} aria-label="Amount owed" />
+            <select className="input" value={f.outcome} onChange={(e) => setF({ ...f, outcome: e.target.value })} aria-label="Outcome">
+              <option value="paid">Paid</option><option value="promised">Promised to pay</option><option value="refused">Refused</option><option value="no_answer">No answer</option><option value="wrong_number">Wrong number</option>
+            </select>
+            {f.outcome === 'paid' && <input className="input col-span-2" inputMode="numeric" placeholder="Amount paid (RWF)" value={f.amount_paid} onChange={(e) => setF({ ...f, amount_paid: e.target.value })} aria-label="Amount paid" />}
+          </div>
+          {err && <p className="text-caption text-danger">{err}</p>}
+          <div className="flex justify-end gap-2"><button className="btn-ghost text-caption" onClick={() => setAdding(false)}>Close</button><button className="btn-secondary text-caption" disabled={busy} onClick={add}>Add</button></div>
+        </div>
+      )}
+    </section>
   );
 }

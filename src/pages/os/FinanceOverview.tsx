@@ -123,7 +123,7 @@ export default function FinanceOverview() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
         <HeadCard icon={ArrowDownCircle} label="Made" value={ms.madeTotal} tone="success"
           sub={ms.toReceive ? `${rwf(ms.toReceive)} still to receive` : 'Money received in this period'}
-          lines={IN_GROUPS.filter((g) => ms.made[g.key].total || g.key !== 'other').map((g) => ({
+          lines={IN_GROUPS.filter((g) => ms.made[g.key].total || (g.key !== 'other' && g.key !== 'branding')).map((g) => ({
             label: g.label, value: ms.made[g.key].total,
             onClick: () => (g.key === 'fees' ? setPanel({ kind: 'fees' }) : g.key === 'onboarding' ? setPanel({ kind: 'onboarding' }) : g.key === 'commissions' ? setPanel({ kind: 'commissions' }) : g.key === 'collections' ? scrollTo('leakage') : setPanel({ kind: 'in', group: g.key })),
           }))} />
