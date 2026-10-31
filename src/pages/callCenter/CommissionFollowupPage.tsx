@@ -7,6 +7,7 @@ import { useAccess } from '../../os/access';
 import { usePageTitle } from '../../os/workspace';
 import { Box, Label, PageHeader, StatCard, StatGrid } from '../../ui/kit';
 import type { Tone } from '../../ui/kit';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
 // Commission follow-up: the commissions are in the Kivu Ride dashboard;
 // every morning the Call Center calls each driver with yesterday's unpaid
@@ -18,7 +19,7 @@ const OUTCOME: Record<Outcome, { label: string; tone: Tone }> = {
   paid: { label: 'Paid', tone: 'success' }, promised: { label: 'Promised', tone: 'attention' }, no_answer: { label: 'No answer', tone: 'neutral' },
   refused: { label: 'Refused', tone: 'danger' }, wrong_number: { label: 'Wrong number', tone: 'neutral' },
 };
-const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const today = () => kTodayFast();
 const rwf = (n: number) => `${Math.round(n).toLocaleString('en-US')} RWF`;
 const key = (n: string) => n.trim().toLowerCase();
 

@@ -7,6 +7,7 @@ import {
   ANSWER_LABEL, APP_STATUS_SHORT, APP_USAGE_LABEL, CATEGORIES, Category, CATEGORY_LABEL, categoryOf, OutreachCall, OutreachRound,
   OutreachStatus, RESULT_LABEL, shortDate,
 } from '../../lib/outreach';
+import { kigaliDay as kDayFast } from '../../lib/kigali';
 
 // The MD's full Non-Insider outreach report: every driver with every answer,
 // filters (above all: who said yes to the device or branding), analytics on
@@ -94,7 +95,7 @@ export default function OutreachReport({ drivers, statuses, calls, round, names 
   const byDay = useMemo(() => {
     const m = new Map<string, { day: string; reached: number; no_answer: number; callback: number; wrong_number: number }>();
     for (const call of calls) {
-      const day = new Date(call.created_at).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+      const day = kDayFast(call.created_at);
       const e = m.get(day) ?? { day, reached: 0, no_answer: 0, callback: 0, wrong_number: 0 };
       e[call.result] += 1;
       m.set(day, e);

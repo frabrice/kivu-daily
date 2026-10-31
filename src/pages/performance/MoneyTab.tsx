@@ -4,7 +4,7 @@ import { ChartCard, DailyBars, Delta, Kpi, MiniTable, pct, RankBars, rwf, rwfSho
 import { TYPE_META } from '../../lib/finance';
 import { FinanceTransactionType } from '../../lib/supabase';
 import { DAILY_DEPOSIT_RATE, dailyRateOn } from '../../lib/fleet';
-import { addDays, CASH_IN_TYPES, collected, driverDay, drives, endDateOf, kivuRevenue, moneyIn, moneyOut, onContract, PerfData, Period, weeksOf, within } from '../../lib/performance';
+import { addDays, CASH_IN_TYPES, collected, depositsOf, driverDay, drives, endDateOf, kivuRevenue, moneyIn, moneyOut, onContract, PerfData, Period, weeksOf, within } from '../../lib/performance';
 
 const weekLabel = (start: string) => `Week of ${shortDay(start)}`;
 
@@ -27,7 +27,7 @@ export default function MoneyTab({ data, period: p }: { data: PerfData; period: 
     for (let day = from; day <= to; day = addDays(day, 1)) {
       for (const d of data.drivers) {
         if (!drives(d) || !onContract(d, endDateOf(d, data.events), day)) continue;
-        const st = driverDay(d, data.deposits.filter((x) => x.driver_id === d.id), day);
+        const st = driverDay(d, depositsOf(data.deposits, d.id), day);
         if (st === 'paid' || st === 'unpaid') expected += dailyRateOn(d, day);
       }
     }

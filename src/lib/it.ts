@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import { fetchAll } from './fetchAll';
 import type { Tone } from '../ui/kit';
+import { kigaliToday as kTodayFast, kFormat } from './kigali';
 
 // The IT workspace (migration 20261017100000): milestones, issues, the
 // inbox where requests land first, and who is working on what.
@@ -66,10 +67,10 @@ export const SIZES: { key: Size; label: string; points: number }[] = [
 export const pointsOf = (i: ItIssue) => SIZES.find((s) => s.key === i.size)?.points ?? 2;
 export const SOURCE_LABEL: Record<ItIssue['source'], string> = { md: 'MD', head: 'Head of IT', it: 'Developer (own)', department: 'Request', incident: 'Incident', migrated: 'Earlier backlog' };
 
-export const kigaliToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+export const kigaliToday = () => kTodayFast();
 export const addDays = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 export const dayLabel = (d: string | null, year = false) => (d ? new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(year ? { year: 'numeric' } : {}) }) : '—');
-export const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Kigali', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
+export const when = (iso: string | null) => (iso ? kFormat(iso, 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
 export const ago = (iso: string | null) => {
   if (!iso) return 'never';
   const m = Math.round((Date.now() - Date.parse(iso)) / 60000);

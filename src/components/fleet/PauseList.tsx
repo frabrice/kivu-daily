@@ -4,8 +4,9 @@ import { supabase, Driver, DriverPause } from '../../lib/supabase';
 import { PAUSE_REASON_LABEL } from '../../lib/fleet';
 import { EntityLink } from '../../os/EntityLink';
 import { Pager, usePaged } from '../../ui/Pager';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
-const kigaliToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const kigaliToday = () => kTodayFast();
 const dayLabel = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 const addDays = (d: string, n: number) => { const x = new Date(`${d}T12:00:00`); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA'); };
 

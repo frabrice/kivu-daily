@@ -21,6 +21,7 @@ import PauseList, { isPausedOn } from '../../components/fleet/PauseList';
 import { useDuties } from '../../lib/callTickets';
 import { supabase } from '../../lib/supabase';
 import { useEffect } from 'react';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
 export default function DriverProfilePage({
   driver,
@@ -63,7 +64,7 @@ export default function DriverProfilePage({
   }, [showMoney]);
   const canPause = canRecordPause(profile, duties);
   const canReviewPauses = canReviewPause(profile);
-  const pausedNow = (driver.pauses ?? []).find((p) => isPausedOn(p, new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' })));
+  const pausedNow = (driver.pauses ?? []).find((p) => isPausedOn(p, kTodayFast()));
   const [endContractOpen, setEndContractOpen] = useState(false);
   const [reactivateOpen, setReactivateOpen] = useState(false);
 

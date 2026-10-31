@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { edgeFunctionError } from './edgeFunctions';
 import type { Tone } from '../ui/kit';
+import { kFormat } from './kigali';
 
 // Dispatch (migration 20261101100000, edge function `dispatch`): book a
 // Kivu Ride trip for someone from Kivu Daily. See the function for how a
@@ -64,8 +65,8 @@ export async function callDispatch<T = Record<string, unknown>>(body: Record<str
 
 export const fmtRwf = (n: number | null | undefined) => (n == null ? '—' : `${Math.round(Number(n)).toLocaleString('en-US')} RWF`);
 export const localPhone = (p: string | null | undefined) => { const d = (p ?? '').replace(/\D/g, '').slice(-9); return d.length === 9 ? `0${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : p ?? ''; };
-export const kTime = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
-export const kDayTime = (iso: string) => new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
+export const kTime = (iso: string) => kFormat(iso, 'en-GB', { hour: '2-digit', minute: '2-digit' });
+export const kDayTime = (iso: string) => kFormat(iso, 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 // What the agent tells or sends the client: the driver, the car and the trip code.
 export function clientMessage(d: Dispatch): string {

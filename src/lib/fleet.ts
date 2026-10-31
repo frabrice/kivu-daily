@@ -53,52 +53,80 @@ export function canSeeDriverPayments(profile: Profile | null | undefined): boole
 // Shared by every Fleet page (Driver Pipeline, Vehicles, Deposits, Fines) so
 // each can be its own nav destination without re-fetching/duplicating the
 // same four tables four times over.
+// One shared copy for every page and panel that uses it (it used to be
+// fetched again by each one, with its own live channel): fetched once,
+// reused for 30 seconds when a page opens, and refreshed once per burst of
+// changes (a second after the last one), whoever is showing it.
+interface FleetSnapshot {
+  drivers: Driver[]; vehicles: Vehicle[]; deposits: DriverDeposit[]; fines: DriverFine[];
+  finePayments: DriverFinePayment[]; contractEvents: DriverContractEvent[]; driverDocuments: DriverDocument[];
+}
+const EMPTY_FLEET: FleetSnapshot = { drivers: [], vehicles: [], deposits: [], fines: [], finePayments: [], contractEvents: [], driverDocuments: [] };
+const fleetStore = {
+  snap: null as FleetSnapshot | null, at: 0, user: null as string | null,
+  inflight: null as Promise<void> | null, listeners: new Set<() => void>(),
+  channel: null as ReturnType<typeof supabase.channel> | null, timer: undefined as ReturnType<typeof setTimeout> | undefined,
+};
+async function fetchFleet(): Promise<FleetSnapshot> {
+  const [d, v, dep, fin, finePay, contractEvts, docs] = await Promise.all([
+    supabase.from('drivers').select('*, vehicle:vehicles(*), pauses:driver_pauses(*)').order('created_at', { ascending: false }),
+    supabase.from('vehicles').select('*').order('created_at', { ascending: false }),
+    fetchAll(() => supabase.from('driver_deposits').select('*').order('paid_date', { ascending: false }).order('id')),
+    fetchAll(() => supabase.from('driver_fines').select('*, driver:drivers(*), vehicle:vehicles(*)').order('fine_date', { ascending: false }).order('id')),
+    supabase.from('driver_fine_payments').select('*').order('paid_date', { ascending: false }),
+    supabase.from('driver_contract_events').select('*').order('event_date', { ascending: false }),
+    supabase.from('driver_documents').select('*'),
+  ]);
+  return {
+    drivers: (d.data as Driver[]) ?? [], vehicles: (v.data as Vehicle[]) ?? [], deposits: (dep.data as DriverDeposit[]) ?? [],
+    fines: (fin.data as DriverFine[]) ?? [], finePayments: (finePay.data as DriverFinePayment[]) ?? [],
+    contractEvents: (contractEvts.data as DriverContractEvent[]) ?? [], driverDocuments: (docs.data as DriverDocument[]) ?? [],
+  };
+}
+function refreshFleet(force: boolean): Promise<void> {
+  // A forced reload (after a save) waits for the one under way, then reads again.
+  if (fleetStore.inflight) return force ? fleetStore.inflight.then(() => refreshFleet(true)) : fleetStore.inflight;
+  if (!force && fleetStore.snap && Date.now() - fleetStore.at < 30_000) return Promise.resolve();
+  fleetStore.inflight = (async () => {
+    // Another person signed in on this computer: never show the last one's data.
+    const user = (await supabase.auth.getSession()).data.session?.user?.id ?? null;
+    if (user !== fleetStore.user) { fleetStore.snap = null; fleetStore.user = user; }
+    try {
+      fleetStore.snap = await fetchFleet();
+      fleetStore.at = Date.now();
+    } finally {
+      fleetStore.inflight = null;
+      fleetStore.listeners.forEach((l) => l());
+    }
+  })();
+  return fleetStore.inflight;
+}
+function watchFleet() {
+  if (fleetStore.channel) return;
+  const soon = () => { clearTimeout(fleetStore.timer); fleetStore.timer = setTimeout(() => { refreshFleet(true); }, 1000); };
+  let ch = supabase.channel(`fleet-feed-${Math.random().toString(36).slice(2)}`);
+  for (const table of ['drivers', 'vehicles', 'driver_deposits', 'driver_fines', 'driver_fine_payments', 'driver_contract_events', 'driver_documents', 'driver_pauses']) {
+    ch = ch.on('postgres_changes', { event: '*', schema: 'public', table }, soon);
+  }
+  fleetStore.channel = ch.subscribe();
+}
+
 export function useFleetData() {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [deposits, setDeposits] = useState<DriverDeposit[]>([]);
-  const [fines, setFines] = useState<DriverFine[]>([]);
-  const [finePayments, setFinePayments] = useState<DriverFinePayment[]>([]);
-  const [contractEvents, setContractEvents] = useState<DriverContractEvent[]>([]);
-  const [driverDocuments, setDriverDocuments] = useState<DriverDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    const [d, v, dep, fin, finePay, contractEvts, docs] = await Promise.all([
-      supabase.from('drivers').select('*, vehicle:vehicles(*), pauses:driver_pauses(*)').order('created_at', { ascending: false }),
-      supabase.from('vehicles').select('*').order('created_at', { ascending: false }),
-      fetchAll(() => supabase.from('driver_deposits').select('*').order('paid_date', { ascending: false }).order('id')),
-      fetchAll(() => supabase.from('driver_fines').select('*, driver:drivers(*), vehicle:vehicles(*)').order('fine_date', { ascending: false }).order('id')),
-      supabase.from('driver_fine_payments').select('*').order('paid_date', { ascending: false }),
-      supabase.from('driver_contract_events').select('*').order('event_date', { ascending: false }),
-      supabase.from('driver_documents').select('*'),
-    ]);
-    setDrivers((d.data as Driver[]) ?? []);
-    setVehicles((v.data as Vehicle[]) ?? []);
-    setDeposits((dep.data as DriverDeposit[]) ?? []);
-    setFines((fin.data as DriverFine[]) ?? []);
-    setFinePayments((finePay.data as DriverFinePayment[]) ?? []);
-    setContractEvents((contractEvts.data as DriverContractEvent[]) ?? []);
-    setDriverDocuments((docs.data as DriverDocument[]) ?? []);
-    setLoading(false);
-  }, []);
-
+  const [, rerender] = useState(0);
   useEffect(() => {
-    load();
-    const channel = supabase
-      .channel(`fleet-feed-${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_deposits' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_fines' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_fine_payments' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_contract_events' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_documents' }, () => load())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [load]);
-
-  return { drivers, vehicles, deposits, fines, finePayments, contractEvents, driverDocuments, loading, reload: load };
+    const l = () => rerender((n) => n + 1);
+    fleetStore.listeners.add(l);
+    watchFleet();
+    refreshFleet(false);
+    return () => {
+      fleetStore.listeners.delete(l);
+      // Nobody showing it any more: stop listening (the copy stays for the next page).
+      if (!fleetStore.listeners.size && fleetStore.channel) { supabase.removeChannel(fleetStore.channel); fleetStore.channel = null; }
+    };
+  }, []);
+  const reload = useCallback(() => refreshFleet(true), []);
+  const snap = fleetStore.snap ?? EMPTY_FLEET;
+  return { ...snap, loading: !fleetStore.snap, reload };
 }
 
 export const DRIVER_DOCUMENT_TYPES: { key: DriverDocumentType; label: string }[] = [

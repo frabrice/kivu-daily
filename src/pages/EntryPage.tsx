@@ -5,6 +5,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
+import { kFormat } from '../lib/kigali';
 
 // The entry room: a door into Kivu Daily. Click the door (or press Enter)
 // and it swings open onto the sign-in. The doors along the bottom open the
@@ -23,9 +24,9 @@ function useKigaliClock() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 15_000); return () => clearInterval(t); }, []);
   return {
-    day: now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Kigali' }),
-    time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' }),
-    hour: Number(now.toLocaleTimeString('en-GB', { hour: '2-digit', hour12: false, timeZone: 'Africa/Kigali' })),
+    day: kFormat(now, 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
+    time: kFormat(now, 'en-GB', { hour: '2-digit', minute: '2-digit' }),
+    hour: Number(kFormat(now, 'en-GB', { hour: '2-digit', hour12: false })),
   };
 }
 

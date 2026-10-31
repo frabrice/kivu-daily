@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import { fetchAll } from './fetchAll';
 import type { Tone } from '../ui/kit';
+import { kigaliDay as kDayFast, kFormat } from './kigali';
 
 // KivuRide platform trips, copied into platform_trips by the trips-sync
 // edge function every 2 minutes (see migration 20261016110000).
@@ -51,10 +52,8 @@ export function shortAddress(a: string | null | undefined) {
   return s || a;
 }
 export const minutesBetween = (a: string | null, b: string | null) => (a && b ? Math.max(0, Math.round((Date.parse(b) - Date.parse(a)) / 60000)) : null);
-export const kigaliDayOf = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' }) : '');
-export const kigaliTime = (iso: string | null, withDay = true) => (iso ? new Date(iso).toLocaleString('en-GB', {
-  timeZone: 'Africa/Kigali', ...(withDay ? { day: 'numeric', month: 'short' } : {}), hour: '2-digit', minute: '2-digit',
-}) : '—');
+export const kigaliDayOf = (iso: string | null) => (iso ? kDayFast(iso) : '');
+export const kigaliTime = (iso: string | null, withDay = true) => (iso ? kFormat(iso, 'en-GB', withDay ? { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' } : { hour: '2-digit', minute: '2-digit' }) : '—');
 export const mapsRoute = (t: PlatformTrip) => (t.pickup_lat && t.destination_lat
   ? `https://www.google.com/maps/dir/?api=1&origin=${t.pickup_lat},${t.pickup_lng}&destination=${t.destination_lat},${t.destination_lng}`
   : null);

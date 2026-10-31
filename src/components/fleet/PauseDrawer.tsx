@@ -3,8 +3,9 @@ import { PauseCircle, Upload } from 'lucide-react';
 import { supabase, Driver, PauseReason } from '../../lib/supabase';
 import { PAUSE_REASONS } from '../../lib/fleet';
 import Modal from '../Modal';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
-const kigaliToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const kigaliToday = () => kTodayFast();
 const minusDays = (d: string, n: number) => { const x = new Date(`${d}T12:00:00`); x.setDate(x.getDate() - n); return x.toLocaleDateString('en-CA'); };
 
 // Pause a driver's days (sick, car in the garage...). Those days count like

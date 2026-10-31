@@ -11,6 +11,7 @@ import LiveTrip from '../../components/dispatch/LiveTrip';
 import {
   Dispatch, FOR_KINDS, FOR_LABEL, ForKind, NearDriver, PAY_LABEL, Place, TypeQuote, callDispatch, fmtRwf, kDayTime, kTime, localPhone, statusOf,
 } from '../../lib/dispatch';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
 // Dispatch (/dispatch): anyone on the team books a Kivu Ride trip for a
 // hotline caller, a friend or family member. Name and phone, where from and
@@ -19,7 +20,7 @@ import {
 // page follows it live: who accepted, the car, the trip code to give the
 // client. If nobody takes it, book again in one click.
 
-const todayK = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const todayK = () => kTodayFast();
 const addDays = (day: string, n: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const dayStart = (day: string) => `${day}T00:00:00+02:00`;
 

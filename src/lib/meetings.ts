@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase, Driver, DriverDeposit, DriverFine, DriverFinePayment, DriverContractEvent, Vehicle } from './supabase';
 import { computeDepositStanding, isoWeekday, shiftDay } from './fleet';
 import type { Tone } from '../ui/kit';
+import { kigaliToday as kTodayFast, kFormat } from './kigali';
 
 // Meetings (migration 20261026100000): regular meetings preset from a
 // series, run with attendance, one note-taker, numbers, decisions and
@@ -28,9 +29,9 @@ export const ATTENDANCE: Record<AttendanceStatus, { label: string; tone: Tone }>
   absent: { label: 'Absent', tone: 'danger' }, excused: { label: 'Excused', tone: 'info' },
 };
 export const DAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-export const kigaliToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+export const kigaliToday = () => kTodayFast();
 export const hhmm = (t: string | null) => (t ? t.slice(0, 5) : '—');
-export const clock = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali', hour: '2-digit', minute: '2-digit' }) : '—');
+export const clock = (iso: string | null) => (iso ? kFormat(iso, 'en-GB', { hour: '2-digit', minute: '2-digit' }) : '—');
 export const minutesLate = (o: Occurrence) => (o.scheduled_start && o.started_at ? Math.round((Date.parse(o.started_at) - Date.parse(`${o.day}T${o.scheduled_start}+02:00`)) / 60000) : null);
 export const metricsList = (o: Occurrence): Metric[] => (Array.isArray(o.metrics) ? o.metrics : []);
 

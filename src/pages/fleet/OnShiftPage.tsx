@@ -7,6 +7,7 @@ import { useAccess } from '../../os/access';
 import { usePageTitle } from '../../os/workspace';
 import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, UnderlineTabs } from '../../ui/kit';
 import Modal from '../../components/Modal';
+import { kFormat } from '../../lib/kigali';
 
 // Ours On Shift: every one of our drivers (and freelancers) who should be
 // driving, and whether they are online in the Kivu Ride app. Fleet and the
@@ -15,7 +16,7 @@ import Modal from '../../components/Modal';
 // Under Management (embedded: no page header of its own).
 
 type View = 'now' | 'day' | 'night';
-const clock = (ms: number) => new Date(ms).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali', hour: '2-digit', minute: '2-digit' });
+const clock = (ms: number) => kFormat(ms, 'en-GB', { hour: '2-digit', minute: '2-digit' });
 const dur = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${min % 60 ? ` ${String(min % 60).padStart(2, '0')}` : ''}`);
 const ago = (iso: string | null, now: number) => { if (!iso) return '—'; const m = Math.round((now - Date.parse(iso)) / 60000); return m < 1 ? 'just now' : `${dur(m)} ago`; };
 const ORDER: Record<Presence, number> = { offline: 0, stale: 1, not_in_app: 2, online: 3, blocked: 4 };
@@ -92,7 +93,7 @@ export default function OnShiftPage({ embedded = false }: { embedded?: boolean }
         <StatCard icon={HelpCircle} label="Not found in the app" value={missing.length} tone={missing.length ? 'attention' : undefined} sub={missing.length ? 'Phone in Kivu Daily ≠ phone in the app' : 'Everyone matched'} />
       </StatGrid>
 
-      <Box title={view === 'now' ? 'Who should be driving now' : `${shiftLabelOf(d.hours, view as ShiftKey)} · ${rows[0] ? new Date(rows[0].e.start).toLocaleDateString('en-GB', { timeZone: 'Africa/Kigali', weekday: 'long', day: 'numeric', month: 'short' }) : ''}`} icon={Radio} padded={false} className="mb-4">
+      <Box title={view === 'now' ? 'Who should be driving now' : `${shiftLabelOf(d.hours, view as ShiftKey)} · ${rows[0] ? kFormat(rows[0].e.start, 'en-GB', { weekday: 'long', day: 'numeric', month: 'short' }) : ''}`} icon={Radio} padded={false} className="mb-4">
         {driving.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-small min-w-[760px]">

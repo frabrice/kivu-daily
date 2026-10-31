@@ -8,6 +8,7 @@ import { CATEGORY_LABEL } from '../../lib/callTickets';
 import { OutreachCall, RESULT_LABEL } from '../../lib/outreach';
 import ShiftReportModal, { shiftMinutes } from '../../components/callCenter/ShiftReportModal';
 import { ChartCard, DailyBars, dayList, Empty, Kpi, kigaliDay, longDay, MiniTable, pct, RangeTabs, RankBars, STATUS, usePalette } from '../../components/charts/kit';
+import { kFormat } from '../../lib/kigali';
 
 type Range = 7 | 30 | 90 | 0;
 const RANGES: { v: Range; label: string }[] = [{ v: 7, label: '7 days' }, { v: 30, label: '30 days' }, { v: 90, label: '90 days' }, { v: 0, label: 'All time' }];
@@ -16,7 +17,7 @@ type StartTone = 'good' | 'warning' | 'serious' | 'critical';
 const startTone = (s: CallCenterShift): StartTone => (s.status === 'auto_closed' ? 'critical' : s.late_minutes > 30 ? 'serious' : s.late_minutes > 10 ? 'warning' : 'good');
 const TONE_LABEL: Record<StartTone, string> = { good: 'On time', warning: 'Late 11–30 min', serious: 'Late 30+ min', critical: 'Not ended' };
 const SLOT_LETTER = { morning: 'M', afternoon: 'A', night: 'N' } as const;
-const kTime = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
+const kTime = (iso: string) => kFormat(iso, 'en-GB', { hour: '2-digit', minute: '2-digit' });
 
 interface Metrics {
   shifts: number; days: number; minutes: number; onTime: number; late: number; lateMinutes: number; notEnded: number;

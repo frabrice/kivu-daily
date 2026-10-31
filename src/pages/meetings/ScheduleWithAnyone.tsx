@@ -5,14 +5,15 @@ import { supabase } from '../../lib/supabase';
 import { MeetingsData, Occurrence, hhmm, kigaliToday } from '../../lib/meetings';
 import { Box, Label } from '../../ui/kit';
 import Modal from '../../components/Modal';
+import { kigaliDay as kDayFast, kFormat } from '../../lib/kigali';
 
 // Anyone books a meeting with anyone (migration 20261028110000): choose the
 // people, see only the times when you and all of them are free (their
 // working hours minus every meeting, booking and day off), book - they are
 // invited. The server checks again at booking time, so nothing collides.
 
-const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali', hour: '2-digit', minute: '2-digit' });
-const kDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const time = (iso: string) => kFormat(iso, 'en-GB', { hour: '2-digit', minute: '2-digit' });
+const kDay = (iso: string) => kDayFast(iso);
 const dayLabel = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
 const LENGTHS = [15, 30, 45, 60, 90, 120];
 

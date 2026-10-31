@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import Modal from '../Modal';
 import { REPORTS, ReportKind, buildReport, download, fileName, loadExportData, toExcel, toPdf } from '../../lib/fleetExports';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
 // "Export" on the Fleet pages and Under Management: pick a report, a period
 // and Excel or PDF; the file is made in the browser and downloaded.
-const todayK = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const todayK = () => kTodayFast();
 const shift = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const mondayOf = (d: string) => shift(d, -((new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7));
 const lastOfMonth = (d: string) => { const x = new Date(`${d.slice(0, 7)}-01T12:00:00Z`); x.setUTCMonth(x.getUTCMonth() + 1); x.setUTCDate(0); return x.toISOString().slice(0, 10); };

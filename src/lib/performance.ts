@@ -4,6 +4,7 @@ import { computeDepositStanding, pauseOn, paidThroughDate, isoWeekday, DepositSt
 import { CallCenterShift } from './shifts';
 import { OutreachCall } from './outreach';
 import { KIVU_REVENUE_TYPES } from './finance';
+import { kigaliDay as kDayFast, kigaliToday as kTodayFast, kFormat } from './kigali';
 
 // MD Performance hub: one load of everything, and the history rebuilt from
 // it - day by day - so trends work from the first day of data, not only
@@ -92,8 +93,8 @@ export function usePerformanceData() {
 }
 
 // ------------------------------------------------------------ periods
-export const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
-export const kDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+export const today = () => kTodayFast();
+export const kDay = (iso: string) => kDayFast(iso);
 export const addDays = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 export interface Period { from: string; to: string; prevFrom: string; prevTo: string; days: number }
 export function periodOf(days: number, end = today()): Period {
@@ -121,13 +122,35 @@ const REST_ISO: Record<string, number> = { monday: 1, tuesday: 2, wednesday: 3, 
 
 // What a driver's day was, judged with only the payments made by then:
 // rest day, paused (sick, garage...), covered by payments, or worked unpaid.
+// Asked for every day of a period for every driver, so the payments are
+// sorted once per driver and each "paid through" date is worked out once
+// per total paid (it only changes when a payment comes in).
+const dayJudges = new WeakMap<DriverDeposit[], WeakMap<Driver, { pays: { date: string; amount: number }[]; through: Map<number, string | null> }>>();
 export function driverDay(d: Driver, deps: DriverDeposit[], day: string): DriverDayState {
   if (d.rest_day && REST_ISO[d.rest_day] === isoWeekday(day)) return 'rest';
   if (pauseOn(d.pauses, day)) return 'paused';
-  const paid = contractPayments(d, deps).filter((p) => p.date <= day).reduce((s, p) => s + p.amount, 0);
-  const through = paidThroughDate(d.start_date!, d.rest_day, paid, d.pauses, (x) => dailyRateOn(d, x));
+  let byDriver = dayJudges.get(deps);
+  if (!byDriver) { byDriver = new WeakMap(); dayJudges.set(deps, byDriver); }
+  let j = byDriver.get(d);
+  if (!j) { j = { pays: contractPayments(d, deps), through: new Map() }; byDriver.set(d, j); }
+  let paid = 0;
+  for (const p of j.pays) { if (p.date > day) break; paid += p.amount; }
+  let through = j.through.get(paid);
+  if (through === undefined) { through = paidThroughDate(d.start_date!, d.rest_day, paid, d.pauses, (x) => dailyRateOn(d, x)); j.through.set(paid, through); }
   return through && through >= day ? 'paid' : 'unpaid';
 }
+// Each driver's payments, split once (carDay asks for them car by car, day by day).
+const depsByDriver = new WeakMap<DriverDeposit[], Map<string, DriverDeposit[]>>();
+export function depositsOf(all: DriverDeposit[], driverId: string): DriverDeposit[] {
+  let m = depsByDriver.get(all);
+  if (!m) {
+    m = new Map();
+    for (const x of all) { const l = m.get(x.driver_id); if (l) l.push(x); else m.set(x.driver_id, [x]); }
+    depsByDriver.set(all, m);
+  }
+  return m.get(driverId) ?? EMPTY_DEPS;
+}
+const EMPTY_DEPS: DriverDeposit[] = [];
 
 export interface DriverRow {
   driver: Driver; end: string | null; standing: DepositStanding;
@@ -172,7 +195,7 @@ export function carDay(v: Vehicle, data: PerfData, day: string): CarDayState | n
   if (!v.operation_start_date && v.created_at && day < kDay(v.created_at)) return null;
   const ds = data.drivers.filter((d) => d.vehicle_id === v.id && onContract(d, endDateOf(d, data.events), day));
   if (!ds.length) return 'no_driver';
-  const states = ds.map((d) => driverDay(d, data.deposits.filter((x) => x.driver_id === d.id), day));
+  const states = ds.map((d) => driverDay(d, depositsOf(data.deposits, d.id), day));
   if (states.includes('paid')) return 'working';
   if (states.every((s) => s === 'rest')) return 'rest';
   if (states.every((s) => s === 'paused' || s === 'rest')) return 'paused';
@@ -197,7 +220,7 @@ export function lostDays(data: PerfData, from: string, to: string): { day: strin
     let lost = 0, paused = 0;
     for (const d of data.drivers) {
       if (!drives(d) || !onContract(d, endDateOf(d, data.events), day)) continue;
-      const st = driverDay(d, data.deposits.filter((x) => x.driver_id === d.id), day);
+      const st = driverDay(d, depositsOf(data.deposits, d.id), day);
       if (st === 'unpaid') lost += 1;
       if (st === 'paused') paused += 1;
     }
@@ -217,7 +240,7 @@ const doneOnTime = (t: PerfTask) => {
   if (doneDay < t.date) return true;
   if (doneDay > t.date) return false;
   if (!t.due_time) return true;
-  const hm = new Date(t.completed_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Africa/Kigali' });
+  const hm = kFormat(t.completed_at, 'en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
   return hm <= t.due_time.slice(0, 5);
 };
 export function personRows(data: PerfData, p: Period): PersonRow[] {

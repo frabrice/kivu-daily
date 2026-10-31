@@ -8,9 +8,10 @@ import { Access } from './access';
 import { BadgeKey } from './registry';
 import { LegalDoc, missingForDriver, missingForOwner } from '../lib/legalDocs';
 import type { Driver, Vehicle } from '../lib/supabase';
+import { kigaliToday as kTodayFast } from '../lib/kigali';
 
 const head = async (q: PromiseLike<{ count: number | null }>) => (await q).count ?? 0;
-const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const today = () => kTodayFast();
 
 // Live counters for the rail and sidebars. Cheap head-only counts,
 // refreshed every minute and whenever the window regains focus.

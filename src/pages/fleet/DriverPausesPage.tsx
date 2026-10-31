@@ -6,8 +6,9 @@ import { useDuties } from '../../lib/callTickets';
 import { canRecordPause, canReviewPause, countWorkingDays, dailyRateOf, PAUSE_REASONS, useFleetData } from '../../lib/fleet';
 import PauseList, { isPausedOn } from '../../components/fleet/PauseList';
 import PauseDrawer from '../../components/fleet/PauseDrawer';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
-const kigaliToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const kigaliToday = () => kTodayFast();
 const rwf = (n: number) => `${Math.round(n).toLocaleString('en-US')} RWF`;
 
 // Driver days off: pauses waiting for approval, who is paused now, this

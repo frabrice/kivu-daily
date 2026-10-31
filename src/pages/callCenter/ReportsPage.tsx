@@ -11,7 +11,7 @@ import { CallCenterShift, durationLabel, SLOT_LABEL, ShiftSlot } from '../../lib
 import { fmtRwf, kTime, localPhone } from '../../lib/dispatch';
 import {
   AgentRow, Booking, BookingStats, Outcome, OUTCOME_LABEL, OUTCOME_SHORT, ReportData, SOURCE_LABEL, addDays, agentRows, bookingStats, carRate, dayOf, daysBetween,
-  FIRST_DAY, fmtWait, hourOf, inShift, loadReport, shiftStats, todayK, wrongSlot,
+  FIRST_DAY, fmtWait, inShift, loadReport, shiftStats, todayK, wrongSlot,
 } from '../../lib/ccReports';
 import { ChartCard, DailyBars, DailyLines, Delta, Empty, Kpi, MiniTable, RankBars, STATUS, dayList, longDay, usePalette } from '../../components/charts/kit';
 import { Label, PageHeader, UnderlineTabs } from '../../ui/kit';
@@ -71,11 +71,11 @@ export default function ReportsPage() {
     const cut = (lo: string, hi: string) => {
       const shifts = data.shifts.filter((s) => dayOf(s.started_at) >= lo && dayOf(s.started_at) <= hi);
       const scoped = shifts.filter((s) => (!agent || s.agent_id === agent) && (!slot || s.slot === slot));
-      let bookings = data.bookings.filter((b) => dayOf(b.at) >= lo && dayOf(b.at) <= hi);
+      let bookings = data.bookings.filter((b) => b.day >= lo && b.day <= hi);
       if (agent || slot) bookings = bookings.filter((b) => (agent && b.by === agent) || (!(b.channel === 'hotline' && b.by && b.by !== agent) && scoped.some((s) => inShift(s, b.at))));
       if (ch !== 'all') bookings = bookings.filter((b) => b.channel === ch);
       // The whole team's bookings in the days, for comparing one agent with the others.
-      const team = data.bookings.filter((b) => dayOf(b.at) >= lo && dayOf(b.at) <= hi && (ch === 'all' || b.channel === ch));
+      const team = data.bookings.filter((b) => b.day >= lo && b.day <= hi && (ch === 'all' || b.channel === ch));
       return { shifts: scoped, allShifts: shifts, bookings, team };
     };
     return { cur: cut(from, to), prev: cut(prevFrom, addDays(from, -1)) };
@@ -164,13 +164,13 @@ function Overview({ cur, prev, from, to, c, agent, rows }: { cur: Slice; prev: S
   const rate = carRate(s), prate = carRate(p);
   const series = OUTCOME_SERIES(c);
   const days = dayList(from, to);
-  const perDay = days.map((d) => ({ day: d, ...countBy(cur.bookings.filter((b) => dayOf(b.at) === d)) }));
+  const perDay = days.map((d) => ({ day: d, ...countBy(cur.bookings.filter((b) => b.day === d)) }));
   const rateDay = days.map((d) => {
     // A day with fewer than 3 bookings on a channel says little: left blank.
-    const at = (chn: string) => { const st = bookingStats(cur.bookings.filter((b) => dayOf(b.at) === d && b.channel === chn)); return st.n >= 3 ? carRate(st) : null; };
+    const at = (chn: string) => { const st = bookingStats(cur.bookings.filter((b) => b.day === d && b.channel === chn)); return st.n >= 3 ? carRate(st) : null; };
     return { day: d, app: at('app'), hotline: at('hotline') };
   });
-  const perHour = Array.from({ length: 24 }, (_, h) => ({ hour: String(h), ...countBy(cur.bookings.filter((b) => hourOf(b.at) === h)) }));
+  const perHour = Array.from({ length: 24 }, (_, h) => ({ hour: String(h), ...countBy(cur.bookings.filter((b) => b.hour === h)) }));
   const bySource = (['app', 'kivu_daily', 'dashboard'] as const).map((src) => ({ label: SOURCE_LABEL[src], ...countBy(cur.bookings.filter((b) => b.source === src)) })).filter((r) => r.completed + r.cancelled_after + r.no_car + r.running);
   const slotOf = (b: Booking) => cur.allShifts.find((x) => inShift(x, b.at))?.slot ?? null;
   const bySlot = [...SLOTS.map((sl) => ({ label: SLOT_LABEL[sl].split(' ')[0], ...countBy(cur.bookings.filter((b) => slotOf(b) === sl)) })), { label: 'No shift', ...countBy(cur.bookings.filter((b) => !slotOf(b))) }]
@@ -286,7 +286,7 @@ function Insights({ cur, rows, agent }: { cur: Slice; rows: AgentRow[]; agent: s
   const app = bookingStats(cur.bookings.filter((b) => b.channel === 'app')), hot = bookingStats(cur.bookings.filter((b) => b.channel === 'hotline'));
   const rate = carRate(s);
   if (s.n && rate != null) out.push({ tone: rate < 70 ? 'bad' : 'good', text: <><b>{s.noCar}</b> of {s.n} bookings got no car ({100 - rate}% did not get one). {rate < 70 ? 'Ask the team to call drivers online near the pickup as soon as a booking waits more than a minute.' : 'Keep it up.'}</> });
-  const hours = Array.from({ length: 24 }, (_, h) => { const l = cur.bookings.filter((b) => hourOf(b.at) === h); return { h, n: l.length, no: l.filter((b) => b.outcome === 'no_car').length }; })
+  const hours = Array.from({ length: 24 }, (_, h) => { const l = cur.bookings.filter((b) => b.hour === h); return { h, n: l.length, no: l.filter((b) => b.outcome === 'no_car').length }; })
     .filter((x) => x.n >= 3 && x.no).sort((x, y) => y.no / y.n - x.no / x.n || y.no - x.no);
   if (hours[0]) out.push({ tone: 'bad', text: <>The worst hour is <b>{hours[0].h}:00–{hours[0].h}:59</b>: {hours[0].no} of {hours[0].n} bookings got no car{hours[1] ? <>, then {hours[1].h}:00 ({hours[1].no} of {hours[1].n})</> : null}. Make sure drivers are online then.</> });
   const slots = SLOTS.map((sl) => { const l = cur.bookings.filter((b) => cur.allShifts.find((x) => inShift(x, b.at))?.slot === sl); return { sl, st: bookingStats(l) }; }).filter((x) => x.st.n >= 3);
@@ -449,7 +449,7 @@ function Bookings({ list, shifts, nameOf, initial, canCancel }: { list: Booking[
             <tbody className="divide-y divide-line-muted">
               {shown.map((b) => (
                 <tr key={b.key} className="hover:bg-hover cursor-pointer" onClick={() => setOpen(b)}>
-                  <td className="px-2 py-2 whitespace-nowrap tabular-nums">{longDay(dayOf(b.at))} {kTime(b.at)}</td>
+                  <td className="px-2 py-2 whitespace-nowrap tabular-nums">{longDay(b.day)} {kTime(b.at)}</td>
                   <td className="px-2 py-2 whitespace-nowrap">{b.channel === 'app' ? <span className="flex items-center gap-1"><Smartphone size={12} /> App</span> : <span className="flex items-center gap-1"><PhoneIncoming size={12} /> {b.source === 'kivu_daily' ? 'Kivu Daily' : 'Dashboard'}</span>}</td>
                   <td className="px-2 py-2"><p className="font-medium">{b.client ?? '—'}</p>{b.phone && <p className="text-caption text-fg-muted">{localPhone(b.phone)}</p>}</td>
                   <td className="px-2 py-2 max-w-[240px]"><p className="truncate">{b.pickup ?? '—'}</p><p className="truncate text-fg-muted">→ {b.destination ?? '—'}</p></td>
@@ -473,7 +473,7 @@ function Bookings({ list, shifts, nameOf, initial, canCancel }: { list: Booking[
 function BookingModal({ b, onClose, nameOf, canCancel }: { b: Booking; onClose: () => void; nameOf: (id: string | null) => string; canCancel: boolean }) {
   const [d, setD] = useState(b.dispatch);
   return (
-    <Modal open onClose={onClose} title={b.client ?? `Trip #${b.tripId}`} subtitle={`${SOURCE_LABEL[b.source]} · ${longDay(dayOf(b.at))} ${kTime(b.at)}`} maxWidth="max-w-lg">
+    <Modal open onClose={onClose} title={b.client ?? `Trip #${b.tripId}`} subtitle={`${SOURCE_LABEL[b.source]} · ${longDay(b.day)} ${kTime(b.at)}`} maxWidth="max-w-lg">
       {d ? <LiveTrip d={d} onChange={setD} onBookAgain={() => { window.location.href = '/dispatch'; }} canCancel={canCancel} bare /> : (
         <dl className="grid grid-cols-[130px_1fr] gap-x-3 gap-y-1.5 text-small">
           {([

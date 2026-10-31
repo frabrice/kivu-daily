@@ -5,6 +5,7 @@ import { EntityLink } from '../../os/EntityLink';
 import {
   ANSWER_LABEL, ANSWERS, APP_STATUS, APP_STATUS_SHORT, CATEGORIES, CATEGORY_LABEL, categoryOf, OutreachCall, OutreachStatus, RESULT_LABEL, RESULTS,
 } from '../../lib/outreach';
+import { kigaliDay as kDayFast, kFormat } from '../../lib/kigali';
 
 type Period = 'all' | 'today' | 'yesterday' | 'week' | '7d' | 'month' | 'custom';
 const PERIODS: { key: Period; label: string }[] = [
@@ -18,7 +19,7 @@ const PERIODS: { key: Period; label: string }[] = [
 ];
 const PAGE_SIZES = [25, 50, 100];
 
-const kigaliDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const kigaliDay = (iso: string) => kDayFast(iso);
 const addDays = (day: string, n: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
 // [from, to] inclusive, as Kigali days; null = no limit.
@@ -115,10 +116,10 @@ export default function OutreachLog({ calls, drivers, statuses, names }: {
   const when = (iso: string) => {
     const d = new Date(iso);
     const day = kigaliDay(iso);
-    const t = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
+    const t = kFormat(d, 'en-GB', { hour: '2-digit', minute: '2-digit' });
     if (day === today) return `Today ${t}`;
     if (day === addDays(today, -1)) return `Yesterday ${t}`;
-    return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Kigali' })} ${t}`;
+    return `${kFormat(d, 'en-GB', { day: 'numeric', month: 'short' })} ${t}`;
   };
 
   const downloadCsv = () => {
@@ -126,7 +127,7 @@ export default function OutreachLog({ calls, drivers, statuses, names }: {
     const head = ['Date', 'Time', 'Agent', 'Driver', 'Phone', 'Plate', 'Round', 'Result', 'Updated app', 'Device', 'Branding', 'Said yes', 'Note'];
     const lines = shown.map((c) => {
       const d = driverById.get(c.platform_driver_id);
-      const t = new Date(c.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
+      const t = kFormat(c.created_at, 'en-GB', { hour: '2-digit', minute: '2-digit' });
       return [kigaliDay(c.created_at), t, c.agent_id ? names[c.agent_id] ?? '' : '', d?.full_name ?? '', d?.phone ?? '', d?.car?.plate_number ?? '', `R${c.round}`,
         RESULT_LABEL[c.result], c.app_status ? APP_STATUS_SHORT[c.app_status] : '', c.device_answer ? ANSWER_LABEL[c.device_answer] : '',
         c.branding_answer ? ANSWER_LABEL[c.branding_answer] : '', c.interested ? 'Yes' : '', c.note ?? ''].map((v) => esc(String(v))).join(',');

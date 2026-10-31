@@ -5,6 +5,7 @@ import { supabase, Driver, DriverDeposit } from '../../lib/supabase';
 import { computeDepositStanding, formatDateLabelSafe } from '../../lib/fleet';
 import type { BalanceAdjustment } from '../../lib/fleet';
 import { rwf } from '../../ui/kit';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
 // Adjust a driver's numbers (migration 20261101130000): type what "Owes",
 // "Behind" and the next payment date should be, and why. Owes and behind
@@ -13,7 +14,7 @@ import { rwf } from '../../ui/kit';
 // recorded as "may drive until". Nothing is overwritten; it is all kept
 // with who, when, the reason and the numbers before and after.
 export default function AdjustBalanceModal({ driver, deposits, onClose, onSaved }: { driver: Driver; deposits: DriverDeposit[]; onClose: () => void; onSaved: () => void }) {
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+  const today = kTodayFast();
   const before = useMemo(() => computeDepositStanding(driver, deposits), [driver, deposits]);
   const [amount, setAmount] = useState(0); // credit (+) or charge (-)
   const [owesText, setOwesText] = useState(String(before.owes));

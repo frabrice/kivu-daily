@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { useAccess } from '../../os/access';
 import { useBusinessData } from '../../lib/business';
 import { AssignToCompanyModal } from '../../components/business/BusinessModals';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
 // Every KivuRide trip, synced from the platform every 2 minutes: live
 // status, rider, driver and car (linked to ours when it's our fleet),
@@ -23,7 +24,7 @@ import { AssignToCompanyModal } from '../../components/business/BusinessModals';
 
 type Period = 'today' | '7d' | '30d' | 'all';
 type View = 'live' | 'completed' | 'cancelled' | 'all';
-const todayK = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const todayK = () => kTodayFast();
 const daysAgo = (n: number) => { const d = new Date(`${todayK()}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
 const ago = (iso: string | null) => {
   if (!iso) return 'never';

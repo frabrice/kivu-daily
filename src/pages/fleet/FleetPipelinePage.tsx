@@ -4,7 +4,7 @@ import { useAuth } from '../../lib/auth';
 import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
 import { isPausedOn } from '../../components/fleet/PauseList';
 
-const kigaliToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const kigaliToday = kTodayFast();
 import { Driver } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
@@ -16,6 +16,7 @@ import { usePeek } from '../../os/peek';
 import { LEGAL_KIND, missingForDriver, useLegalDocs } from '../../lib/legalDocs';
 import { Label } from '../../ui/kit';
 import ExportButton from '../../components/fleet/ExportButton';
+import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
 interface DriverDrawerState { driver: Driver | null; startEditing: boolean }
 

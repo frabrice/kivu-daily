@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import { fetchAll } from './fetchAll';
 import { PlatformTrip, kigaliDayOf, shortAddress } from './trips';
+import { kigaliToday as kTodayFast } from './kigali';
 
 // Business clients (companies whose people ride with Kivu Ride and are
 // billed weekly): their tagged trips, invoices and payments.
@@ -51,7 +52,7 @@ export const PAYMENT_METHODS = [
 const TRIP_COLS = 'id, status, created_at, requested_at, accepted_at, started_at, completed_at, cancelled_at, vehicle_type, pickup_address, destination_address, rider_kind, rider_name, rider_phone, driver_name, driver_phone, vehicle_plate, kivu_driver_id, kivu_vehicle_id, estimated_distance_km, actual_distance_km, estimated_duration_minutes, actual_duration_minutes, waiting_minutes, waiting_fee, extras_total, total_fare, payment_method, payment_status, dispatch_method';
 
 // ------------------------------------------------------------ dates (Kigali, Monday-Sunday weeks)
-export const todayK = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+export const todayK = () => kTodayFast();
 export const addDaysK = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 export const mondayOfK = (d: string) => { const w = new Date(`${d}T12:00:00Z`).getUTCDay(); return addDaysK(d, -((w + 6) % 7)); };
 export const dayLabel = (d: string, year = false) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(year ? { year: 'numeric' } : {}) });

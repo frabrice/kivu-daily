@@ -1,6 +1,7 @@
 import { getLogoDataUrl, getPdfMake } from './newsletterPdf';
 import { BusinessClient, BusinessInvoice, InvoiceSettings, InvoiceSnapshot, StatementRow, dayLabel } from './business';
 import { kigaliDayOf, shortAddress } from './trips';
+import { kigaliToday as kTodayFast, kFormat } from './kigali';
 
 // Branded A4 invoice and statement PDFs (pdfmake, generated in the browser).
 // Navy / teal / green from the Kivu Ride logo; quiet hairlines, one strong
@@ -16,7 +17,7 @@ const ZEBRA = '#F6F8FA';
 
 const rwf = (n: number) => `${Math.round(n).toLocaleString('en-US')} RWF`;
 const num = (n: number) => Math.round(n).toLocaleString('en-US');
-const timeK = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali', hour: '2-digit', minute: '2-digit' });
+const timeK = (iso: string) => kFormat(iso, 'en-GB', { hour: '2-digit', minute: '2-digit' });
 const dayK = (iso: string) => dayLabel(kigaliDayOf(iso));
 const weekday = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
@@ -325,7 +326,7 @@ export async function reportPdfBlob(r: ReportInput): Promise<Blob> {
 
 export async function statementPdfBlob(client: BusinessClient, issuer: InvoiceSettings, rows: StatementRow[], unbilled: { trips: number; amount: number }): Promise<Blob> {
   const pdfMake = await getPdfMake();
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+  const today = kTodayFast();
   const balance = rows.length ? rows[rows.length - 1].balance : 0;
   const doc = {
     pageSize: 'A4',

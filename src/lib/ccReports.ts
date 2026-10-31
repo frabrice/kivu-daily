@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { CallCenterShift } from './shifts';
 import { Dispatch } from './dispatch';
+import { kigaliDay as kDayFast, kigaliToday as kTodayFast, kigaliHour } from './kigali';
 
 // Call Center reports (page /call-center/reports): every booking that
 // needed a car - app bookings and hotline dispatches - next to the shifts
@@ -25,6 +26,7 @@ export const SOURCE_LABEL: Record<Source, string> = { app: 'App', kivu_daily: 'H
 
 export interface Booking {
   key: string; channel: Channel; source: Source; at: string; status: string; outcome: Outcome; gotCar: boolean;
+  day: string; hour: number;   // Kigali day and hour of `at`, worked out once
   acceptSecs: number | null; refusals: number | null;
   by: string | null;          // the agent who dispatched it (hotline)
   team: boolean;              // hotline from a shared account or none: the team on shift
@@ -46,11 +48,11 @@ const TRIP_COLS = 'id, status, requested_at, created_at, accepted_at, dispatch_m
 
 // The first trip on the platform: "All time" starts here.
 export const FIRST_DAY = '2026-05-31';
-export const todayK = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+export const todayK = () => kTodayFast();
 export const addDays = (day: string, n: number) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 export const dayStart = (day: string) => `${day}T00:00:00+02:00`;
-export const dayOf = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
-export const hourOf = (iso: string) => Number(new Date(iso).toLocaleString('en-GB', { hour: '2-digit', hour12: false, timeZone: 'Africa/Kigali' })) % 24;
+export const dayOf = (iso: string) => kDayFast(iso);
+export const hourOf = (iso: string) => kigaliHour(iso);
 export const daysBetween = (from: string, to: string) => Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000) + 1;
 // A shift's window: start to end; one still open runs to now (at most 10 h).
 export const shiftEnd = (s: CallCenterShift) => s.ended_at ?? new Date(Math.min(Date.now(), Date.parse(s.started_at) + 10 * 3_600_000)).toISOString();
@@ -102,7 +104,7 @@ export async function loadReport(from: string, to: string): Promise<ReportData> 
     const trip = x.platform_trip_id ? tripById.get(x.platform_trip_id) : undefined;
     const accepted = !!x.accepted_at;
     bookings.push({
-      key: `kd-${x.id}`, channel: 'hotline', source: 'kivu_daily', at: x.created_at, status: x.status, outcome: outcomeOf(x.status, accepted), gotCar: accepted,
+      key: `kd-${x.id}`, channel: 'hotline', source: 'kivu_daily', at: x.created_at, day: dayOf(x.created_at), hour: hourOf(x.created_at), status: x.status, outcome: outcomeOf(x.status, accepted), gotCar: accepted,
       acceptSecs: secsBetween(x.created_at, x.accepted_at), refusals: trip?.rejected_driver_count ?? null, by: x.created_by, team: false, adminId: null, tripId: x.platform_trip_id,
       client: x.client_name, phone: x.client_phone, pickup: x.pickup_address, destination: x.destination_address, driver: x.driver_name, plate: x.vehicle_plate,
       fare: x.fare ?? x.estimated_fare, vehicleType: x.vehicle_type, dispatch: x,
@@ -115,7 +117,7 @@ export async function loadReport(from: string, to: string): Promise<ReportData> 
     const acc = manual && x.dispatched_by_admin_id != null ? byAccount.get(x.dispatched_by_admin_id) : undefined;
     const accepted = !!x.accepted_at;
     bookings.push({
-      key: `pt-${x.id}`, channel: manual ? 'hotline' : 'app', source: manual ? 'dashboard' : 'app', at, status: x.status, outcome: outcomeOf(x.status, accepted), gotCar: accepted,
+      key: `pt-${x.id}`, channel: manual ? 'hotline' : 'app', source: manual ? 'dashboard' : 'app', at, day: dayOf(at), hour: hourOf(at), status: x.status, outcome: outcomeOf(x.status, accepted), gotCar: accepted,
       acceptSecs: secsBetween(at, x.accepted_at), refusals: x.rejected_driver_count, by: acc?.kind === 'agent' ? acc.profile_id : null, team: manual && acc?.kind !== 'agent',
       adminId: x.dispatched_by_admin_id, tripId: x.id, client: x.rider_name, phone: x.rider_phone, pickup: x.pickup_address, destination: x.destination_address,
       driver: x.driver_name, plate: x.vehicle_plate, fare: x.total_fare, vehicleType: x.vehicle_type, dispatch: null,

@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth';
 import { BusinessClient, BusinessInvoice, ClientTrip, InvoiceSettings, addDaysK, billingOf, mondayOfK, todayK } from '../../lib/business';
 import { downloadBlob, reportPdfBlob } from '../../lib/invoicePdf';
 import { shortAddress } from '../../lib/trips';
+import { kFormat } from '../../lib/kigali';
 
 // The report (a pre-invoice) for one company: the trips so far in a period
 // the person chooses - by default this week, Monday 00:00 until now. Trips
@@ -16,9 +17,9 @@ type Order = 'oldest' | 'newest' | 'rider' | 'driver';
 const ORDERS: { key: Order; label: string }[] = [
   { key: 'oldest', label: 'Oldest first' }, { key: 'newest', label: 'Newest first' }, { key: 'rider', label: 'By rider' }, { key: 'driver', label: 'By driver' },
 ];
-const nowTimeK = () => new Date().toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali', hour: '2-digit', minute: '2-digit' });
+const nowTimeK = () => kFormat(Date.now(), 'en-GB', { hour: '2-digit', minute: '2-digit' });
 const isoK = (d: string, t: string) => new Date(`${d}T${t || '00:00'}:00+02:00`).toISOString();
-const whenK = (iso: string) => new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Kigali', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const whenK = (iso: string) => kFormat(iso, 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const rwf = (n: number) => `${Math.round(n).toLocaleString('en-US')} RWF`;
 const startOf = (x: ClientTrip) => x.trip?.started_at ?? x.trip?.created_at ?? '';
 const ms = (iso: string) => (iso ? Date.parse(iso) : 0);

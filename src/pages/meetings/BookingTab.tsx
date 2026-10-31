@@ -7,6 +7,7 @@ import { useAccess } from '../../os/access';
 import { Box, Label } from '../../ui/kit';
 import Modal from '../../components/Modal';
 import { ScheduleModal, ScheduledMeetings } from './ScheduleWithAnyone';
+import { kigaliDay as kDayFast, kFormat } from '../../lib/kigali';
 
 // Booking meetings with the MD (migration 20261028100000): staff see what
 // they can book and pick a free time; the MD answers requests, sees who has
@@ -21,9 +22,9 @@ export interface Booking { id: string; type_id: string; booked_by: string; start
 interface Avail { id: string; host_id: string; weekday: number; start_time: string; end_time: string }
 interface Blocked { id: string; host_id: string; starts_at: string; ends_at: string; reason: string | null }
 
-const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Kigali', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kigali', hour: '2-digit', minute: '2-digit' });
-const kDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+const when = (iso: string) => kFormat(iso, 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const time = (iso: string) => kFormat(iso, 'en-GB', { hour: '2-digit', minute: '2-digit' });
+const kDay = (iso: string) => kDayFast(iso);
 const dowOf = (iso: string) => { const d = new Date(`${kDay(iso)}T12:00:00Z`).getUTCDay(); return d === 0 ? 7 : d; };
 const STATUS = { requested: { label: 'Waiting for the MD', tone: 'attention' }, confirmed: { label: 'Confirmed', tone: 'success' }, declined: { label: 'Declined', tone: 'danger' }, cancelled: { label: 'Cancelled', tone: 'neutral' } } as const;
 

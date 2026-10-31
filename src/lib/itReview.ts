@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 import { ACTIVE, ItCheckin, ItData, ItIssue, ItMilestone, MilestoneStats, addDays, daysSince, isOpen, kigaliToday, milestoneStats, pointsOf } from './it';
 import { ItInitiative, ItSpend } from './itPlan';
 import type { Tone } from '../ui/kit';
+import { kigaliDay as kDayFast } from './kigali';
 
 // IT & Product phase 3 (migration 20261019100000): releases, the decisions
 // log and the weekly review (Monday-Sunday, Kigali time).
@@ -54,7 +55,7 @@ export function draftNotes(issues: ItIssue[]) {
 }
 
 // ------------------------------------------------------------ weeks
-export const kigaliDay = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+export const kigaliDay = (iso: string) => kDayFast(iso);
 export const mondayOf = (d: string) => { const x = new Date(`${d}T12:00:00Z`); const dow = (x.getUTCDay() + 6) % 7; return addDays(d, -dow); };
 export const weekLabel = (monday: string) => {
   const end = addDays(monday, 6);

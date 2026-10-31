@@ -2,6 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BarChart3, LucideIcon, Table2 } from 'lucide-react';
 import { useTheme } from '../../lib/theme';
+import { kigaliDay as kDayFast } from '../../lib/kigali';
 
 // Shared pieces for analytics pages (Performance hub, agent pages). Same
 // validated palette and look as Call Analytics.
@@ -20,7 +21,7 @@ export function usePalette(): Palette {
 export const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : null);
 export const shortDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 export const longDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-export const kigaliDay = (iso: string | Date) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Kigali' });
+export const kigaliDay = (iso: string | Date) => kDayFast(iso);
 export const rwfShort = (n: number) => (Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(n % 1e6 ? 1 : 0)}M` : Math.abs(n) >= 1e3 ? `${Math.round(n / 1e3)}k` : String(Math.round(n)));
 export const rwf = (n: number) => `${Math.round(n).toLocaleString('en-US')} RWF`;
 
