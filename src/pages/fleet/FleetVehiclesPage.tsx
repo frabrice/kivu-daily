@@ -10,6 +10,7 @@ import EntryActions from '../../components/EntryActions';
 import VehicleDrawer from '../../components/fleet/VehicleDrawer';
 import { EntityLink } from '../../os/EntityLink';
 import { usePeek } from '../../os/peek';
+import ExportButton from '../../components/fleet/ExportButton';
 
 interface VehicleDrawerState { vehicle: Vehicle | null; startEditing: boolean }
 
@@ -59,6 +60,7 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search plate or driver" className="input pl-8 w-full sm:w-52" />
           </div>
+          <ExportButton initial="cars" />
           {canEdit && (
             <button onClick={() => setVehicleDrawer({ vehicle: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
               <Plus size={14} /> Add Vehicle

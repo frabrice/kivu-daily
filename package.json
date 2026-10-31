@@ -17,6 +17,7 @@
     "@tanstack/react-table": "8.20.5",
     "@types/pdfmake": "^0.2.11",
     "cmdk": "1.0.0",
+    "exceljs": "^4.4.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.344.0",
     "pdfmake": "^0.2.20",

@@ -12,6 +12,7 @@ import { usePageTitle } from '../../os/workspace';
 import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, Tone, UnderlineTabs, fmtWhen } from '../../ui/kit';
 import Modal from '../../components/Modal';
 import OnShiftPage from './OnShiftPage';
+import ExportButton from '../../components/fleet/ExportButton';
 
 // Under Management (migration 20261031110000, edge function fleet-sync):
 // every car we manage (all fleet companies in the Kivu Ride app except the
@@ -151,7 +152,7 @@ export default function UnderManagementPage() {
       <PageHeader icon={CarFront} title="Under Management"
         subtitle="Every car we manage and its drivers, in Kivu Daily and in the Kivu Ride app. What differs between the two waits in To confirm."
         meta={<><span className={late ? 'text-danger' : ''}>App read {ago(lastOk, now)}{late ? ' — the check is late' : ' · every 10 minutes'}</span>{!canAct && <span>Fleet and the MD make the changes</span>}</>}
-        actions={<button onClick={checkNow} disabled={busy} className="btn-secondary"><RefreshCw size={14} className={busy ? 'animate-spin' : ''} /> {busy ? 'Reading the app…' : 'Check now'}</button>} />
+        actions={<><ExportButton initial="drivers" /><button onClick={checkNow} disabled={busy} className="btn-secondary"><RefreshCw size={14} className={busy ? 'animate-spin' : ''} /> {busy ? 'Reading the app…' : 'Check now'}</button></>} />
       {(error || d.sync?.last_error) && <p className="mb-3 text-caption text-danger bg-danger-muted rounded-md px-3 py-2">Couldn't read the app: {error || d.sync?.last_error}</p>}
       {notice && <p className="mb-3 text-small bg-success-muted text-success rounded-md px-3 py-2 flex items-center gap-2"><CheckCircle2 size={14} /> <span className="flex-1">{notice}</span><button onClick={() => setNotice('')} aria-label="Close"><X size={14} /></button></p>}
 

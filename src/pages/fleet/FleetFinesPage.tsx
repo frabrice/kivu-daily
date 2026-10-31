@@ -10,6 +10,7 @@ import EntryActions from '../../components/EntryActions';
 import FineDrawer from '../../components/fleet/FineDrawer';
 import LogFinePaymentDrawer from '../../components/fleet/LogFinePaymentDrawer';
 import { EntityLink } from '../../os/EntityLink';
+import ExportButton from '../../components/fleet/ExportButton';
 
 interface FineDrawerState { fine: DriverFine | null; startEditing: boolean }
 
@@ -56,6 +57,7 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or plate" className="input pl-8 w-full sm:w-52" />
           </div>
+          <ExportButton initial="fines" />
           {canEdit && (
             <button onClick={() => setFineDrawer({ fine: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
               <Plus size={14} /> Add Fine

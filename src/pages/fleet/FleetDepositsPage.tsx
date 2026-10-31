@@ -6,6 +6,7 @@ import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import { EntityLink } from '../../os/EntityLink';
+import ExportButton from '../../components/fleet/ExportButton';
 
 interface FleetDepositsPageProps { data?: ReturnType<typeof useFleetData> }
 
@@ -62,9 +63,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
           </h2>
           <p className="text-caption text-fg-subtle mt-0.5">Every driver pays 180,000 by Sunday for the Monday–Sunday week ahead (360,000 for a driver on both shifts). Unpaid on Monday means not cleared to drive.</p>
         </div>
-        <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name" className="input pl-8 w-full sm:w-52" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name" className="input pl-8 w-full sm:w-52" />
+          </div>
+          <ExportButton initial="payments" />
         </div>
       </div>
 

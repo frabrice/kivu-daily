@@ -15,6 +15,7 @@ import { EntityLink } from '../../os/EntityLink';
 import { usePeek } from '../../os/peek';
 import { LEGAL_KIND, missingForDriver, useLegalDocs } from '../../lib/legalDocs';
 import { Label } from '../../ui/kit';
+import ExportButton from '../../components/fleet/ExportButton';
 
 interface DriverDrawerState { driver: Driver | null; startEditing: boolean }
 
@@ -109,6 +110,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or phone" className="input pl-8 w-full sm:w-52" />
           </div>
+          <ExportButton initial="drivers" />
           {canEdit && (
             <button onClick={() => setDriverDrawer({ driver: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
               <Plus size={14} /> Add Driver

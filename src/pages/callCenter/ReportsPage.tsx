@@ -74,7 +74,9 @@ export default function ReportsPage() {
       let bookings = data.bookings.filter((b) => dayOf(b.at) >= lo && dayOf(b.at) <= hi);
       if (agent || slot) bookings = bookings.filter((b) => (agent && b.by === agent) || (!(b.channel === 'hotline' && b.by && b.by !== agent) && scoped.some((s) => inShift(s, b.at))));
       if (ch !== 'all') bookings = bookings.filter((b) => b.channel === ch);
-      return { shifts: scoped, allShifts: shifts, bookings };
+      // The whole team's bookings in the days, for comparing one agent with the others.
+      const team = data.bookings.filter((b) => dayOf(b.at) >= lo && dayOf(b.at) <= hi && (ch === 'all' || b.channel === ch));
+      return { shifts: scoped, allShifts: shifts, bookings, team };
     };
     return { cur: cut(from, to), prev: cut(prevFrom, addDays(from, -1)) };
   }, [data, from, to, prevFrom, agent, slot, ch]);
@@ -133,8 +135,8 @@ export default function ReportsPage() {
       <UnderlineTabs tabs={tabs} value={tab} onChange={(k) => setQ({ tab: k === 'overview' ? null : k })} />
 
       {loading || !view || !data ? <div className="grid gap-3 md:grid-cols-4">{[0, 1, 2, 3].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>
-        : tab === 'overview' ? <Overview cur={view.cur} prev={view.prev} from={from} to={to} c={c} agent={agent} rows={a.isMd && !agent ? agentRows(data, view.cur.allShifts.filter((s) => !slot || s.slot === slot), view.cur.bookings) : []} />
-        : tab === 'agents' && a.isMd ? <Agents data={data} rows={agentRows(data, view.cur.allShifts.filter((s) => !slot || s.slot === slot), view.cur.bookings)} c={c}
+        : tab === 'overview' ? <Overview cur={view.cur} prev={view.prev} from={from} to={to} c={c} agent={agent} rows={agentRows(data, view.cur.allShifts.filter((s) => !slot || s.slot === slot), view.cur.team)} />
+        : tab === 'agents' && a.isMd ? <Agents data={data} rows={agentRows(data, view.cur.allShifts.filter((s) => !slot || s.slot === slot), view.cur.team)} c={c}
             onOpen={(id) => setQ({ agent: id, tab: 'shifts' })} onSaved={() => setReload((n) => n + 1)} />
         : tab === 'bookings' ? <Bookings list={view.cur.bookings} shifts={view.cur.allShifts} nameOf={nameOf} initial={params.get('outcome') as Outcome | null} canCancel={a.isMd || a.dept === 'call_center'} />
         : <Shifts shifts={view.cur.shifts} bookings={view.cur.bookings} nameOf={nameOf} agent={agent} canCancel={a.isMd || a.dept === 'call_center'} />}
@@ -143,7 +145,7 @@ export default function ReportsPage() {
 }
 
 // ------------------------------------------------------------------ overview
-type Slice = { shifts: CallCenterShift[]; allShifts: CallCenterShift[]; bookings: Booking[] };
+type Slice = { shifts: CallCenterShift[]; allShifts: CallCenterShift[]; bookings: Booking[]; team: Booking[] };
 const OUTCOME_SERIES = (c: ReturnType<typeof usePalette>) => [
   { key: 'completed', label: 'Completed', color: c.aqua },
   { key: 'cancelled_after', label: 'Cancelled after a driver', color: c.yellow },
@@ -199,6 +201,7 @@ function Overview({ cur, prev, from, to, c, agent, rows }: { cur: Slice; prev: S
           sub={`${sh.shifts} shift${sh.shifts === 1 ? '' : 's'} · ${durationLabel(sh.minutes)} · ${sh.withReport} with a written report${sh.notEnded ? ` · ${sh.notEnded} not ended` : ''}${sh.wrongSlot ? ` · ${sh.wrongSlot} on the wrong shift` : ''}`} />
       </div>
 
+      {agent && <MyPerformance rows={rows} agent={agent} />}
       <Insights cur={cur} rows={rows} agent={agent} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -227,6 +230,55 @@ function Overview({ cur, prev, from, to, c, agent, rows }: { cur: Slice; prev: S
   );
 }
 
+// One agent's score, what it is made of and how each part compares with
+// the team's average (no other agent's name), plus their place.
+function MyPerformance({ rows, agent }: { rows: AgentRow[]; agent: string }) {
+  const me = rows.find((r) => r.id === agent);
+  if (!me) return null;
+  const others = rows.filter((r) => r.id !== agent);
+  const ranked = rows.filter((r) => r.score != null).sort((x, y) => (y.score ?? 0) - (x.score ?? 0));
+  const place = me.score != null ? ranked.findIndex((r) => r.id === agent) + 1 : null;
+  const teamAvg = (i: number) => { const v = rows.map((r) => r.parts[i]?.value).filter((x): x is number => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+  const scoreAvg = (() => { const v = rows.map((r) => r.score).filter((x): x is number => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; })();
+  const tone = (v: number | null) => (v == null ? 'text-fg-subtle' : v >= 75 ? 'text-emerald-700 dark:text-emerald-400' : v >= 55 ? 'text-attention' : 'text-danger');
+  return (
+    <div className="card p-4 space-y-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div>
+          <p className="text-caption text-fg-muted flex items-center gap-1.5"><Trophy size={13} /> Performance score</p>
+          <p className={`text-h1 font-bold tabular-nums leading-tight ${tone(me.score)}`}>{me.score ?? '—'}<span className="text-ui text-fg-subtle font-normal"> / 100</span></p>
+        </div>
+        <div className="text-small text-fg-muted space-y-0.5">
+          {place && ranked.length > 1 && <p><b className="text-fg">#{place}</b> of {ranked.length} agents this period</p>}
+          {scoreAvg != null && others.length > 0 && <p>Team average {scoreAvg}</p>}
+          {me.score == null && <p>Too little data in this period for a score.</p>}
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-small min-w-[520px]">
+          <thead><tr className="text-caption text-fg-subtle text-left border-b border-line-muted">{['What counts', 'Weight', 'You', 'Team average'].map((h) => <th key={h} className="py-1.5 pr-3 font-medium">{h}</th>)}</tr></thead>
+          <tbody className="divide-y divide-line-muted">
+            {me.parts.map((p, i) => (
+              <tr key={p.label}>
+                <td className="py-1.5 pr-3">{p.label}</td>
+                <td className="py-1.5 pr-3 tabular-nums text-fg-muted">{p.weight}%</td>
+                <td className={`py-1.5 pr-3 tabular-nums font-semibold ${tone(p.value == null ? null : Math.round(p.value))}`}>{p.value == null ? 'not enough data' : `${Math.round(p.value)}%`}</td>
+                <td className="py-1.5 pr-3 tabular-nums text-fg-muted">{others.length ? showPct(teamAvg(i)) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {me.flags.length > 0 && (
+        <div className="rounded-lg bg-danger/5 border border-danger/20 p-2.5">
+          <p className="text-caption font-semibold flex items-center gap-1.5 mb-1"><AlertTriangle size={13} className="text-danger" /> To work on</p>
+          <ul className="text-small list-disc pl-5 space-y-0.5">{me.flags.map((f) => <li key={f}>{f}</li>)}</ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // What the numbers say, in sentences: what to ask the team to improve.
 function Insights({ cur, rows, agent }: { cur: Slice; rows: AgentRow[]; agent: string | null }) {
   const out: { tone: 'bad' | 'good' | 'info'; text: ReactNode }[] = [];
@@ -243,6 +295,8 @@ function Insights({ cur, rows, agent }: { cur: Slice; rows: AgentRow[]; agent: s
   if (app.medianWait != null && hot.medianWait != null && hot.medianWait > app.medianWait * 2) out.push({ tone: 'bad', text: <>A hotline booking waits <b>{fmtWait(hot.medianWait)}</b> for a driver, against {fmtWait(app.medianWait)} in the app. {hot.refusals ? <>Drivers refused hotline trips {hot.refusals} times.</> : null}</> });
   const noCarHot = cur.bookings.filter((b) => b.channel === 'hotline' && b.outcome === 'no_car').length;
   if (noCarHot) out.push({ tone: 'bad', text: <><b>{noCarHot}</b> hotline caller{noCarHot === 1 ? '' : 's'} got no car. See them in Bookings → No car, and call them back.</> });
+  const mine = agent ? rows.find((r) => r.id === agent) : null;
+  if (mine) out.push(mine.flags.length ? { tone: 'bad', text: <>To work on: {mine.flags.join('; ').toLowerCase()}.</> } : { tone: 'good', text: <>Nothing below the lines this period: keep it up.</> });
   if (!agent && rows.length > 1) {
     const ranked = rows.filter((r) => r.score != null);
     if (ranked.length > 1) out.push({ tone: 'good', text: <>Best this period: <b>{ranked[0].name}</b> (score {ranked[0].score}). Lowest: <b>{ranked[ranked.length - 1].name}</b> (score {ranked[ranked.length - 1].score}).</> });

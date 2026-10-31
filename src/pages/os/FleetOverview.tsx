@@ -7,6 +7,7 @@ import { addDays, CAR_STATE_LABEL, fleetDays, PerfData, today } from '../../lib/
 import { ChartCard, DailyBars, MiniTable, longDay, usePalette } from '../../components/charts/kit';
 import { EntityLink } from '../../os/EntityLink';
 import { Box, Label, PageHeader, StatCard, StatGrid, Timeline, TimelineItem, rwf } from '../../ui/kit';
+import ExportButton from '../../components/fleet/ExportButton';
 
 // Fleet at a glance: cars working, who's paid up, days off, fines,
 // licences, the driver pipeline, and what needs someone today.
@@ -56,7 +57,7 @@ export default function FleetOverview() {
   return (
     <div className="animate-fade-in">
       <PageHeader icon={Truck} title="Fleet" subtitle={`${onRoad.length} drivers on the road · ${vehicles.length} cars`}
-        actions={<><Link to="/fleet/drivers" className="btn-secondary"><Truck size={14} /> Drivers</Link><Link to="/fleet/cars" className="btn-secondary"><Car size={14} /> Cars</Link></>} />
+        actions={<><ExportButton initial="drivers" /><Link to="/fleet/drivers" className="btn-secondary"><Truck size={14} /> Drivers</Link><Link to="/fleet/cars" className="btn-secondary"><Car size={14} /> Cars</Link></>} />
 
       <StatGrid cols={4}>
         <StatCard to="/fleet/cars" icon={Gauge} label="Cars working today" value={`${todayCars?.working ?? 0}/${vehicles.length}`} spark={workingSpark} sub={todayCars?.rest ? `${todayCars.rest} on their rest day` : 'With a paid-up driver'} />
