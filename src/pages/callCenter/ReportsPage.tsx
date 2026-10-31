@@ -345,9 +345,9 @@ function Agents({ data, rows, c, onOpen, onSaved }: { data: ReportData; rows: Ag
           </div>
 
           <div className="card overflow-x-auto">
-            <table className="w-full text-small min-w-[1000px]">
+            <table className="w-full text-small min-w-[1240px]">
               <thead><tr className="text-caption text-fg-subtle text-left border-b border-line-muted">
-                {['#', 'Agent', 'Score', 'Shifts', 'On time', 'Reports', 'Calls in / missed', 'Made per hour', 'Their dispatches', 'Team account (on shift)', 'App bookings on shift'].map((h) => <th key={h} className="px-3 py-2 font-medium">{h}</th>)}
+                {['#', 'Agent', 'Score', 'Shifts', 'On time', 'Reports', 'Calls in / missed', 'Made per hour', 'Their dispatches', 'Team account (on shift)', 'App bookings on shift', 'Calls after trips', 'Branding yes'].map((h) => <th key={h} className="px-3 py-2 font-medium">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-line-muted">
                 {rows.map((r, i) => (
@@ -363,6 +363,8 @@ function Agents({ data, rows, c, onOpen, onSaved }: { data: ReportData; rows: Ag
                     <td className="px-3 py-2 tabular-nums">{cell(r.mine)}</td>
                     <td className="px-3 py-2 tabular-nums">{cell(r.teamHotline)}</td>
                     <td className="px-3 py-2 tabular-nums">{cell(r.app)}</td>
+                    <td className={`px-3 py-2 tabular-nums ${tone(pctOf(r.calls.madeOnShift, r.calls.due))}`}>{r.calls.due ? `${r.calls.madeOnShift}/${r.calls.due} on shift` : '—'}<span className="text-fg-muted">{r.calls.byThem ? ` · ${r.calls.byThem} by them` : ''}</span></td>
+                    <td className="px-3 py-2 tabular-nums">{r.calls.reached ? `${r.calls.yes} of ${r.calls.reached} reached` : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -374,7 +376,7 @@ function Agents({ data, rows, c, onOpen, onSaved }: { data: ReportData; rows: Ag
       {how && (
         <Modal open onClose={() => setHow(false)} title="How the score works" subtitle="Out of 100, from what the agent controls">
           <div className="space-y-2 text-small">
-            <p>Each part is a percentage; the score is their weighted average. A part with too little data (fewer than 3 dispatches or app bookings) is left out and the others count more.</p>
+            <p>Each part is a percentage; the score is their weighted average. A part with too little data (fewer than 3 dispatches or app bookings, fewer than 2 calls after trips due, fewer than 3 drivers reached) is left out and the others count more. Calls after trips: a call that comes in at night is due at 07:00, and counts for whoever is on shift then.</p>
             <MiniTable head={['Part', 'Weight']} rows={(rows[0]?.parts ?? []).map((p) => [p.label, `${p.weight}%`])} />
             <p className="text-fg-muted">"Team account" dispatches were made from a shared admin account while they were on shift: they show in the table but do not count in the score. Cancellations are not split by who cancelled yet: the app does not send that.</p>
           </div>

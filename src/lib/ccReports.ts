@@ -66,7 +66,9 @@ function outcomeOf(status: string, accepted: boolean): Outcome {
 }
 const secsBetween = (a: string | null, b: string | null) => { if (!a || !b) return null; const s = (Date.parse(b) - Date.parse(a)) / 1000; return s >= 0 && s < 7200 ? s : null; };
 
-export interface ReportData { people: Person[]; accounts: AdminAccount[]; shifts: CallCenterShift[]; bookings: Booking[] }
+// Calls after trips (migration 20261101170000), as the score needs them.
+export interface TripCallLite { id: string; created_at: string; status: string; attempts: number; last_attempt_at: string | null; last_attempt_by: string | null; called_at: string | null; called_by: string | null; outcome: string | null; answer: string | null }
+export interface ReportData { people: Person[]; accounts: AdminAccount[]; shifts: CallCenterShift[]; bookings: Booking[]; tripCalls: TripCallLite[] }
 
 // The server returns at most 1000 rows a request: read page after page.
 async function all<T>(page: (lo: number, hi: number) => PromiseLike<{ data: T[] | null }>): Promise<{ data: T[] }> {
@@ -83,12 +85,13 @@ async function all<T>(page: (lo: number, hi: number) => PromiseLike<{ data: T[] 
 // a night shift that began the evening before covers the first hours.
 export async function loadReport(from: string, to: string): Promise<ReportData> {
   const start = dayStart(from), end = dayStart(addDays(to, 1));
-  const [p, a, s, t, d] = await Promise.all([
+  const [p, a, s, t, d, tc] = await Promise.all([
     supabase.from('profiles').select('id, full_name, is_active, department:departments(slug)'),
     supabase.from('kivuride_admin_accounts').select('admin_id, profile_id, kind, note'),
     all((lo, hi) => supabase.from('call_center_shifts').select('*').gte('started_at', dayStart(addDays(from, -1))).lt('started_at', end).order('started_at').order('id').range(lo, hi)),
     all((lo, hi) => supabase.from('platform_trips').select(TRIP_COLS).gte('requested_at', start).lt('requested_at', end).in('dispatch_method', [...APP_METHODS, 'manual']).order('id').range(lo, hi)),
     all((lo, hi) => supabase.from('dispatches').select('*').eq('sandbox', false).gte('created_at', start).lt('created_at', end).order('id').range(lo, hi)),
+    all((lo, hi) => supabase.from('trip_calls').select('id, created_at, status, attempts, last_attempt_at, last_attempt_by, called_at, called_by, outcome, answer').gte('created_at', dayStart(addDays(from, -1))).lt('created_at', end).order('id').range(lo, hi)),
   ]);
   const people = ((p.data ?? []) as unknown as { id: string; full_name: string; is_active: boolean; department: { slug: string } | null }[])
     .map((x) => ({ id: x.id, full_name: x.full_name.trim(), is_active: x.is_active, dept: x.department?.slug ?? null }));
@@ -124,8 +127,19 @@ export async function loadReport(from: string, to: string): Promise<ReportData> 
     });
   }
   bookings.sort((x, y) => y.at.localeCompare(x.at));
-  return { people, accounts, shifts: (s.data as CallCenterShift[]) ?? [], bookings };
+  return { people, accounts, shifts: (s.data as CallCenterShift[]) ?? [], bookings, tripCalls: (tc.data as TripCallLite[]) ?? [] };
 }
+
+// A call after a trip can be made from 07:00 to 21:00 Kigali: one that comes
+// in at night is due at 07:00.
+export function callableAt(iso: string): string {
+  const h = hourOf(iso);
+  if (h >= 7 && h < 21) return iso;
+  const d = h >= 21 ? addDays(dayOf(iso), 1) : dayOf(iso);
+  return new Date(Date.parse(`${d}T07:00:00+02:00`)).toISOString();
+}
+// When someone first did something with the call (we keep the last try and the conversation).
+const touchedAt = (c: TripCallLite) => (c.attempts > 0 ? c.called_at ?? c.last_attempt_at : null);
 
 // ------------------------------------------------------------------ numbers
 export interface BookingStats {
@@ -165,8 +179,9 @@ export function shiftStats(list: CallCenterShift[]): ShiftStats {
 
 // One agent over the period: their shifts, the hotline trips they
 // dispatched themselves, the team ones and the app bookings while on shift.
+export interface TripCallStats { due: number; madeOnShift: number; byThem: number; reached: number; yes: number }
 export interface AgentRow {
-  id: string; name: string; active: boolean; sh: ShiftStats; mine: BookingStats; teamHotline: BookingStats; app: BookingStats;
+  id: string; name: string; active: boolean; sh: ShiftStats; mine: BookingStats; teamHotline: BookingStats; app: BookingStats; calls: TripCallStats;
   score: number | null; parts: { label: string; value: number | null; weight: number }[]; flags: string[];
 }
 export function agentRows(data: ReportData, shifts: CallCenterShift[], bookings: Booking[]): AgentRow[] {
@@ -179,20 +194,35 @@ export function agentRows(data: ReportData, shifts: CallCenterShift[], bookings:
     const mine = bookingStats(bookings.filter((b) => b.channel === 'hotline' && b.by === id));
     const teamHotline = bookingStats(bookings.filter((b) => b.channel === 'hotline' && b.team && during(b)));
     const app = bookingStats(bookings.filter((b) => b.channel === 'app' && during(b)));
-    return { id, name: name(id)?.full_name ?? 'Agent', active: name(id)?.is_active ?? true, sh, mine, teamHotline, app, score: null as number | null, parts: [] as AgentRow['parts'], flags: [] as string[] };
+    // Calls after trips that became due during their shifts, and whether
+    // they were made on that shift (by them or the colleague on it).
+    const dueHere = (data.tripCalls ?? []).map((c) => ({ c, s: mineShifts.find((s) => inShift(s, callableAt(c.created_at))) })).filter((x) => x.s);
+    const madeOnShift = dueHere.filter(({ c, s }) => { const t = touchedAt(c); return !!t && inShift(s!, t); }).length;
+    const own = (data.tripCalls ?? []).filter((c) => c.called_by === id || (c.last_attempt_by === id && c.attempts > 0));
+    const calls: TripCallStats = {
+      due: dueHere.length, madeOnShift, byThem: own.length,
+      reached: own.filter((c) => c.called_by === id && c.outcome === 'reached').length,
+      yes: own.filter((c) => c.called_by === id && ['both', 'branding', 'device'].includes(c.answer ?? '')).length,
+    };
+    return { id, name: name(id)?.full_name ?? 'Agent', active: name(id)?.is_active ?? true, sh, mine, teamHotline, app, calls, score: null as number | null, parts: [] as AgentRow['parts'], flags: [] as string[] };
   });
+  // Yes to branding / device, compared with the team's best (a low rate is normal; what matters is who converts best).
+  const yesRate = (r: (typeof rows)[number]) => (r.calls.reached >= 3 ? r.calls.yes / r.calls.reached : null);
+  const bestYes = Math.max(0, ...rows.map((r) => yesRate(r) ?? 0));
   // Calls made per hour, compared with the team's best.
   const perHour = (r: (typeof rows)[number]) => (r.sh.minutes ? r.sh.made / (r.sh.minutes / 60) : 0);
   const bestPace = Math.max(0.001, ...rows.map(perHour));
   for (const r of rows) {
     const answered = r.sh.received + r.sh.missed;
     r.parts = [
-      { label: 'Started on time', value: r.sh.timed ? (r.sh.onTime / r.sh.timed) * 100 : null, weight: 15 },
+      { label: 'Started on time', value: r.sh.timed ? (r.sh.onTime / r.sh.timed) * 100 : null, weight: 10 },
       { label: 'Shift reports written', value: r.sh.shifts ? (r.sh.withReport / r.sh.shifts) * 100 : null, weight: 10 },
-      { label: 'Calls answered', value: answered ? (r.sh.received / answered) * 100 : null, weight: 15 },
-      { label: 'Their dispatches got a car', value: r.mine.n >= 3 ? carRate(r.mine) : null, weight: 25 },
-      { label: 'App bookings on their shifts got a car', value: r.app.n >= 3 ? carRate(r.app) : null, weight: 20 },
-      { label: 'Calls made per hour (vs the team\'s best)', value: r.sh.minutes ? Math.min(100, (perHour(r) / bestPace) * 100) : null, weight: 15 },
+      { label: 'Calls answered', value: answered ? (r.sh.received / answered) * 100 : null, weight: 10 },
+      { label: 'Their dispatches got a car', value: r.mine.n >= 3 ? carRate(r.mine) : null, weight: 20 },
+      { label: 'App bookings on their shifts got a car', value: r.app.n >= 3 ? carRate(r.app) : null, weight: 15 },
+      { label: 'Calls made per hour (vs the team\'s best)', value: r.sh.minutes ? Math.min(100, (perHour(r) / bestPace) * 100) : null, weight: 10 },
+      { label: 'Calls after trips made on their shifts', value: r.calls.due >= 2 ? (r.calls.madeOnShift / r.calls.due) * 100 : null, weight: 15 },
+      { label: 'Drivers who said yes to branding / device (vs the team\'s best)', value: yesRate(r) != null && bestYes > 0 ? ((yesRate(r) as number) / bestYes) * 100 : null, weight: 10 },
     ];
     const used = r.parts.filter((p) => p.value != null);
     const w = used.reduce((n, p) => n + p.weight, 0);
@@ -208,6 +238,8 @@ export function agentRows(data: ReportData, shifts: CallCenterShift[], bookings:
     const ar = carRate(r.app);
     if (r.app.n >= 5 && ar != null && ar < 60) f.push(`${r.app.noCar} app bookings on their shifts got no car`);
     if (r.sh.shifts >= 3 && r.mine.n === 0) f.push('No hotline dispatch in the period');
+    if (r.calls.due >= 2 && r.calls.madeOnShift / r.calls.due < 0.7) f.push(`${r.calls.due - r.calls.madeOnShift} of ${r.calls.due} calls after trips not made on their shifts`);
+    if (r.calls.reached >= 5 && r.calls.yes === 0) f.push(`No yes to branding from ${r.calls.reached} drivers reached`);
     r.flags = f;
   }
   return rows.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
