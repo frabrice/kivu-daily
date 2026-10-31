@@ -9,7 +9,7 @@ import { kFormat, kigaliToday } from '../../lib/kigali';
 
 // People > Today (MD, 31 Oct 2026): everyone's tasks for a day - what
 // they're on, how far, what's late. The MD sees everyone; a head of
-// department (route_finance / route_operations / route_it) sees their own
+// department (route_finance / route_operations / route_it / route_call_center) sees their own
 // department. Data: team_day() (migration 20261101190000).
 
 interface DayTask {

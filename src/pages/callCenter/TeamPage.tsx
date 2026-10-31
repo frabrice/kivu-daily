@@ -14,6 +14,7 @@ import { EmptyState, Label, PageHeader } from '../../ui/kit';
 interface Person { id: string; full_name: string; role: string; responsibility_label: string | null; email: string | null; department: { slug: string; name: string } | null }
 
 const DUTY: Record<string, { title: string; topics: string[] }> = {
+  route_call_center: { title: 'Call Center team lead', topics: ["Agents' shifts, tasks and who covers whom", "A case an agent can't solve: ask the team lead first", 'Leads the Call Center day to day'] },
   route_md: { title: 'Managing Director', topics: ['Approves payments, payroll and driver pauses', 'Emergencies: every emergency case goes to him', 'Anything nobody else can decide'] },
   route_bizdev: { title: 'Business development', topics: ['New partners, investors and car owners', 'Marketing and brand partners'] },
   route_corporate: { title: 'Company clients', topics: ['Companies that ride with us: agreements and prices'] },

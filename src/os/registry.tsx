@@ -193,7 +193,7 @@ export const MODULES: ModuleDef[] = [
   {
     id: 'people', label: 'People', icon: Users2, base: '/people', shortcut: 'g t',
     pages: [
-      { id: 'people-today', path: '/people/today', label: 'Team today', icon: ListTodo, component: L(() => import('../pages/os/TeamDayPage')), can: (a) => a.isMd || a.duties.has('route_finance') || a.duties.has('route_operations') || a.duties.has('route_it'), keywords: 'daily tasks everyone working on progress late done team day heads', description: "Everyone's tasks for the day: what they're on, how far, what's late. Heads see their own department." },
+      { id: 'people-today', path: '/people/today', label: 'Team today', icon: ListTodo, component: L(() => import('../pages/os/TeamDayPage')), can: (a) => a.isMd || ['route_finance', 'route_operations', 'route_it', 'route_call_center'].some((d) => a.duties.has(d)), keywords: 'daily tasks everyone working on progress late done team day heads', description: "Everyone's tasks for the day: what they're on, how far, what's late. Heads see their own department." },
       { id: 'people-departments', path: '/people', label: 'Departments', icon: Building2, component: A.Departments, can: md, keywords: 'team staff employees' },
       { id: 'people-leaderboard', path: '/people/leaderboard', label: 'Leaderboard', icon: Trophy, component: A.StaffLeaderboard, can: md },
       { id: 'people-search', path: '/people/search', label: 'Search tasks', icon: Search, component: A.PeopleSearch, can: md },

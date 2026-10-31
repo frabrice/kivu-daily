@@ -3,7 +3,7 @@ import { ALL_DAYS, Built, Ctx, esc, firstName, hm, longDay, plural, RuleDef, Ton
 // 17:30 every day (MD, 31 Oct 2026): the team's day - who is done, who is
 // behind, what is late or still open. The MD gets everyone; each head of
 // department (route_finance -> Finance, route_operations -> Fleet,
-// route_it -> IT) gets their own people. Same numbers as People > Today
+// route_it -> IT, route_call_center -> Call Center) gets their own people. Same numbers as People > Today
 // (team_day(), migration 20261101190000).
 
 interface DayTask { id: string; user_id: string; title: string; completed: boolean; due_time: string | null; smart_total: number | null; smart_done: number | null }
@@ -14,7 +14,7 @@ interface TeamDay {
 
 const units = (t: DayTask) => (t.smart_total && t.smart_total > 0 ? t.smart_total : 1);
 const doneUnits = (t: DayTask) => (t.completed ? units(t) : Math.min(units(t), t.smart_total ? t.smart_done ?? 0 : 0));
-const HEADS: [string, string][] = [["route_finance", "finance"], ["route_operations", "fleet"], ["route_it", "it"]];
+const HEADS: [string, string][] = [["route_finance", "finance"], ["route_operations", "fleet"], ["route_it", "it"], ["route_call_center", "call_center"]];
 
 function build(ctx: Ctx, data: TeamDay, people: TeamDay["people"], recipient: string, scope: string): Built {
   const nowHm = new Date().toLocaleTimeString("en-GB", { timeZone: "Africa/Kigali", hour: "2-digit", minute: "2-digit", hour12: false });
