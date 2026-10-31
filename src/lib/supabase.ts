@@ -159,6 +159,8 @@ export interface Driver {
   opening_credit?: number | null;
   // Daily rate from each date within the current contract (mid-contract shift changes).
   rate_history?: { from: string; daily: number }[] | null;
+  // Adjust button entries (depositRules BalanceAdjustment).
+  balance_adjustments?: import('../../supabase/functions/_shared/depositRules').BalanceAdjustment[] | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

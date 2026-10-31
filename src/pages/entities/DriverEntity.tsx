@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
   Banknote, BedDouble, CalendarOff, Car, CircleDollarSign, FileText, Gavel, History, LayoutGrid, PauseCircle, Pencil, Phone, Truck,
-  UserX, Wallet, XCircle, RotateCcw, FileSignature, SunMoon,
+  UserX, Wallet, XCircle, RotateCcw, FileSignature, SunMoon, SlidersHorizontal, CalendarClock, CalendarCheck2,
 } from 'lucide-react';
+import { useAccess } from '../../os/access';
+import AdjustBalanceModal from '../../components/fleet/AdjustBalanceModal';
 import { EntityViewProps } from '../../os/peek';
 import { EntityLink, useEntityMeta } from '../../os/EntityLink';
 import { useAuth } from '../../lib/auth';
@@ -43,6 +45,9 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
   const [renewing, setRenewing] = useState(false);
   const [shifting, setShifting] = useState(false);
   const [adding, setAdding] = useState<LegalKind | null>(null);
+  const [adjusting, setAdjusting] = useState(false);
+  const access = useAccess();
+  const canAdjust = access.isMd || access.in('finance', 'fleet') || access.grants.has('adjust_balances');
   const legal = useLegalDocs();
   const canEdit = canEditFleet(profile);
   const canPause = canRecordPause(profile, duties);
@@ -60,6 +65,19 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
       out.push({ day, state: onContract(driver, end, day) ? driverDay(driver, deps, day) : 'none' });
     }
     return out;
+  }, [driver, deps, myEvents, t]);
+
+  // The whole contract: working days so far, and how many of them are fully paid.
+  const contractDays = useMemo(() => {
+    if (!driver?.start_date || driver.start_date > t) return null;
+    const end = endDateOf(driver, myEvents);
+    const last = end && end < t ? end : t;
+    let worked = 0, paid = 0;
+    for (let day = driver.start_date; day <= last; day = addDays(day, 1)) {
+      const st = driverDay(driver, deps, day);
+      if (st === 'paid' || st === 'unpaid') { worked++; if (st === 'paid') paid++; }
+    }
+    return { worked, paid };
   }, [driver, deps, myEvents, t]);
 
   if (loading) return <div className="p-4 space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-20 skeleton rounded-card" />)}</div>;
@@ -94,6 +112,9 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
   const timeline: TimelineItem[] = [
     ...deps.map((d) => ({ id: `d${d.id}`, at: d.created_at, icon: Banknote, tone: (d.status === 'pending' ? 'attention' : 'success') as TimelineItem['tone'], title: <>Paid <b>{rwf(Number(d.amount))}</b>{d.status === 'pending' ? ' · waiting for Finance to confirm' : ''}</>, body: d.paid_date !== d.created_at.slice(0, 10) ? `Payment date ${formatDateLabelSafe(d.paid_date)}` : undefined })),
     ...(driver.pauses ?? []).map((p) => ({ id: `p${p.id}`, at: p.created_at, icon: CalendarOff, tone: (p.approval_status === 'rejected' ? 'danger' : 'accent') as TimelineItem['tone'], title: <>Days off: {PAUSE_REASON_LABEL[p.reason]} · {formatDateLabelSafe(p.start_date)}{p.end_date ? ` → ${formatDateLabelSafe(p.end_date)}` : ' (open)'}</>, body: `${p.approval_status === 'pending' ? 'Waiting for approval' : p.approval_status === 'approved' ? 'Approved' : 'Rejected'}${p.note ? ` · ${p.note}` : ''}` })),
+    ...(driver.balance_adjustments ?? []).map((x) => ({ id: `a${x.id}`, at: x.at, icon: SlidersHorizontal, tone: 'attention' as const,
+      title: <>Adjusted by {x.by_name ?? 'someone'}: {x.kind === 'amount' ? <>{Number(x.amount) > 0 ? 'credit' : 'charge'} of <b>{rwf(Math.abs(Number(x.amount)))}</b></> : <>may drive until <b>{formatDateLabelSafe(x.until!)}</b></>}</>,
+      body: `${x.reason}${x.before && x.after ? ` · owes ${rwf(x.before.owes ?? 0)} → ${rwf(x.after.owes ?? 0)}, behind ${rwf(x.before.behind ?? 0)} → ${rwf(x.after.behind ?? 0)}` : ''}` })),
     ...myFines.map((f) => ({ id: `f${f.id}`, at: f.created_at, icon: Gavel, tone: 'danger' as const, title: <>Fined <b>{rwf(f.amount)}</b></>, body: f.reason })),
     ...myEvents.map((e) => ({ id: `e${e.id}`, at: e.created_at, icon: History, tone: 'neutral' as const, title: <>Contract {e.event_type}</>, body: [e.reason, e.details].filter(Boolean).join(' — ') })),
     { id: 'start', at: driver.created_at, icon: Truck, tone: 'neutral' as const, title: <>Added to Kivu Daily</> },
@@ -117,11 +138,15 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
   );
 
   const stats = (
-    <StatGrid cols={mode === 'peek' ? 2 : 4}>
+    <StatGrid cols={mode === 'peek' ? 2 : 3}>
       <StatCard label="Owes now" icon={Wallet} value={rwf(standing.owes)} tone={standing.owes ? 'danger' : undefined} sub={standing.weekBehind ? `${rwf(standing.weekBehind)} behind this week` : 'Nothing behind this week'} />
+      <StatCard label="Next payment" icon={CalendarClock} value={standing.nextDueDate ? formatDateLabelSafe(standing.nextDueDate) : '—'}
+        sub={standing.graceUntil ? `May drive until then (adjusted)` : standing.nextDueAmount ? `${rwf(standing.nextDueAmount)} due` : 'Nothing due'} />
+      <StatCard label="Days worked · fully paid" icon={CalendarCheck2} value={contractDays ? `${contractDays.worked} · ${contractDays.paid}` : '—'} tone={contractDays && contractDays.paid < contractDays.worked ? 'danger' : undefined}
+        sub={contractDays ? (contractDays.worked - contractDays.paid ? `${contractDays.worked - contractDays.paid} working day${contractDays.worked - contractDays.paid === 1 ? '' : 's'} not paid since the start` : 'Every working day paid since the start') : 'Not started'} />
       <StatCard label="Paid on time (90 days)" icon={CircleDollarSign} value={reliability === null ? '—' : `${reliability}%`} tone={reliability !== null && reliability < 80 ? 'danger' : 'success'} sub={`${paid90} paid · ${unpaid90} driven unpaid`} />
       <StatCard label="Days lost (30 days)" icon={XCircle} value={count(last30, 'unpaid')} tone={count(last30, 'unpaid') ? 'danger' : undefined} sub={`${count(last30, 'paused')} days off · ${count(last30, 'rest')} rest days`} />
-      <StatCard label="Paid in total" icon={Banknote} value={rwf(standing.totalPaid)} spark={weekly} sub={finesOwed ? `${rwf(finesOwed)} fines unpaid` : 'Last 8 weeks'} />
+      <StatCard label="Paid in total" icon={Banknote} value={rwf(standing.totalPaid)} spark={weekly} sub={[finesOwed ? `${rwf(finesOwed)} fines unpaid` : 'Last 8 weeks', standing.adjusted ? `${standing.adjusted > 0 ? '+' : '−'}${rwf(Math.abs(standing.adjusted))} adjusted` : ''].filter(Boolean).join(' · ')} />
     </StatGrid>
   );
 
@@ -146,6 +171,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
       actions={mode === 'page' && <>
         {canEdit && !isEnded && <button onClick={() => setLogging(true)} className="btn-primary"><Banknote size={14} /> Log payment</button>}
         {canPause && !isEnded && <button onClick={() => setPausing(true)} className="btn-secondary"><CalendarOff size={14} /> Days off</button>}
+        {canAdjust && !isEnded && driver.start_date && <button onClick={() => setAdjusting(true)} className="btn-secondary"><SlidersHorizontal size={14} /> Adjust</button>}
         {canEdit && <button onClick={() => setEditing(true)} className="btn-secondary"><Pencil size={14} /> Edit</button>}
         {canEdit && !isEnded && driver.vehicle_id && driver.start_date && <button onClick={() => setShifting(true)} className="btn-secondary"><SunMoon size={14} /> Change shift</button>}
         {canEdit && !isEnded && <button onClick={() => setEnding(true)} className="btn-danger"><UserX size={14} /> End contract</button>}
@@ -160,6 +186,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
     {pausing && <PauseDrawer driver={driver} drivers={drivers} onClose={() => setPausing(false)} onSaved={() => { setPausing(false); reload(); }} />}
     {ending && <EndContractDrawer driver={driver} deposits={deposits} fines={fines} finePayments={finePayments} onClose={() => setEnding(false)} onSaved={reload} />}
     {shifting && <ChangeShiftDrawer driver={driver} drivers={drivers} deposits={deposits} onClose={() => setShifting(false)} onSaved={() => { reload(); legal.reload(); }} />}
+    {adjusting && <AdjustBalanceModal driver={driver} deposits={deps} onClose={() => setAdjusting(false)} onSaved={reload} />}
     {adding && <AddLegalDocModal kind={adding} driverId={driver.id} name={driver.full_name} onClose={() => setAdding(null)} onSaved={legal.reload} />}
     {renewing && <RenewContractDrawer driver={driver} drivers={drivers} vehicles={vehicles} deposits={deposits} contractEvents={contractEvents} onClose={() => setRenewing(false)} onSaved={reload} />}
   </>;

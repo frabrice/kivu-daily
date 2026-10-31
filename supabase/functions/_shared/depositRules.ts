@@ -94,10 +94,26 @@ export interface DepositDriverLike {
   opening_credit?: number | null;
   // Daily rate from each date (mid-contract shift changes).
   rate_history?: RateChange[] | null;
+  // Adjustments made with the Adjust button (adjust_driver_balance()).
+  balance_adjustments?: BalanceAdjustment[] | null;
 }
 
+// An adjustment (migration 20261101130000): 'amount' is a credit (+) or
+// charge (-) counted like a payment on its date - not money received;
+// 'grace' lets the driver drive until `until` although not paid up, and
+// those days are not lost.
+export interface BalanceAdjustment {
+  id: string; kind: 'amount' | 'grace'; date: string; amount?: number; until?: string;
+  reason: string; by: string | null; by_name: string | null; at: string;
+  before?: { owes?: number; behind?: number; next_due?: string | null } | null;
+  after?: { owes?: number; behind?: number; next_due?: string | null } | null;
+}
+const adjustmentsOf = (driver: DepositDriverLike) => (driver.balance_adjustments ?? []).filter((a) => !driver.payments_from || a.date >= driver.payments_from);
+// The grace windows as days off for counting lost days.
+const graceDays = (driver: DepositDriverLike): PauseLike[] => adjustmentsOf(driver).filter((a) => a.kind === 'grace' && a.until).map((a) => ({ start_date: a.date, end_date: a.until!, approval_status: 'approved' }));
+
 // Every payment that counts for the driver's current contract, oldest first.
-export function contractPayments(driver: DepositDriverLike, deposits: DepositLike[]): { date: string; amount: number; order: string }[] {
+export function contractPayments(driver: DepositDriverLike, deposits: DepositLike[]): { date: string; amount: number; order: string; adjustment?: boolean }[] {
   const start = driver.start_date;
   const initialAmount = driver.initial_deposit_paid ? (driver.initial_deposit_amount ?? 0) : 0;
   const credit = Number(driver.opening_credit ?? 0);
@@ -105,6 +121,7 @@ export function contractPayments(driver: DepositDriverLike, deposits: DepositLik
     ...(credit > 0 && start ? [{ date: start, amount: credit, order: '' }] : []),
     ...(initialAmount > 0 ? [{ date: driver.initial_deposit_date ?? start ?? localToday(), amount: initialAmount, order: '' }] : []),
     ...deposits.filter((d) => !driver.payments_from || d.paid_date >= driver.payments_from).map((d) => ({ date: d.paid_date, amount: Number(d.amount), order: d.created_at })),
+    ...adjustmentsOf(driver).filter((a) => a.kind === 'amount' && Number(a.amount)).map((a) => ({ date: a.date, amount: Number(a.amount), order: a.at, adjustment: true })),
   ].sort((a, b) => a.date.localeCompare(b.date) || a.order.localeCompare(b.order));
 }
 
@@ -134,6 +151,10 @@ export interface DepositStanding {
   periods: DepositPeriod[];
   current: DepositPeriod | null;
   totalPaid: number;
+  // Sum of the credits (+) and charges (-) made with Adjust.
+  adjusted: number;
+  // An Adjust grace running today: may drive until this date.
+  graceUntil: string | null;
   paidThrough: string | null;
   // The pause covering today (if any), and paused working days this week.
   pausedToday: PauseLike | null;
@@ -259,17 +280,22 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
   const rate = dailyRateOf(driver);
   const weekly = rate * 6;
   const payments = contractPayments(driver, deposits);
-  const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
+  // Paid in total is real money only; adjustments are added separately.
+  const totalPaid = payments.reduce((s, p) => s + (p.adjustment ? 0 : p.amount), 0);
+  const adjusted = payments.reduce((s, p) => s + (p.adjustment ? p.amount : 0), 0);
+  const grace = adjustmentsOf(driver).filter((a) => a.kind === 'grace' && a.until && a.date <= today && today <= a.until).sort((a, b) => b.until!.localeCompare(a.until!))[0] ?? null;
+  const graceUntil = grace?.until ?? null;
 
   if (!start || start > today) {
     return {
-      hasStarted: false, ruleInForce, periods: [], current: null, totalPaid, paidThrough: null, pausedToday: null, pausedDaysThisWeek: 0, owes: 0, weekBehind: 0,
+      hasStarted: false, ruleInForce, periods: [], current: null, totalPaid, adjusted, graceUntil, paidThrough: null, pausedToday: null, pausedDaysThisWeek: 0, owes: 0, weekBehind: 0,
       isCleared: true, owedNow: 0, nextDueDate: start, nextDueAmount: Math.max(weekly - totalPaid, 0),
       daysLost: 0, score: 0, onTimeWeeks: 0, lateWeeks: 0,
     };
   }
 
   const pauses = driver.pauses ?? [];
+  const pausesAndGrace = [...pauses, ...graceDays(driver)];
   const costThrough = (d: string) => (d < start ? 0 : workingCost(driver, start, d));
   const paidToDate = payments.reduce((s, p) => (p.date <= today ? s + p.amount : s), 0);
   const clearedOn = (required: number): string | null => {
@@ -303,7 +329,7 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     const lostEnd = strict
       ? shiftDay([clearedDate ?? today, today, p.end].sort()[0], 1)
       : [clearedDate ?? today, today, shiftDay(p.end, 1)].sort()[0];
-    const daysLost = clearedDate && clearedDate < p.start ? 0 : countWorkingDays(p.start, shiftDay(lostEnd, -1), rest, pauses);
+    const daysLost = clearedDate && clearedDate < p.start ? 0 : countWorkingDays(p.start, shiftDay(lostEnd, -1), rest, pausesAndGrace);
     const state: DepositPeriodState = clearedDate ? (daysLost > 0 ? 'late' : 'on_time') : 'open';
     return { ...p, clearedDate, daysLost, state };
   });
@@ -314,7 +340,7 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
   // Before the Sunday rule starts there's no enforced week yet, so the
   // week is simply Monday-Sunday: everything up to this Sunday.
   const weekBehind = ruleInForce ? owedNow : Math.max(costThrough(sundayOf(today)) - paidToDate, 0);
-  const nextDueDate = ruleInForce ? sundayOf(today) : shiftDay(SUNDAY_RULE_START, -1);
+  const nextDueDate = graceUntil ?? (ruleInForce ? sundayOf(today) : shiftDay(SUNDAY_RULE_START, -1));
   const nextDueAmount = Math.max(costThrough(shiftDay(nextDueDate, 7)) - paidToDate, 0);
   const daysLost = periods.reduce((s, p) => s + p.daysLost, 0);
 
@@ -324,12 +350,14 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     periods,
     current,
     totalPaid,
+    adjusted,
+    graceUntil,
     paidThrough: paidThroughDate(start, rest, paidToDate, pauses, (day) => dailyRateOn(driver, day)),
     pausedToday: pauseOn(pauses, today),
     pausedDaysThisWeek: countDays(mondayOf(today), sundayOf(today), (d) => isoWeekday(d) !== restDayIso(rest) && !!pauseOn(pauses, d) && d >= start),
     owes,
     weekBehind,
-    isCleared: owedNow === 0,
+    isCleared: owedNow === 0 || !!graceUntil,
     owedNow,
     nextDueDate,
     nextDueAmount,

@@ -87,7 +87,7 @@ type Any = any;
 async function syncRoster(db: Any, now: number) {
   const today = kigaliDay(now);
   const [{ data: ds }, { data: deps }, { data: hrs }, { data: fl }, { data: fds }, { data: vs }, { data: existing }] = await Promise.all([
-    db.from("drivers").select("id, full_name, phone, start_date, rest_day, initial_deposit_paid, initial_deposit_amount, initial_deposit_date, contract_status, vehicle_id, shift, payments_from, opening_credit, rate_history, pauses:driver_pauses(start_date, end_date, approval_status, reason)").eq("contract_status", "active"),
+    db.from("drivers").select("id, full_name, phone, start_date, rest_day, initial_deposit_paid, initial_deposit_amount, initial_deposit_date, contract_status, vehicle_id, shift, payments_from, opening_credit, rate_history, balance_adjustments, pauses:driver_pauses(start_date, end_date, approval_status, reason)").eq("contract_status", "active"),
     db.from("driver_deposits").select("driver_id, paid_date, amount, created_at, status"),
     db.from("fleet_shift_hours").select("shift, starts, ends"),
     db.from("freelance_shifts").select("id, day, vehicle_id, shift, freelancer_id, covering_driver_id, status").gte("day", kigaliDay(now - 86400_000)),
