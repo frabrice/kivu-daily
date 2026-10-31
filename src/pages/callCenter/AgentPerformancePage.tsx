@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { AlarmClock, AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Clock, Megaphone, MessageSquareText, PhoneIncoming, PhoneOutgoing, Smile, Ticket } from 'lucide-react';
+import { AlarmClock, AlertTriangle, ArrowLeft, CalendarDays, FileText, CheckCircle2, Clock, Megaphone, MessageSquareText, PhoneIncoming, PhoneOutgoing, Smile, Ticket } from 'lucide-react';
 import { supabase, CallTicket } from '../../lib/supabase';
 import { CallCenterShift, durationLabel, SLOT_LABEL } from '../../lib/shifts';
 import { CATEGORY_LABEL } from '../../lib/callTickets';
@@ -39,6 +40,7 @@ function metricsOf(list: CallCenterShift[]): Metrics {
 // their shift reports - next to the team average.
 export default function AgentPerformancePage({ agentId, onBack }: { agentId: string; onBack: () => void }) {
   const c = usePalette();
+  const nav = useNavigate();
   const [range, setRange] = useState<Range>(30);
   const [profile, setProfile] = useState<{ full_name: string; email: string | null; is_active: boolean; created_at: string } | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
@@ -155,7 +157,10 @@ export default function AgentPerformancePage({ agentId, onBack }: { agentId: str
             </p>
           </div>
         </div>
-        <RangeTabs value={range} onChange={setRange} options={RANGES} />
+        <div className="flex flex-wrap items-center gap-2">
+          <button className="btn-secondary" onClick={() => nav(`/call-center/daily-report?agent=${agentId}`)}><FileText size={14} /> Daily report</button>
+          <RangeTabs value={range} onChange={setRange} options={RANGES} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

@@ -69,6 +69,7 @@ export interface ShiftStats {
   outreach_calls: number;
   outreach_interested: number;
   open_cases_at_end: number;
+  dispatches?: number;
 }
 
 export interface CallCenterShift {

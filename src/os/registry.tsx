@@ -3,7 +3,7 @@ import {
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
   Route, Flag, Inbox, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
-  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel, Compass, Coins,
+  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel, Compass, Coins, Send,
 } from 'lucide-react';
 import { Access } from './access';
 import { withChunkReload } from '../lib/chunkReload';
@@ -84,6 +84,12 @@ export const MODULES: ModuleDef[] = [
     ],
   },
   {
+    id: 'dispatch', label: 'Dispatch', icon: Send, base: '/dispatch', shortcut: 'g b',
+    pages: [
+      { id: 'dispatch', path: '/dispatch', label: 'Dispatch', icon: Send, component: L(() => import('../pages/dispatch/DispatchPage')), keywords: 'book ride trip taxi hotline caller client friend family driver nearby fare estimate economy comfort', description: 'Book a Kivu Ride for a caller, a friend or family, and follow it live until the driver arrives.' },
+    ],
+  },
+  {
     id: 'meetings', label: 'Meetings', icon: CalendarCheck, base: '/meetings', shortcut: 'g e',
     pages: [
       { id: 'meetings', path: '/meetings', label: 'Meetings', icon: CalendarCheck, component: L(() => import('../pages/meetings/MeetingsPage')), keywords: 'meeting attendance notes one-to-one booking daily fleet it call center 19:00', description: 'Regular meetings, attendance, notes, numbers, actions — and one-to-one bookings.' },
@@ -147,6 +153,7 @@ export const MODULES: ModuleDef[] = [
       { id: 'calls-outreach', path: '/call-center/outreach', label: 'Outreach', icon: Megaphone, component: L(() => import('../pages/callCenter/OutreachPage')), can: (a) => a.in('call_center') , keywords: 'non-insider rounds calls log' },
       { id: 'calls-non-insider', path: '/non-insider', label: 'Non-Insider', icon: CarFront, component: L(() => import('../pages/nonInsider/NonInsiderPage')), can: (a) => a.dept === 'call_center', keywords: 'platform drivers cars partners' },
       { id: 'calls-directory', path: '/call-center/directory', label: 'Directory', icon: BookMarked, component: L(() => import('../pages/callCenter/CallDirectoryPage')), can: (a) => a.in('call_center') },
+      { id: 'calls-daily-report', path: '/call-center/daily-report', label: 'Daily report', icon: FileText, component: L(() => import('../pages/callCenter/DailyReportPage')), can: (a) => a.in('call_center'), keywords: 'shift report end of shift dispatched trips day range agent', description: "An agent's end-of-shift reports and the trips they dispatched, for a day or a range." },
       { id: 'calls-scripts', path: '/call-center/scripts', label: 'Script Book', icon: BookOpen, component: L(() => import('../pages/callCenter/ScriptBookPage')), can: (a) => a.in('call_center') },
       { id: 'calls-shifts', path: '/call-center/shifts', label: 'Shifts & agents', icon: Timer, component: L(() => import('../pages/callCenter/ShiftsPerformancePage')), can: md, group: 'Performance' },
       { id: 'calls-analytics', path: '/call-center/analytics', label: 'Call analytics', icon: BarChart3, component: L(() => import('../pages/callCenter/CallAnalyticsPage')), can: (a) => a.in('finance'), group: 'Performance' },
