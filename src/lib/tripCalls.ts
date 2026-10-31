@@ -8,7 +8,7 @@ import type { Tone } from '../ui/kit';
 export const BRANDING_PRICE = 20000;
 export const DEVICE_PRICE = 120000;
 
-export type CallReason = 'first_trip' | 'first_call' | 'seven_days' | 'four_trips';
+export type CallReason = 'first_trip' | 'first_call' | 'seven_days' | 'four_trips' | 'top_driver';
 export type CallAnswer = 'both' | 'branding' | 'device' | 'thinking' | 'no';
 export interface TripCall {
   id: string; platform_driver_id: number; driver_name: string | null; driver_phone: string | null; vehicle_plate: string | null;
@@ -16,11 +16,11 @@ export interface TripCall {
   reason: CallReason; trips_since: number; status: 'open' | 'done' | 'missed'; attempts: number; last_attempt_at: string | null; last_attempt_by: string | null;
   outcome: 'reached' | 'no_answer' | 'wrong_number' | null; rating: number | null; experience: string | null; problems: string | null;
   answer: CallAnswer | null; no_reason: string | null; notes: string | null; called_by: string | null; called_at: string | null;
-  signup_id: string | null; missed_reason: string | null; created_at: string;
+  signup_id: string | null; missed_reason: string | null; created_at: string; context?: string | null;
 }
 
 export const REASON: Record<CallReason, string> = {
-  first_trip: 'First trip ever', first_call: 'First call', seven_days: '7 days since the last call', four_trips: '4 trips since the last call',
+  first_trip: 'First trip ever', first_call: 'First call', seven_days: '7 days since the last call', four_trips: '4 trips since the last call', top_driver: 'Top 10 Non-Insider (one-time list)',
 };
 export const DISPATCH: Record<string, string> = {
   app: 'Booked in the app', auto: 'Booked in the app', passenger_triggered: 'Booked in the app', manual: 'Dispatched by us', driver_initiated: 'Walk-in (driver started it)',

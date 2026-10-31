@@ -306,7 +306,7 @@ const LIST_KINDS: ListKind[] = [
       const hour = Number(new Date().toLocaleString("en-GB", { timeZone: "Africa/Kigali", hour: "2-digit", hour12: false }));
       const daytime = hour >= 7 && hour < 21;
       const agents = daytime ? await onShiftAgents(ctx) : [];
-      const why: Record<string, string> = { first_trip: "first trip", first_call: "first call", seven_days: "7 days since last call", four_trips: "4 trips since last call" };
+      const why: Record<string, string> = { first_trip: "first trip", first_call: "first call", seven_days: "7 days since last call", four_trips: "4 trips since last call", top_driver: "top 10 Non-Insider" };
       const by = new Map<string, SmartItem[]>();
       calls.forEach((c, i) => {
         if (!agents.length) return;

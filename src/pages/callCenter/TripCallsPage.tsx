@@ -68,7 +68,8 @@ export default function TripCallsPage() {
                     <p className="text-caption text-fg-muted">
                       Trip {when(c.trip_completed_at)} · {DISPATCH[c.trip_dispatch ?? ''] ?? 'Trip'}{c.trip_fare ? ` · ${rwf(c.trip_fare)}` : ''}
                     </p>
-                    <p className="mt-1 flex flex-wrap gap-1"><Label tone="info">{REASON[c.reason]}</Label>{c.trips_since > 1 && <Label>{c.trips_since} trips since</Label>}{c.attempts > 0 && <Label tone="attention" icon={PhoneMissed}>{c.attempts}× no answer</Label>}</p>
+                    {c.context && <p className="text-caption mt-0.5">{c.context}</p>}
+                    <p className="mt-1 flex flex-wrap gap-1"><Label tone="info">{REASON[c.reason]}</Label>{c.trips_since > 1 && c.reason !== 'top_driver' && <Label>{c.trips_since} trips since</Label>}{c.attempts > 0 && <Label tone="attention" icon={PhoneMissed}>{c.attempts}× no answer</Label>}</p>
                   </div>
                   {c.driver_phone && <a href={`tel:${c.driver_phone}`} className="btn-secondary"><Phone size={14} /> {c.driver_phone}</a>}
                   {canLog && <button onClick={() => setLogging(c)} className="btn-primary">Record the call</button>}
@@ -77,7 +78,7 @@ export default function TripCallsPage() {
           </div>
           <Box title="What to say" icon={MessageSquareQuote}>
             <ol className="list-decimal pl-4 space-y-1.5 text-small">{PITCH.map((p) => <li key={p}>{p}</li>)}</ol>
-            <p className="text-caption text-fg-muted mt-3">Who gets a call: after their first trip; then after the next trip once 7 days have passed, or after 4 trips even the same day. Never while a sign-up is open, and not for 30 days after a "no".</p>
+            <p className="text-caption text-fg-muted mt-3">Who gets a call: to start, the 10 Non-Insiders with the most trips this month (one time). Then: after their first trip; then after the next trip once 7 days have passed, or after 4 trips even the same day. Never while a sign-up is open, and not for 30 days after a "no".</p>
           </Box>
         </div>
       )}
@@ -169,7 +170,7 @@ function LogCallModal({ call, onClose, onSaved }: { call: TripCall; onClose: () 
   };
   const chip = (on: boolean) => `px-2.5 py-1.5 rounded-lg border text-small ${on ? 'border-brand bg-brand/10 text-brand font-medium' : 'border-line text-fg-muted hover:border-brand/40'}`;
   return (
-    <Modal open onClose={onClose} title={`Call ${call.driver_name ?? `driver #${call.platform_driver_id}`}`} subtitle={`${call.driver_phone ?? 'no phone'} · ${call.vehicle_plate ?? 'no plate'} · trip ${when(call.trip_completed_at)}`} maxWidth="max-w-lg">
+    <Modal open onClose={onClose} title={`Call ${call.driver_name ?? `driver #${call.platform_driver_id}`}`} subtitle={`${call.driver_phone ?? 'no phone'} · ${call.vehicle_plate ?? 'no plate'} · trip ${when(call.trip_completed_at)}${call.context ? ` · ${call.context}` : ''}`} maxWidth="max-w-lg">
       <div className="space-y-4 text-small">
         <div className="flex flex-wrap gap-1.5">
           {([['reached', 'Spoke to them'], ['no_answer', 'No answer'], ['wrong_number', 'Wrong number']] as const).map(([k, l]) => <button key={k} onClick={() => setOutcome(k)} className={chip(outcome === k)}>{l}</button>)}

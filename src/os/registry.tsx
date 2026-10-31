@@ -1,5 +1,5 @@
 import { lazy, LazyExoticComponent, ComponentType } from 'react';
-import {
+import { Contact,
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
   Route, Flag, Inbox, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
@@ -155,6 +155,7 @@ export const MODULES: ModuleDef[] = [
       { id: 'calls-commissions', path: '/call-center/commissions', label: 'Commission follow-up', icon: Coins, component: L(() => import('../pages/callCenter/CommissionFollowupPage')), can: (a) => a.in('call_center', 'finance') || a.plan === 'full', keywords: 'commission unpaid drivers follow-up collect', description: "Call every driver with yesterday's unpaid commission and record the outcome." },
       { id: 'calls-outreach', path: '/call-center/outreach', label: 'Outreach', icon: Megaphone, component: L(() => import('../pages/callCenter/OutreachPage')), can: (a) => a.in('call_center') , keywords: 'non-insider rounds calls log' },
       { id: 'calls-non-insider', path: '/non-insider', label: 'Non-Insider', icon: CarFront, component: L(() => import('../pages/nonInsider/NonInsiderPage')), can: (a) => a.dept === 'call_center', keywords: 'platform drivers cars partners' },
+      { id: 'calls-team', path: '/call-center/team', label: 'Team', icon: Contact, component: L(() => import('../pages/callCenter/TeamPage')), can: (a) => a.in('call_center'), keywords: 'team colleagues who is in charge responsibilities duties hand over escalate contact staff', description: 'Everyone at Kivu Ride and what they are in charge of: who to hand a case to.' },
       { id: 'calls-directory', path: '/call-center/directory', label: 'Directory', icon: BookMarked, component: L(() => import('../pages/callCenter/CallDirectoryPage')), can: (a) => a.in('call_center') },
       { id: 'calls-reports', path: '/call-center/reports', label: 'Reports', icon: FileText, component: L(() => import('../pages/callCenter/ReportsPage')), can: (a) => a.in('call_center'), keywords: 'daily report shift report end of shift dispatched trips bookings app hotline no car cancelled got a car agents score ranking day range month', description: 'Did every app booking and hotline call get a car? Bookings, shifts, shift reports and agents, for any day or range.' },
       { id: 'calls-daily-report', path: '/call-center/daily-report', label: 'Reports', icon: FileText, component: L(() => import('../pages/callCenter/ReportsPage')), can: (a) => a.in('call_center'), hidden: true },
