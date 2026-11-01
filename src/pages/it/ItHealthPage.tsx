@@ -20,6 +20,10 @@ const th = 'px-3 py-2 font-medium whitespace-nowrap';
 const td = 'px-3 py-2.5';
 const Loading = () => <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-24 skeleton rounded-card" />)}</div>;
 
+// Secrets go in the Supabase dashboard, not the terminal: a command line keeps
+// the token in PowerShell's history file.
+const SECRETS_LINK = <a className="link" href="https://supabase.com/dashboard/project/nwpsfsxuiugtgpgjffnt/functions/secrets" target="_blank" rel="noreferrer">Edge Functions → Secrets → Add new secret</a>;
+
 export function ItHealth() {
   usePageTitle('Health');
   const { profile } = useAuth();
@@ -276,7 +280,6 @@ function SettingsTab({ h, data, isLead }: { h: Health; data: ReturnType<typeof u
   const field = (k: keyof typeof f, label: string, hint?: string, wide?: boolean) => (
     <label key={k} className={`block ${wide ? 'sm:col-span-2' : ''}`}><span className={lbl}>{label}</span><input value={f[k]} onChange={(e) => set(k, e.target.value)} disabled={!isLead} className="input disabled:opacity-70" />{hint && <span className="text-micro text-fg-subtle">{hint}</span>}</label>
   );
-  const cmd = 'block font-mono text-caption bg-inset rounded px-2 py-1.5 mt-1 select-all';
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <div className="space-y-4">
@@ -305,24 +308,24 @@ function SettingsTab({ h, data, isLead }: { h: Health; data: ReturnType<typeof u
             {field('sentry_base_url', 'Sentry address', 'https://sentry.io, or https://de.sentry.io for EU data')}
             {field('sentry_projects', 'Project slugs', 'Comma separated, e.g. kivuride-app, kivuride-backend', true)}
           </div>
-          <p className="text-small font-medium">The token (once, in PowerShell, in the project folder)</p>
+          <p className="text-small font-medium">The token (once)</p>
           <ol className="list-decimal ml-5 text-small space-y-1 mt-1">
-            <li>In Sentry: Settings → Developer Settings → Personal Tokens → create one with <b>Read</b> on Organization, Project, Issue &amp; Event.</li>
-            <li>Run, replacing the placeholder with the token (don't paste it anywhere else):<code className={cmd}>npx supabase secrets set SENTRY_AUTH_TOKEN=paste-the-token-here</code></li>
+            <li>In Sentry: Settings → Developer Settings → Custom Integrations → <b>Create New Integration → Internal Integration</b>, named "Kivu Daily health". Permissions: <b>Read</b> on Project, Issue &amp; Event and Organization; <b>No Access</b> on everything else; no webhooks. Save, then copy its token.</li>
+            <li>Paste it in Supabase: {SECRETS_LINK}, name <b>SENTRY_AUTH_TOKEN</b>. Nowhere else: not in a chat, a file, an email or the PowerShell window.</li>
           </ol>
           <p className="text-caption text-fg-muted mt-2">{h.sentry ? `Last read ${ago(h.sentry.taken_at)}${h.sentry.error ? ` — ${h.sentry.error}` : ''}` : 'Not read yet.'}</p>
         </Box>
         <Box title="GitHub (code)" icon={GitBranch}>
           <div className="grid grid-cols-1 gap-3 mb-3">{field('github_repos', 'Repositories', 'owner/name, comma separated, e.g. kivuride/rider-driver-app, kivuride/backend')}</div>
           <ol className="list-decimal ml-5 text-small space-y-1">
-            <li>In GitHub: Settings → Developer settings → Fine-grained tokens → generate one for those repositories with <b>read-only</b> Contents, Metadata and Pull requests.</li>
-            <li>Run:<code className={cmd}>npx supabase secrets set GITHUB_TOKEN=paste-the-token-here</code></li>
+            <li>In GitHub: Settings → Developer settings → Fine-grained tokens → generate one with an expiry (90 days), <b>Only select repositories</b> (the ones above), and <b>Read-only</b> Contents and Pull requests (Metadata is added by itself). Nothing else.</li>
+            <li>Paste it in Supabase: {SECRETS_LINK}, name <b>GITHUB_TOKEN</b>. GitHub emails you before it expires: make a new one and replace it there.</li>
           </ol>
           <p className="text-caption text-fg-muted mt-2">Tip: mention the issue in commit messages (e.g. "KR-118 fix promo total") — the commit then shows in that issue's activity. {h.github ? `Last read ${ago(h.github.taken_at)}.` : ''}</p>
         </Box>
         <Box title="AI help" icon={Sparkles}>
           <p className="text-small">{ai.data?.configured ? <><Label tone="success">Connected</Label> using {ai.data.providers.join(', ')}.</> : <><Label>Not connected</Label> Add one key — Gemini has a free tier:</>}</p>
-          {!ai.data?.configured && <code className={cmd}>npx supabase secrets set GEMINI_API_KEY=paste-the-key-here</code>}
+          {!ai.data?.configured && <p className="text-small mt-1">Paste it in Supabase: {SECRETS_LINK}, name <b>GEMINI_API_KEY</b>.</p>}
           <p className="text-caption text-fg-muted mt-2">Used for: writing up an issue from a rough request, drafting the weekly review notes, and explaining Sentry errors. Names, phone numbers and plates are replaced with codes before anything is sent. The same key also turns on the AI line in the daily "Your day" email.</p>
         </Box>
       </div>
