@@ -22,8 +22,8 @@ import { ShiftReportBody } from '../../components/callCenter/ShiftReportModal';
 // Call Center > Reports (/call-center/reports): did every booking get a car?
 // App bookings and hotline dispatches (Kivu Daily and the admin dashboard)
 // next to the shifts and what the agents wrote in their shift reports, for
-// any day or range. The MD sees the whole team and ranks the agents; an
-// agent sees their own shifts. See lib/ccReports.ts for where each number
+// any day or range. The MD and the Call Center team lead (route_call_center)
+// see the whole team and rank the agents; an agent sees their own shifts. See lib/ccReports.ts for where each number
 // comes from.
 
 type Tab = 'overview' | 'agents' | 'bookings' | 'shifts';
@@ -43,7 +43,8 @@ export default function ReportsPage() {
   const today = todayK();
   const from = isDay(params.get('from')) ? params.get('from')! : today;
   const to = isDay(params.get('to')) && params.get('to')! >= from ? params.get('to')! : from;
-  const agent = a.isMd ? params.get('agent') || null : profile?.id ?? null;
+  const seesTeam = a.isMd || a.duties.has('route_call_center');
+  const agent = seesTeam ? params.get('agent') || null : profile?.id ?? null;
   const slot = (SLOTS as string[]).includes(params.get('slot') ?? '') ? (params.get('slot') as ShiftSlot) : null;
   const ch = (['app', 'hotline'].includes(params.get('ch') ?? '') ? params.get('ch') : 'all') as Ch;
   const tab = ((['overview', 'agents', 'bookings', 'shifts'] as Tab[]).includes(params.get('tab') as Tab) ? params.get('tab') : 'overview') as Tab;
@@ -88,7 +89,7 @@ export default function ReportsPage() {
   const quick: [string, string, string][] = [['Today', today, today], ['Yesterday', addDays(today, -1), addDays(today, -1)], ['Last 7 days', addDays(today, -6), today], ['This month', `${today.slice(0, 8)}01`, today], ['All time', FIRST_DAY, today]];
   const tabs = [
     { key: 'overview' as Tab, label: 'Overview', icon: BarChart3 },
-    ...(a.isMd ? [{ key: 'agents' as Tab, label: 'Agents', icon: Users }] : []),
+    ...(seesTeam ? [{ key: 'agents' as Tab, label: 'Agents', icon: Users }] : []),
     { key: 'bookings' as Tab, label: 'Bookings', icon: Car, count: view?.cur.bookings.filter((b) => b.outcome === 'no_car').length || undefined, tone: 'danger' as const },
     { key: 'shifts' as Tab, label: 'Shift reports', icon: FileText },
   ];
@@ -112,7 +113,7 @@ export default function ReportsPage() {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-small">
-          {a.isMd && (
+          {seesTeam && (
             <select className="input !w-auto py-1" value={agent ?? ''} aria-label="Agent" onChange={(e) => setQ({ agent: e.target.value || null })}>
               <option value="">All agents</option>
               {agents.map((p) => <option key={p.id} value={p.id}>{p.full_name}{p.is_active ? '' : ' (left)'}</option>)}
@@ -128,7 +129,7 @@ export default function ReportsPage() {
                 className={`px-2.5 py-1 rounded-md text-small font-medium ${ch === k ? 'bg-surface-3 shadow-sm text-brand' : 'text-fg-muted'}`}>{l}</button>
             ))}
           </div>
-          {(agent && a.isMd) || slot || ch !== 'all' ? <button className="btn-ghost text-caption" onClick={() => setQ({ agent: null, slot: null, ch: null })}>Clear filters</button> : null}
+          {(agent && seesTeam) || slot || ch !== 'all' ? <button className="btn-ghost text-caption" onClick={() => setQ({ agent: null, slot: null, ch: null })}>Clear filters</button> : null}
         </div>
       </div>
 
@@ -136,7 +137,7 @@ export default function ReportsPage() {
 
       {loading || !view || !data ? <div className="grid gap-3 md:grid-cols-4">{[0, 1, 2, 3].map((i) => <div key={i} className="h-28 skeleton rounded-xl" />)}</div>
         : tab === 'overview' ? <Overview cur={view.cur} prev={view.prev} from={from} to={to} c={c} agent={agent} rows={agentRows(data, view.cur.allShifts.filter((s) => !slot || s.slot === slot), view.cur.team)} />
-        : tab === 'agents' && a.isMd ? <Agents data={data} rows={agentRows(data, view.cur.allShifts.filter((s) => !slot || s.slot === slot), view.cur.team)} c={c}
+        : tab === 'agents' && seesTeam ? <Agents data={data} canEdit={a.isMd} rows={agentRows(data, view.cur.allShifts.filter((s) => !slot || s.slot === slot), view.cur.team)} c={c}
             onOpen={(id) => setQ({ agent: id, tab: 'shifts' })} onSaved={() => setReload((n) => n + 1)} />
         : tab === 'bookings' ? <Bookings list={view.cur.bookings} shifts={view.cur.allShifts} nameOf={nameOf} initial={params.get('outcome') as Outcome | null} canCancel={a.isMd || a.dept === 'call_center'} />
         : <Shifts shifts={view.cur.shifts} bookings={view.cur.bookings} nameOf={nameOf} agent={agent} canCancel={a.isMd || a.dept === 'call_center'} />}
@@ -320,7 +321,7 @@ function Insights({ cur, rows, agent }: { cur: Slice; rows: AgentRow[]; agent: s
 }
 
 // ------------------------------------------------------------------ agents
-function Agents({ data, rows, c, onOpen, onSaved }: { data: ReportData; rows: AgentRow[]; c: ReturnType<typeof usePalette>; onOpen: (id: string) => void; onSaved: () => void }) {
+function Agents({ data, canEdit, rows, c, onOpen, onSaved }: { data: ReportData; canEdit: boolean; rows: AgentRow[]; c: ReturnType<typeof usePalette>; onOpen: (id: string) => void; onSaved: () => void }) {
   const [how, setHow] = useState(false);
   const cell = (st: BookingStats) => st.n ? <><b>{st.n}</b><span className="text-fg-muted"> · {showPct(carRate(st))} car</span>{st.noCar ? <span className="text-danger"> · {st.noCar} none</span> : null}</> : <span className="text-fg-subtle">—</span>;
   const tone = (v: number | null) => (v == null ? 'text-fg-subtle' : v >= 75 ? 'text-emerald-700 dark:text-emerald-400' : v >= 55 ? 'text-attention' : 'text-danger');
@@ -372,7 +373,7 @@ function Agents({ data, rows, c, onOpen, onSaved }: { data: ReportData; rows: Ag
           </div>
         </>
       )}
-      <AdminAccounts data={data} onSaved={onSaved} />
+      {canEdit && <AdminAccounts data={data} onSaved={onSaved} />}
       {how && (
         <Modal open onClose={() => setHow(false)} title="How the score works" subtitle="Out of 100, from what the agent controls">
           <div className="space-y-2 text-small">

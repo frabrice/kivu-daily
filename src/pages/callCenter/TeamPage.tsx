@@ -131,7 +131,7 @@ export default function TeamPage() {
                 ))}
               </ul>
             ) : <p className="text-small text-fg-muted">Nothing matches.</p>}
-            <p className="text-micro text-fg-subtle mt-3">Duties are set by the MD in Notifications settings; this page follows them.</p>
+            <p className="text-micro text-fg-subtle mt-3">Duties are set by the MD in Admin → MD Panel → Email notifications → Who's in charge; this page follows them.</p>
           </aside>
         </div>
       )}
