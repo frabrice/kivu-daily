@@ -172,7 +172,7 @@ function StationForm({
     setSaving(true);
     setError('');
 
-    let photoUrls: string[] = [];
+    const photoUrls: string[] = [];
     if (photos.length > 0) {
       setUploading(true);
       for (const file of photos) {

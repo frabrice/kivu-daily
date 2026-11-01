@@ -51,11 +51,12 @@ export default function ShiftsPerformancePage() {
     }).sort((a, b) => b.minutes - a.minutes);
   }, [inRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Hooks before the loading return: a hook after it crashed the page once data arrived.
+  const pgInRange = usePaged(inRange, { key: 'shifts', reset: days });
   if (loading) return <div className="space-y-2">{[0, 1].map((i) => <div key={i} className="h-24 skeleton rounded-xl" />)}</div>;
 
   const th = 'px-3 py-2 font-medium text-left';
   const td = 'px-3 py-2';
-  const pgInRange = usePaged(inRange, { key: 'shifts', reset: days });
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">

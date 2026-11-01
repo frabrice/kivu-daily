@@ -48,7 +48,7 @@ export function useCompanyData() {
 export function computeStreakForTasks(tasks: Task[]): number {
   const completedDates = new Set(tasks.filter((t) => t.completed).map((t) => t.date));
   let streak = 0;
-  let cursor = new Date();
+  const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
   if (!completedDates.has(dateStr(cursor))) {
     cursor.setDate(cursor.getDate() - 1);

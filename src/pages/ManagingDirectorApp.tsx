@@ -642,7 +642,6 @@ function EmployeeCard({ employee: e, onClick }: { employee: EmployeeWithStats; o
 function DepartmentsView({
   employees,
   departments,
-  allTasks: _allTasks,
   onSelect,
   reload,
 }: {
