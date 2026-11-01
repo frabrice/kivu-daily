@@ -69,10 +69,11 @@ export default function ActivityLogPage({ profiles }: { profiles: Profile[] }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">
                     <span className="font-medium">{entry.actor?.full_name ?? 'Someone'}</span>{' '}
-                    <span className="text-fg-muted ">{entry.action}</span>{' '}
+                    <span className="text-fg-muted ">{entry.action === 'opened_dashboard' ? 'opened the dashboard of' : entry.action}</span>{' '}
                     {entry.entity_label && (
                       <span className="text-fg-muted ">"{entry.entity_label}"</span>
                     )}
+                    {entry.on_behalf_of && entry.action !== 'opened_dashboard' && <span className="text-attention"> · in {profiles.find((p) => p.id === entry.on_behalf_of)?.full_name.trim() ?? 'someone'}{"'s"} dashboard</span>}
                   </p>
                   <p className="text-xs text-fg-subtle mt-0.5">{timeAgo(entry.created_at)}</p>
                 </div>

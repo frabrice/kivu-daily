@@ -1,5 +1,5 @@
 import { lazy, LazyExoticComponent, ComponentType } from 'react';
-import { Contact,
+import { Contact, Eye,
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
   Route, Flag, Inbox, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
@@ -236,6 +236,7 @@ export const MODULES: ModuleDef[] = [
     id: 'admin', label: 'Admin', icon: Shield, base: '/admin',
     pages: [
       { id: 'md-panel', path: '/admin', label: 'MD Panel', icon: Shield, component: L(() => import('../pages/MDPanel')), can: md, keywords: 'research charging stations email notifications recurring tasks' },
+      { id: 'dashboards', path: '/admin/dashboards', label: 'Open a dashboard', icon: Eye, component: L(() => import('../pages/admin/DashboardsPage')), can: md, keywords: 'view as see as open dashboard impersonate look at someone else staff screen what they see', description: "See Kivu Daily exactly as someone sees it, and use it; what you do there is recorded as you." },
       { id: 'settings', path: '/settings', label: 'Settings', icon: Settings, component: L(() => import('../pages/SettingsPage')) },
     ],
   },

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, CheckCircle2, Clock, Flame, Headphones, LayoutGrid, ListTodo, User, XCircle } from 'lucide-react';
+import { Activity, CheckCircle2, Clock, Eye, Flame, Headphones, LayoutGrid, ListTodo, User, XCircle } from 'lucide-react';
 import { EntityViewProps } from '../../os/peek';
 import { EntityLink, useEntityMeta } from '../../os/EntityLink';
 import { useAuth } from '../../lib/auth';
@@ -18,7 +18,7 @@ const SHADE = ['rgb(var(--c-line-muted))', 'rgb(var(--c-accent) / 0.30)', 'rgb(v
 // A staff member: their work rhythm (GitHub-style activity calendar),
 // tasks done and on time, cases they answer, and the MD's notes to them.
 export default function PersonEntity({ id, mode }: EntityViewProps) {
-  const { profile: me } = useAuth();
+  const { profile: me, openDashboard } = useAuth();
   const nav = useNavigate();
   const { profiles, allTasks, loading } = useCompanyData();
   const person = profiles.find((p) => p.id === id) ?? null;
@@ -58,7 +58,12 @@ export default function PersonEntity({ id, mode }: EntityViewProps) {
     <PageHeader avatar={<Avatar name={person.full_name} url={person.avatar_url} size="lg" />} title={person.full_name.trim()}
       labels={<>{person.role === 'managing_director' && <Label tone="accent">Managing Director</Label>}{!person.is_active && <Label>Left</Label>}{person.responsibility_label && <Label tone="info">{person.responsibility_label}</Label>}</>}
       meta={<><span>{dept?.name ?? 'No department'}</span>{person.email && <a href={`mailto:${person.email}`} className="link">{person.email}</a>}</>}
-      actions={mode === 'page' && isAgent && isMd ? <button onClick={() => nav(`/call-center/agents/${id}`)} className="btn-secondary"><Headphones size={14} /> Shifts and calls</button> : undefined} />
+      actions={mode === 'page' && isMd && person.role !== 'managing_director' && person.is_active ? (
+        <div className="flex flex-wrap gap-2">
+          {isAgent && <button onClick={() => nav(`/call-center/agents/${id}`)} className="btn-secondary"><Headphones size={14} /> Shifts and calls</button>}
+          <button onClick={async () => { const e = await openDashboard(id); if (e) window.alert(e); }} className="btn-secondary" title="See Kivu Daily exactly as they see it; what you do there is recorded as you"><Eye size={14} /> Open their dashboard</button>
+        </div>
+      ) : mode === 'page' && isAgent && isMd ? <button onClick={() => nav(`/call-center/agents/${id}`)} className="btn-secondary"><Headphones size={14} /> Shifts and calls</button> : undefined} />
   );
   const stats = (
     <StatGrid cols={mode === 'peek' ? 2 : 4}>

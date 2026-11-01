@@ -1,7 +1,7 @@
 import { lazy, ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  CalendarPlus, ChevronDown, Keyboard, LogOut, Megaphone, Menu, Moon, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
+  CalendarPlus, ChevronDown, Eye, Keyboard, LogOut, Megaphone, Menu, Moon, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
   PhoneIncoming, Plus, Rocket, Search, Settings, Sun, X, ListTodo, CalendarOff,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
@@ -37,7 +37,7 @@ function useLocalBool(key: string, initial: boolean): [boolean, (v: boolean | ((
 
 // ---------------------------------------------------------------- shell
 export default function Shell({ access, children }: { access: Access; children: ReactNode }) {
-  const { profile, signOut: plainSignOut } = useAuth();
+  const { profile, signOut: plainSignOut, viewing, closeDashboard } = useAuth();
   const loc = useLocation();
   const nav = useNavigate();
   const badges = useBadges(access);
@@ -58,8 +58,9 @@ export default function Shell({ access, children }: { access: Access; children: 
   const isCallCenter = access.dept === 'call_center';
   const { shift, loading: shiftLoading, reload: reloadShift } = useMyOpenShift(profile?.id, isCallCenter);
   const [ending, setEnding] = useState<null | 'end' | 'signout'>(null);
-  const needsShift = isCallCenter && !shiftLoading && !shift;
-  const signOut = isCallCenter && shift ? () => setEnding('signout') : plainSignOut;
+  // In someone's dashboard the MD sees their pages even when they are not on shift.
+  const needsShift = isCallCenter && !shiftLoading && !shift && !viewing;
+  const signOut = isCallCenter && shift && !viewing ? () => setEnding('signout') : plainSignOut;
 
   useEffect(() => { setMobileMenu(false); setFlyout(null); }, [loc.pathname]);
 
@@ -159,6 +160,7 @@ export default function Shell({ access, children }: { access: Access; children: 
                   {needsShift ? <StartShiftScreen onStarted={reloadShift} /> : children}
                 </Suspense>
               </PageBoundary>
+              {viewing && <div className="h-14" aria-hidden />}
             </div>
             {peekStack.length > 0 && <PeekPanel />}
           </div>
@@ -166,6 +168,13 @@ export default function Shell({ access, children }: { access: Access; children: 
       </div>
 
 
+      {viewing && (
+        <div role="status" className="fixed z-[60] left-1/2 -translate-x-1/2 bottom-20 md:bottom-4 max-w-[calc(100vw-2rem)] flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full bg-amber-500 text-black shadow-overlay text-small">
+          <Eye size={15} className="shrink-0" />
+          <span className="min-w-0 truncate"><b>{viewing.name}'s dashboard</b><span className="hidden sm:inline"> · what you do here is recorded as you{isCallCenter && !shiftLoading && !shift ? ' · not on shift (they would see Start shift first)' : ''}</span></span>
+          <button onClick={() => void closeDashboard()} className="shrink-0 h-7 px-3 rounded-full bg-black/85 text-white font-medium hover:bg-black">Exit</button>
+        </div>
+      )}
       <MobileBar access={access} badges={badges} onMenu={() => setMobileMenu(true)} onSearch={() => setPalette(true)} />
       {mobileMenu && <MobileMenu access={access} badges={badges} onClose={() => setMobileMenu(false)} signOut={signOut} />}
       <CommandPalette open={palette} onClose={() => setPalette(false)} access={access} onSignOut={signOut} onShortcuts={() => setShortcuts(true)} />

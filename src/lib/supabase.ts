@@ -1,7 +1,59 @@
 import { createClient } from '@supabase/supabase-js';
+import { getViewAs } from './viewAsStore';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+// MD in someone's dashboard (lib/viewAsStore.ts): every database request
+// carries x-kd-view-as so the server records the MD as the one who did it,
+// each change is written to the visit's history, and the few actions that
+// would act on the MD's own record are stopped.
+const SELF_ONLY: Record<string, string> = {
+  start_call_center_shift: 'start a shift',
+  end_call_center_shift: 'end a shift',
+  confirm_it_work: 'confirm IT work',
+  decline_meeting: 'decline a meeting',
+};
+// Reads and automatic syncs a page runs by itself: not worth a history line.
+const QUIET_RPC = new Set([
+  'team_day', 'shift_stats', 'call_center_analytics', 'call_center_drivers', 'company_trips_daily', 'company_month_facts', 'company_money_live',
+  'company_campaign_results', 'company_budget_spending', 'it_trip_health', 'it_initiative_spending', 'get_survey_progress', 'free_times_for',
+  'booking_free_times', 'series_clashes', 'validate_collector_email', 'ensure_meeting_occurrences', 'sync_vehicle_obligations', 'sync_driver_payroll',
+  'sync_issue_task', 'generate_recurring_tasks',
+]);
+const KIND: Record<string, string> = { POST: 'add', PATCH: 'change', PUT: 'change', DELETE: 'delete' };
+
+async function viewAsFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const v = getViewAs();
+  if (!v) return fetch(input, init);
+  const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  const u = new URL(href);
+  const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
+  const rest = u.pathname.match(/\/rest\/v1\/(rpc\/)?([^/?]+)/);
+  const fn = u.pathname.match(/\/functions\/v1\/([^/?]+)/);
+  if (rest?.[1] && SELF_ONLY[rest[2]]) {
+    record(v.session, 'blocked', rest[2], 400, '');
+    const message = `You are in ${v.name}'s dashboard: you can't ${SELF_ONLY[rest[2]]} for them from here (it would be done for you). Ask them to do it from their own account.`;
+    return new Response(JSON.stringify({ message, code: 'KD001', details: null, hint: null }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  }
+  let res: Response;
+  if (rest) {
+    const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+    headers.set('x-kd-view-as', v.id);
+    res = await fetch(input, { ...init, headers });
+  } else {
+    res = await fetch(input, init);
+  }
+  const body = typeof init?.body === 'string' ? init.body : '';
+  if (rest?.[1] && !rest[2].startsWith('view_as_') && !QUIET_RPC.has(rest[2])) record(v.session, 'action', rest[2], res.status, body);
+  else if (rest && !rest[1] && KIND[method]) record(v.session, KIND[method], rest[2], res.status, [decodeURIComponent(u.search.slice(1)), body].filter(Boolean).join(' '));
+  else if (fn && method === 'POST') record(v.session, 'function', fn[1], res.status, body);
+  return res;
+}
+
+function record(session: string, kind: string, target: string, status: number, detail: string) {
+  void supabase.rpc('view_as_log', { p_session: session, p_kind: kind, p_target: target, p_status: status, p_detail: detail.slice(0, 800) }).then(() => undefined);
+}
 
 export const supabase = createClient(url, anonKey, {
   auth: {
@@ -9,6 +61,7 @@ export const supabase = createClient(url, anonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
+  global: { fetch: viewAsFetch },
 });
 
 export type Role = 'employee' | 'managing_director';
@@ -567,6 +620,8 @@ export interface ActivityLogEntry {
   entity_label: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
+  // Set when the MD did it while in this person's dashboard (Admin > Open a dashboard).
+  on_behalf_of?: string | null;
   actor?: Profile | null;
 }
 
