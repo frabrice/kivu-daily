@@ -321,6 +321,8 @@ async function sync(db: Any) {
 
   const summary = { companies: companies.length, cars: carRows.filter((c) => managed(c.fleet_company_id) || c.kivu_vehicle_id).length, open: rows.filter((r) => (old.get(r.key)?.status ?? "open") !== "dismissed").length, fixed: gone.length };
   await db.from("platform_sync_state").upsert({ key: "fleet", last_run_at: started, last_ok_at: new Date().toISOString(), last_error: null, last_changed: gone.length, platform_total: carRows.length });
+  // Every car registered on the app (not decommissioned), for the public website's total.
+  await db.from("platform_sync_state").upsert({ key: "vehicles", last_run_at: started, last_ok_at: new Date().toISOString(), last_error: null, platform_total: app.vehicles.filter((v) => v.status !== "decommissioned").length });
   return summary;
 }
 
