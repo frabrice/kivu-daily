@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CalendarDays, Coins, FileSpreadsheet, FileText, Loader2, PhoneCall, Smartphone, Wallet } from 'lucide-react';
+import { CalendarDays, Coins, Eye, PhoneCall, Smartphone, Wallet } from 'lucide-react';
 import { usePageTitle } from '../../os/workspace';
 import { useAccess } from '../../os/access';
 import { kigaliToday } from '../../lib/kigali';
-import { CTrip, Followup, METHOD_LABEL, commissionReport, loadCommissions, summarise } from '../../lib/commissions';
-import { download, fileName, toExcel, toPdf } from '../../lib/fleetExports';
+import { CTrip, Company, Followup, METHOD_LABEL, exemptMap, loadCommissions, summarise } from '../../lib/commissions';
+import CommissionPreview from '../../components/commissions/CommissionPreview';
 import { ChartCard, DailyBars, Empty, Kpi, MiniTable, RankBars, STATUS, dayList, longDay, usePalette } from '../../components/charts/kit';
 import { Label, PageHeader } from '../../ui/kit';
 
 // Trips > Commissions: what the 10% on completed trips should bring, what
 // the app already took, what drivers owe from cash trips, and who to call.
-// Sums in lib/commissions.ts.
+// Sums in lib/commissions.ts. Reports are exported from the preview, where
+// Finance and the MD leave company trips (and any other) out of commission.
 
 const FIRST_DAY = '2026-05-31';
 const addDays = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
@@ -31,13 +32,16 @@ export default function CommissionsPage() {
   const only = params.get('who') === 'ours' ? 'ours' : 'all';
   const setQ = (patch: Record<string, string | null>) => setParams((p) => { const n = new URLSearchParams(p); Object.entries(patch).forEach(([k, v]) => (v ? n.set(k, v) : n.delete(k))); return n; }, { replace: true });
 
-  const [data, setData] = useState<{ trips: CTrip[]; followups: Followup[] } | null>(null);
-  const [busy, setBusy] = useState<'xlsx' | 'pdf' | null>(null);
-  const [err, setErr] = useState('');
-  useEffect(() => { setData(null); loadCommissions(from, to).then(setData); }, [from, to]);
+  const [data, setData] = useState<{ trips: CTrip[]; followups: Followup[]; companies: Company[] } | null>(null);
+  const [preview, setPreview] = useState(false);
+  const [tick, setTick] = useState(0);
+  const canEdit = a.isMd || a.dept === 'finance';
+  useEffect(() => { let on = true; loadCommissions(from, to).then((d) => on && setData(d)); return () => { on = false; }; }, [from, to, tick]);
+  useEffect(() => { setData(null); }, [from, to]);
 
   const days = useMemo(() => dayList(from, to), [from, to]);
-  const s = useMemo(() => (data ? summarise(only === 'ours' ? data.trips.filter((t) => t.kivu_driver_id) : data.trips, data.followups, days) : null), [data, only, days]);
+  const scoped = useMemo(() => (data ? (only === 'ours' ? data.trips.filter((t) => t.kivu_driver_id) : data.trips) : []), [data, only]);
+  const s = useMemo(() => (data ? summarise(scoped, data.followups, days, exemptMap(scoped)) : null), [data, scoped, days]);
   const period = from === to ? fullDay(from) : `${fullDay(from)} to ${fullDay(to)}`;
   const quick: [string, string, string][] = [['Yesterday', addDays(today, -1), addDays(today, -1)], ['Today', today, today], ['Last 7 days', addDays(today, -6), today], ['This month', `${today.slice(0, 8)}01`, today], ['All time', FIRST_DAY, today]];
   const series = [
@@ -45,23 +49,16 @@ export default function CommissionsPage() {
     { key: 'paid', label: 'Cash: recorded paid', color: c.aqua },
     { key: 'owed', label: 'Cash: still to collect', color: STATUS.critical },
   ] as const;
-  const make = async (ext: 'xlsx' | 'pdf') => {
-    if (!s) return;
-    setBusy(ext); setErr('');
-    try { const r = commissionReport(s, from, to, period); download(ext === 'xlsx' ? await toExcel(r) : await toPdf(r), fileName(r, ext)); }
-    catch (e) { setErr(`The file could not be made: ${e instanceof Error ? e.message : String(e)}`); }
-    finally { setBusy(null); }
-  };
 
   return (
     <div className="space-y-4">
       <PageHeader icon={Coins} title="Commissions" subtitle={`${period} · 10% of every completed trip: expected, taken by the app, and what drivers still owe from cash trips`}
-        actions={<>
-          <button onClick={() => make('pdf')} disabled={!s || !!busy} className="btn-secondary">{busy === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} PDF</button>
-          <button onClick={() => make('xlsx')} disabled={!s || !!busy} className="btn-secondary">{busy === 'xlsx' ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />} Excel</button>
-        </>} />
+        actions={<button onClick={() => setPreview(true)} disabled={!s} className="btn-primary"><Eye size={14} /> Preview &amp; export</button>} />
 
-      {err && <p className="text-small text-danger">{err}</p>}
+      {preview && data && (
+        <CommissionPreview trips={scoped} followups={data.followups} companies={data.companies} days={days} from={from} to={to} period={period}
+          canEdit={canEdit} onClose={() => setPreview(false)} onSaved={() => setTick((n) => n + 1)} />
+      )}
       <div className="card p-3 flex flex-wrap items-center gap-2 text-small">
         {quick.map(([l, f, t]) => (
           <button key={l} className={`px-2.5 py-1 rounded-md border ${from === f && to === t ? 'border-brand text-brand bg-brand/5 font-medium' : 'border-line text-fg-muted hover:border-brand/40'}`} onClick={() => setQ({ from: f, to: t })}>{l}</button>
@@ -89,6 +86,13 @@ export default function CommissionsPage() {
             <Kpi icon={Wallet} label="Still to collect" value={rwf(s.total.owed)} tone={s.total.owed ? 'bad' : undefined} sub={`${s.drivers.filter((r) => r.owed > 0).length} drivers`} />
             <Kpi icon={Coins} label="Collected so far" value={s.total.expected ? `${Math.round(((s.total.byApp + Math.min(s.total.paid, s.total.cash)) / s.total.expected) * 100)}%` : '—'} sub="Taken by the app + recorded paid, out of expected" />
           </div>
+
+          {s.exempt.trips > 0 && (
+            <p className="text-small rounded-md border border-line-muted px-3 py-2">
+              <b>{s.exempt.trips} trip{s.exempt.trips === 1 ? '' : 's'} left out of commission</b> ({rwf(s.exempt.fares)} in fares): company trips, paid to Kivu Ride and driven by our own drivers{s.exempt.rows.some((x) => !x.trip.company) ? ', and trips Finance left out' : ''}.{' '}
+              <button className="link" onClick={() => setPreview(true)}>See them in the preview</button>
+            </p>
+          )}
 
           <p className="text-caption text-fg-muted rounded-md bg-inset px-3 py-2">
             "Recorded paid" only counts what the Call Center logs in <Link className="link" to="/call-center/commissions">Commission follow-up</Link>. The exact amounts in each driver's app wallet need KivuRide to give our key the finance permissions (<code>finance.view</code>, <code>driver_finance.view</code>).

@@ -13,12 +13,26 @@ import type { Report } from './fleetExports';
 // The exact per-driver wallet (paid / owed in the app) needs our key to get
 // finance.view + driver_finance.view from KivuRide; until then "paid" is
 // what is recorded here.
+//
+// Exempt trips (MD, 3 Nov 2026) carry no commission: company trips (e.g.
+// CEVR) are paid to Kivu Ride and driven by our own paid drivers. A trip
+// tagged to a company is exempt automatically; Finance or the MD can decide
+// any trip in the preview (commission_exemptions). Rider names that only
+// look like a company ("CEVR", "CVR") are suggestions until someone saves them.
 
 export const COMMISSION_RATE = 0.1;
 export const APP_METHODS = ['mobile_money', 'card', 'corporate'];
 export const METHOD_LABEL: Record<string, string> = { cash: 'Cash', mobile_money: 'Mobile Money', card: 'Card', corporate: 'Company account' };
 
-export interface CTrip { id: number; completed_at: string | null; requested_at: string | null; total_fare: number | null; payment_method: string | null; platform_driver_id: number | null; driver_name: string | null; driver_phone: string | null; kivu_driver_id: string | null; day: string }
+export interface Decision { exempt: boolean; reason: string | null; decided_at: string; by: string | null }
+export interface CTrip {
+  id: number; completed_at: string | null; requested_at: string | null; total_fare: number | null; payment_method: string | null;
+  platform_driver_id: number | null; driver_name: string | null; driver_phone: string | null; kivu_driver_id: string | null;
+  rider_name: string | null; pickup_address: string | null; destination_address: string | null; day: string;
+  company: { client_id: string; name: string; status: string } | null;   // tagged to a company (Trips > Companies)
+  decision: Decision | null;                                             // Finance / MD, in the preview
+}
+export interface Company { id: string; name: string }
 export interface Followup { id: string; day: string; driver_name: string; driver_phone: string | null; amount_owed: number; outcome: string; promised_date: string | null; amount_paid: number | null; created_at: string }
 
 const phoneKey = (p: string | null | undefined) => (p ?? '').replace(/\D/g, '').slice(-9);
@@ -37,16 +51,89 @@ async function all<T>(make: () => any): Promise<T[]> {
   return out;
 }
 
+// PostgREST gives a one-to-one embed as an object, or as a list on some setups.
+const one = <T,>(x: T | T[] | null | undefined): T | null => (Array.isArray(x) ? x[0] ?? null : x ?? null);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Raw = Omit<CTrip, 'day' | 'company' | 'decision'> & { company: any; decision: any };
+
 export async function loadCommissions(from: string, to: string) {
   const start = new Date(Date.parse(`${from}T00:00:00+02:00`)).toISOString();
   const end = new Date(Date.parse(`${to}T00:00:00+02:00`) + 86_400_000).toISOString();
   // A few completed trips come from the app with no completion time: they count on the day they were requested.
-  const [trips, followups] = await Promise.all([
-    all<Omit<CTrip, 'day'>>(() => supabase.from('platform_trips').select('id, completed_at, requested_at, total_fare, payment_method, platform_driver_id, driver_name, driver_phone, kivu_driver_id')
+  const [trips, followups, companies] = await Promise.all([
+    all<Raw>(() => supabase.from('platform_trips').select('id, completed_at, requested_at, total_fare, payment_method, platform_driver_id, driver_name, driver_phone, kivu_driver_id, rider_name, pickup_address, destination_address, '
+      + 'company:business_client_trips(client_id, status, client:business_clients(name)), decision:commission_exemptions(exempt, reason, decided_at, decider:profiles(full_name))')
       .eq('status', 'completed').or(`and(completed_at.gte.${start},completed_at.lt.${end}),and(completed_at.is.null,requested_at.gte.${start},requested_at.lt.${end})`).order('id')),
     all<Followup>(() => supabase.from('commission_followups').select('id, day, driver_name, driver_phone, amount_owed, outcome, promised_date, amount_paid, created_at').gte('day', from).lte('day', to).order('created_at')),
+    all<Company>(() => supabase.from('business_clients').select('id, name').neq('status', 'ended').order('name')),
   ]);
-  return { trips: trips.map((t) => ({ ...t, day: kigaliDay(t.completed_at ?? t.requested_at) })), followups };
+  return {
+    trips: trips.map((t): CTrip => {
+      const c = one(t.company), d = one(t.decision);
+      return {
+        ...t, day: kigaliDay(t.completed_at ?? t.requested_at),
+        company: c ? { client_id: c.client_id, status: c.status, name: one(c.client)?.name ?? 'a company' } : null,
+        decision: d ? { exempt: !!d.exempt, reason: d.reason ?? null, decided_at: d.decided_at, by: one(d.decider)?.full_name?.trim() ?? null } : null,
+      };
+    }),
+    followups, companies,
+  };
+}
+
+// ------------------------------------------------------------ exemptions
+// What applies today: a saved decision, else a company trip is exempt.
+export const autoExempt = (t: CTrip) => !!t.company;
+export const isExempt = (t: CTrip) => t.decision?.exempt ?? autoExempt(t);
+export const companyReason = (name: string) => `Company trip: ${name}`;
+export const exemptReason = (t: CTrip) => (t.decision?.exempt ? t.decision.reason ?? '' : t.company ? companyReason(t.company.name) : '');
+
+// A rider name typed like a company's ("CEVR", "cevr", "CVR", "C.E.V.R").
+const letters = (x: string) => x.toLowerCase().replace(/[^a-z]/g, '');
+const consonants = (x: string) => x.replace(/[aeiou]/g, '');
+export function looksLike(t: CTrip, companies: Company[]): Company | null {
+  const r = letters(t.rider_name ?? '');
+  if (!r) return null;
+  return companies.find((c) => {
+    const k = letters(c.name);
+    return k.length >= 3 && (r === k || r.includes(k) || (consonants(k).length >= 3 && consonants(r) === consonants(k)));
+  }) ?? null;
+}
+
+// The trips the page leaves out (id -> reason), as decided today.
+export const exemptMap = (trips: CTrip[]) => new Map(trips.filter(isExempt).map((t) => [t.id, exemptReason(t)]));
+
+// Save the preview's choices: only what differs from what applies today.
+// A choice equal to the automatic rule needs no row (and removes one).
+export async function saveExemptions(trips: CTrip[], picks: Map<number, { exempt: boolean; reason: string }>) {
+  const upserts: { trip_id: number; exempt: boolean; reason: string | null }[] = [];
+  const removes: number[] = [];
+  for (const t of trips) {
+    const p = picks.get(t.id);
+    if (!p) continue;
+    const reason = p.reason.trim();
+    if (p.exempt === autoExempt(t)) {
+      if (t.decision) removes.push(t.id);
+      continue;
+    }
+    if (t.decision && t.decision.exempt === p.exempt && (t.decision.reason ?? '') === reason) continue;
+    upserts.push({ trip_id: t.id, exempt: p.exempt, reason: reason || null });
+  }
+  if (upserts.length) {
+    const { error } = await supabase.from('commission_exemptions').upsert(upserts, { onConflict: 'trip_id' });
+    if (error) throw new Error(error.message);
+  }
+  if (removes.length) {
+    const { error } = await supabase.from('commission_exemptions').delete().in('trip_id', removes);
+    if (error) throw new Error(error.message);
+  }
+  return upserts.length + removes.length;
+}
+
+// Tag a trip to its company (as Trips > Companies does); it is then exempt automatically.
+export async function tagToCompany(tripId: number, clientId: string) {
+  const { error } = await supabase.from('business_client_trips').insert({ trip_id: tripId, client_id: clientId, note: 'Added from the commission preview' });
+  if (error) throw new Error(error.message);
 }
 
 export interface Totals { trips: number; fares: number; expected: number; byApp: number; cash: number; paid: number; owed: number }
@@ -59,7 +146,11 @@ const add = (s: Totals, t: CTrip) => {
 const finish = (s: Totals) => { s.owed = Math.max(0, s.cash - s.paid); return s; };
 
 export interface DriverRow extends Totals { key: string; name: string; phone: string | null; ours: boolean; cashTrips: number; last: Followup | null }
-export function summarise(trips: CTrip[], followups: Followup[], days: string[]) {
+export interface ExemptRow { trip: CTrip; reason: string }
+// `exempt`: trip id -> reason. Those trips are listed apart and carry no commission.
+export function summarise(all: CTrip[], followups: Followup[], days: string[], exempt: Map<number, string> = new Map()) {
+  const trips = all.filter((t) => !exempt.has(t.id));
+  const left: ExemptRow[] = all.filter((t) => exempt.has(t.id)).map((t) => ({ trip: t, reason: exempt.get(t.id) || 'Left out' }));
   const total = zero();
   const byDay = new Map(days.map((d) => [d, zero()]));
   const drivers = new Map<string, DriverRow>();
@@ -94,12 +185,17 @@ export function summarise(trips: CTrip[], followups: Followup[], days: string[])
   }
   return {
     total, days: [...byDay.entries()].map(([day, s]) => ({ day, ...s })),
+    exempt: { rows: left, trips: left.length, fares: left.reduce((n, x) => n + Number(x.trip.total_fare ?? 0), 0) },
     drivers: [...drivers.values()].sort((a, b) => b.owed - a.owed || b.expected - a.expected),
     methods: [...byMethod.entries()].map(([method, x]) => ({ method, ...x })).sort((a, b) => b.commission - a.commission),
   };
 }
 
 const money = (n: number) => `${Math.round(n).toLocaleString('en-US')} RWF`;
+export const timeOf = (t: CTrip) => {
+  const at = t.completed_at ?? t.requested_at;
+  return at ? new Date(at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' }) : '';
+};
 export function commissionReport(s: ReturnType<typeof summarise>, from: string, to: string, period: string): Report {
   return {
     title: 'Commissions', subtitle: period, from, to,
@@ -110,6 +206,7 @@ export function commissionReport(s: ReturnType<typeof summarise>, from: string, 
       { label: 'Cash commission', value: money(s.total.cash), sub: 'drivers must pay it' },
       { label: 'Recorded paid', value: money(s.total.paid) },
       { label: 'Still to collect', value: money(s.total.owed) },
+      ...(s.exempt.trips ? [{ label: 'Exempt trips', value: String(s.exempt.trips), sub: `${money(s.exempt.fares)} in fares, no commission` }] : []),
     ],
     sections: [
       { title: 'By driver', red: (r) => Number(r.owed) > 0, columns: [
@@ -124,11 +221,19 @@ export function commissionReport(s: ReturnType<typeof summarise>, from: string, 
       { title: 'By payment method', columns: [
         { header: 'Paid by', key: 'label' }, { header: 'Trips', key: 'trips', kind: 'int' }, { header: 'Fares', key: 'fares', kind: 'money' }, { header: 'Commission 10%', key: 'commission', kind: 'money' },
       ], rows: s.methods.map((m) => ({ ...m, label: METHOD_LABEL[m.method] ?? m.method })) as never },
+      ...(s.exempt.trips ? [{ title: 'Exempt trips (no commission)', note: 'Company trips are paid to Kivu Ride and driven by our own paid drivers.', columns: [
+        { header: 'Day', key: 'day', kind: 'date' as const }, { header: 'Time', key: 'time' }, { header: 'Trip', key: 'id', kind: 'int' as const }, { header: 'Driver', key: 'driver', width: 24 }, { header: 'Rider', key: 'rider', width: 18 },
+        { header: 'Fare', key: 'fare', kind: 'money' as const }, { header: 'Paid by', key: 'paidBy' }, { header: 'Reason', key: 'reason', width: 30 },
+      ], rows: s.exempt.rows.map(({ trip: t, reason }) => ({
+        day: t.day, time: timeOf(t), id: t.id, driver: (t.driver_name ?? '').replace(/\s+/g, ' ').trim(), rider: t.rider_name ?? '', fare: Number(t.total_fare ?? 0),
+        paidBy: METHOD_LABEL[t.payment_method ?? 'cash'] ?? t.payment_method ?? '', reason,
+      })) }] : []),
     ],
     notes: [
       'Commission is 10% of the final fare of every completed trip, on the day it was completed (or requested, when the app gives no completion time).',
       'Taken by the app: the rider paid through the app (Mobile Money, card) or a company account, so the commission is already in. Cash: the driver holds the fare and owes the 10%.',
       'Recorded paid is what the Call Center records in Commission follow-up. The exact amounts in each driver\'s app wallet need KivuRide to give our key the finance permissions.',
+      ...(s.exempt.trips ? ['Exempt trips carry no commission and are not in any total above: company trips (tagged in Trips > Companies) are left out automatically; any other was left out by Finance or the MD, with the reason shown.'] : []),
     ],
   };
 }
