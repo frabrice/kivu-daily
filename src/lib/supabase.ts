@@ -78,6 +78,8 @@ export interface Profile {
   // What they're in charge of, shown as "Name (Head of IT)" when the
   // Call Center assigns a ticket.
   responsibility_label: string | null;
+  // Public LinkedIn profile, shown on kivuride.com's team.
+  linkedin_url?: string | null;
   force_password_change: boolean;
   last_comment_seen_at: string | null;
   created_at: string;

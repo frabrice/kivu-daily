@@ -25,6 +25,7 @@ import {
   Loader2,
   Check,
   Activity,
+  Linkedin,
 } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, BarChart, Bar, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
@@ -46,6 +47,7 @@ import TaskReviewModal from '../components/TaskReviewModal';
 import EmployeeProfilePage from '../components/EmployeeProfilePage';
 import { CreateUserModal, EditUserModal } from '../components/EmployeeAdminModals';
 import TerminateEmployeeModal from '../components/TerminateEmployeeModal';
+import TeamLinkedInModal from '../components/TeamLinkedInModal';
 import { edgeFunctionError } from '../lib/edgeFunctions';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
@@ -660,6 +662,7 @@ function DepartmentsView({
   const [terminating, setTerminating] = useState<EmployeeWithStats | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resendResult, setResendResult] = useState<{ id: string; error: string | null } | null>(null);
+  const [linkedinOpen, setLinkedinOpen] = useState(false);
 
   const addDepartment = async () => {
     if (!newDeptName.trim()) return;
@@ -691,7 +694,10 @@ function DepartmentsView({
 
   return (
     <div className="space-y-2.5">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-1">
+        <button onClick={() => setLinkedinOpen(true)} className="btn-ghost flex items-center gap-1.5" title="Everyone's LinkedIn profile, shown on kivuride.com's team">
+          <Linkedin size={14} /> LinkedIn links
+        </button>
         <button onClick={() => setAddDeptOpen(true)} className="btn-ghost flex items-center gap-1.5">
           <Plus size={14} /> Add Department
         </button>
@@ -729,7 +735,7 @@ function DepartmentsView({
                     <button onClick={() => onSelect(e)} className="flex-1 flex items-center gap-2.5 min-w-0 text-left">
                       <Avatar name={e.full_name} url={e.avatar_url} size="sm" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-caption font-medium truncate">{e.full_name}</p>
+                        <p className="text-caption font-medium truncate flex items-center gap-1">{e.full_name}{e.linkedin_url && <Linkedin size={11} className="text-[#0A66C2] shrink-0" aria-label="LinkedIn link set" />}</p>
                         <p className="text-micro text-fg-subtle">{e.todayCompleted}/{e.todayTotal} · {e.streak} day streak</p>
                         {e.force_password_change && (
                           <p className="text-micro font-medium text-orange-600 dark:text-orange-400">Pending setup</p>
@@ -777,6 +783,8 @@ function DepartmentsView({
           </div>
         </div>
       )}
+
+      {linkedinOpen && <TeamLinkedInModal onClose={() => setLinkedinOpen(false)} onSaved={reload} />}
 
       {creatingFor && (
         <CreateUserModal

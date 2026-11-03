@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
+import { LINKEDIN_HINT, linkedinUrl } from '../lib/linkedin';
 import { supabase } from '../lib/supabase';
 import { Moon, Sun, User, Lock, Bell, Mail, Clock, MessageSquare } from 'lucide-react';
 
@@ -23,6 +24,8 @@ export default function SettingsPage() {
   const { profile, refreshProfile } = useAuth();
   const { theme, setTheme } = useTheme();
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
+  const [linkedin, setLinkedin] = useState(profile?.linkedin_url ?? '');
+  const [profileErr, setProfileErr] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [newPw, setNewPw] = useState('');
@@ -97,8 +100,13 @@ export default function SettingsPage() {
   };
 
   const saveProfile = async () => {
+    const li = linkedinUrl(linkedin);
+    if (li === undefined) { setProfileErr('That is not a LinkedIn profile link. It looks like linkedin.com/in/your-name.'); return; }
+    setProfileErr('');
     setSaving(true);
-    await supabase.from('profiles').update({ full_name: fullName, updated_at: new Date().toISOString() }).eq('id', profile!.id);
+    const { error } = await supabase.from('profiles').update({ full_name: fullName, linkedin_url: li, updated_at: new Date().toISOString() }).eq('id', profile!.id);
+    if (error) { setProfileErr(error.message); setSaving(false); return; }
+    setLinkedin(li ?? '');
     await refreshProfile();
     setSaving(false);
     setSaved(true);
@@ -125,6 +133,10 @@ export default function SettingsPage() {
         </div>
         <label className="block text-sm font-medium text-fg-muted mb-1.5">Full Name</label>
         <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input mb-3" />
+        <label className="block text-sm font-medium text-fg-muted mb-1.5" htmlFor="linkedin">LinkedIn profile</label>
+        <input id="linkedin" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} className="input" placeholder="linkedin.com/in/your-name" inputMode="url" />
+        <p className="text-micro text-fg-subtle mt-1 mb-3">{LINKEDIN_HINT}</p>
+        {profileErr && <p className="text-sm text-danger mb-3">{profileErr}</p>}
         <div className="flex items-center gap-3">
           <button onClick={saveProfile} disabled={saving} className="btn-primary disabled:opacity-50">
             {saving ? 'Saving…' : 'Save'}

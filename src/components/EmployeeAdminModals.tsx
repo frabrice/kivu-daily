@@ -1,3 +1,4 @@
+import { linkedinUrl } from '../lib/linkedin';
 import { useState, ReactNode } from 'react';
 import { Loader2, Mail, Shield, UserCog } from 'lucide-react';
 import { supabase, Profile, Department } from '../lib/supabase';
@@ -180,6 +181,7 @@ export function EditUserModal({
   const [role, setRole] = useState(user.role);
   const [deptId, setDeptId] = useState(user.department_id ?? '');
   const [inChargeOf, setInChargeOf] = useState(user.responsibility_label ?? '');
+  const [linkedin, setLinkedin] = useState(user.linkedin_url ?? '');
   const [error, setError] = useState('');
 
   const save = () => {
@@ -187,7 +189,13 @@ export function EditUserModal({
       setError('A department is required for employees');
       return;
     }
-    onSave({ role, department_id: role === 'employee' ? deptId : null, responsibility_label: inChargeOf.trim() || null });
+    const li = linkedinUrl(linkedin);
+    if (allowMDRole && li === undefined) {
+      setError('The LinkedIn link should look like linkedin.com/in/their-name');
+      return;
+    }
+    // Only the MD saves profiles directly; Finance's save (an RPC) doesn't take LinkedIn.
+    onSave({ role, department_id: role === 'employee' ? deptId : null, responsibility_label: inChargeOf.trim() || null, ...(allowMDRole ? { linkedin_url: li ?? null } : {}) });
   };
 
   return (
@@ -216,6 +224,13 @@ export function EditUserModal({
           <input id="in-charge-of" value={inChargeOf} onChange={(e) => setInChargeOf(e.target.value)} className="input" placeholder="e.g. Head of IT, Finance, Operations Manager" />
           <p className="text-micro text-fg-subtle mt-1">Shown to the Call Center when they assign a caller's issue: "{user.full_name.trim()} ({inChargeOf.trim() || 'In charge of…'})".</p>
         </div>
+        {allowMDRole && (
+          <div>
+            <label className="block text-caption font-medium mb-1.5 text-fg-muted" htmlFor="linkedin-url">LinkedIn profile</label>
+            <input id="linkedin-url" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} className="input" placeholder="linkedin.com/in/their-name" inputMode="url" />
+            <p className="text-micro text-fg-subtle mt-1">Shown as a LinkedIn icon next to {user.full_name.trim()} on kivuride.com's team.</p>
+          </div>
+        )}
       </FormSection>
       {error && (
         <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2 mb-4">{error}</div>
