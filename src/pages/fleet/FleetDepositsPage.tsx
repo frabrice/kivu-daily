@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Pager, usePaged } from '../../ui/Pager';
 import { Search, Wallet, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, nextPaymentText, foldDepositTier, DEPOSIT_TIER_STYLE, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositStanding, depositStandingTier, depositStandingLabel, depositOwesLabel, nextPaymentText, foldDepositTier, DEPOSIT_TIER_STYLE, PAUSE_REASON_LABEL, driverShiftShort } from '../../lib/fleet';
 import { Driver } from '../../lib/supabase';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import { EntityLink } from '../../os/EntityLink';
@@ -86,7 +86,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                 </p>
                 <p className="text-micro text-fg-subtle flex items-center gap-1">
                   <Car size={10} /> {row.driver.vehicle?.plate_number}
-                  {row.driver.shift && <span>· {shiftLabel(row.driver.shift, true)}</span>}
+                  {row.driver.shift && <span>· {driverShiftShort(row.driver, true)}</span>}
                 </p>
                 {!row.isEnded && depositOwesLabel(row.standing) && (
                   <p className="text-micro font-semibold mt-0.5 text-red-600 dark:text-red-400">{depositOwesLabel(row.standing)} for days already worked</p>

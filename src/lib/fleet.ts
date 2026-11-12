@@ -13,6 +13,12 @@ export function canEditFleet(profile: Profile | null | undefined): boolean {
   return profile?.role === 'managing_director' || FLEET_EDIT_DEPARTMENTS.includes(profile?.department?.slug ?? '');
 }
 
+// Moving a driver to another model (One shift, Both shifts, Solo car):
+// Fleet, Finance and the MD (MD, 12 Nov 2026) - change_driver_model checks it too.
+export function canChangeDriverModel(profile: Profile | null | undefined): boolean {
+  return profile?.role === 'managing_director' || ['fleet', 'finance'].includes(profile?.department?.slug ?? '');
+}
+
 // Is branded / allows branding / wants our device, plus a note - via the
 // set_platform_car_interest RPC.
 export function canSetCarInterest(profile: Profile | null | undefined): boolean {
@@ -184,6 +190,9 @@ export function availableForReplacement(drivers: Driver[], excludeDriverId?: str
   return drivers.filter((d) => d.contract_status === 'ended' && d.id !== excludeDriverId && !claimed.has(d.id));
 }
 
+// How each contract event reads in a driver's history.
+export const CONTRACT_EVENT_LABEL: Record<string, string> = { ended: 'Ended', reactivated: 'Reactivated', renewed: 'Renewed', shift_changed: 'Shift changed', model_changed: 'Model changed' };
+
 // Why a contract ends, grouped for the dropdown. Keys are stored on the
 // contract event (reason_key) so the reasons can be counted later.
 export const CONTRACT_END_REASONS: { key: string; label: string; group: string }[] = [
@@ -234,7 +243,7 @@ export const CONTRACT_RENEW_REASONS: { key: string; label: string }[] = [
   { key: 'other', label: 'Other (write it in)' },
 ];
 // What changed in how they work, ticked on renewal.
-export const CONTRACT_RENEW_CHANGES = ['New car', 'New shift', 'Now on both shifts', 'New rest day', 'New payment terms', 'Probation period', 'Extra training'] as const;
+export const CONTRACT_RENEW_CHANGES = ['New car', 'New shift', 'Now on both shifts', 'Now on Solo car', 'New rest day', 'New payment terms', 'Probation period', 'Extra training'] as const;
 
 export const DEPOSIT_PAYMENT_METHODS: { key: DepositPaymentMethod; label: string }[] = [
   { key: 'momo', label: 'MoMo' },

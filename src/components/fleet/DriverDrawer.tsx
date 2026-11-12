@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, SunMoon, BedDouble, FileText } from 'lucide-react';
-import { supabase, Driver, DriverStage, Vehicle, DriverShift, DriverRestDay, DriverDocument } from '../../lib/supabase';
+import { supabase, Driver, DriverStage, Vehicle, DriverModel, DriverRestDay, DriverDocument } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { MANUAL_STAGES, REST_DAYS, WEEKLY_DEPOSIT_AMOUNT, availableForReplacement, firstSundayPayment, formatRwf, formatDateLabelSafe, shiftLabel, carSeats, seatFree, weeklyAmountOf, dailyRateOf } from '../../lib/fleet';
+import { MANUAL_STAGES, REST_DAYS, availableForReplacement, firstSundayPayment, formatRwf, formatDateLabelSafe, shiftLabel, driverShiftShort, carSeats, seatFree, DRIVER_MODELS, modelWeekly } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import SearchableSelect from '../SearchableSelect';
@@ -43,11 +43,13 @@ export default function DriverDrawer({
   const [startDate, setStartDate] = useState(driver?.start_date ?? todayStr());
   const [initialDepositPaid, setInitialDepositPaid] = useState(driver?.initial_deposit_paid ?? false);
   const [initialDepositDate, setInitialDepositDate] = useState(driver?.initial_deposit_date ?? '');
-  const [initialDepositAmount, setInitialDepositAmount] = useState(driver?.initial_deposit_amount ? String(driver.initial_deposit_amount) : String(WEEKLY_DEPOSIT_AMOUNT));
+  const [initialDepositAmount, setInitialDepositAmount] = useState(driver?.initial_deposit_amount ? String(driver.initial_deposit_amount) : String(modelWeekly(driver?.model ?? 'one_shift')));
   const [stage, setStage] = useState<DriverStage>(driver?.stage === 'active' ? 'ready' : driver?.stage ?? 'applying');
   const [notes, setNotes] = useState(driver?.notes ?? '');
   const [vehicleId, setVehicleId] = useState(driver?.vehicle_id ?? '');
-  const [shift, setShift] = useState<DriverShift | ''>(driver?.shift ?? '');
+  // One shift: 'day' or 'night' on a car; a whole-car model is always 'full'.
+  const [shift, setShift] = useState<'day' | 'night' | ''>(driver?.shift === 'day' || driver?.shift === 'night' ? driver.shift : '');
+  const [model, setModel] = useState<DriverModel>(driver?.model ?? 'one_shift');
   const [restDay, setRestDay] = useState<DriverRestDay | ''>(driver?.rest_day ?? '');
   const [replacedDriverId, setReplacedDriverId] = useState(driver?.replaced_driver_id ?? '');
   const [saving, setSaving] = useState(false);
@@ -69,17 +71,26 @@ export default function DriverDrawer({
   // A car has a day seat and a night seat; a driver on both shifts takes the whole car.
   const seats = vehicleId ? carSeats(vehicleId, drivers, driver?.id) : null;
   const vehicleFull = !!selectedVehicle && !seatFree(vehicleId, 'day', drivers, driver?.id) && !seatFree(vehicleId, 'night', drivers, driver?.id);
-  const weekly = weeklyAmountOf({ shift: shift || 'day' });
-  const pickShift = (s: DriverShift) => {
-    // Keep the upfront amount in step with the shift unless someone typed their own.
-    if (!initialDepositAmount || [String(weeklyAmountOf({ shift: 'day' })), String(weeklyAmountOf({ shift: 'full' }))].includes(initialDepositAmount)) setInitialDepositAmount(String(weeklyAmountOf({ shift: s })));
-    setShift(s);
+  const terms = DRIVER_MODELS[model];
+  const weekly = modelWeekly(model);
+  // Once a contract has started, its model changes with "Change model" on the
+  // driver's page (or a renewal), so the days before keep their terms (rate_history).
+  const modelLocked = !!driver?.start_date && driver.start_date <= todayStr();
+  const wholeCarFree = !!vehicleId && seatFree(vehicleId, 'full', drivers, driver?.id);
+  const pickModel = (m: DriverModel) => {
+    // Keep the upfront amount in step with the model unless someone typed their own.
+    if (!initialDepositAmount || (Object.keys(DRIVER_MODELS) as DriverModel[]).some((k) => String(modelWeekly(k)) === initialDepositAmount)) setInitialDepositAmount(String(modelWeekly(m)));
+    setModel(m);
   };
 
   const save = async () => {
     if (!fullName.trim() || !phone.trim()) return;
-    if (vehicleId && !shift) {
-      setError('Pick a shift for this driver on the assigned vehicle.');
+    if (vehicleId && !terms.wholeCar && !shift) {
+      setError('Pick the day or the night shift for this driver on the car.');
+      return;
+    }
+    if (vehicleId && terms.wholeCar && !wholeCarFree) {
+      setError(`${terms.label} needs the car to itself, and another driver is on it.`);
       return;
     }
     if (initialDepositPaid && !initialDepositDate) {
@@ -90,8 +101,8 @@ export default function DriverDrawer({
       setError('Enter how much the initial deposit was.');
       return;
     }
-    if (!restDay) {
-      setError('Every driver must be assigned a weekly rest day.');
+    if (terms.restDay && !restDay) {
+      setError('Every driver on this model must be assigned a weekly rest day.');
       return;
     }
     if (needContract) {
@@ -113,10 +124,15 @@ export default function DriverDrawer({
       stage,
       notes: notes.trim() || null,
       vehicle_id: vehicleId || null,
-      shift: vehicleId ? shift || null : null,
-      rest_day: restDay || null,
+      shift: vehicleId ? (terms.wholeCar ? 'full' : shift || null) : null,
+      rest_day: terms.restDay ? restDay || null : null,
       replaced_driver_id: replacedDriverId || null,
       updated_at: new Date().toISOString(),
+      // Before the contract starts the model is free to change: its terms are the contract's first entry.
+      ...(modelLocked ? {} : {
+        model,
+        rate_history: startDate ? [{ from: startDate, daily: terms.daily, model, rest_day: terms.restDay ? restDay || null : null }] : [],
+      }),
     };
     const { error: err } = driver || inserted
       ? await supabase.from('drivers').update(payload).eq('id', driverId)
@@ -202,24 +218,48 @@ export default function DriverDrawer({
           </div>
         )}
 
-        <div className={`p-2.5 rounded-lg border space-y-2 ${restDay ? 'border-indigo-300 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-500/5' : 'border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/5'}`}>
-          <label className="block text-caption font-medium mb-1.5 flex items-center gap-1"><BedDouble size={11} /> Weekly Rest Day <span className="text-red-500">*</span></label>
-          <select value={restDay} onChange={(e) => setRestDay(e.target.value as DriverRestDay)} disabled={!editing} className="input">
-            <option value="">Select a day…</option>
-            {REST_DAYS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-          </select>
-          <p className="text-micro text-fg-subtle">Every driver must have one fixed day off each week.</p>
+        <div>
+          <p className="block text-caption font-medium mb-1.5 text-fg-muted">Model <span className="text-red-500">*</span></p>
+          <div className="grid grid-cols-3 gap-2">
+            {(Object.keys(DRIVER_MODELS) as DriverModel[]).map((k) => {
+              const m = DRIVER_MODELS[k];
+              return (
+                <button key={k} type="button" disabled={!editing || modelLocked} onClick={() => pickModel(k)} aria-pressed={model === k}
+                  className={`p-2 rounded-lg border text-left text-caption disabled:cursor-not-allowed ${model === k ? 'border-brand bg-brand/10' : 'border-line disabled:opacity-40'}`}>
+                  <span className="block font-medium">{m.label}</span>
+                  <span className="block text-micro text-fg-subtle mt-0.5">{formatRwf(modelWeekly(k))}/week · {m.restDay ? '6 days' : '7 days'}{m.salary ? '' : ' · no salary'}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-micro text-fg-subtle mt-1">
+            {modelLocked ? 'The contract has started: change the model with “Change model” on the driver’s page, so past days keep their terms.'
+              : `${terms.label}: ${formatRwf(terms.daily)} a ${terms.restDay ? 'working day, one rest day free' : 'day, every day'}${terms.wholeCar ? ', the car alone' : ', sharing the car (day or night)'}${terms.salary ? `, salary ${formatRwf(terms.salary)} a month` : ', no monthly salary'}.`}
+          </p>
         </div>
 
-        {!driver && startDate && restDay && (() => {
-          const first = firstSundayPayment(startDate, restDay, dailyRateOf({ shift: shift || 'day' }));
+        {terms.restDay ? (
+          <div className={`p-2.5 rounded-lg border space-y-2 ${restDay ? 'border-indigo-300 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-500/5' : 'border-red-200 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/5'}`}>
+            <label className="block text-caption font-medium mb-1.5 flex items-center gap-1"><BedDouble size={11} /> Weekly Rest Day <span className="text-red-500">*</span></label>
+            <select value={restDay} onChange={(e) => setRestDay(e.target.value as DriverRestDay)} disabled={!editing || modelLocked} className="input">
+              <option value="">Select a day…</option>
+              {REST_DAYS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+            </select>
+            <p className="text-micro text-fg-subtle">{modelLocked ? 'To change it, use “Change model” on the driver’s page.' : `Every driver on ${terms.label.toLowerCase()} has one fixed day off each week.`}</p>
+          </div>
+        ) : (
+          <p className="p-2.5 rounded-lg border border-line text-caption text-fg-muted flex items-center gap-1.5"><BedDouble size={11} /> {terms.label}: no rest day, every day is a working day.</p>
+        )}
+
+        {!driver && startDate && (restDay || !terms.restDay) && (() => {
+          const first = firstSundayPayment(startDate, terms.restDay ? (restDay || null) : null, terms.daily);
           return (
             <div className="p-2.5 rounded-lg border border-brand/30 bg-brand/5">
               <p className="text-caption font-medium mb-1">Payment schedule</p>
               <p className="text-micro text-fg-muted leading-relaxed">
                 {formatRwf(weekly)} on {formatDateLabelSafe(startDate)} before the first shift
                 {' → '}{formatRwf(first.amount)} by Sunday {formatDateLabelSafe(first.date)}
-                {' → '}{formatRwf(weekly)} every Sunday after{shift === 'full' ? ' (both shifts: 60,000 a working day)' : ''}.
+                {' → '}{formatRwf(weekly)} every Sunday after ({terms.label.toLowerCase()}: {formatRwf(terms.daily)} a {terms.restDay ? 'working day' : 'day'}).
               </p>
             </div>
           );
@@ -264,7 +304,7 @@ export default function DriverDrawer({
               return (
                 <option key={v.id} value={v.id} disabled={full}>
                   {v.plate_number}{v.make || v.model ? ` — ${[v.make, v.model].filter(Boolean).join(' ')}` : ''}
-                  {others.length > 0 ? ` (${others.map((d) => `${d.full_name}: ${shiftLabel(d.shift)}`).join(', ')})` : ''}
+                  {others.length > 0 ? ` (${others.map((d) => `${d.full_name}: ${driverShiftShort(d)}`).join(', ')})` : ''}
                   {full ? ' — full' : ''}
                 </option>
               );
@@ -283,30 +323,31 @@ export default function DriverDrawer({
                   {[selectedVehicle.make, selectedVehicle.model, selectedVehicle.color].filter(Boolean).join(' · ')}
                 </p>
               )}
-              <div>
-                <p className="text-micro font-medium text-fg-muted mb-1">Shift</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['day', 'night', 'full'] as DriverShift[]).map((s) => {
-                    const free = seatFree(vehicleId, s, drivers, driver?.id);
-                    const taken = s === 'full' ? (seats?.full ?? seats?.day ?? seats?.night) : seats?.[s];
-                    return (
-                      <button
-                        key={s}
-                        type="button"
-                        disabled={!editing || !free}
-                        onClick={() => pickShift(s)}
-                        className={`p-2 rounded-lg border text-left text-caption disabled:opacity-40 disabled:cursor-not-allowed ${
-                          shift === s ? 'border-brand bg-brand/10' : 'border-line '
-                        }`}
-                      >
-                        <span className="flex items-center gap-1.5 font-medium">{s === 'day' ? <Sun size={12} /> : s === 'night' ? <Moon size={12} /> : <SunMoon size={12} />}{shiftLabel(s)}</span>
-                        <span className="block text-micro text-fg-subtle mt-0.5">{!free && taken ? taken.full_name : `${formatRwf(weeklyAmountOf({ shift: s }))}/week`}</span>
-                      </button>
-                    );
-                  })}
+              {terms.wholeCar ? (
+                <p className={`text-micro flex items-center gap-1.5 ${wholeCarFree ? 'text-fg-muted' : 'text-danger'}`}>
+                  <SunMoon size={12} />
+                  {wholeCarFree
+                    ? `${terms.label}: has this car alone, day and night. No other driver can be on it.`
+                    : `${terms.label} needs the car to itself: ${(seats?.full ?? seats?.day ?? seats?.night)?.full_name ?? 'another driver'} is on it.`}
+                </p>
+              ) : (
+                <div>
+                  <p className="text-micro font-medium text-fg-muted mb-1">Shift</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['day', 'night'] as const).map((s) => {
+                      const free = seatFree(vehicleId, s, drivers, driver?.id);
+                      const taken = seats?.full ?? seats?.[s];
+                      return (
+                        <button key={s} type="button" disabled={!editing || !free} onClick={() => setShift(s)}
+                          className={`p-2 rounded-lg border text-left text-caption disabled:opacity-40 disabled:cursor-not-allowed ${shift === s ? 'border-brand bg-brand/10' : 'border-line '}`}>
+                          <span className="flex items-center gap-1.5 font-medium">{s === 'day' ? <Sun size={12} /> : <Moon size={12} />}{shiftLabel(s)}</span>
+                          <span className="block text-micro text-fg-subtle mt-0.5">{!free && taken ? taken.full_name : `${formatRwf(weekly)}/week`}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                {shift === 'full' && <p className="text-micro text-fg-muted mt-1.5">Works the day and the night shift: pays 60,000 per working day, {formatRwf(weeklyAmountOf({ shift: 'full' }))} by the start of each week. No other driver can be on this car.</p>}
-              </div>
+              )}
             </div>
           )}
         </div>

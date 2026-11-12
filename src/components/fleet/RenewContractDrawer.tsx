@@ -1,20 +1,24 @@
 import { useMemo, useState } from 'react';
 import { CalendarCheck, Car, Info, RotateCcw, Wallet } from 'lucide-react';
-import { supabase, Driver, DriverContractEvent, DriverDeposit, DriverRestDay, DriverShift, Vehicle } from '../../lib/supabase';
+import { supabase, Driver, DriverContractEvent, DriverDeposit, DriverModel, DriverRestDay, DriverShift, Vehicle } from '../../lib/supabase';
 import { todayStr } from '../../lib/utils';
 import {
   CONTRACT_CAN_RETURN, CONTRACT_RENEW_CHANGES, CONTRACT_RENEW_REASONS, REST_DAYS, carSeats, computeDepositStanding, contractSettlement, formatDateLabelSafe,
-  formatRwf, seatFree, shiftDay, shiftLabel, weeklyAmountOf, dailyRateOf,
+  formatRwf, seatFree, shiftDay, shiftLabel, DRIVER_MODELS, modelWeekly,
 } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import { LegalDocFields } from '../legal/LegalDocFields';
 import { LegalDraft, draftError, emptyDraft, uploadDraft } from '../../lib/legalDocs';
 
-const SHIFTS: { key: DriverShift; label: string; sub: string }[] = [
-  { key: 'day', label: 'Day shift', sub: '180,000 a week' },
-  { key: 'night', label: 'Night shift', sub: '180,000 a week' },
-  { key: 'full', label: 'Both shifts', sub: '360,000 a week · the whole car' },
+// The model and the seat on the car (MD, 12 Nov 2026).
+type Choice = 'day' | 'night' | 'both_shifts' | 'solo_car';
+const rwfN = (n: number) => n.toLocaleString('en-US');
+const CHOICES: { key: Choice; model: DriverModel; seat: DriverShift; label: string; sub: string }[] = [
+  { key: 'day', model: 'one_shift', seat: 'day', label: 'Day shift', sub: `${rwfN(modelWeekly('one_shift'))} a week` },
+  { key: 'night', model: 'one_shift', seat: 'night', label: 'Night shift', sub: `${rwfN(modelWeekly('one_shift'))} a week` },
+  { key: 'both_shifts', model: 'both_shifts', seat: 'full', label: 'Both shifts', sub: `${rwfN(modelWeekly('both_shifts'))} a week · the whole car` },
+  { key: 'solo_car', model: 'solo_car', seat: 'full', label: 'Solo car', sub: `${rwfN(modelWeekly('solo_car'))} a week · alone, every day` },
 ];
 
 // Start a new contract for a driver whose contract ended: new start date,
@@ -37,11 +41,14 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
   const [reasonKey, setReasonKey] = useState('');
   const [otherReason, setOtherReason] = useState('');
   const [startDate, setStartDate] = useState(todayStr());
-  const [shift, setShift] = useState<DriverShift>('day');
+  const [choice, setChoice] = useState<Choice>('day');
+  const picked = CHOICES.find((c) => c.key === choice)!;
+  const shift = picked.seat;
+  const terms = DRIVER_MODELS[picked.model];
   const [vehicleId, setVehicleId] = useState('');
   const [restDay, setRestDay] = useState<DriverRestDay | ''>(driver.rest_day ?? '');
   const [paidFirst, setPaidFirst] = useState(true);
-  const [firstAmount, setFirstAmount] = useState(String(weeklyAmountOf({ shift: 'day' })));
+  const [firstAmount, setFirstAmount] = useState(String(modelWeekly('one_shift')));
   const [firstDate, setFirstDate] = useState(todayStr());
   const [useCredit, setUseCredit] = useState(suggestedCredit > 0);
   const [creditAmount, setCreditAmount] = useState(String(suggestedCredit || ''));
@@ -52,11 +59,13 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const pickShift = (s: DriverShift) => {
-    setShift(s);
-    if (firstAmount === String(weeklyAmountOf({ shift })) || !firstAmount) setFirstAmount(String(weeklyAmountOf({ shift: s })));
-    if (vehicleId && !seatFree(vehicleId, s, drivers, driver.id)) setVehicleId('');
-    if (s === 'full' && !changes.includes('Now on both shifts')) setChanges((c) => [...c, 'Now on both shifts']);
+  const pickChoice = (k: Choice) => {
+    const c = CHOICES.find((x) => x.key === k)!;
+    setChoice(k);
+    if (firstAmount === String(modelWeekly(picked.model)) || !firstAmount) setFirstAmount(String(modelWeekly(c.model)));
+    if (vehicleId && !seatFree(vehicleId, c.seat, drivers, driver.id)) setVehicleId('');
+    const note = k === 'both_shifts' ? 'Now on both shifts' : k === 'solo_car' ? 'Now on Solo car' : null;
+    if (note && !changes.includes(note)) setChanges((x) => [...x, note]);
   };
   const cars = vehicles.map((v) => ({ v, free: seatFree(v.id, shift, drivers, driver.id), seats: carSeats(v.id, drivers, driver.id) }));
   const first = paidFirst ? Number(firstAmount.replace(/[^\d]/g, '')) || 0 : 0;
@@ -67,16 +76,17 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
   const preview = useMemo(() => {
     if (!startDate) return null;
     const hyp: Driver = {
-      ...driver, contract_status: 'active', start_date: startDate, shift, rest_day: (restDay || null) as Driver['rest_day'],
+      ...driver, contract_status: 'active', start_date: startDate, shift, model: picked.model, rest_day: terms.restDay ? (restDay || null) as Driver['rest_day'] : null,
+      rate_history: [{ from: startDate, daily: terms.daily, model: picked.model, rest_day: terms.restDay ? (restDay || null) as Driver['rest_day'] : null }],
       payments_from: lastEnd ? shiftDay(lastEnd.event_date, 1) : startDate, opening_credit: credit,
       initial_deposit_paid: first > 0, initial_deposit_amount: first > 0 ? first : null, initial_deposit_date: first > 0 ? firstDate : null, pauses: [],
     };
     const on = startDate > todayStr() ? startDate : todayStr();
     return computeDepositStanding(hyp, myDeposits, on);
-  }, [driver, startDate, shift, vehicleId, restDay, lastEnd, credit, first, firstDate, myDeposits]);
+  }, [driver, startDate, shift, picked.model, terms, restDay, lastEnd, credit, first, firstDate, myDeposits]);
 
   const contractError = draftError('driver_contract', contract);
-  const canSave = !!reasonKey && (reasonKey !== 'other' || !!otherReason.trim()) && !!startDate && !!restDay && (!paidFirst || first > 0) && !contractError;
+  const canSave = !!reasonKey && (reasonKey !== 'other' || !!otherReason.trim()) && !!startDate && (!terms.restDay || !!restDay) && (!paidFirst || first > 0) && !contractError;
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
@@ -89,7 +99,7 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
       doc: up.doc,
       p: {
         driver_id: driver.id, start_date: startDate, reason_key: reasonKey, reason, details: details.trim(),
-        vehicle_id: vehicleId || null, shift: vehicleId ? shift : null, rest_day: restDay,
+        vehicle_id: vehicleId || null, model: picked.model, shift: vehicleId ? shift : null, rest_day: terms.restDay ? restDay : null,
         first_payment: first > 0 ? first : null, first_payment_date: firstDate, opening_credit: credit,
         changes, agreed_next_payment: agreedNext || null,
       },
@@ -124,9 +134,9 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
 
         <section>
           <p className={label}>How they'll work</p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {SHIFTS.map((s) => (
-              <button key={s.key} type="button" onClick={() => pickShift(s.key)} className={`rounded-md border px-3 py-2 text-left ${shift === s.key ? 'border-accent bg-accent/10' : 'border-line hover:bg-hover'}`}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            {CHOICES.map((s) => (
+              <button key={s.key} type="button" onClick={() => pickChoice(s.key)} className={`rounded-md border px-3 py-2 text-left ${choice === s.key ? 'border-accent bg-accent/10' : 'border-line hover:bg-hover'}`}>
                 <span className="block text-small font-semibold">{s.label}</span><span className="block text-caption text-fg-muted">{s.sub}</span>
               </button>
             ))}
@@ -138,18 +148,22 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
                 <option value="">No car yet</option>
                 {cars.map(({ v, free, seats }) => (
                   <option key={v.id} value={v.id} disabled={!free}>
-                    {v.plate_number}{free ? '' : ` — ${seats.full ? `${seats.full.full_name} has both shifts` : `${shift === 'full' ? 'has drivers' : `${shiftLabel(shift)} taken`}`}`}
+                    {v.plate_number}{free ? '' : ` — ${seats.full ? `${seats.full.full_name} has the whole car` : `${shift === 'full' ? 'has drivers' : `${shiftLabel(shift)} taken`}`}`}
                   </option>
                 ))}
               </select>
             </label>
-            <label className="block">
-              <span className={label}>Rest day</span>
-              <select value={restDay} onChange={(e) => setRestDay(e.target.value as DriverRestDay)} className="input">
-                <option value="" disabled>Choose…</option>
-                {REST_DAYS.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
-              </select>
-            </label>
+            {terms.restDay ? (
+              <label className="block">
+                <span className={label}>Rest day</span>
+                <select value={restDay} onChange={(e) => setRestDay(e.target.value as DriverRestDay)} className="input">
+                  <option value="" disabled>Choose…</option>
+                  {REST_DAYS.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+                </select>
+              </label>
+            ) : (
+              <div><span className={label}>Rest day</span><p className="text-small text-fg-muted pt-2">None: Solo car works every day.</p></div>
+            )}
           </div>
         </section>
 
@@ -162,14 +176,14 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
                 <DateInput value={firstDate} onChange={setFirstDate} />
               </div>
             )}
-            <p className="text-caption text-fg-muted">A full week on {shiftLabel(shift).toLowerCase()} is {formatRwf(weeklyAmountOf({ shift }))}.</p>
+            <p className="text-caption text-fg-muted">A full week on {picked.label.toLowerCase()} is {formatRwf(modelWeekly(picked.model))}{terms.salary ? '' : ', with no monthly salary'}.</p>
           </div>
           <div className="rounded-lg border border-line p-3 space-y-2">
             <label className="flex items-center gap-2 text-small font-medium"><input type="checkbox" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} /> Still had paid days left</label>
             {useCredit && <input value={creditAmount} onChange={(e) => setCreditAmount(e.target.value)} inputMode="numeric" className="input" aria-label="Credit carried over" placeholder="Amount in RWF" />}
             <p className="text-caption text-fg-muted">
               {suggestedCredit > 0 ? `When the contract ended they had ${formatRwf(suggestedCredit)} paid ahead.` : 'Nothing was paid ahead when the contract ended.'}
-              {credit > 0 && (Math.floor(credit / dailyRateOf({ shift })) >= 1 ? ` That covers ${Math.floor(credit / dailyRateOf({ shift }))} working day${Math.floor(credit / dailyRateOf({ shift })) === 1 ? '' : 's'}.` : ` That is less than one working day (${formatRwf(dailyRateOf({ shift }))}); it still counts towards the first week.`)}
+              {credit > 0 && (Math.floor(credit / terms.daily) >= 1 ? ` That covers ${Math.floor(credit / terms.daily)} working day${Math.floor(credit / terms.daily) === 1 ? '' : 's'}.` : ` That is less than one working day (${formatRwf(terms.daily)}); it still counts towards the first week.`)}
             </p>
           </div>
         </section>

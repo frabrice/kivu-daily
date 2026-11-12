@@ -10,8 +10,8 @@ import { EntityLink, useEntityMeta } from '../../os/EntityLink';
 import { useAuth } from '../../lib/auth';
 import { useDuties } from '../../lib/callTickets';
 import {
-  useFleetData, canEditFleet, canRecordPause, computeDepositStanding, STAGES, effectiveStage, REST_DAYS, PAUSE_REASON_LABEL, formatDateLabelSafe,
-  fineAmountPaid, pauseOn, shiftLabel } from '../../lib/fleet';
+  useFleetData, canEditFleet, canChangeDriverModel, driverTermsLabel, canRecordPause, computeDepositStanding, STAGES, effectiveStage, REST_DAYS, PAUSE_REASON_LABEL, formatDateLabelSafe,
+  fineAmountPaid, pauseOn, CONTRACT_EVENT_LABEL } from '../../lib/fleet';
 import { addDays, driverDay, endDateOf, onContract, today } from '../../lib/performance';
 import { Box, Details, EmptyState, Heatmap, HeatCell, Label, ObjectLayout, PageHeader, StatCard, StatGrid, Timeline, TimelineItem, UnderlineTabs, rwf } from '../../ui/kit';
 import DriverProfilePage from '../fleet/DriverProfilePage';
@@ -22,7 +22,7 @@ import DriverCasesList from '../../components/callTickets/DriverCasesList';
 import DriverDocumentsSection from '../../components/fleet/DriverDocumentsSection';
 import EndContractDrawer from '../../components/fleet/EndContractDrawer';
 import RenewContractDrawer from '../../components/fleet/RenewContractDrawer';
-import ChangeShiftDrawer from '../../components/fleet/ChangeShiftDrawer';
+import ChangeModelDrawer from '../../components/fleet/ChangeModelDrawer';
 import { AddLegalDocModal, LegalDocsBox } from '../../components/legal/LegalDocFields';
 import { LEGAL_KIND, LegalKind, missingForDriver, useLegalDocs } from '../../lib/legalDocs';
 
@@ -50,6 +50,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
   const canAdjust = access.isMd || access.in('finance', 'fleet') || access.grants.has('adjust_balances');
   const legal = useLegalDocs();
   const canEdit = canEditFleet(profile);
+  const canChangeModel = canChangeDriverModel(profile);
   const canPause = canRecordPause(profile, duties);
   useEntityMeta('driver', id, mode, driver?.full_name, driver?.vehicle?.plate_number);
 
@@ -116,7 +117,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
       title: <>Adjusted by {x.by_name ?? 'someone'}: {x.kind === 'amount' ? <>{Number(x.amount) > 0 ? 'credit' : 'charge'} of <b>{rwf(Math.abs(Number(x.amount)))}</b></> : <>may drive until <b>{formatDateLabelSafe(x.until!)}</b></>}</>,
       body: `${x.reason}${x.before && x.after ? ` · owes ${rwf(x.before.owes ?? 0)} → ${rwf(x.after.owes ?? 0)}, behind ${rwf(x.before.behind ?? 0)} → ${rwf(x.after.behind ?? 0)}` : ''}` })),
     ...myFines.map((f) => ({ id: `f${f.id}`, at: f.created_at, icon: Gavel, tone: 'danger' as const, title: <>Fined <b>{rwf(f.amount)}</b></>, body: f.reason })),
-    ...myEvents.map((e) => ({ id: `e${e.id}`, at: e.created_at, icon: History, tone: 'neutral' as const, title: <>Contract {e.event_type}</>, body: [e.reason, e.details].filter(Boolean).join(' — ') })),
+    ...myEvents.map((e) => ({ id: `e${e.id}`, at: e.created_at, icon: History, tone: 'neutral' as const, title: <>{CONTRACT_EVENT_LABEL[e.event_type] ?? e.event_type}</>, body: [e.reason, e.details].filter(Boolean).join(' — ') })),
     { id: 'start', at: driver.created_at, icon: Truck, tone: 'neutral' as const, title: <>Added to Kivu Daily</> },
   ].sort((a, b) => b.at.localeCompare(a.at)).slice(0, mode === 'peek' ? 8 : 40);
 
@@ -125,7 +126,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
     <Box title="Details" padded>
       <Details items={[
         { label: 'Car', value: car ? <EntityLink type="car" id={car.id} label={car.plate_number} /> : 'No car' },
-        { label: 'Shift', value: driver.shift ? `${shiftLabel(driver.shift)} shift` : null },
+        { label: 'Model', value: driver.shift || driver.model !== 'one_shift' ? driverTermsLabel(driver) : null },
         { label: 'Shares the car with', value: coDriver ? <EntityLink type="driver" id={coDriver.id} label={coDriver.full_name} /> : null },
         { label: 'Phone', value: <a href={`tel:${driver.phone}`} className="link flex items-center gap-1"><Phone size={12} />{driver.phone}</a> },
         { label: 'Stage', value: stage ? <span style={{ color: stage.color }} className="font-medium">{stage.label}</span> : null },
@@ -165,7 +166,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
       title={driver.full_name} labels={<>{status}{missingDoc && <button onClick={() => (mode === 'page' ? setTab('contract') : setAdding(missingDoc))}><Label tone="danger" icon={FileSignature}>{LEGAL_KIND[missingDoc].missing}</Label></button>}</>}
       meta={<>
         {car ? <EntityLink type="car" id={car.id} label={car.plate_number} /> : <span>No car</span>}
-        {driver.shift && <span>{shiftLabel(driver.shift)} shift</span>}
+        {(driver.shift || driver.model !== 'one_shift') && <span>{driverTermsLabel(driver)}</span>}
         {driver.start_date && <span>since {formatDateLabelSafe(driver.start_date)}</span>}
       </>}
       actions={mode === 'page' && <>
@@ -173,7 +174,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
         {canPause && !isEnded && <button onClick={() => setPausing(true)} className="btn-secondary"><CalendarOff size={14} /> Days off</button>}
         {canAdjust && !isEnded && driver.start_date && <button onClick={() => setAdjusting(true)} className="btn-secondary"><SlidersHorizontal size={14} /> Adjust</button>}
         {canEdit && <button onClick={() => setEditing(true)} className="btn-secondary"><Pencil size={14} /> Edit</button>}
-        {canEdit && !isEnded && driver.vehicle_id && driver.start_date && <button onClick={() => setShifting(true)} className="btn-secondary"><SunMoon size={14} /> Change shift</button>}
+        {canChangeModel && !isEnded && driver.vehicle_id && driver.start_date && <button onClick={() => setShifting(true)} className="btn-secondary"><SunMoon size={14} /> Change model</button>}
         {canEdit && !isEnded && <button onClick={() => setEnding(true)} className="btn-danger"><UserX size={14} /> End contract</button>}
         {canEdit && isEnded && <button onClick={() => setRenewing(true)} className="btn-primary"><RotateCcw size={14} /> Renew contract</button>}
       </>}
@@ -185,7 +186,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
     {logging && <LogDepositDrawer driver={driver} deposits={deposits} onClose={() => setLogging(false)} onSaved={reload} />}
     {pausing && <PauseDrawer driver={driver} drivers={drivers} onClose={() => setPausing(false)} onSaved={() => { setPausing(false); reload(); }} />}
     {ending && <EndContractDrawer driver={driver} deposits={deposits} fines={fines} finePayments={finePayments} onClose={() => setEnding(false)} onSaved={reload} />}
-    {shifting && <ChangeShiftDrawer driver={driver} drivers={drivers} deposits={deposits} onClose={() => setShifting(false)} onSaved={() => { reload(); legal.reload(); }} />}
+    {shifting && <ChangeModelDrawer driver={driver} drivers={drivers} deposits={deposits} onClose={() => setShifting(false)} onSaved={() => { reload(); legal.reload(); }} />}
     {adjusting && <AdjustBalanceModal driver={driver} deposits={deps} onClose={() => setAdjusting(false)} onSaved={reload} />}
     {adding && <AddLegalDocModal kind={adding} driverId={driver.id} name={driver.full_name} onClose={() => setAdding(null)} onSaved={legal.reload} />}
     {renewing && <RenewContractDrawer driver={driver} drivers={drivers} vehicles={vehicles} deposits={deposits} contractEvents={contractEvents} onClose={() => setRenewing(false)} onSaved={reload} />}

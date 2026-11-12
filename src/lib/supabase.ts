@@ -110,11 +110,14 @@ export interface Department {
 // writing it directly.
 export type DriverStage = 'applying' | 'raw' | 'ready' | 'active' | 'flagged' | 'inactive';
 export type RuraLicenseStatus = 'pending' | 'provided';
-// 'full' = both shifts of the car (pays double: 360,000 a week).
+// 'full' = the whole car: both shifts, or Solo car (see DriverModel).
 export type DriverShift = 'day' | 'night' | 'full';
+// How a driver pays (table driver_models, MD 12 Nov 2026): one shift 30,000 x 6,
+// both shifts 60,000 x 6, Solo car 45,000 x 7 (the car alone, no rest day).
+export type DriverModel = 'one_shift' | 'both_shifts' | 'solo_car';
 export type DriverRestDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 export type DriverContractStatus = 'active' | 'ended';
-export type ContractEventType = 'ended' | 'reactivated' | 'renewed' | 'shift_changed';
+export type ContractEventType = 'ended' | 'reactivated' | 'renewed' | 'shift_changed' | 'model_changed';
 
 export type PaymentDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
@@ -205,6 +208,7 @@ export interface Driver {
   notes: string | null;
   vehicle_id: string | null;
   shift: DriverShift | null;
+  model: DriverModel;
   rest_day: DriverRestDay | null;
   contract_status: DriverContractStatus;
   replaced_driver_id: string | null;
@@ -212,8 +216,8 @@ export interface Driver {
   payments_from?: string | null;
   // Credit carried from the previous contract, counted as paid on start_date.
   opening_credit?: number | null;
-  // Daily rate from each date within the current contract (mid-contract shift changes).
-  rate_history?: { from: string; daily: number }[] | null;
+  // Terms from each date within the current contract (model changes): rate, model and rest day.
+  rate_history?: import('../../supabase/functions/_shared/depositRules').RateChange[] | null;
   // Adjust button entries (depositRules BalanceAdjustment).
   balance_adjustments?: import('../../supabase/functions/_shared/depositRules').BalanceAdjustment[] | null;
   created_by: string | null;

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Pager, usePaged } from '../../ui/Pager';
 import { Search, Plus, Car, ShieldCheck, ShieldAlert, Smartphone, FileCheck2 } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, canEditFleet, shiftLabel } from '../../lib/fleet';
+import { useFleetData, canEditFleet, driverShiftShort } from '../../lib/fleet';
 import { Vehicle } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
@@ -117,7 +117,7 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
                     <p className="text-micro text-fg-subtle">Unassigned</p>
                   ) : (
                     <p className="text-micro text-fg-muted ">
-                      {assigned.map((d) => `${d.full_name} (${shiftLabel(d.shift)})`).join(' · ')}
+                      {assigned.map((d) => `${d.full_name} (${driverShiftShort(d)})`).join(' · ')}
                     </p>
                   )}
                 </div>

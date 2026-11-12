@@ -2,7 +2,7 @@ import { MouseEvent, ReactNode, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Car, FileText, Headphones, Truck, User, UserRound, CarFront, Phone } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { computeDepositStanding, shiftLabel } from '../lib/fleet';
+import { computeDepositStanding, driverShiftShort } from '../lib/fleet';
 import { HoverCard } from '../ui/Popover';
 import { Label, rwf } from '../ui/kit';
 import { ENTITY_PATH, usePeek } from './peek';
@@ -56,12 +56,12 @@ async function summarize(type: EntityType, id: string): Promise<Summary | null> 
   if (type === 'car') {
     const [{ data: v }, { data: ds }] = await Promise.all([
       supabase.from('vehicles').select('plate_number, make, model, rura_license_expiry_date, operation_start_date').eq('id', id).maybeSingle(),
-      supabase.from('drivers').select('full_name, shift').eq('vehicle_id', id).eq('contract_status', 'active'),
+      supabase.from('drivers').select('full_name, shift, model').eq('vehicle_id', id).eq('contract_status', 'active'),
     ]);
     if (!v) return null;
-    const drivers = (ds as { full_name: string; shift: string | null }[]) ?? [];
+    const drivers = (ds as { full_name: string; shift: string | null; model: string | null }[]) ?? [];
     return { title: v.plate_number, sub: [v.make, v.model].filter(Boolean).join(' '), label: drivers.length ? <Label tone="success">{drivers.length} driver{drivers.length === 1 ? '' : 's'}</Label> : <Label tone="danger">No driver</Label>,
-      facts: [['Drivers', drivers.map((x) => `${x.full_name.split(' ')[0]}${x.shift ? ` (${shiftLabel(x.shift)})` : ''}`).join(', ') || '—'], ['Licence expires', v.rura_license_expiry_date ?? '—'], ['On the road since', v.operation_start_date ?? '—']] };
+      facts: [['Drivers', drivers.map((x) => `${x.full_name.split(' ')[0]}${x.shift ? ` (${driverShiftShort(x)})` : ''}`).join(', ') || '—'], ['Licence expires', v.rura_license_expiry_date ?? '—'], ['On the road since', v.operation_start_date ?? '—']] };
   }
   if (type === 'person' || type === 'agent') {
     const { data: p } = await supabase.from('profiles').select('full_name, email, role, department:departments(name)').eq('id', id).maybeSingle();

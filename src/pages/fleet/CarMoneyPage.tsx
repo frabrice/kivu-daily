@@ -76,7 +76,7 @@ export default function CarMoneyPage() {
         <PageHeader icon={Car} title={car.vehicle.plate_number} labels={<Label tone={car.status === 'on_target' ? 'success' : car.status === 'below' ? 'attention' : 'danger'}>{car.status === 'on_target' ? 'On target' : car.status === 'below' ? 'Below target' : 'Losing money'}</Label>}
           meta={<><span>Owner: {car.ownerName}</span><span>{car.days} days in this period</span>{car.vehicle.operation_start_date && <span>On the road since {car.vehicle.operation_start_date}</span>}</>} actions={tabs} />
         <StatGrid cols={5}>
-          <StatCard icon={Wallet} label="Should have collected" value={rwf(car.expected)} sub="360,000 a week for two seats" />
+          <StatCard icon={Wallet} label="Should have collected" value={rwf(car.expected)} sub={car.drivers.some((r) => r.driver.model === 'solo_car') ? 'Solo car: 315,000 a week (45,000 every day)' : '360,000 a week for two seats'} />
           <StatCard label="Collected" value={rwf(car.collected)} sub={kept !== null ? `${kept}% of what it should` : ''} tone={kept !== null && kept < 90 ? 'danger' : undefined} />
           {seesOwner && <StatCard label="Kivu Ride's share" value={rwf(shareOf(car))} sub={`should be ${rwf(targetShareOf(car))} after the owner`} tone={shareOf(car) < targetShareOf(car) ? 'attention' : 'success'} />}
           <StatCard icon={TrendingDown} label="Lost" value={rwf(car.lost)} sub={CAUSES.filter((x) => car.byCause[x.key] > 0).map((x) => `${x.label} ${short(car.byCause[x.key])}`).join(' · ') || 'nothing'} tone={car.lost > 0 ? 'danger' : undefined} />

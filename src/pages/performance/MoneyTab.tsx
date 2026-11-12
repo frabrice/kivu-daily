@@ -79,7 +79,7 @@ export default function MoneyTab({ data, period: p }: { data: PerfData; period: 
         </ChartCard>
       </div>
 
-      <ChartCard title="Drivers: paid in vs cost of days worked" subtitle={`Each working day costs ${rwf(DAILY_DEPOSIT_RATE)} per shift (double for drivers on both shifts); rest days and paused days cost nothing`} legend={driverSeries}
+      <ChartCard title="Drivers: paid in vs cost of days worked" subtitle={`Each working day costs ${rwf(DAILY_DEPOSIT_RATE)} on one shift, ${rwf(DAILY_DEPOSIT_RATE * 2)} on both shifts, 45,000 on Solo car (every day); rest days and paused days cost nothing`} legend={driverSeries}
         table={<MiniTable head={['Week', 'Cost of days worked', 'Paid in', 'Rate']} rows={[...weeks].reverse().map((w) => [w.label, rwf(w.expected), rwf(w.collected), w.expected ? `${pct(w.collected, w.expected)}%` : '—'])} />}>
         <DailyBars data={weeks} series={driverSeries} c={c} stacked={false} format={rwfShort} xKey="start" tipTitle={weekLabel} />
       </ChartCard>

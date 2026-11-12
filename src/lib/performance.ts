@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, Driver, DriverDeposit, Vehicle, FinanceTransaction, CallTicket, PauseReason } from './supabase';
-import { computeDepositStanding, pauseOn, paidThroughDate, isoWeekday, DepositStanding, contractPayments, dailyRateOn } from '../../supabase/functions/_shared/depositRules';
+import { computeDepositStanding, pauseOn, paidThroughDate, isoWeekday, DepositStanding, contractPayments, dailyRateOn, restDayOn } from '../../supabase/functions/_shared/depositRules';
 import { CallCenterShift } from './shifts';
 import { OutreachCall } from './outreach';
 import { KIVU_REVENUE_TYPES } from './finance';
@@ -127,7 +127,8 @@ const REST_ISO: Record<string, number> = { monday: 1, tuesday: 2, wednesday: 3, 
 // per total paid (it only changes when a payment comes in).
 const dayJudges = new WeakMap<DriverDeposit[], WeakMap<Driver, { pays: { date: string; amount: number }[]; through: Map<number, string | null> }>>();
 export function driverDay(d: Driver, deps: DriverDeposit[], day: string): DriverDayState {
-  if (d.rest_day && REST_ISO[d.rest_day] === isoWeekday(day)) return 'rest';
+  const rest = restDayOn(d, day);
+  if (rest && REST_ISO[rest] === isoWeekday(day)) return 'rest';
   if (pauseOn(d.pauses, day)) return 'paused';
   let byDriver = dayJudges.get(deps);
   if (!byDriver) { byDriver = new WeakMap(); dayJudges.set(deps, byDriver); }
@@ -136,7 +137,7 @@ export function driverDay(d: Driver, deps: DriverDeposit[], day: string): Driver
   let paid = 0;
   for (const p of j.pays) { if (p.date > day) break; paid += p.amount; }
   let through = j.through.get(paid);
-  if (through === undefined) { through = paidThroughDate(d.start_date!, d.rest_day, paid, d.pauses, (x) => dailyRateOn(d, x)); j.through.set(paid, through); }
+  if (through === undefined) { through = paidThroughDate(d.start_date!, (x) => restDayOn(d, x), paid, d.pauses, (x) => dailyRateOn(d, x)); j.through.set(paid, through); }
   return through && through >= day ? 'paid' : 'unpaid';
 }
 // Each driver's payments, split once (carDay asks for them car by car, day by day).

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, Phone, Car, Truck } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
+import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL, driverShiftShort, driverTermsLabel, DRIVER_MODELS } from '../../lib/fleet';
 import { isPausedOn } from '../../components/fleet/PauseList';
 
 const kigaliToday = kTodayFast();
@@ -45,6 +45,8 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
   const missingDoc = (d: Driver) => (legal.loading ? null : missingForDriver(d, legal.docs));
   const [view, setView] = useState<ViewMode>('table');
   const [search, setSearch] = useState('');
+  // All models, or one (One shift, Both shifts, Solo car).
+  const [modelFilter, setModelFilter] = useState<string>('');
   const [driverDrawer, setDriverDrawer] = useState<DriverDrawerState | null>(null);
   // Keyed by id (not the object itself) so the profile page stays live -
   // e.g. reflects an edit made from it, or a new deposit - instead of
@@ -54,9 +56,8 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return drivers;
-    return drivers.filter((d) => d.full_name.toLowerCase().includes(q) || d.phone.includes(q));
-  }, [drivers, search]);
+    return drivers.filter((d) => (!modelFilter || d.model === modelFilter) && (!q || d.full_name.toLowerCase().includes(q) || d.phone.includes(q)));
+  }, [drivers, search, modelFilter]);
 
   const byStage = useMemo(() => {
     const map: Record<string, Driver[]> = { applying: [], raw: [], ready: [], active: [], flagged: [], inactive: [] };
@@ -111,6 +112,10 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or phone" className="input pl-8 w-full sm:w-52" />
           </div>
+          <select value={modelFilter} onChange={(e) => setModelFilter(e.target.value)} className="input w-auto" aria-label="Model">
+            <option value="">All models</option>
+            {Object.entries(DRIVER_MODELS).map(([k, m]) => <option key={k} value={k}>{m.label} ({drivers.filter((d) => d.model === k && d.contract_status === 'active').length})</option>)}
+          </select>
           <ExportButton initial="drivers" />
           {canEdit && (
             <button onClick={() => setDriverDrawer({ driver: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
@@ -155,7 +160,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                     {d.vehicle ? (
                       <p className="text-micro text-brand-600 dark:text-brand-300 flex items-center gap-1 mt-1">
                         <Car size={10} /> {d.vehicle.plate_number}
-                        {d.shift && <span className="text-fg-subtle">· {shiftLabel(d.shift)}</span>}
+                        {d.shift && <span className="text-fg-subtle">· {driverShiftShort(d)}</span>}
                       </p>
                     ) : (
                       <p className="text-micro text-fg-subtle mt-1">
@@ -198,7 +203,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
               },
             },
             { header: 'Vehicle', render: (d) => d.vehicle ? <EntityLink type="car" id={d.vehicle.id} label={d.vehicle.plate_number} className="font-mono" /> : '—' },
-            { header: 'Shift', render: (d) => (d.shift ? (shiftLabel(d.shift)) : '—') },
+            { header: 'Model', render: (d) => (d.shift || d.model !== 'one_shift' ? driverTermsLabel(d) : 'One shift') },
             {
               header: '',
               className: 'text-right',

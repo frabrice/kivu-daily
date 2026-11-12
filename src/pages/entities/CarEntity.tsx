@@ -5,11 +5,12 @@ import { EntityViewProps } from '../../os/peek';
 import { EntityLink, useEntityMeta } from '../../os/EntityLink';
 import { useAuth } from '../../lib/auth';
 import { supabase, FinanceTransaction, VehicleOwner } from '../../lib/supabase';
-import { useFleetData, canEditFleet, computeDepositStanding, formatDateLabelSafe, pauseOn, PAUSE_REASON_LABEL, shiftLabel } from '../../lib/fleet';
+import { useFleetData, canEditFleet, computeDepositStanding, formatDateLabelSafe, pauseOn, PAUSE_REASON_LABEL, driverTermsLabel } from '../../lib/fleet';
 import { TYPE_META } from '../../lib/finance';
 import { addDays, carDay, CarDayState, PerfData, today } from '../../lib/performance';
 import { Box, Details, EmptyState, Heatmap, Label, ObjectLayout, PageHeader, StatCard, StatGrid, Timeline, TimelineItem, UnderlineTabs, rwf } from '../../ui/kit';
 import VehicleDrawer from '../../components/fleet/VehicleDrawer';
+import CarDriverHistory from '../../components/fleet/CarDriverHistory';
 
 type Tab = 'overview' | 'money';
 const COLOR: Record<CarDayState | 'none', string> = { working: '#2a78d6', unpaid: '#eb6834', paused: '#1baf7a', rest: 'rgb(var(--c-line-strong))', no_driver: '#a3a3a3', none: 'rgb(var(--c-line-muted))' };
@@ -112,7 +113,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
             return (
               <li key={d.id} className="flex items-center gap-3 px-4 py-2.5">
                 <Truck size={15} className="text-fg-subtle" />
-                <div className="flex-1 min-w-0"><EntityLink type="driver" id={d.id} label={d.full_name} /><p className="text-caption text-fg-muted">{d.shift ? `${shiftLabel(d.shift)} shift` : 'No shift'}{d.start_date ? ` · since ${formatDateLabelSafe(d.start_date)}` : ''}</p></div>
+                <div className="flex-1 min-w-0"><EntityLink type="driver" id={d.id} label={d.full_name} /><p className="text-caption text-fg-muted">{d.shift || d.model !== 'one_shift' ? driverTermsLabel(d) : 'No shift'}{d.start_date ? ` · since ${formatDateLabelSafe(d.start_date)}` : ''}</p></div>
                 {ended ? <Label>Ended</Label> : s && !s.isCleared ? <Label tone="danger">Owes {rwf(s.owes)}</Label> : <Label tone="success">Paid up</Label>}
               </li>
             );
@@ -139,9 +140,11 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
     </Box>
   );
 
+  const history = <CarDriverHistory carId={id} drivers={drivers} vehicles={vehicles} contractEvents={contractEvents} compact={mode === 'peek'} />;
+
   const drawer = editing && <VehicleDrawer vehicle={car} startEditing canEdit={canEdit} onClose={() => setEditing(false)} onSaved={reload} onCreated={() => undefined} />;
 
-  if (mode === 'peek') return <div className="p-4 space-y-4">{header}{stats}{driversBox}{calendar}{side}{drawer}</div>;
+  if (mode === 'peek') return <div className="p-4 space-y-4">{header}{stats}{driversBox}{history}{calendar}{side}{drawer}</div>;
 
   const ownerIn = tx.filter((x) => x.type === 'vehicle_owner_payment');
   return (
@@ -151,7 +154,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
         { key: 'overview', label: 'Overview', icon: LayoutGrid },
         ...(isMoneyPerson ? [{ key: 'money' as const, label: 'Money', icon: Banknote, count: tx.length }] : []),
       ]} />
-      {tab === 'overview' && <ObjectLayout side={side} main={<>{stats}{driversBox}{calendar}<Box title="Activity" icon={History}><Timeline items={timeline} /></Box></>} />}
+      {tab === 'overview' && <ObjectLayout side={side} main={<>{stats}{driversBox}{history}{calendar}<Box title="Activity" icon={History}><Timeline items={timeline} /></Box></>} />}
       {tab === 'money' && (
         <div className="space-y-4">
           <StatGrid cols={3}>

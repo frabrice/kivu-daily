@@ -1,5 +1,5 @@
 import { supabase, Driver, DriverDeposit, Vehicle } from './supabase';
-import { computeDepositStanding, formatDateLabelSafe, shiftLabel, REST_DAYS } from './fleet';
+import { computeDepositStanding, formatDateLabelSafe, driverShiftShort, driverTermsLabel, REST_DAYS } from './fleet';
 import { addDays, carDay, driverDay, endDateOf, onContract, PerfData, PerfEvent, today, within } from './performance';
 import { NAVY, MUTED, baseDoc, h1, h2, kpiRow, note, render, smallLogo, table } from './stationReportPdf';
 
@@ -132,7 +132,7 @@ export function buildReport(kind: ReportKind, d: ExportData, from: string, to: s
       const drv = d.drivers.filter((x) => x.vehicle_id === v.id && x.contract_status === 'active');
       const paid = d.deposits.filter((x) => within(x.paid_date, from, to) && drv.some((y) => y.id === x.driver_id)).reduce((s, x) => s + Number(x.amount), 0)
         + drv.filter((y) => y.initial_deposit_paid && within(initialDate(y), from, to)).reduce((s, y) => s + Number(y.initial_deposit_amount ?? 0), 0);
-      return { car: v.plate_number, model: [v.make, v.model, v.color].filter(Boolean).join(' '), owner: v.owner_id ? d.owners.get(v.owner_id) ?? '' : '', drivers: drv.map((x) => `${x.full_name} (${shiftLabel(x.shift)})`).join(', '), ...c, paid };
+      return { car: v.plate_number, model: [v.make, v.model, v.color].filter(Boolean).join(' '), owner: v.owner_id ? d.owners.get(v.owner_id) ?? '' : '', drivers: drv.map((x) => `${x.full_name} (${driverShiftShort(x)})`).join(', '), ...c, paid };
     });
     return { ...base, title: 'Cars report', subtitle: period, sections: [{
       title: 'Cars', rows, red: (r) => Number(r.unpaid) > 0 || Number(r.no_driver) > 0, columns: [
@@ -165,7 +165,7 @@ export function buildReport(kind: ReportKind, d: ExportData, from: string, to: s
     const paused = !!s.pausedToday;
     return {
       driver: x.full_name, phone: x.phone, car: plateOf(x.vehicle_id), owner: x.vehicle?.owner_id ? d.owners.get(x.vehicle.owner_id) ?? '' : '',
-      shift: shiftLabel(x.shift), start: x.start_date, rest: restLabel(x.rest_day),
+      shift: x.shift || x.model !== 'one_shift' ? driverTermsLabel(x) : '', start: x.start_date, rest: restLabel(x.rest_day),
       status: paused ? 'Day off (paused)' : s.isCleared ? (s.graceUntil ? `Cleared until ${formatDateLabelSafe(s.graceUntil)} (adjusted)` : 'Cleared to drive') : 'Not paid up',
       owes: s.owes, behind: s.weekBehind, next_date: s.nextDueDate, next_amount: s.nextDueAmount, total_paid: s.totalPaid, adjusted: s.adjusted,
       worked, fully_paid: fullyPaid, not_paid: worked - fullyPaid, days_lost: s.daysLost, on_time: s.onTimeWeeks, late: s.lateWeeks,
@@ -181,7 +181,7 @@ export function buildReport(kind: ReportKind, d: ExportData, from: string, to: s
   const behind = rows.filter((r) => r.status === 'Not paid up');
   const columns: Column[] = [
     { header: 'Driver', key: 'driver', width: 26 }, { header: 'Phone', key: 'phone', width: 14 }, { header: 'Car', key: 'car' }, ...(d.owners.size ? [{ header: 'Owner', key: 'owner', width: 22 } as Column] : []),
-    { header: 'Shift', key: 'shift' }, { header: 'Started', key: 'start', kind: 'date' }, { header: 'Rest day', key: 'rest' }, { header: 'Status today', key: 'status', width: 22 },
+    { header: 'Model', key: 'shift' }, { header: 'Started', key: 'start', kind: 'date' }, { header: 'Rest day', key: 'rest' }, { header: 'Status today', key: 'status', width: 22 },
     { header: 'Owes now', key: 'owes', kind: 'money' }, { header: 'Behind this week', key: 'behind', kind: 'money' }, { header: 'Next payment', key: 'next_date', kind: 'date' }, { header: 'Next amount', key: 'next_amount', kind: 'money' },
     { header: 'Paid in total', key: 'total_paid', kind: 'money' }, { header: 'Adjusted', key: 'adjusted', kind: 'money' },
     { header: 'Days worked', key: 'worked', kind: 'int' }, { header: 'Days fully paid', key: 'fully_paid', kind: 'int' }, { header: 'Days not paid', key: 'not_paid', kind: 'int' },

@@ -3,7 +3,7 @@ import { ShieldAlert, Wallet } from 'lucide-react';
 import { supabase, Driver, DriverDeposit, DriverFine, DriverFinePayment } from '../../lib/supabase';
 import { todayStr } from '../../lib/utils';
 import {
-  CONTRACT_CAN_RETURN, CONTRACT_END_DECIDED_BY, CONTRACT_END_REASONS, contractSettlement, fineAmountPaid, formatDateLabelSafe, formatRwf, shiftLabel,
+  CONTRACT_CAN_RETURN, CONTRACT_END_DECIDED_BY, CONTRACT_END_REASONS, contractSettlement, fineAmountPaid, formatDateLabelSafe, formatRwf, driverShiftShort,
 } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
@@ -84,7 +84,7 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
   );
 
   return (
-    <Modal open onClose={onClose} title="End contract" subtitle={`${driver.full_name}${driver.vehicle ? ` · ${driver.vehicle.plate_number}` : ''}${driver.shift ? ` · ${shiftLabel(driver.shift)}` : ''}`} maxWidth="max-w-lg">
+    <Modal open onClose={onClose} title="End contract" subtitle={`${driver.full_name}${driver.vehicle ? ` · ${driver.vehicle.plate_number}` : ''}${driver.shift ? ` · ${driverShiftShort(driver)}` : ''}`} maxWidth="max-w-lg">
       {!confirming ? (
         <div className="space-y-4">
           <label className="block">

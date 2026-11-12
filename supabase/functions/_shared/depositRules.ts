@@ -12,12 +12,18 @@
 // day, then on the first Sunday a top-up for the days already driven,
 // then 180,000 every Sunday after.
 //
-// A driver on BOTH shifts of a car (shift 'full', MD 15 Oct 2026) pays
-// double: 60,000 per working day, 360,000 for the week - same Sunday rule.
+// Every driver is on a model (drivers.model, table driver_models; MD 12
+// Nov 2026), all paid the same way - by Sunday for the week ahead:
+//   one_shift    30,000 a working day, one rest day free  -> 180,000 a week
+//   both_shifts  60,000 a working day, one rest day free  -> 360,000 a week
+//   solo_car     45,000 a day, no rest day (7 days)       -> 315,000 a week
+// A whole-car model (both shifts, Solo car) has shift 'full'; a model with
+// no rest day has rest_day null, so every day is a working day.
 //
-// A driver can switch between one shift and both shifts mid-contract:
-// drivers.rate_history ([{from, daily}]) keeps each rate from its date, so
-// past days keep the old rate (empty history = the rate of their shift).
+// A driver can change model mid-contract: drivers.rate_history
+// ([{from, daily, model, rest_day}]) keeps the terms from each date, so past
+// days keep their old rate AND their old rest day. Every contract starts
+// with one entry (its start date); empty history = the model's own terms.
 //
 // A renewed contract (drivers.payments_from / opening_credit) counts only
 // its own payments: deposits from payments_from on, the new first payment,
@@ -26,22 +32,66 @@
 export const WEEKLY_DEPOSIT_AMOUNT = 180000;
 export const DAILY_DEPOSIT_RATE = 30000;
 
-// Per driver: one shift = 30,000/day (180,000/week); both shifts = double.
-export const dailyRateOf = (d: { shift?: string | null }) => (d.shift === 'full' ? DAILY_DEPOSIT_RATE * 2 : DAILY_DEPOSIT_RATE);
-export const weeklyAmountOf = (d: { shift?: string | null }) => dailyRateOf(d) * 6;
+// The models' own terms (mirrors driver_models). Used only when a driver has
+// no history entry yet, and for the choices on the screens.
+export type DriverModelKey = 'one_shift' | 'both_shifts' | 'solo_car';
+export const DRIVER_MODELS: Record<DriverModelKey, { label: string; daily: number; restDay: boolean; wholeCar: boolean; salary: number | null }> = {
+  one_shift: { label: 'One shift', daily: 30000, restDay: true, wholeCar: false, salary: 150000 },
+  both_shifts: { label: 'Both shifts', daily: 60000, restDay: true, wholeCar: true, salary: 300000 },
+  solo_car: { label: 'Solo car', daily: 45000, restDay: false, wholeCar: true, salary: null },
+};
+export const modelOf = (key: string | null | undefined) => DRIVER_MODELS[(key ?? '') as DriverModelKey] ?? null;
+// A model's full week: the day rate times its paid days (6 with a rest day, 7 without).
+export const modelWeekly = (key: string | null | undefined) => { const m = modelOf(key); return m ? m.daily * (m.restDay ? 6 : 7) : WEEKLY_DEPOSIT_AMOUNT; };
 
-export interface RateChange { from: string; daily: number }
-// The daily rate on a given day, following any mid-contract shift change.
-export function dailyRateOn(d: { shift?: string | null; rate_history?: RateChange[] | null }, day: string): number {
+export interface RateChange { from: string; daily: number; model?: string | null; rest_day?: RestDayKey | null }
+type TermsLike = { shift?: string | null; model?: string | null; rest_day?: RestDayKey | string | null; rate_history?: RateChange[] | null };
+
+// The history entry in force on a day (the first one for days before it).
+function termsOn(d: TermsLike, day: string): RateChange | null {
   const h = d.rate_history ?? [];
-  if (!h.length) return dailyRateOf(d);
+  if (!h.length) return null;
   const sorted = [...h].sort((a, b) => a.from.localeCompare(b.from));
-  let rate = sorted[0].daily;
-  for (const e of sorted) if (e.from <= day) rate = e.daily;
-  return Number(rate);
+  let e = sorted[0];
+  for (const x of sorted) if (x.from <= day) e = x;
+  return e;
 }
+
+// The driver's day rate now: their latest terms, else their model's, else their shift's.
+export function dailyRateOf(d: TermsLike): number {
+  const h = d.rate_history ?? [];
+  if (h.length) return Number([...h].sort((a, b) => a.from.localeCompare(b.from))[h.length - 1].daily);
+  return modelOf(d.model)?.daily ?? (d.shift === 'full' ? DAILY_DEPOSIT_RATE * 2 : DAILY_DEPOSIT_RATE);
+}
+// A full week now: 6 paid days with a rest day, 7 without.
+export const weeklyAmountOf = (d: TermsLike) => dailyRateOf(d) * (d.rest_day === null ? 7 : 6);
+
+// The daily rate on a given day, following any mid-contract change.
+export function dailyRateOn(d: TermsLike, day: string): number {
+  const e = termsOn(d, day);
+  return e ? Number(e.daily) : dailyRateOf(d);
+}
+// The rest day on a given day (null: none, every day is a working day).
+export function restDayOn(d: TermsLike, day: string): RestDayKey | null {
+  const e = termsOn(d, day);
+  return (e && 'rest_day' in e ? e.rest_day ?? null : (d.rest_day as RestDayKey | null | undefined) ?? null);
+}
+// The model on a given day.
+export function modelOn(d: TermsLike, day: string): string | null {
+  return termsOn(d, day)?.model ?? d.model ?? (d.shift === 'full' ? 'both_shifts' : 'one_shift');
+}
+
 export const shiftLabel = (shift: string | null | undefined, long = false) =>
   shift === 'full' ? (long ? 'Both shifts (day & night)' : 'Day & night') : shift === 'day' ? (long ? 'Day shift' : 'Day') : shift === 'night' ? (long ? 'Night shift' : 'Night') : '';
+// The short shift label of a driver ("Day", "Night", "Day & night"), with Solo car named as such.
+export const driverShiftShort = (d: { model?: string | null; shift?: string | null }, long = false) =>
+  d.model === 'solo_car' ? (long ? 'Solo car (the car alone, every day)' : 'Solo car') : shiftLabel(d.shift, long);
+// How a driver's terms read everywhere: "Solo car", "Both shifts", "Day shift"...
+export function driverTermsLabel(d: { model?: string | null; shift?: string | null }, long = false): string {
+  if (d.model === 'solo_car') return long ? 'Solo car (the car alone, every day)' : 'Solo car';
+  if (d.model === 'both_shifts' || d.shift === 'full') return long ? 'Both shifts (day & night)' : 'Both shifts';
+  return d.shift ? `${shiftLabel(d.shift, long)}${long ? '' : ' shift'}` : 'One shift';
+}
 
 // First Monday the Sunday rule is enforced (payments due Sunday 11 Oct
 // 2026). Weeks before it ran on the old rolling 7-day cycle from each
@@ -202,6 +252,11 @@ function restDayIso(restDay: RestDayKey | null): number {
   return REST_DAY_ORDER.indexOf(restDay as RestDayKey) + 1;
 }
 
+// A rest day given once (the same every week) or day by day (it can change
+// with the driver's model, see restDayOn).
+export type RestDayRule = RestDayKey | null | ((day: string) => RestDayKey | null);
+const isRestDay = (rule: RestDayRule, d: string) => isoWeekday(d) === restDayIso(typeof rule === 'function' ? rule(d) : rule);
+
 function localToday(): string {
   return formatDay(new Date());
 }
@@ -226,30 +281,27 @@ function countDays(from: string, to: string, include: (d: string) => boolean): n
 
 // What the working days from..to cost, at each day's own rate.
 export function workingCost(driver: DepositDriverLike, from: string, to: string): number {
-  const rest = restDayIso(driver.rest_day);
   let total = 0;
-  for (let d = from; d <= to; d = shiftDay(d, 1)) if (isoWeekday(d) !== rest && !pauseOn(driver.pauses, d)) total += dailyRateOn(driver, d);
+  for (let d = from; d <= to; d = shiftDay(d, 1)) if (!isRestDay((x) => restDayOn(driver, x), d) && !pauseOn(driver.pauses, d)) total += dailyRateOn(driver, d);
   return total;
 }
 
-export function countWorkingDays(from: string, to: string, restDay: RestDayKey | null, pauses?: PauseLike[] | null): number {
-  const rest = restDayIso(restDay);
+export function countWorkingDays(from: string, to: string, restDay: RestDayRule, pauses?: PauseLike[] | null): number {
   let n = 0;
-  for (let d = from; d <= to; d = shiftDay(d, 1)) if (isoWeekday(d) !== rest && !pauseOn(pauses, d)) n++;
+  for (let d = from; d <= to; d = shiftDay(d, 1)) if (!isRestDay(restDay, d) && !pauseOn(pauses, d)) n++;
   return n;
 }
 
 // The last day a given total covers, walking working days from the start
 // date at 30,000 each - a rest day right after the last paid working day
 // counts as covered too, since it costs nothing.
-export function paidThroughDate(startDate: string, restDay: RestDayKey | null, amount: number, pauses?: PauseLike[] | null, rate: number | ((day: string) => number) = DAILY_DEPOSIT_RATE): string | null {
+export function paidThroughDate(startDate: string, restDay: RestDayRule, amount: number, pauses?: PauseLike[] | null, rate: number | ((day: string) => number) = DAILY_DEPOSIT_RATE): string | null {
   const rateOn = typeof rate === 'function' ? rate : () => rate;
-  const rest = restDayIso(restDay);
   let remaining = amount;
   let last: string | null = null;
   let d = startDate;
   for (let i = 0; i < 2000; i++) {
-    if (isoWeekday(d) === rest || pauseOn(pauses, d)) {
+    if (isRestDay(restDay, d) || pauseOn(pauses, d)) {
       last = d;
     } else {
       const r = rateOn(d);
@@ -262,23 +314,25 @@ export function paidThroughDate(startDate: string, restDay: RestDayKey | null, a
   return last;
 }
 
-// What a brand new driver pays on their first Sunday after the 180,000
-// upfront - the working days already driven by then, or the normal
-// 180,000 when they start on a Monday. Before the rule starts, the first
-// enforced Sunday is the switch-over Sunday, not an earlier one.
+// What a brand new driver pays on their first Sunday after their first
+// week upfront - the working days already driven by then, or a normal
+// week when they start on a Monday. A week is 6 paid days with a rest day,
+// 7 without (Solo car). Before the rule starts, the first enforced Sunday
+// is the switch-over Sunday, not an earlier one.
 export function firstSundayPayment(startDate: string, restDay: RestDayKey | null, rate: number = DAILY_DEPOSIT_RATE): { date: string; amount: number } {
   const switchoverSunday = shiftDay(SUNDAY_RULE_START, -1);
   const firstSunday = sundayOf(startDate) < switchoverSunday ? switchoverSunday : sundayOf(startDate);
-  const amount = countWorkingDays(startDate, shiftDay(firstSunday, 7), restDay) * rate - rate * 6;
+  const amount = countWorkingDays(startDate, shiftDay(firstSunday, 7), restDay) * rate - rate * (restDay ? 6 : 7);
   return { date: firstSunday, amount: Math.max(amount, 0) };
 }
 
 export function computeDepositStanding(driver: DepositDriverLike, deposits: DepositLike[], today: string = localToday()): DepositStanding {
   const start = driver.start_date;
-  const rest = driver.rest_day;
+  // The rest day day by day: a driver moved to Solo car keeps their old rest day before the move.
+  const rest: RestDayRule = (day) => restDayOn(driver, day);
   const ruleInForce = today >= SUNDAY_RULE_START;
-  const rate = dailyRateOf(driver);
-  const weekly = rate * 6;
+  // The first week (paid upfront): the terms the contract started on.
+  const weekly = start ? dailyRateOn(driver, start) * (restDayOn(driver, start) ? 6 : 7) : weeklyAmountOf(driver);
   const payments = contractPayments(driver, deposits);
   // Paid in total is real money only; adjustments are added separately.
   const totalPaid = payments.reduce((s, p) => s + (p.adjustment ? 0 : p.amount), 0);
@@ -354,7 +408,7 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     graceUntil,
     paidThrough: paidThroughDate(start, rest, paidToDate, pauses, (day) => dailyRateOn(driver, day)),
     pausedToday: pauseOn(pauses, today),
-    pausedDaysThisWeek: countDays(mondayOf(today), sundayOf(today), (d) => isoWeekday(d) !== restDayIso(rest) && !!pauseOn(pauses, d) && d >= start),
+    pausedDaysThisWeek: countDays(mondayOf(today), sundayOf(today), (d) => !isRestDay(rest, d) && !!pauseOn(pauses, d) && d >= start),
     owes,
     weekBehind,
     isCleared: owedNow === 0 || !!graceUntil,

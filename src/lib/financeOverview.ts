@@ -1,5 +1,5 @@
 import { Driver, DriverCarAssignment, DriverDeposit, FinanceTransaction, PauseReason, Vehicle } from './supabase';
-import { dailyRateOn, isoWeekday, mondayOf, pauseOn, DAILY_DEPOSIT_RATE } from '../../supabase/functions/_shared/depositRules';
+import { dailyRateOn, isoWeekday, mondayOf, pauseOn, restDayOn, modelOn, modelOf } from '../../supabase/functions/_shared/depositRules';
 import { addDays, endDateOf, PerfEvent } from './performance';
 import { WEEKLY_COLLECTION_TARGET, WEEKLY_OWNER_PAYOUT_DEFAULT, MONTHLY_MANAGEMENT_FEE_DEFAULT } from './finance';
 
@@ -75,11 +75,12 @@ type DayState = { kind: 'rest' } | { kind: 'paused'; owner: boolean; reason: Pau
 function driverDays(d: Driver, deposits: DriverDeposit[], until: string): Map<string, DayState> {
   const out = new Map<string, DayState>();
   if (!d.start_date) return out;
-  const restIso = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(d.rest_day ?? '') + 1;
+  // The rest day of each day (it can change with the driver's model).
+  const restIso = (day: string) => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(restDayOn(d, day) ?? '') + 1;
   const credit = Number(d.opening_credit ?? 0) + (d.initial_deposit_paid ? Number(d.initial_deposit_amount ?? 0) : 0);
   let remaining = credit + deposits.filter((x) => x.driver_id === d.id && (!d.payments_from || x.paid_date >= d.payments_from)).reduce((s, x) => s + Number(x.amount), 0);
   for (let day = d.start_date; day <= until; day = addDays(day, 1)) {
-    if (isoWeekday(day) === restIso) { out.set(day, { kind: 'rest' }); continue; }
+    if (isoWeekday(day) === restIso(day)) { out.set(day, { kind: 'rest' }); continue; }
     const rate = dailyRateOn(d, day);
     const p = pauseOn(d.pauses, day) as (NonNullable<Driver['pauses']>[number] | null);
     if (p) { out.set(day, { kind: 'paused', owner: !!p.owner_payout_paused, reason: p.reason, rate }); continue; }
@@ -186,14 +187,15 @@ export function computeLeakage(input: OverviewInput, range: Range, today: string
       let seats = 0;
       for (const d of [...new Map(here.map((x) => [x.id, x])).values()]) {
         const st = daysFor(d).get(day);
-        const rate = st && st.kind !== 'rest' ? st.rate : dailyRateOn(d, day);
-        seats += rate >= DAILY_DEPOSIT_RATE * 2 ? 2 : 1;
+        // A whole-car model (both shifts, Solo car) fills both seats.
+        const seatsOf = modelOf(modelOn(d, day))?.wholeCar ? 2 : 1;
+        seats += seatsOf;
         const row = perDriver.get(d.id) ?? { driver: d, days: 0, expected: 0, collected: 0, lost: 0, cause: null, ended: !!endOf.get(d.id) };
         row.days += 1;
         perDriver.set(d.id, row);
         if (!st || st.kind === 'rest') continue;
         if (st.kind === 'paused') {
-          if (st.owner) { car.ownerPausedShifts += rate >= DAILY_DEPOSIT_RATE * 2 ? 2 : 1; continue; }
+          if (st.owner) { car.ownerPausedShifts += seatsOf; continue; }
           both({ expected: st.rate, cause: 'paused', lost: st.rate });
           row.expected += st.rate; row.lost += st.rate; row.cause = 'paused';
           loss(d, 'paused', st.rate, plate, st.reason);

@@ -10,7 +10,7 @@ import {
   STAGES, effectiveStage, REST_DAYS, DEPOSIT_TIER_STYLE, depositRemainingColor, formatDateLabelSafe,
   computeDepositStanding, depositStandingTier, depositStandingLabel, depositPeriodLabel, paidThroughDate, formatRwf, SUNDAY_RULE_START,
   fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, canSeeDriverPayments, canRecordPause, canReviewPause, PAUSE_REASON_LABEL,
-  CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN, dailyRateOn, shiftLabel, nextPaymentText } from '../../lib/fleet';
+  CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN, dailyRateOn, shiftLabel, driverShiftShort, nextPaymentText, modelOf, CONTRACT_EVENT_LABEL } from '../../lib/fleet';
 import { useAuth } from '../../lib/auth';
 import FlagToITDrawer from '../../components/FlagToITDrawer';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
@@ -174,7 +174,7 @@ export default function DriverProfilePage({
             {driver.vehicle ? (
               <span className="inline-flex items-center gap-1 text-micro font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
                 <Car size={10} /> {driver.vehicle.plate_number}
-                {driver.shift && <span>· {shiftLabel(driver.shift, true)}</span>}
+                {driver.shift && <span>· {driverShiftShort(driver, true)}</span>}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-micro font-medium text-fg-muted bg-inset px-2 py-0.5 rounded-full">
@@ -465,7 +465,7 @@ export default function DriverProfilePage({
                 <div className="flex items-center justify-between gap-2 text-caption">
                   <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${e.event_type === 'ended' ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10' : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'}`}>
                     {e.event_type === 'ended' ? <UserX size={10} /> : <UserCheck size={10} />}
-                    {e.event_type === 'ended' ? 'Ended' : e.event_type === 'renewed' ? 'Renewed' : 'Reactivated'}
+                    {CONTRACT_EVENT_LABEL[e.event_type] ?? e.event_type}
                   </span>
                   <span className="text-fg-subtle shrink-0">{formatDateLabelSafe(e.event_date)}</span>
                 </div>
@@ -537,8 +537,17 @@ function ContractEventFacts({ meta, type }: { meta?: Record<string, unknown> | n
     if (Number(m.credit) > 0) items.push(`${formatRwf(Number(m.credit))} paid ahead`);
     if (Number(m.fines_unpaid) > 0) items.push(`Unpaid fines ${formatRwf(Number(m.fines_unpaid))}`);
   }
+  if (type === 'model_changed' || type === 'shift_changed') {
+    const from = modelOf(String(m.from_model ?? ''))?.label, to = modelOf(String(m.to_model ?? ''))?.label;
+    if (from && to && from !== to) items.push(`${from} → ${to}`);
+    if (m.to_shift === 'day' || m.to_shift === 'night') items.push(shiftLabel(String(m.to_shift), true));
+    if (Number(m.weekly) > 0) items.push(`${formatRwf(Number(m.weekly))} a week`);
+    if ('salary' in m) items.push(m.salary ? `Salary ${formatRwf(Number(m.salary))}` : 'No salary');
+    if ('rest_day' in m) items.push(m.rest_day ? `Rest day ${String(m.rest_day)}` : 'No rest day');
+  }
   if (type === 'renewed') {
-    if (m.shift) items.push(shiftLabel(String(m.shift), true));
+    if (m.model) items.push(modelOf(String(m.model))?.label ?? String(m.model));
+    if (m.shift && m.model !== 'solo_car') items.push(shiftLabel(String(m.shift), true));
     if (Number(m.first_payment) > 0) items.push(`First payment ${formatRwf(Number(m.first_payment))}`);
     if (Number(m.opening_credit) > 0) items.push(`Credit carried ${formatRwf(Number(m.opening_credit))}`);
     if (m.agreed_next_payment) items.push(`Next payment agreed for ${formatDateLabelSafe(String(m.agreed_next_payment))}`);
