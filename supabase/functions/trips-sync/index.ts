@@ -10,6 +10,13 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // still have as in progress; every 6 hours (or with { full: true }) it
 // re-reads everything. Only rows whose content changed are written, so
 // the Trips page isn't flooded with identical updates.
+//
+// 13 Nov 2026: the full read asked for 500 trips a page and the platform
+// answered 502 from 10 Nov (the page grew too big to answer in time); as the
+// full read never finished, every run retried it and no trip came in for
+// three days. Pages are now 100 trips, and when the full read fails the run
+// still reads the last 2 days, so new trips keep coming in; the full read is
+// tried again next run and the error stays visible on the Trips page.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,7 +31,7 @@ const apiKey = Deno.env.get("KIVURIDE_API_KEY");
 const apiBase = Deno.env.get("KIVURIDE_API_URL") || "https://kivuride.onrender.com";
 
 const FINAL = new Set(["completed", "cancelled"]);
-const PAGE = 500;
+const PAGE = 100;
 const FULL_EVERY_MS = 6 * 3600_000;
 const CAN_SEE = ["call_center", "fleet", "finance", "it"];
 
@@ -164,12 +171,18 @@ Deno.serve(async (req) => {
     const { count: have } = await db.from("platform_trips").select("id", { count: "exact", head: true });
     const full = !!body?.full || !have || !state?.last_full_at || Date.now() - Date.parse(state.last_full_at) > FULL_EVERY_MS;
 
-    let trips: Trip[];
+    let trips: Trip[] = [];
     let total: number | null = null;
+    let fullError: string | null = null;
     if (full) {
-      const r = await listAll("");
-      trips = r.items; total = r.total;
-    } else {
+      try {
+        const r = await listAll("");
+        trips = r.items; total = r.total;
+      } catch (e) {
+        fullError = e instanceof Error ? e.message : String(e);
+      }
+    }
+    if (!full || fullError) {
       const since = new Date(Date.now() - 2 * 86400_000).toLocaleDateString("en-CA", { timeZone: "Africa/Kigali" });
       trips = (await listAll(`&date_from=${since}`)).items;
       // Older trips we still have as in progress: read each one again.
@@ -218,10 +231,11 @@ Deno.serve(async (req) => {
     for (let i = 0; i < statusLog.length; i += 500) await db.from("platform_trip_status_log").insert(statusLog.slice(i, i + 500));
 
     await db.from("platform_sync_state").upsert({
-      key: "trips", last_run_at: started, last_ok_at: new Date().toISOString(), last_error: null, last_changed: changed.length,
-      ...(full ? { last_full_at: new Date().toISOString(), platform_total: total } : {}),
+      key: "trips", last_run_at: started, last_ok_at: new Date().toISOString(), last_changed: changed.length,
+      last_error: fullError ? `Full re-read failed (recent trips still synced): ${fullError}`.slice(0, 500) : null,
+      ...(full && !fullError ? { last_full_at: new Date().toISOString(), platform_total: total } : {}),
     });
-    return json({ ok: true, full, read: rows.length, changed: changed.length, new: changed.filter((r) => !existing.has(r.id)).length });
+    return json({ ok: true, full: full && !fullError, fullError, read: rows.length, changed: changed.length, new: changed.filter((r) => !existing.has(r.id)).length });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await db.from("platform_sync_state").upsert({ key: "trips", last_run_at: started, last_error: msg.slice(0, 500) });
