@@ -1,3 +1,4 @@
+import { edgeFunctionError } from './edgeFunctions';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import { fetchAll } from './fetchAll';
@@ -97,7 +98,8 @@ export function useTrips(fromDay: string | null) {
   const syncNow = useCallback(async (full = false) => {
     const { data, error: err } = await supabase.functions.invoke('trips-sync', { body: { full } });
     await load();
-    if (err) return err.message;
+    // The function's own words (e.g. "the app's server answered 502"), not "non-2xx status code".
+    if (err) return edgeFunctionError(err);
     return (data as { error?: string } | null)?.error ?? null;
   }, [load]);
   return { trips, sync, loading, error, reload: load, syncNow };

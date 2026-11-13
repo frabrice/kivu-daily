@@ -17,6 +17,14 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // three days. Pages are now 100 trips, and when the full read fails the run
 // still reads the last 2 days, so new trips keep coming in; the full read is
 // tried again next run and the error stays visible on the Trips page.
+//
+// Same day, later: even at 100 a page the platform did not answer, and with
+// 90-second waits and 3 retries a run was cut off by the time limit before
+// it could save anything or say why. Now every run has a time budget: the
+// recent trips are read FIRST (from the last good sync, at least 2 days back,
+// so a gap like 10-13 Nov is filled), saved, and only then the full re-read
+// is tried with the time left. Waits are short (25 s, one retry), so a run
+// always ends and records what happened.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,22 +48,29 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 // deno-lint-ignore no-explicit-any
 type Trip = Record<string, any>;
 
+// The run's time budget (Supabase stops a function after about 150 s).
+let deadline = Infinity;
+const left = () => deadline - Date.now();
+
 async function api(path: string, attempt = 0): Promise<Trip> {
+  if (left() < 5_000) throw new Error(`Out of time this run before ${path.split("?")[0]}`);
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 90_000); // Render can take a while to wake up
+  const timer = setTimeout(() => ctrl.abort(), Math.min(25_000, left() - 2_000));
   try {
     const res = await fetch(`${apiBase}${path}`, { headers: { "X-API-Key": apiKey!, Accept: "application/json" }, signal: ctrl.signal });
     if (res.status === 429 || res.status >= 500) {
-      if (attempt >= 3) throw new Error(`KivuRide API ${res.status} on ${path}`);
-      const wait = Number(res.headers.get("Retry-After")) || 2 ** attempt * 2;
-      await new Promise((r) => setTimeout(r, wait * 1000));
+      if (attempt >= 1 || left() < 15_000) throw new Error(`The Kivu Ride app's server answered ${res.status} on ${path}`);
+      await new Promise((r) => setTimeout(r, 2_000));
       return api(path, attempt + 1);
     }
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(`KivuRide API ${res.status} on ${path}: ${JSON.stringify(body?.detail ?? body).slice(0, 300)}`);
     return body;
   } catch (e) {
-    if (e instanceof DOMException && e.name === "AbortError" && attempt < 2) return api(path, attempt + 1);
+    if (e instanceof DOMException && e.name === "AbortError") {
+      if (attempt < 1 && left() > 30_000) return api(path, attempt + 1);
+      throw new Error(`The Kivu Ride app's server did not answer in time on ${path}`);
+    }
     throw e;
   } finally {
     clearTimeout(timer);
@@ -164,6 +179,7 @@ Deno.serve(async (req) => {
   if (!apiKey) return json({ error: "KIVURIDE_API_KEY is not set" }, 500);
 
   const started = new Date().toISOString();
+  deadline = Date.now() + 115_000;
   const { data: state } = await db.from("platform_sync_state").select("*").eq("key", "trips").maybeSingle();
   await db.from("platform_sync_state").upsert({ key: "trips", last_run_at: started });
 
@@ -171,29 +187,35 @@ Deno.serve(async (req) => {
     const { count: have } = await db.from("platform_trips").select("id", { count: "exact", head: true });
     const full = !!body?.full || !have || !state?.last_full_at || Date.now() - Date.parse(state.last_full_at) > FULL_EVERY_MS;
 
-    let trips: Trip[] = [];
+    // 1. Recent trips first: from the last good sync (a day before it), at least 2 days back.
+    const byId = new Map<number, Trip>();
+    const lastOk = state?.last_ok_at ? Date.parse(state.last_ok_at) : Date.now();
+    const since = new Date(Math.min(Date.now() - 2 * 86400_000, lastOk - 86400_000)).toLocaleDateString("en-CA", { timeZone: "Africa/Kigali" });
+    for (const t of (await listAll(`&date_from=${since}`)).items) byId.set(Number(t.id), t);
+    // Older trips we still have as in progress: read each one again.
+    const { data: open } = await db.from("platform_trips").select("id").not("status", "in", "(completed,cancelled)").limit(60);
+    for (const o of open ?? []) {
+      if (byId.has(Number(o.id)) || left() < 40_000) continue;
+      const one = await api(`/admin/trips/${o.id}`).catch(() => null);
+      if (one?.data) byId.set(Number(one.data.id), one.data);
+    }
+    // 2. The full re-read, when due, with the time left; the recent trips are kept either way.
     let total: number | null = null;
     let fullError: string | null = null;
+    let didFull = false;
     if (full) {
-      try {
-        const r = await listAll("");
-        trips = r.items; total = r.total;
-      } catch (e) {
-        fullError = e instanceof Error ? e.message : String(e);
+      if (left() < 50_000) fullError = "not enough time left this run";
+      else {
+        try {
+          const r = await listAll("");
+          for (const t of r.items) byId.set(Number(t.id), t);
+          total = r.total; didFull = true;
+        } catch (e) {
+          fullError = e instanceof Error ? e.message : String(e);
+        }
       }
     }
-    if (!full || fullError) {
-      const since = new Date(Date.now() - 2 * 86400_000).toLocaleDateString("en-CA", { timeZone: "Africa/Kigali" });
-      trips = (await listAll(`&date_from=${since}`)).items;
-      // Older trips we still have as in progress: read each one again.
-      const seen = new Set(trips.map((t) => Number(t.id)));
-      const { data: open } = await db.from("platform_trips").select("id").not("status", "in", "(completed,cancelled)").limit(60);
-      for (const o of open ?? []) {
-        if (seen.has(Number(o.id))) continue;
-        const one = await api(`/admin/trips/${o.id}`).catch(() => null);
-        if (one?.data) trips.push(one.data);
-      }
-    }
+    const trips = [...byId.values()];
 
     // Match to our own drivers (phone) and cars (plate).
     const [{ data: ds }, { data: vs }] = await Promise.all([
@@ -232,10 +254,10 @@ Deno.serve(async (req) => {
 
     await db.from("platform_sync_state").upsert({
       key: "trips", last_run_at: started, last_ok_at: new Date().toISOString(), last_changed: changed.length,
-      last_error: fullError ? `Full re-read failed (recent trips still synced): ${fullError}`.slice(0, 500) : null,
-      ...(full && !fullError ? { last_full_at: new Date().toISOString(), platform_total: total } : {}),
+      last_error: fullError ? `New trips synced; the full re-read failed: ${fullError}`.slice(0, 500) : null,
+      ...(didFull ? { last_full_at: new Date().toISOString(), platform_total: total } : {}),
     });
-    return json({ ok: true, full: full && !fullError, fullError, read: rows.length, changed: changed.length, new: changed.filter((r) => !existing.has(r.id)).length });
+    return json({ ok: true, full: didFull, fullError, since, read: rows.length, changed: changed.length, new: changed.filter((r) => !existing.has(r.id)).length });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await db.from("platform_sync_state").upsert({ key: "trips", last_run_at: started, last_error: msg.slice(0, 500) });
