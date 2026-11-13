@@ -51,7 +51,11 @@ async function api(method: string, path: string, body?: unknown, attempt = 0): P
       await new Promise((r) => setTimeout(r, 2 ** attempt * 2000));
       return api(method, path, body, attempt + 1);
     }
-    return { status: res.status, ok: res.ok, body: await res.json().catch(() => null) };
+    // Keep what the app answers even when it isn't JSON (an error page, plain text).
+    const text = await res.text().catch(() => "");
+    let parsed: Any = null;
+    try { parsed = text ? JSON.parse(text) : null; } catch { parsed = { message: text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300) }; }
+    return { status: res.status, ok: res.ok, body: parsed };
   } finally {
     clearTimeout(timer);
   }
@@ -99,7 +103,13 @@ const rosterOf = async (vehicleId: number): Promise<RosterEntry[]> => {
 };
 
 async function readApp() {
-  const companies = ((await get("/v2/fleet/companies?limit=100"))?.items ?? []) as AppCompany[];
+  const companies: AppCompany[] = [];
+  for (let skip = 0; skip < 2000; skip += 100) {
+    const d = await get(`/v2/fleet/companies?limit=100&skip=${skip}`);
+    const fresh = ((d?.items ?? []) as AppCompany[]).filter((c) => !companies.some((x) => x.id === c.id));
+    companies.push(...fresh);
+    if (!d?.has_next || !fresh.length) break;
+  }
   const vehicles: AppVehicle[] = [];
   for (let skip = 0; skip < 5000; skip += 200) {
     const d = await get(`/v2/admin/vehicles?limit=200&skip=${skip}`);
@@ -339,6 +349,15 @@ async function sync(db: Any) {
 
 // ------------------------------------------------------------------ actions
 interface Step { call: string; status: number; ok: boolean; message?: string }
+// When the app refuses a change: a server error (5xx) is the app's own fault,
+// so say so plainly, with what was sent, for whoever runs the app's server.
+function appFailed(r: ApiRes, what: string, sent: string): string {
+  if (r.status >= 500) {
+    const at = new Date().toLocaleString("en-GB", { timeZone: "Africa/Kigali", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    return `The Kivu Ride app's server failed while trying to ${what} (error ${said(r)}). Nothing is wrong on Kivu Daily's side and nothing was created. Send this to whoever runs the app's server (Baptiste): "${at} (Kigali): ${sent}".`;
+  }
+  return `The app refused to ${what}: ${said(r)}`;
+}
 class Stop extends Error {}
 
 async function act(db: Any, actor: string | null, body: Any) {
@@ -353,6 +372,12 @@ async function act(db: Any, actor: string | null, body: Any) {
     const { data } = await db.from("drivers").select("id, full_name, phone, phone_alt, email, license_number, license_expiry, vehicle_id, shift").eq("id", id).maybeSingle();
     if (!data) throw new Stop("This driver is not in Kivu Daily.");
     return data as Any;
+  };
+  // Leaving a company the driver is already out of is done, not a failure
+  // (the app answers 404 "No active membership").
+  const leaveCompany = async (cid: number, pid: number, what: string) => {
+    const r = await call("DELETE", `/v2/fleet/companies/${cid}/drivers/${pid}`, undefined, `Leave company #${cid}`);
+    if (r.status !== 404) need(r, what);
   };
   const appDriver = async (pid: number) => need(await call("GET", `/admin/drivers/${pid}`, undefined, "Read the driver in the app"), "Reading the driver").body?.data as AppDriver;
   const n = (x: unknown) => { const v = Number(x); if (!Number.isInteger(v) || v <= 0) throw new Stop("Missing or wrong id."); return v; };
@@ -498,7 +523,9 @@ async function act(db: Any, actor: string | null, body: Any) {
         return { ok: false, error: "Already in the app: link instead of creating.", ...result, steps };
       }
       const payload = { full_name: String(d.full_name).replace(/\s+/g, " ").trim(), email, phone, license_number: licence, license_expiry: `${expiry}T00:00:00Z` };
-      need(await call("POST", companyId ? `/v2/fleet/companies/${companyId}/drivers/register` : "/v2/drivers/admin/independent", payload, companyId ? `Create the driver in company #${companyId}` : "Create the driver (no fleet)"), "Creating the driver");
+      const path = companyId ? `/v2/fleet/companies/${companyId}/drivers/register` : "/v2/drivers/admin/independent";
+      const sent = await call("POST", path, payload, companyId ? `Create the driver in company #${companyId}` : "Create the driver (no fleet)");
+      if (!sent.ok && !(await findDrivers([phone])).length) throw new Stop(appFailed(sent, "create the driver", `POST ${path} for ${payload.full_name} (${payload.phone})`));
       const made = (await findDrivers([phone])).sort((x, y) => y.id - x.id)[0];
       if (!made) throw new Stop("Created, but the new account was not found to link: check \"To confirm\" after the next sync.");
       await linkDriver(d.id, made.id);
@@ -525,8 +552,10 @@ async function act(db: Any, actor: string | null, body: Any) {
         return { ok: false, error: "Already in the app: link instead of creating.", ...result, steps };
       }
       const payload = { plate: plateKey(v.plate_number), make: String(body.make).trim(), model: String(body.model).trim(), year, color: String(body.color).trim(), vehicle_type: "economy", seats: Number(body.seats) || 4, fuel_type: String(body.fuel_type || "electric") };
-      need(await call("POST", `/v2/admin/vehicles?fleet_company_id=${companyId}`, payload, `Create the car in company #${companyId}`), "Creating the car");
+      const sent = await call("POST", `/v2/admin/vehicles?fleet_company_id=${companyId}`, { ...payload, fleet_company_id: companyId }, `Create the car in company #${companyId}`);
+      // A server error can still have saved the car: look again before saying it failed.
       const made = (await findCars(v.plate_number))[0];
+      if (!sent.ok && !made) throw new Stop(appFailed(sent, "add the car", `POST /v2/admin/vehicles?fleet_company_id=${companyId} with ${JSON.stringify({ ...payload, fleet_company_id: companyId })}`));
       if (!made) throw new Stop("Created, but the new car was not found to link: check \"To confirm\" after the next sync.");
       await linkCar(v.id, made.id);
       await closeCase(body.case_id, `Created in the app (#${made.id})`);
@@ -546,7 +575,7 @@ async function act(db: Any, actor: string | null, body: Any) {
       const member = ((r.body?.data?.items ?? []) as AppDriver[]).some((x) => x.id === pid);
       if (!member) {
         const { data: m } = await db.from("platform_fleet_members").select("fleet_company_id").eq("platform_driver_id", pid).maybeSingle();
-        if (m && m.fleet_company_id !== car.fleet_company_id) need(await call("DELETE", `/v2/fleet/companies/${m.fleet_company_id}/drivers/${pid}`, undefined, `Leave company #${m.fleet_company_id}`), "Leaving the old company");
+        if (m && m.fleet_company_id !== car.fleet_company_id) await leaveCompany(m.fleet_company_id, pid, "Leaving the old company");
         need(await call("POST", `/v2/fleet/companies/${car.fleet_company_id}/drivers/direct-add-by-phone`, { phone: ad.phone }, `Join company #${car.fleet_company_id}`), "Joining the car's company");
       }
       // 2. On the car's roster (2 drivers at most).
@@ -587,7 +616,7 @@ async function act(db: Any, actor: string | null, body: Any) {
       const car = need(await call("GET", `/v2/admin/vehicles/${pvid}`, undefined, "Read the car in the app"), "Reading the car").body?.data as AppVehicle;
       if (car.active_assignment?.driver_id === pid) need(await call("POST", `/v2/admin/vehicles/${pvid}/unassign`, undefined, "Stop driving it now"), "Taking them off (refused during a trip)");
       if ((await rosterOf(pvid)).some((x) => x.driver_id === pid)) need(await call("DELETE", `/v2/admin/vehicles/${pvid}/dedicated-drivers/${pid}`, undefined, "Remove from the car's roster"), "Removing from the roster");
-      if (body.leave_company && car.fleet_company_id) need(await call("DELETE", `/v2/fleet/companies/${car.fleet_company_id}/drivers/${pid}`, undefined, `Leave company #${car.fleet_company_id}`), "Leaving the company");
+      if (body.leave_company && car.fleet_company_id) await leaveCompany(car.fleet_company_id, pid, "Leaving the company");
       await closeCase(body.case_id, `Taken off ${car.plate} in the app`);
       summary = `Driver #${pid} taken off ${car.plate} in the app${body.leave_company ? " and out of its company" : ""}`;
       break;
@@ -595,7 +624,7 @@ async function act(db: Any, actor: string | null, body: Any) {
     case "remove_from_company": {
       writes();
       const pid = n(body.platform_driver_id), cid = n(body.fleet_company_id);
-      need(await call("DELETE", `/v2/fleet/companies/${cid}/drivers/${pid}`, undefined, `Leave company #${cid}`), "Removing from the company");
+      await leaveCompany(cid, pid, "Removing from the company");
       await closeCase(body.case_id, `Removed from company #${cid} in the app`);
       summary = `Driver #${pid} removed from company #${cid} in the app (the account stays)`;
       break;
@@ -674,7 +703,7 @@ async function act(db: Any, actor: string | null, body: Any) {
         }
         for (const m of ((mem ?? []) as Any[]).filter((x) => x.platform_driver_id === pid)) {
           if (kindOf.get(m.fleet_company_id) === "operator") continue;
-          need(await call("DELETE", `/v2/fleet/companies/${m.fleet_company_id}/drivers/${pid}`, undefined, `Leave company #${m.fleet_company_id}`), "Removing from the company");
+          await leaveCompany(m.fleet_company_id, pid, "Removing from the company");
           done.push(`out of company #${m.fleet_company_id}`);
         }
       }

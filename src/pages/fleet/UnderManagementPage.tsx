@@ -405,8 +405,8 @@ function CaseCard({ c, d, canAct, open, finish, close }: { c: Case; d: Data; can
         break;
       case 'car_not_in_app':
         actions = <>
-          <B primary onClick={() => open(<PickAppCar d={d} kdCar={kdCar!} onClose={close} onPick={async (pvid) => { const r = await run('link_vehicle', { case_id: c.id, vehicle_id: c.vehicle_id, platform_vehicle_id: pvid }); await finish(r); return r; }} />)}><Link2 size={13} /> Link to an app car</B>
-          {kdCar && <B app onClick={() => open(<CreateCarModal kdCar={kdCar} d={d} companyId={(det.company_id as number | null) ?? null} caseId={c.id} onClose={close} onDone={finish} />)}><Plus size={13} /> Add to the app</B>}
+          {kdCar && <B primary app onClick={() => open(<CreateCarModal kdCar={kdCar} d={d} companyId={(det.company_id as number | null) ?? null} caseId={c.id} onClose={close} onDone={finish} />)}><Plus size={13} /> Add to the app</B>}
+          <B onClick={() => open(<PickAppCar d={d} kdCar={kdCar!} onClose={close} onPick={async (pvid) => { const r = await run('link_vehicle', { case_id: c.id, vehicle_id: c.vehicle_id, platform_vehicle_id: pvid }); await finish(r); return r; }} />)}><Link2 size={13} /> Already in the app under another plate? Link it</B>
         </>;
         break;
       case 'car_wrong_owner': {
@@ -586,7 +586,7 @@ function PickAppCar({ d, kdCar, onClose, onPick }: { d: Data; kdCar: KdCar; onCl
   const company = new Map(d.companies.map((c) => [c.id, c.name]));
   const items = d.appCars.filter((x) => !x.kivu_vehicle_id && x.status !== 'decommissioned').sort((a, b) => a.plate.localeCompare(b.plate));
   return (
-    <Modal open onClose={onClose} title={`Link ${kdCar.plate_number} to a car in the app`} subtitle="Cars of fleet companies in the app not linked to a Kivu Daily car." maxWidth="max-w-xl">
+    <Modal open onClose={onClose} title={`Link ${kdCar.plate_number} to a car in the app`} subtitle="Only when this same car is already in the app, for example with its plate typed differently (RAK 679 J and RAK679J). Linking tells Kivu Daily they are the same car; nothing changes in the app. A new car: use Add to the app." maxWidth="max-w-xl">
       <div className="space-y-3">
         <PickList items={items} keyOf={(x) => x.id} busy={busy} onPick={(x) => pick(x.id as never)} empty="Every fleet car in the app is already linked. Add this car to the app instead."
           render={(x) => <><b>{x.plate}</b> <span className="text-caption text-fg-muted">#{x.id}</span><span className="block text-caption text-fg-muted">{[x.make, x.model].filter(Boolean).join(' ')} · {x.fleet_company_id ? company.get(x.fleet_company_id) ?? '' : 'independent'}{x.current_driver_name ? ` · ${clean(x.current_driver_name)}` : ''}</span></>} />
@@ -626,12 +626,15 @@ function Duplicates({ r, onLink, what }: { r: Result | null; onLink: (id: number
 }
 
 function CompanySelect({ d, value, onChange, allowNone }: { d: Data; value: number | null; onChange: (v: number | null) => void; allowNone?: string }) {
-  // Managed companies, plus the one already chosen (e.g. the car's company), so what shows is what is sent.
-  const list = d.companies.filter((c) => c.kind === 'managed' || c.id === value);
+  // Every company in the app, grouped: the owners we manage first, then the others (operators, training and test).
+  const groups: [Company['kind'], string][] = [['managed', 'Owners we manage'], ['operator', 'Run their own drivers'], ['ignore', 'Training or test']];
   return (
     <select value={value ?? ''} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)} className="input">
       {allowNone ? <option value="">{allowNone}</option> : <option value="" disabled>Choose the owner's company</option>}
-      {list.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+      {groups.map(([k, label]) => {
+        const list = d.companies.filter((c) => c.kind === k).sort((a, b) => a.name.localeCompare(b.name));
+        return list.length ? <optgroup key={k} label={label}>{list.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup> : null;
+      })}
     </select>
   );
 }
