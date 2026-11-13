@@ -50,11 +50,11 @@ const MANAGED_STAGES = ['ready', 'active'];
 const KIND: Record<Company['kind'], string> = { managed: 'Owner: we manage its cars', operator: 'Runs its own drivers', ignore: 'Training or test (not managed)' };
 const CASE_GROUP: Record<string, 'drivers' | 'cars' | 'driving'> = {
   driver_not_in_app: 'drivers', phone_differs: 'drivers', name_differs: 'drivers', not_approved: 'drivers', driver_only_in_app: 'drivers', ended_still_in_app: 'drivers',
-  car_not_in_app: 'cars', car_only_in_app: 'cars', car_wrong_owner: 'cars', not_on_car_in_app: 'driving', extra_on_car_in_app: 'driving',
+  car_not_in_app: 'cars', car_only_in_app: 'cars', car_wrong_owner: 'cars', not_on_car_in_app: 'driving', extra_on_car_in_app: 'driving', not_driving_now: 'driving',
 };
 const CASE_LABEL: Record<string, string> = {
   driver_not_in_app: 'Not in the app', phone_differs: 'Phone differs', name_differs: 'Name differs', not_approved: 'Approval', driver_only_in_app: 'In the app only', ended_still_in_app: 'Contract ended',
-  car_not_in_app: 'Car not in the app', car_only_in_app: 'Car in the app only', car_wrong_owner: 'Owner differs', not_on_car_in_app: 'Not on the car in the app', extra_on_car_in_app: 'Extra on the car in the app',
+  car_not_in_app: 'Car not in the app', car_only_in_app: 'Car in the app only', car_wrong_owner: 'Owner differs', not_on_car_in_app: 'Not on the car in the app', extra_on_car_in_app: 'Extra on the car in the app', not_driving_now: 'Nobody driving it now',
 };
 const dur = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${min % 60 ? ` ${String(min % 60).padStart(2, '0')}` : ''}`);
 const ago = (iso: string | null, now: number) => { if (!iso) return '—'; const m = Math.round((now - Date.parse(iso)) / 60000); return m < 1 ? 'just now' : m >= 2880 ? `${Math.floor(m / 1440)} days ago` : `${dur(m)} ago`; };
@@ -423,6 +423,11 @@ function CaseCard({ c, d, canAct, open, finish, close }: { c: Case; d: Data; can
       case 'not_on_car_in_app':
         actions = <B primary app onClick={() => open(<PutOnCarModal c={c} kd={kd} onClose={close} onDone={finish} />)}><CarFront size={13} /> Put on the car in the app</B>;
         break;
+      case 'not_driving_now': {
+        const who = clean(String(det.driver ?? kd?.full_name ?? 'the driver'));
+        actions = <B primary app onClick={() => confirm(`Make ${who} the driver now`, <>In the Kivu Ride app, <b>{who}</b> becomes the driver of <b>{appCar?.plate ?? kdCar?.plate_number ?? 'the car'}</b> now, so the car and their profile show it. The app refuses this during a trip.</>, 'make_current', { case_id: c.id, platform_driver_id: c.platform_driver_id, platform_vehicle_id: c.platform_vehicle_id })}><CarFront size={13} /> Make {who} the driver now</B>;
+        break;
+      }
       case 'extra_on_car_in_app':
         actions = <>
           <B app onClick={() => open(<TakeOffModal c={c} appCar={appCar} kd={kd} onClose={close} onDone={finish} />)}><UserMinus size={13} /> Take off the car in the app</B>
@@ -700,7 +705,9 @@ function PutOnCarModal({ c, kd, onClose, onDone }: { c: Case; kd: KdDriver | nul
   const nowDriving = (det.now_driving as string | null) ?? null;
   const [label, setLabel] = useState(kd?.shift === 'night' ? 'night shift' : kd?.shift === 'full' ? 'day and night' : 'day shift');
   const [current, setCurrent] = useState(!nowDriving);
-  const [replace, setReplace] = useState(false);
+  // Kivu Daily has this driver on this car: they should be the one driving it
+  // now, so replacing whoever drives it starts ticked (refused during a trip).
+  const [replace, setReplace] = useState(!!nowDriving && !!kd && kd.vehicle_id === c.vehicle_id);
   const [busy, setBusy] = useState(false);
   const [r, setR] = useState<Result | null>(null);
   const moving = det.member_of && det.member_of !== det.car_company;

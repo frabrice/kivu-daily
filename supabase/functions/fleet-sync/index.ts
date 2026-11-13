@@ -275,6 +275,17 @@ async function sync(db: Any) {
         kd_value: kd ? `${nm(kd)} · ${kd.contract_status === "ended" ? "contract ended" : kd.vehicle_id ? `on ${kdCar.get(kd.vehicle_id)?.plate_number ?? "another car"}` : "no car"}` : "Not in Kivu Daily", app_value: c.current_driver_id === pid ? "Driving it now" : `On its roster${r?.label ? ` (${r.label})` : ""}`,
         details: { driving_now: c.current_driver_id === pid, on_roster: !!r, company: companyName(c.fleet_company_id) } });
     }
+    // ...and when one of ours has the car alone (both shifts, Solo car, or the
+    // only driver on it) and is on its roster, the app should show them driving
+    // it now. Shared day/night cars are left out: between shifts nobody drives.
+    if (!c.current_driver_id && ours.length === 1) {
+      const d = ours[0];
+      const a = accountOf.get(d.id);
+      if (a && !a.is_rejected && a.is_approved !== false && (c.roster as RosterEntry[]).some((r) => r.driver_id === a.id))
+        cases.push({ key: `not_driving:${c.id}:${a.id}`, kind: "not_driving_now", title: `Nobody is driving ${v.plate_number} in the app now`, driver_id: d.id, vehicle_id: v.id, platform_driver_id: a.id, platform_vehicle_id: c.id,
+          kd_value: `${nm(d)} · ${d.shift === "day" ? "day" : d.shift === "night" ? "night" : "the whole car"}`, app_value: `${nm(a)} is on its roster, not driving it now`,
+          details: { shift: d.shift, driver: nm(a), company: companyName(c.fleet_company_id) } });
+    }
   }
 
   const onManagedCar = new Set<number>();
@@ -552,6 +563,22 @@ async function act(db: Any, actor: string | null, body: Any) {
       }
       await closeCase(body.case_id, `Put on ${car.plate} in the app`);
       summary = `${nmTrim(ad.full_name)} put on ${car.plate} in the app${label ? ` (${label})` : ""}.${note}`;
+      break;
+    }
+    case "make_current": {
+      writes();
+      const pid = n(body.platform_driver_id), pvid = n(body.platform_vehicle_id);
+      const car = need(await call("GET", `/v2/admin/vehicles/${pvid}`, undefined, "Read the car in the app"), "Reading the car").body?.data as AppVehicle;
+      const ad = await appDriver(pid);
+      if (car.active_assignment?.driver_id === pid) {
+        await closeCase(body.case_id, `Already driving ${car.plate} in the app`);
+        summary = `${nmTrim(ad.full_name)} was already driving ${car.plate} in the app.`;
+        break;
+      }
+      if (car.active_assignment && !body.replace) throw new Stop(`${car.active_assignment.driver_name ?? "Someone"} is driving ${car.plate} in the app now.`);
+      need(await call("POST", `/v2/admin/vehicles/${pvid}/assign`, { driver_id: pid, replace: !!car.active_assignment }, "Make them the car's driver now"), "Making them the driver (refused during a trip)");
+      await closeCase(body.case_id, `Driving ${car.plate} in the app now`);
+      summary = `${nmTrim(ad.full_name)} is now driving ${car.plate} in the app.`;
       break;
     }
     case "take_off_car": {
