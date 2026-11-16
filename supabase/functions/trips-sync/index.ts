@@ -35,7 +35,9 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 const cronSecret = Deno.env.get("NOTIFICATIONS_CRON_SECRET");
-const apiKey = Deno.env.get("KIVURIDE_API_KEY");
+// 16 Nov 2026: the old read key (KIVURIDE_API_KEY) was revoked by the app on
+// 13 Nov; use the live key first, as Under Management (fleet-sync) does.
+const apiKey = Deno.env.get("KIVURIDE_LIVE_API_KEY") || Deno.env.get("KIVURIDE_API_KEY");
 const apiBase = Deno.env.get("KIVURIDE_API_URL") || "https://kivuride.onrender.com";
 
 const FINAL = new Set(["completed", "cancelled"]);
@@ -178,7 +180,7 @@ Deno.serve(async (req) => {
     const slug = (p?.department as { slug?: string } | null)?.slug ?? "";
     if (!p?.is_active || !(p.role === "managing_director" || CAN_SEE.includes(slug))) return json({ error: "Unauthorized" }, 401);
   }
-  if (!apiKey) return json({ error: "KIVURIDE_API_KEY is not set" }, 500);
+  if (!apiKey) return json({ error: "KIVURIDE_LIVE_API_KEY is not set" }, 500);
 
   const started = new Date().toISOString();
   deadline = Date.now() + 115_000;
