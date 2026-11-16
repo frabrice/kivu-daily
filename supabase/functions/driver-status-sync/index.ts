@@ -70,12 +70,13 @@ async function api(path: string, attempt = 0): Promise<Record<string, unknown>> 
 
 async function allDrivers(): Promise<Upstream[]> {
   const out: Upstream[] = [];
-  for (let page = 1; page <= 50; page++) {
-    const body = await api(`/admin/drivers?limit=${PAGE}&page=${page}`);
+  // 16 Nov 2026: the app's lists now page with skip & limit (it refuses "page" with 422).
+  for (let skip = 0; skip < 50 * PAGE; skip += PAGE) {
+    const body = await api(`/admin/drivers?limit=${PAGE}&skip=${skip}`);
     const data = body?.data as { items?: Upstream[]; has_next?: boolean } | undefined;
     if (!data || !Array.isArray(data.items)) throw new Error("Unexpected response from /admin/drivers");
     out.push(...data.items);
-    if (!data.has_next) break;
+    if (!data.has_next || !data.items.length) break;
   }
   // The list can reorder while we page through it (drivers going online): keep one per id.
   return [...new Map(out.map((d) => [d.id, d])).values()];

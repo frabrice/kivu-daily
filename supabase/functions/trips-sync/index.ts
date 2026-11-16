@@ -80,12 +80,14 @@ async function api(path: string, attempt = 0): Promise<Trip> {
 async function listAll(query: string): Promise<{ items: Trip[]; total: number }> {
   const items: Trip[] = [];
   let total = 0;
-  for (let page = 1; page <= 200; page++) {
-    const body = await api(`/admin/trips?limit=${PAGE}&page=${page}${query}`);
+  // 16 Nov 2026: the app's lists now page with skip & limit (it refuses "page" with 422).
+  for (let skip = 0; skip < 200 * PAGE; skip += PAGE) {
+    const body = await api(`/admin/trips?limit=${PAGE}&skip=${skip}${query}`);
     const data = body?.data ?? {};
-    items.push(...(data.items ?? []));
+    const got = data.items ?? [];
+    items.push(...got);
     total = data.total ?? items.length;
-    if (!data.has_next) break;
+    if (!data.has_next || !got.length) break;
   }
   return { items, total };
 }

@@ -90,10 +90,11 @@ interface RosterEntry { driver_id: number; name: string | null; phone: string | 
 
 async function pagedDrivers(query: string): Promise<AppDriver[]> {
   const out: AppDriver[] = [];
-  for (let page = 1; page <= 50; page++) {
-    const d = await get(`/admin/drivers?limit=100&page=${page}${query}`);
+  // 16 Nov 2026: the app's lists now page with skip & limit (it refuses "page" with 422).
+  for (let skip = 0; skip < 5000; skip += 100) {
+    const d = await get(`/admin/drivers?limit=100&skip=${skip}${query}`);
     out.push(...(d?.items ?? []));
-    if (!d?.has_next) break;
+    if (!d?.has_next || !d?.items?.length) break;
   }
   return out;
 }
