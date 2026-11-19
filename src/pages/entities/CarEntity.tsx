@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Banknote, Calendar, Car, CircleSlash, FileWarning, Gauge, History, LayoutGrid, Pencil, Truck, Users2, Wallet, Wrench } from 'lucide-react';
+import { Banknote, Calendar, Car, CircleSlash, FileSignature, FileWarning, Gauge, History, LayoutGrid, Pencil, Truck, Users2, Wallet, Wrench } from 'lucide-react';
 import { EntityViewProps } from '../../os/peek';
 import { EntityLink, useEntityMeta } from '../../os/EntityLink';
 import { useAuth } from '../../lib/auth';
@@ -11,6 +11,8 @@ import { addDays, carDay, CarDayState, PerfData, today } from '../../lib/perform
 import { Box, Details, EmptyState, Heatmap, Label, ObjectLayout, PageHeader, StatCard, StatGrid, Timeline, TimelineItem, UnderlineTabs, rwf } from '../../ui/kit';
 import VehicleDrawer from '../../components/fleet/VehicleDrawer';
 import CarDriverHistory from '../../components/fleet/CarDriverHistory';
+import { AddLegalDocModal, LegalDocsBox } from '../../components/legal/LegalDocFields';
+import { missingInspection, useLegalDocs } from '../../lib/legalDocs';
 
 type Tab = 'overview' | 'money';
 const COLOR: Record<CarDayState | 'none', string> = { working: '#2a78d6', unpaid: '#eb6834', paused: '#1baf7a', rest: 'rgb(var(--c-line-strong))', no_driver: '#a3a3a3', none: 'rgb(var(--c-line-muted))' };
@@ -27,6 +29,10 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
   const [editing, setEditing] = useState(false);
   const canEdit = canEditFleet(profile);
   const isMoneyPerson = profile?.role === 'managing_director' || profile?.department?.slug === 'finance';
+  // Kivu Ride's inspection document: seen by Fleet, IT, Finance and the MD (as all contract papers).
+  const seesDocs = profile?.role === 'managing_director' || ['fleet', 'it', 'finance'].includes(profile?.department?.slug ?? '');
+  const legal = useLegalDocs();
+  const [addingInspection, setAddingInspection] = useState(false);
   useEntityMeta('car', id, mode, car?.plate_number, [car?.make, car?.model].filter(Boolean).join(' '));
 
   const money = useQuery({
@@ -57,6 +63,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
   const noDriver = days.filter((d) => d.state === 'no_driver').length;
   const garage = days.filter((d) => onCar.some((dr) => ['garage', 'accident'].includes(pauseOn(dr.pauses, d.day)?.reason ?? ''))).length;
   const collected30 = deposits.filter((x) => onCar.some((d) => d.id === x.driver_id) && x.paid_date > addDays(t, -30)).reduce((s, x) => s + Number(x.amount), 0);
+  const noInspection = seesDocs && !legal.loading && missingInspection(id, legal.docs);
   const expiry = car.rura_license_expiry_date;
   const expired = !!expiry && expiry < t;
   const expiresSoon = !!expiry && !expired && expiry <= addDays(t, 30);
@@ -77,7 +84,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
   const header = (
     <PageHeader
       avatar={<span className="w-11 h-11 rounded-lg bg-surface-2 border border-line flex items-center justify-center shrink-0"><Car size={20} className="text-fg-muted" /></span>}
-      title={<span className="font-mono">{car.plate_number}</span>} labels={<>{status}{expired && <Label tone="danger" icon={FileWarning}>Licence expired</Label>}{expiresSoon && <Label tone="attention" icon={FileWarning}>Licence expires soon</Label>}</>}
+      title={<span className="font-mono">{car.plate_number}</span>} labels={<>{status}{expired && <Label tone="danger" icon={FileWarning}>Licence expired</Label>}{expiresSoon && <Label tone="attention" icon={FileWarning}>Licence expires soon</Label>}{noInspection && <Label tone="danger" icon={FileSignature}>Inspection missing</Label>}</>}
       meta={<>
         <span>{[car.make, car.model, car.color].filter(Boolean).join(' · ') || 'No make/model'}</span>
         {owner && <span>Owner <EntityLink type="owner" id={owner.id} label={owner.full_name} /></span>}
@@ -140,11 +147,19 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
     </Box>
   );
 
+  const inspection = seesDocs && (
+    <Box title="Inspection" icon={FileSignature}>
+      <LegalDocsBox docs={legal.docs.filter((x) => x.vehicle_id === id)} missing={noInspection ? 'vehicle_inspection' : null} canAdd={canEdit}
+        addKinds={noInspection ? [] : ['vehicle_inspection']} onAdd={() => setAddingInspection(true)} empty="No inspection document yet." />
+    </Box>
+  );
+  const inspectionModal = addingInspection && <AddLegalDocModal kind="vehicle_inspection" vehicleId={id} name={car.plate_number} onClose={() => setAddingInspection(false)} onSaved={legal.reload} />;
+
   const history = <CarDriverHistory carId={id} drivers={drivers} vehicles={vehicles} contractEvents={contractEvents} compact={mode === 'peek'} />;
 
   const drawer = editing && <VehicleDrawer vehicle={car} startEditing canEdit={canEdit} onClose={() => setEditing(false)} onSaved={reload} onCreated={() => undefined} />;
 
-  if (mode === 'peek') return <div className="p-4 space-y-4">{header}{stats}{driversBox}{history}{calendar}{side}{drawer}</div>;
+  if (mode === 'peek') return <div className="p-4 space-y-4">{header}{stats}{driversBox}{history}{calendar}{side}{inspection}{drawer}{inspectionModal}</div>;
 
   const ownerIn = tx.filter((x) => x.type === 'vehicle_owner_payment');
   return (
@@ -154,7 +169,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
         { key: 'overview', label: 'Overview', icon: LayoutGrid },
         ...(isMoneyPerson ? [{ key: 'money' as const, label: 'Money', icon: Banknote, count: tx.length }] : []),
       ]} />
-      {tab === 'overview' && <ObjectLayout side={side} main={<>{stats}{driversBox}{history}{calendar}<Box title="Activity" icon={History}><Timeline items={timeline} /></Box></>} />}
+      {tab === 'overview' && <ObjectLayout side={<div className="space-y-4">{side}{inspection}</div>} main={<>{stats}{driversBox}{history}{calendar}<Box title="Activity" icon={History}><Timeline items={timeline} /></Box></>} />}
       {tab === 'money' && (
         <div className="space-y-4">
           <StatGrid cols={3}>
@@ -184,6 +199,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
         </div>
       )}
       {drawer}
+      {inspectionModal}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Plus, Trash2, Pencil, X } from 'lucide-react';
 import { supabase, Vehicle, RuraLicenseStatus } from '../../lib/supabase';
-import { useAuth } from '../../lib/auth';
-import { timeAgo, dateStr, addDays } from '../../lib/utils';
+import { timeAgo, dateStr, addDays, todayStr } from '../../lib/utils';
+import { LegalDraft, draftError, emptyDraft, uploadDraft } from '../../lib/legalDocs';
+import { LegalDocFields } from '../legal/LegalDocFields';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 
@@ -21,7 +22,6 @@ export default function VehicleDrawer({
   onSaved: () => void;
   onCreated?: (vehicle: Vehicle) => void;
 }) {
-  const { profile } = useAuth();
   const [editing, setEditing] = useState(startEditing && canEdit);
   const [plateNumber, setPlateNumber] = useState(vehicle?.plate_number ?? '');
   const [make, setMake] = useState(vehicle?.make ?? '');
@@ -37,6 +37,11 @@ export default function VehicleDrawer({
   const [ruraExpiryDate, setRuraExpiryDate] = useState(vehicle?.rura_license_expiry_date ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // A new car comes with Kivu Ride's inspection document (19 Nov 2026),
+  // saved in the same step. The id is fixed up front so the file is filed under it.
+  const [newId] = useState(() => crypto.randomUUID());
+  const [inspection, setInspection] = useState<LegalDraft>(emptyDraft(todayStr()));
+  const inspectionError = vehicle ? null : draftError('vehicle_inspection', inspection);
 
   const addDoc = () => setDocuments((d) => [...d, '']);
   const updateDoc = (i: number, text: string) => setDocuments((d) => d.map((v, idx) => (idx === i ? text : v)));
@@ -74,7 +79,11 @@ export default function VehicleDrawer({
       setSaving(false);
       if (err) { setError(err.message); return; }
     } else {
-      const { data, error: err } = await supabase.from('vehicles').insert({ ...payload, created_by: profile!.id }).select().single();
+      const up = await uploadDraft('vehicle_inspection', newId, inspection);
+      if ('error' in up) { setSaving(false); setError(up.error); return; }
+      const fields: Record<string, unknown> = { ...payload };
+      delete fields.updated_at;
+      const { data, error: err } = await supabase.rpc('create_vehicle_with_inspection', { p: { ...fields, id: newId }, d: up.doc });
       setSaving(false);
       if (err) { setError(err.message); return; }
       if (data) onCreated?.(data as Vehicle);
@@ -193,6 +202,8 @@ export default function VehicleDrawer({
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="Condition, mileage, anything worth remembering…" />
         </div>
 
+        {!vehicle && editing && <LegalDocFields kind="vehicle_inspection" draft={inspection} onChange={setInspection} title="Kivu Ride inspection document *" />}
+
         {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 
         {editing ? (
@@ -204,7 +215,7 @@ export default function VehicleDrawer({
             ) : <span />}
             <div className="flex gap-2">
               <button onClick={() => (vehicle ? setEditing(false) : onClose())} className="btn-ghost">Cancel</button>
-              <button onClick={save} disabled={saving || !plateNumber.trim()} className="btn-primary disabled:opacity-50">
+              <button onClick={save} disabled={saving || !plateNumber.trim() || !!inspectionError} title={inspectionError ?? undefined} className="btn-primary disabled:opacity-50">
                 {saving ? 'Saving…' : vehicle ? 'Save Changes' : 'Add Vehicle'}
               </button>
             </div>

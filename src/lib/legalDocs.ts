@@ -4,12 +4,13 @@ import { supabase, Driver, Vehicle } from './supabase';
 // Contract documents (MD, 15 Oct 2026): every driver on a car has their
 // signed and stamped contract, every ended contract its termination
 // letter, every shift change its amendment, every owner whose car we
-// manage their management agreement. Files live in the private
+// manage their management agreement; and (19 Nov 2026) every car its Kivu
+// Ride inspection document, uploaded when the car is added. Files live in the private
 // 'legal-docs' bucket; rows in contract_documents.
 
-export type LegalKind = 'driver_contract' | 'driver_contract_amendment' | 'driver_termination_letter' | 'owner_management_agreement';
+export type LegalKind = 'driver_contract' | 'driver_contract_amendment' | 'driver_termination_letter' | 'owner_management_agreement' | 'vehicle_inspection';
 export interface LegalDoc {
-  id: string; kind: LegalKind; driver_id: string | null; owner_id: string | null; contract_event_id: string | null;
+  id: string; kind: LegalKind; driver_id: string | null; owner_id: string | null; vehicle_id: string | null; contract_event_id: string | null;
   period_start: string | null; document_date: string; signed: boolean; stamped: boolean; delivered_how: string | null;
   file_path: string; file_name: string; notes: string | null; uploaded_by: string | null; uploaded_at: string;
 }
@@ -19,6 +20,7 @@ export const LEGAL_KIND: Record<LegalKind, { label: string; plural: string; seal
   driver_contract_amendment: { label: 'Contract amendment', plural: 'Contract amendments', sealed: true, missing: 'Amendment missing' },
   driver_termination_letter: { label: 'Termination letter', plural: 'Driver termination letters', sealed: false, missing: 'Termination letter missing' },
   owner_management_agreement: { label: 'Management agreement', plural: 'Owner management agreements', sealed: true, missing: 'Agreement missing' },
+  vehicle_inspection: { label: 'Inspection document', plural: 'Car inspections', sealed: false, missing: 'Inspection missing' },
 };
 
 export const DELIVERED_HOW = [
@@ -109,6 +111,10 @@ export function missingForDriver(d: Driver, docs: LegalDoc[]): LegalKind | null 
 // An owner with a car under management needs their management agreement.
 export function ownerNeedsAgreement(ownerId: string, vehicles: Pick<Vehicle, 'owner_id' | 'operation_start_date'>[]) {
   return vehicles.some((v) => v.owner_id === ownerId && !!v.operation_start_date);
+}
+// Every car we manage needs Kivu Ride's inspection document.
+export function missingInspection(vehicleId: string, docs: Pick<LegalDoc, 'kind' | 'vehicle_id'>[]) {
+  return !docs.some((x) => x.vehicle_id === vehicleId && x.kind === 'vehicle_inspection');
 }
 export function missingForOwner(ownerId: string, vehicles: Pick<Vehicle, 'owner_id' | 'operation_start_date'>[], docs: LegalDoc[]) {
   return ownerNeedsAgreement(ownerId, vehicles) && !docs.some((x) => x.owner_id === ownerId && x.kind === 'owner_management_agreement');

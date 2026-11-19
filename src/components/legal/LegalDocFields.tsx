@@ -53,17 +53,19 @@ export function LegalDocFields({ kind, draft, onChange, title }: { kind: LegalKi
 }
 
 // Add a document on its own - a missing contract, letter or agreement.
-export function AddLegalDocModal({ kind, driverId, ownerId, name, onClose, onSaved }: {
-  kind: LegalKind; driverId?: string; ownerId?: string; name: string; onClose: () => void; onSaved: () => void;
+export function AddLegalDocModal({ kind, driverId, ownerId, vehicleId, name, onClose, onSaved }: {
+  kind: LegalKind; driverId?: string; ownerId?: string; vehicleId?: string; name: string; onClose: () => void; onSaved: () => void;
 }) {
   const [draft, setDraft] = useState<LegalDraft>(emptyDraft(todayStr()));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const save = async () => {
     setBusy(true); setError('');
-    const up = await uploadDraft(kind, (driverId ?? ownerId)!, draft);
+    const up = await uploadDraft(kind, (driverId ?? ownerId ?? vehicleId)!, draft);
     if ('error' in up) { setBusy(false); setError(up.error); return; }
-    const { error: err } = ownerId
+    const { error: err } = vehicleId
+      ? await supabase.rpc('add_vehicle_inspection', { p_vehicle: vehicleId, d: up.doc })
+      : ownerId
       ? await supabase.rpc('add_owner_agreement', { p_owner: ownerId, d: up.doc })
       : await supabase.rpc('add_driver_document', { p_driver: driverId, p_kind: kind, d: up.doc });
     setBusy(false);
@@ -86,8 +88,8 @@ export function AddLegalDocModal({ kind, driverId, ownerId, name, onClose, onSav
 }
 
 // A driver's or owner's contract documents, with what's missing on top.
-export function LegalDocsBox({ docs, missing, canAdd, addKinds, onAdd }: {
-  docs: LegalDoc[]; missing: LegalKind | null; canAdd: boolean; addKinds: LegalKind[]; onAdd: (k: LegalKind) => void;
+export function LegalDocsBox({ docs, missing, canAdd, addKinds, onAdd, empty = 'No contract documents yet.' }: {
+  docs: LegalDoc[]; missing: LegalKind | null; canAdd: boolean; addKinds: LegalKind[]; onAdd: (k: LegalKind) => void; empty?: string;
 }) {
   const [error, setError] = useState('');
   const sorted = [...docs].sort((a, b) => b.document_date.localeCompare(a.document_date));
@@ -96,7 +98,7 @@ export function LegalDocsBox({ docs, missing, canAdd, addKinds, onAdd }: {
       {missing && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-danger/40 bg-danger-muted px-3 py-2.5">
           <Label tone="danger">{LEGAL_KIND[missing].missing}</Label>
-          <span className="text-small flex-1 min-w-[200px]">{missing === 'driver_termination_letter' ? 'The contract ended without its termination letter on file.' : `The ${LEGAL_KIND[missing].sealed ? 'signed and stamped ' : ''}${LEGAL_KIND[missing].label.toLowerCase()} isn't on file.`}</span>
+          <span className="text-small flex-1 min-w-[200px]">{missing === 'driver_termination_letter' ? 'The contract ended without its termination letter on file.' : missing === 'vehicle_inspection' ? "Kivu Ride's inspection document for this car isn't on file." : `The ${LEGAL_KIND[missing].sealed ? 'signed and stamped ' : ''}${LEGAL_KIND[missing].label.toLowerCase()} isn't on file.`}</span>
           {canAdd && <button onClick={() => onAdd(missing)} className="btn-primary text-caption"><Plus size={13} /> Add it now</button>}
         </div>
       )}
@@ -114,7 +116,7 @@ export function LegalDocsBox({ docs, missing, canAdd, addKinds, onAdd }: {
             </li>
           ))}
         </ul>
-      ) : !missing && <p className="text-small text-fg-muted">No contract documents yet.</p>}
+      ) : !missing && <p className="text-small text-fg-muted">{empty}</p>}
       {canAdd && (
         <div className="flex flex-wrap gap-1.5">
           {addKinds.map((k) => <button key={k} onClick={() => onAdd(k)} className="btn-secondary text-caption"><Plus size={13} /> {LEGAL_KIND[k].label}</button>)}

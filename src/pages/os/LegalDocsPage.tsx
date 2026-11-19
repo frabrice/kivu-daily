@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ExternalLink, FileSignature, Plus, Search } from 'lucide-react';
 import { supabase, Driver, Vehicle } from '../../lib/supabase';
 import {
-  DELIVERED_HOW, LEGAL_KIND, LegalDoc, LegalKind, missingForDriver, missingForOwner, openLegalDoc, useLegalDocs,
+  DELIVERED_HOW, LEGAL_KIND, LegalDoc, LegalKind, missingForDriver, missingForOwner, missingInspection, openLegalDoc, useLegalDocs,
 } from '../../lib/legalDocs';
 import { useAccess } from '../../os/access';
 import { EntityLink } from '../../os/EntityLink';
@@ -13,11 +13,12 @@ import { Pager, usePaged } from '../../ui/Pager';
 
 // Contract papers in one place: what's missing first, then every driver
 // contract, amendment, termination letter and owner agreement with its
-// dates. Fleet sees the drivers' side, Finance the owners', the MD both.
+// dates. Fleet sees the drivers' side (and the cars' inspection documents),
+// Finance the owners', the MD both.
 
 type Scope = 'drivers' | 'owners' | 'all';
 type Tab = 'missing' | LegalKind;
-interface Missing { key: string; kind: LegalKind; driverId?: string; ownerId?: string; name: string; context: string }
+interface Missing { key: string; kind: LegalKind; driverId?: string; ownerId?: string; vehicleId?: string; name: string; context: string }
 const day = (d: string | null) => (d ? new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 const th = 'px-3 py-2 font-medium whitespace-nowrap';
 const td = 'px-3 py-2 whitespace-nowrap';
@@ -61,16 +62,24 @@ export function LegalDocsBoard({ scope }: { scope: Scope }) {
         context: kind === 'driver_termination_letter' ? `Contract from ${day(d.start_date)} ended` : `${d.vehicle?.plate_number ?? 'On a car'} · since ${day(d.start_date)}`,
       });
     }
+    if (withDrivers) for (const v of vehicles) {
+      if (missingInspection(v.id, docs)) out.push({ key: `v${v.id}`, kind: 'vehicle_inspection', vehicleId: v.id, name: v.plate_number, context: [v.make, v.model].filter(Boolean).join(' ') || 'Car' });
+    }
     if (withOwners) for (const o of owners) {
       if (missingForOwner(o.id, vehicles, docs)) out.push({ key: `o${o.id}`, kind: 'owner_management_agreement', ownerId: o.id, name: o.full_name, context: vehicles.filter((v) => v.owner_id === o.id).map((v) => v.plate_number).join(', ') });
     }
     return out.sort((x, y) => x.kind.localeCompare(y.kind) || x.name.localeCompare(y.name));
   }, [drivers, owners, vehicles, docs, withDrivers, withOwners]);
 
-  const kinds: LegalKind[] = scope === 'drivers' ? ['driver_contract', 'driver_contract_amendment', 'driver_termination_letter']
+  const kinds: LegalKind[] = scope === 'drivers' ? ['driver_contract', 'driver_contract_amendment', 'driver_termination_letter', 'vehicle_inspection']
     : scope === 'owners' ? ['owner_management_agreement']
-    : ['driver_contract', 'driver_contract_amendment', 'driver_termination_letter', 'owner_management_agreement'];
-  const nameOf = (x: LegalDoc) => (x.driver_id ? drivers.find((d) => d.id === x.driver_id)?.full_name : owners.find((o) => o.id === x.owner_id)?.full_name) ?? '—';
+    : ['driver_contract', 'driver_contract_amendment', 'driver_termination_letter', 'owner_management_agreement', 'vehicle_inspection'];
+  const nameOf = (x: LegalDoc) => (x.driver_id ? drivers.find((d) => d.id === x.driver_id)?.full_name
+    : x.vehicle_id ? vehicles.find((v) => v.id === x.vehicle_id)?.plate_number
+    : owners.find((o) => o.id === x.owner_id)?.full_name) ?? '—';
+  const linkOf = (x: { driverId?: string; ownerId?: string; vehicleId?: string }, label: string) => x.driverId ? <EntityLink type="driver" id={x.driverId} label={label} />
+    : x.vehicleId ? <EntityLink type="car" id={x.vehicleId} label={label} className="font-mono" />
+    : <EntityLink type="owner" id={x.ownerId!} label={label} />;
   const needle = q.trim().toLowerCase();
   const missingRows = missing.filter((m) => !needle || m.name.toLowerCase().includes(needle) || m.context.toLowerCase().includes(needle));
   const docRows = tab === 'missing' ? [] : docs.filter((x) => x.kind === tab && (!needle || nameOf(x).toLowerCase().includes(needle)));
@@ -94,10 +103,10 @@ export function LegalDocsBoard({ scope }: { scope: Scope }) {
                 <thead><tr className="text-caption text-fg-muted text-left bg-inset">{['Name', 'Missing', 'Details', ''].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
                 <tbody>
                   {pagedMissing.rows.map((m) => {
-                    const can = m.ownerId ? canAddOwnerDocs : canAddDriverDocs;
+                    const can = m.ownerId ? canAddOwnerDocs : canAddDriverDocs; // cars: Fleet, IT, MD (as drivers)
                     return (
                       <tr key={m.key} className="border-t border-line-muted">
-                        <td className={td}>{m.driverId ? <EntityLink type="driver" id={m.driverId} label={m.name} /> : <EntityLink type="owner" id={m.ownerId!} label={m.name} />}</td>
+                        <td className={td}>{linkOf(m, m.name)}</td>
                         <td className={td}><Label tone="danger" icon={FileSignature}>{LEGAL_KIND[m.kind].missing}</Label></td>
                         <td className={`${td} text-caption text-fg-muted`}>{m.context}</td>
                         <td className={`${td} text-right`}>{can && <button onClick={() => setAdding(m)} className="btn-primary text-caption"><Plus size={13} /> Add</button>}</td>
@@ -114,14 +123,14 @@ export function LegalDocsBoard({ scope }: { scope: Scope }) {
         <>
           <div className="card overflow-x-auto p-0">
             <table className="w-full text-body min-w-[760px]">
-              <thead><tr className="text-caption text-fg-muted text-left bg-inset">{['Name', 'Date on document', 'Contract from', tab === 'driver_termination_letter' ? 'Given' : 'Signed & stamped', 'Added', ''].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
+              <thead><tr className="text-caption text-fg-muted text-left bg-inset">{[tab === 'vehicle_inspection' ? 'Car' : 'Name', 'Date on document', tab === 'vehicle_inspection' ? 'Note' : 'Contract from', tab === 'driver_termination_letter' ? 'Given' : tab === 'vehicle_inspection' ? '' : 'Signed & stamped', 'Added', ''].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
               <tbody>
                 {pagedDocs.rows.map((x) => (
                   <tr key={x.id} className="border-t border-line-muted">
-                    <td className={td}>{x.driver_id ? <EntityLink type="driver" id={x.driver_id} label={nameOf(x)} /> : <EntityLink type="owner" id={x.owner_id!} label={nameOf(x)} />}</td>
+                    <td className={td}>{linkOf({ driverId: x.driver_id ?? undefined, ownerId: x.owner_id ?? undefined, vehicleId: x.vehicle_id ?? undefined }, nameOf(x))}</td>
                     <td className={`${td} tabular-nums`}>{day(x.document_date)}</td>
-                    <td className={`${td} tabular-nums`}>{day(x.period_start)}</td>
-                    <td className={td}>{x.kind === 'driver_termination_letter' ? <span className="text-caption">{DELIVERED_HOW.find((o) => o.key === x.delivered_how)?.label ?? '—'}</span> : x.signed && x.stamped ? <Label tone="success">Yes</Label> : <Label tone="danger">No</Label>}</td>
+                    <td className={`${td} tabular-nums`}>{x.kind === 'vehicle_inspection' ? <span className="text-caption text-fg-muted">{x.notes ?? '—'}</span> : day(x.period_start)}</td>
+                    <td className={td}>{x.kind === 'vehicle_inspection' ? null : x.kind === 'driver_termination_letter' ? <span className="text-caption">{DELIVERED_HOW.find((o) => o.key === x.delivered_how)?.label ?? '—'}</span> : x.signed && x.stamped ? <Label tone="success">Yes</Label> : <Label tone="danger">No</Label>}</td>
                     <td className={`${td} text-caption text-fg-muted tabular-nums`}>{day(x.uploaded_at.slice(0, 10))}</td>
                     <td className={`${td} text-right`}><button onClick={async () => setError((await openLegalDoc(x.file_path)) ?? '')} className="btn-ghost text-caption"><ExternalLink size={13} /> Open</button></td>
                   </tr>
@@ -133,7 +142,7 @@ export function LegalDocsBoard({ scope }: { scope: Scope }) {
         </>
       ) : <div className="card p-10 text-center text-body text-fg-muted">{needle ? 'No match.' : `No ${LEGAL_KIND[tab].plural.toLowerCase()} yet.`}</div>}
 
-      {adding && <AddLegalDocModal kind={adding.kind} driverId={adding.driverId} ownerId={adding.ownerId} name={adding.name} onClose={() => setAdding(null)} onSaved={() => setAdding(null)} />}
+      {adding && <AddLegalDocModal kind={adding.kind} driverId={adding.driverId} ownerId={adding.ownerId} vehicleId={adding.vehicleId} name={adding.name} onClose={() => setAdding(null)} onSaved={() => setAdding(null)} />}
     </div>
   );
 }
@@ -142,7 +151,7 @@ export function FleetContractsPage() {
   usePageTitle('Contracts');
   return (
     <div className="animate-fade-in">
-      <PageHeader icon={FileSignature} title="Contracts" subtitle="Every driver on a car needs their signed and stamped contract; every ended contract its termination letter." />
+      <PageHeader icon={FileSignature} title="Contracts" subtitle="Every driver on a car needs their signed and stamped contract; every ended contract its termination letter; every car its Kivu Ride inspection document." />
       <LegalDocsBoard scope="drivers" />
     </div>
   );
