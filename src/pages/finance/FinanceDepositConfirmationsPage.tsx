@@ -4,9 +4,12 @@ import { ShieldCheck, Smartphone, Landmark, Car, Ban } from 'lucide-react';
 import { useFleetData, formatDateLabelSafe } from '../../lib/fleet';
 import { supabase, DriverDeposit } from '../../lib/supabase';
 import RejectDepositModal from '../../components/finance/RejectDepositModal';
+import { useAuth } from '../../lib/auth';
 
 export default function FinanceDepositConfirmationsPage() {
   const { drivers, deposits, loading, reload } = useFleetData();
+  // Only the MD confirms driver payments (MD, 19 Nov 2026); Finance sees what waits.
+  const isMd = useAuth().profile?.role === 'managing_director';
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<DriverDeposit | null>(null);
   const [error, setError] = useState('');
@@ -42,7 +45,7 @@ export default function FinanceDepositConfirmationsPage() {
           <ShieldCheck size={16} className="text-blue-600 dark:text-blue-300" /> Deposit Confirmations
           {pending.length > 0 && <span className="text-micro font-bold text-white bg-amber-500 px-1.5 py-0.5 rounded-full">{pending.length}</span>}
         </h2>
-        <p className="text-caption text-fg-subtle mt-0.5">Every driver deposit Fleet logs stays pending until Finance confirms it here.</p>
+        <p className="text-caption text-fg-subtle mt-0.5">Every driver payment someone other than the MD records waits here until the MD confirms it.</p>
       </div>
 
       {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
@@ -71,6 +74,7 @@ export default function FinanceDepositConfirmationsPage() {
                 </p>
               </div>
               <p className="text-body font-semibold shrink-0">{dep.amount.toLocaleString()} RWF</p>
+              {isMd ? <>
               <button
                 onClick={() => setRejecting(dep)}
                 disabled={confirmingId === dep.id}
@@ -85,6 +89,7 @@ export default function FinanceDepositConfirmationsPage() {
               >
                 {confirmingId === dep.id ? 'Confirming…' : 'Confirm'}
               </button>
+              </> : <span className="text-micro font-medium text-amber-600 dark:text-amber-400 shrink-0">Awaiting MD</span>}
             </div>
           );
         })}

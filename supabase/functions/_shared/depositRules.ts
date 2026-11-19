@@ -155,6 +155,8 @@ export interface DepositDriverLike {
 export interface BalanceAdjustment {
   id: string; kind: 'amount' | 'grace'; date: string; amount?: number; until?: string;
   reason: string; by: string | null; by_name: string | null; at: string;
+  // Someone other than the MD: pending until the MD confirms (no status: before the rule, confirmed).
+  status?: 'pending' | 'confirmed'; confirmed_by?: string | null; confirmed_at?: string | null;
   before?: { owes?: number; behind?: number; next_due?: string | null } | null;
   after?: { owes?: number; behind?: number; next_due?: string | null } | null;
 }

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Trash2, Pencil, Banknote } from 'lucide-react';
-import { supabase, DriverFine, Driver, Vehicle, DriverFinePayment } from '../../lib/supabase';
+import { supabase, DriverFine, Driver, Vehicle, DriverFinePayment, DriverFineKind } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, formatDateLabelSafe } from '../../lib/fleet';
+import { fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, formatDateLabelSafe, FINE_KINDS, fineKindLabel, AWAITING_MD } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import LogFinePaymentDrawer from './LogFinePaymentDrawer';
@@ -31,6 +31,9 @@ export default function FineDrawer({
   const [editing, setEditing] = useState(startEditing && canEdit);
   const [driverId, setDriverId] = useState(fine?.driver_id ?? '');
   const [vehicleId, setVehicleId] = useState(fine?.vehicle_id ?? '');
+  // A fine, damage, an advance or other money owed; only a traffic fine needs the car.
+  const [kind, setKind] = useState<DriverFineKind>(fine?.kind ?? 'fine');
+  const needsCar = kind === 'fine';
   const [amount, setAmount] = useState(fine ? String(fine.amount) : '');
   const [fineDate, setFineDate] = useState(fine?.fine_date ?? todayStr());
   const [reason, setReason] = useState(fine?.reason ?? '');
@@ -46,12 +49,13 @@ export default function FineDrawer({
 
   const save = async () => {
     const numAmount = Number(amount);
-    if (!driverId || !vehicleId || !numAmount || numAmount <= 0 || !fineDate) return;
+    if (!driverId || (needsCar && !vehicleId) || !numAmount || numAmount <= 0 || !fineDate) return;
     setSaving(true);
     setError('');
     const payload = {
       driver_id: driverId,
-      vehicle_id: vehicleId,
+      vehicle_id: vehicleId || null,
+      kind,
       amount: numAmount,
       fine_date: fineDate,
       reason: reason.trim() || null,
@@ -76,8 +80,15 @@ export default function FineDrawer({
   };
 
   return (
-    <Modal open onClose={onClose} title={fine ? `${fine.amount.toLocaleString()} RWF fine` : 'Add Fine'} subtitle={fine ? timeAgo(fine.updated_at) + ' updated' : 'Amount, date, driver, and the car that was fined'} maxWidth="max-w-md">
+    <Modal open onClose={onClose} title={fine ? `${fine.amount.toLocaleString()} RWF · ${fineKindLabel(fine.kind).toLowerCase()}` : 'Add Fine'} subtitle={fine ? timeAgo(fine.updated_at) + ' updated' : 'Amount, date, driver, and the car that was fined'} maxWidth="max-w-md">
       <div className="space-y-3">
+        {fine?.status === 'pending' && <p className="text-caption text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 rounded-lg px-3 py-2">{AWAITING_MD}: it counts already; the MD confirms it in Driver Adjust.</p>}
+        <div>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">What</label>
+          <select value={kind} onChange={(e) => setKind(e.target.value as DriverFineKind)} disabled={!editing} className="input">
+            {FINE_KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
+          </select>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-caption font-medium mb-1.5 text-fg-muted">Amount (RWF)</label>
@@ -96,9 +107,9 @@ export default function FineDrawer({
           </select>
         </div>
         <div>
-          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Car Fined</label>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">{needsCar ? 'Car Fined' : 'Car (optional)'}</label>
           <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} disabled={!editing} className="input">
-            <option value="">Select a car</option>
+            <option value="">{needsCar ? 'Select a car' : 'No car'}</option>
             {vehicles.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.plate_number}{v.make || v.model ? ` — ${[v.make, v.model].filter(Boolean).join(' ')}` : ''}
@@ -155,7 +166,7 @@ export default function FineDrawer({
             ) : <span />}
             <div className="flex gap-2">
               <button onClick={() => (fine ? setEditing(false) : onClose())} className="btn-ghost">Cancel</button>
-              <button onClick={save} disabled={saving || !driverId || !vehicleId || !Number(amount) || !fineDate} className="btn-primary disabled:opacity-50">
+              <button onClick={save} disabled={saving || !driverId || (needsCar && !vehicleId) || !Number(amount) || !fineDate} className="btn-primary disabled:opacity-50">
                 {saving ? 'Saving…' : fine ? 'Save Changes' : 'Add Fine'}
               </button>
             </div>

@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { Pager, usePaged } from '../../ui/Pager';
 import { Search, Plus, Receipt, Car } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, formatDateLabelSafe, canEditFleet, fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel } from '../../lib/fleet';
+import { useFleetData, formatDateLabelSafe, canEditFleet, fineAmountPaid, fineStatus, FINE_STATUS_STYLE, fineStatusLabel, fineKindLabel, AWAITING_MD } from '../../lib/fleet';
+import { Label, Tagged } from '../../ui/kit';
 import { DriverFine } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
 import DataTable from '../../components/DataTable';
@@ -79,7 +80,7 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
                 className={`card p-4 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all border ${statusStyle.border}`}
               >
                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <p className="text-small font-semibold">{f.amount.toLocaleString()} RWF</p>
+                  <p className="text-small font-semibold">{f.amount.toLocaleString()} RWF{f.kind !== 'fine' && <span className="font-normal text-fg-muted"> · {fineKindLabel(f.kind)}</span>}</p>
                   <EntryActions
                     onView={() => setFineDrawer({ fine: f, startEditing: false })}
                     onEdit={() => setFineDrawer({ fine: f, startEditing: true })}
@@ -90,7 +91,7 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
                 <p className="text-micro text-fg-subtle flex items-center gap-1 mt-0.5">
                   <Car size={10} /> {f.vehicle?.plate_number ?? 'No vehicle on file'}
                 </p>
-                <p className="text-micro text-fg-subtle mt-1.5">{formatDateLabelSafe(f.fine_date)}</p>
+                <p className="text-micro text-fg-subtle mt-1.5 flex items-center gap-1.5">{formatDateLabelSafe(f.fine_date)}{f.status === 'pending' && <Label tone="attention">{AWAITING_MD}</Label>}</p>
                 {f.reason && <p className="text-caption text-fg-muted mt-1.5 line-clamp-2">{f.reason}</p>}
                 <div className="flex items-center justify-between gap-2 mt-2.5 pt-2.5 border-t border-line-muted ">
                   <span className={`inline-flex items-center gap-1.5 text-micro font-medium px-2 py-0.5 rounded-full ${statusStyle.badge}`}>
@@ -127,7 +128,7 @@ function FleetFinesPageView({ data }: { data: ReturnType<typeof useFleetData> })
           columns={[
             { header: 'Driver', render: (f) => f.driver ? <EntityLink type="driver" id={f.driver_id} label={f.driver.full_name} /> : 'Unknown' },
             { header: 'Vehicle', render: (f) => f.vehicle && f.vehicle_id ? <EntityLink type="car" id={f.vehicle_id} label={f.vehicle.plate_number} className="font-mono" /> : '—' },
-            { header: 'Amount', render: (f) => `${f.amount.toLocaleString()} RWF` },
+            { header: 'Amount', render: (f) => <Tagged tags={f.status === 'pending' && <Label tone="attention">{AWAITING_MD}</Label>}>{f.amount.toLocaleString()} RWF{f.kind !== 'fine' ? <span className="text-fg-muted"> · {fineKindLabel(f.kind)}</span> : null}</Tagged> },
             { header: 'Date', render: (f) => f.fine_date },
             {
               header: 'Payment',

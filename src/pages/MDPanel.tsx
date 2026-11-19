@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Zap, ChevronRight, ClipboardList, Mail, Repeat } from 'lucide-react';
+import { Zap, ChevronRight, ClipboardList, Mail, Repeat, SlidersHorizontal } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase, SurveyCase } from '../lib/supabase';
 import ChargingStationsHub from './casehubs/ChargingStationsHub';
 import NotificationsSettingsPage from './NotificationsSettingsPage';
@@ -43,6 +44,20 @@ export default function MDPanel() {
 
   return (
     <div className="space-y-4">
+      <Link
+        to="/admin/driver-adjust"
+        className="w-full card p-4 flex items-center gap-3 hover:shadow-md hover:border-brand/30 transition-all text-left"
+      >
+        <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center shrink-0">
+          <SlidersHorizontal size={18} className="text-brand-600 dark:text-brand-300" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-small font-semibold">Driver Adjust</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Confirm every driver's money: start date, deposit, last payment, paid until, fines and what we owe them. Then confirm what anyone else records.</p>
+        </div>
+        <ChevronRight size={16} className="text-fg-subtle shrink-0" />
+      </Link>
+
       <button
         onClick={() => setShowNotifications(true)}
         className="w-full card p-4 flex items-center gap-3 hover:shadow-md hover:border-brand/30 transition-all text-left"

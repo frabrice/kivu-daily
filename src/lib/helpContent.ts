@@ -170,11 +170,11 @@ export const HELP_CONTENT: Partial<Record<NavKey, HelpEntry>> = {
     ],
   },
   finance_deposit_confirmations: {
-    blurb: "Driver deposits Fleet logs stay 'Pending' here until Finance confirms them.",
+    blurb: "Driver payments someone other than the MD records stay 'Pending' here until the MD confirms them.",
     sections: [
       {
         heading: 'Who can confirm',
-        body: ['Only Finance or the MD can confirm a deposit — Fleet can log one but can\'t confirm their own, by design.'],
+        body: ['Only the MD confirms driver payments, fines and adjustments (MD, 19 Nov 2026). Anyone can record them; what the MD records is confirmed at once. The MD does it in MD Panel → Driver Adjust.'],
       },
     ],
     tips: ['Confirming is the last step before a deposit counts as fully settled — check the amount and payment method match what was actually received before confirming.'],

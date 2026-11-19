@@ -274,13 +274,21 @@ export interface DriverDeposit {
   created_at: string;
 }
 
+// What a driver owes besides the weekly payment (migration 20261119140000).
+export type DriverFineKind = 'fine' | 'damage' | 'advance' | 'other';
+
 export interface DriverFine {
   id: string;
   driver_id: string;
   vehicle_id: string | null;
+  kind: DriverFineKind;
   amount: number;
   fine_date: string;
   reason: string | null;
+  // Pending until the MD confirms it (the MD's own entries are confirmed at once).
+  status: DepositStatus;
+  confirmed_by: string | null;
+  confirmed_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -293,6 +301,33 @@ export interface DriverFinePayment {
   fine_id: string;
   amount: number;
   paid_date: string;
+  status: DepositStatus;
+  confirmed_by: string | null;
+  confirmed_at: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+// The MD's confirmation of one driver's money on a day (Driver Adjust).
+export interface DriverMoneyReview {
+  id: string;
+  driver_id: string;
+  reviewed_on: string;
+  start_date: string | null;
+  deposit_amount: number;
+  deposit_date: string | null;
+  last_payment_date: string | null;
+  paid_until: string | null;
+  model: string | null;
+  daily_rate: number | null;
+  rest_day: string | null;
+  adjustment: number;
+  we_owe_amount: number;
+  we_owe_note: string | null;
+  driver_agrees: boolean;
+  notes: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
   created_by: string | null;
   created_at: string;
 }

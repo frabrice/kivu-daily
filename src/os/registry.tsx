@@ -3,7 +3,7 @@ import { Contact, Eye,
   Activity, AlertTriangle, ArrowLeftRight, BarChart3, BookOpen, Calendar, CalendarClock, CalendarOff, Car, CarFront, ClipboardCheck,
   Route, Flag, Inbox, FileSignature, FileText, Gauge, Headphones, HelpCircle, Home, Image as ImageIcon, Landmark, LayoutDashboard, ListTodo, LucideIcon, Mail,
   Megaphone, MessageSquare, Package, Paintbrush, PhoneCall, PhoneIncoming, Radio, Receipt, Rocket, Search, Settings, Shield, ShieldCheck,
-  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel, Compass, Coins, Send,
+  Target, Timer, TrendingUp, Trophy, Truck, UserCog, Users2, Wallet, Building2, BookMarked, ScrollText, CalendarCheck, Gavel, Compass, Coins, Send, SlidersHorizontal,
 } from 'lucide-react';
 import { Access } from './access';
 import { withChunkReload } from '../lib/chunkReload';
@@ -12,7 +12,7 @@ import { withChunkReload } from '../lib/chunkReload';
 // sidebar, its address, and who may see it. The shell, the router, the
 // command palette, How to Use and the mobile menu all read from here.
 
-export type BadgeKey = 'itInbox' | 'itProposed' | 'planBudgets' | 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks' | 'missingContracts' | 'missingAgreements';
+export type BadgeKey = 'itInbox' | 'itProposed' | 'planBudgets' | 'myCases' | 'unreadComments' | 'carFollowups' | 'overdueDeposits' | 'pendingPauses' | 'openIssues' | 'pendingFinance' | 'myOpenTasks' | 'missingContracts' | 'missingAgreements' | 'driverAdjust';
 
 export interface PageDef {
   id: string;
@@ -236,6 +236,7 @@ export const MODULES: ModuleDef[] = [
     id: 'admin', label: 'Admin', icon: Shield, base: '/admin',
     pages: [
       { id: 'md-panel', path: '/admin', label: 'MD Panel', icon: Shield, component: L(() => import('../pages/MDPanel')), can: md, keywords: 'research charging stations email notifications recurring tasks' },
+      { id: 'driver-adjust', path: '/admin/driver-adjust', label: 'Driver Adjust', icon: SlidersHorizontal, component: L(() => import('../pages/admin/DriverAdjustPage')), can: md, badge: 'driverAdjust', keywords: 'driver money confirm payments fines deposit paid until owes behind survey review approve', description: "Confirm every driver's money once, then confirm whatever anyone else records: payments, fines, adjustments." },
       { id: 'dashboards', path: '/admin/dashboards', label: 'Open a dashboard', icon: Eye, component: L(() => import('../pages/admin/DashboardsPage')), can: md, keywords: 'view as see as open dashboard impersonate look at someone else staff screen what they see', description: "See Kivu Daily exactly as someone sees it, and use it; what you do there is recorded as you." },
       { id: 'settings', path: '/settings', label: 'Settings', icon: Settings, component: L(() => import('../pages/SettingsPage')) },
     ],

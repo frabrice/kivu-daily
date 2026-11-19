@@ -365,6 +365,19 @@ export function buildDepositLeaderboard<T extends DepositLike & { driver_id: str
     .sort((a, b) => b.standing.score - a.standing.score || Number(b.standing.isCleared) - Number(a.standing.isCleared) || a.driver.full_name.localeCompare(b.driver.full_name));
 }
 
+// What a driver can owe besides the weekly payment, all recorded and paid
+// like a fine (migration 20261119140000). Only a traffic fine needs the car.
+export const FINE_KINDS: { key: import('./supabase').DriverFineKind; label: string; plural: string }[] = [
+  { key: 'fine', label: 'Fine', plural: 'Fines' },
+  { key: 'damage', label: 'Damage', plural: 'Damage' },
+  { key: 'advance', label: 'Advance / loan', plural: 'Advances' },
+  { key: 'other', label: 'Other money owed', plural: 'Other' },
+];
+export const fineKindLabel = (k: string | null | undefined) => FINE_KINDS.find((x) => x.key === k)?.label ?? 'Fine';
+
+// Driver money someone other than the MD recorded waits for the MD (MD, 19 Nov 2026).
+export const AWAITING_MD = 'Awaiting MD';
+
 export type FineStatus = 'unpaid' | 'partial' | 'paid';
 
 export function fineAmountPaid(fineId: string, finePayments: DriverFinePayment[]): number {

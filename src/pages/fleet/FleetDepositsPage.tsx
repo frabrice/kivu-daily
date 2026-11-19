@@ -98,7 +98,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
               </div>
               {row.lastDeposit?.status === 'pending' && (
                 <span className="text-micro font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">
-                  Pending
+                  Awaiting MD
                 </span>
               )}
               {row.isEnded ? (

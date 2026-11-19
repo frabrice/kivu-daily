@@ -132,7 +132,7 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
             {after.paidThrough && <p className="text-small text-fg-muted ">Covers through {formatDateLabelSafe(after.paidThrough)}</p>}
             {effect && <p className={`text-small font-medium ${effect.tone}`}>{effect.text}</p>}
           </div>
-          <p className="text-micro text-fg-subtle">It stays pending until Finance confirms it. If this doesn't cover everything owed, you can log another payment for the rest at any time.</p>
+          <p className="text-micro text-fg-subtle">{profile?.role === 'managing_director' ? 'You are recording it, so it is confirmed at once.' : 'It counts straight away and waits for the MD to confirm it.'} If this doesn't cover everything owed, you can log another payment for the rest at any time.</p>
 
           {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 

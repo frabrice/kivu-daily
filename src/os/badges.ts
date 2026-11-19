@@ -30,7 +30,7 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
         a.in('it') ? head(supabase.from('it_issues').select('id', { count: 'exact', head: true }).eq('priority', 'p0').not('status', 'in', '(done,wont_do)')) : 0,
         a.in('finance') ? head(supabase.from('finance_transactions').select('id', { count: 'exact', head: true }).in('status', ['pending', 'checked'])) : 0,
         head(supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('user_id', profile!.id).eq('date', today()).eq('completed', false)),
-        a.in('fleet', 'finance', 'it') ? head(supabase.from('driver_deposits').select('id', { count: 'exact', head: true }).eq('status', 'pending')) : 0,
+        a.in('fleet', 'finance', 'it') || a.isMd ? head(supabase.from('driver_deposits').select('id', { count: 'exact', head: true }).eq('status', 'pending')) : 0,
         a.in('it') ? head(supabase.from('it_inbox').select('id', { count: 'exact', head: true }).eq('status', 'new')) : 0,
         // Projects waiting for the MD's decision.
         a.isMd ? head(supabase.from('it_initiatives').select('id', { count: 'exact', head: true }).eq('status', 'proposed')) : 0,
@@ -54,7 +54,22 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
           missingAgreements = [...new Set(v.map((x) => x.owner_id).filter(Boolean) as string[])].filter((o) => missingForOwner(o, v, d)).length;
         }
       }
-      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits, missingContracts, missingAgreements, itInbox, itProposed, planBudgets };
+      // Driver Adjust (MD): entries others recorded, plus drivers not confirmed yet.
+      let driverAdjust = 0;
+      if (a.isMd) {
+        const [fines, finePays, drv, reviews] = await Promise.all([
+          head(supabase.from('driver_fines').select('id', { count: 'exact', head: true }).eq('status', 'pending')),
+          head(supabase.from('driver_fine_payments').select('id', { count: 'exact', head: true }).eq('status', 'pending')),
+          supabase.from('drivers').select('id, contract_status, balance_adjustments').neq('contract_status', 'ended'),
+          supabase.from('driver_money_reviews').select('driver_id'),
+        ]);
+        const reviewed = new Set(((reviews.data ?? []) as { driver_id: string }[]).map((r) => r.driver_id));
+        const list = (drv.data ?? []) as Pick<Driver, 'id' | 'balance_adjustments'>[];
+        driverAdjust = pendingDeposits + fines + finePays
+          + list.reduce((t, d) => t + (d.balance_adjustments ?? []).filter((x) => x.status === 'pending').length, 0)
+          + list.filter((d) => !reviewed.has(d.id)).length;
+      }
+      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits, missingContracts, missingAgreements, itInbox, itProposed, planBudgets, driverAdjust };
     },
   });
   return { myCases, unreadComments, carFollowups, ...(q.data ?? {}) };

@@ -368,7 +368,7 @@ export default function DriverProfilePage({
                     </span>
                     {dep.status === 'pending' ? (
                       <span className="inline-flex items-center gap-1 text-micro font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full shrink-0">
-                        <ShieldAlert size={9} /> Pending
+                        <ShieldAlert size={9} /> Awaiting MD
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-micro font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">
