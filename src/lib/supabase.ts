@@ -313,6 +313,10 @@ export interface DriverMoneyReview {
   id: string;
   driver_id: string;
   reviewed_on: string;
+  // 'terminated': the MD confirmed the contract was terminated; nothing else was changed and their money is closed.
+  outcome: 'confirmed' | 'terminated';
+  terminated_on: string | null;
+  termination_reason: string | null;
   start_date: string | null;
   deposit_amount: number;
   deposit_date: string | null;

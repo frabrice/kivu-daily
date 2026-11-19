@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { SlidersHorizontal, CheckCircle2, AlertTriangle, Plus, Wallet, Receipt, HandCoins, Loader2, Search, Ban, Check, CalendarClock, Users2 } from 'lucide-react';
-import { supabase, Driver, DriverDeposit, DriverFine, DriverFineKind } from '../../lib/supabase';
+import { SlidersHorizontal, CheckCircle2, AlertTriangle, Plus, Wallet, Receipt, HandCoins, Loader2, Search, Ban, Check, CalendarClock, Users2, UserX } from 'lucide-react';
+import { supabase, Driver, DriverDeposit, DriverFine, DriverFineKind, DriverFinePayment } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import {
   useFleetData, computeDepositStanding, driverTermsLabel, dailyRateOf, fineAmountPaid, fineKindLabel, FINE_KINDS, AWAITING_MD,
+  CONTRACT_END_REASONS, CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN,
 } from '../../lib/fleet';
 import {
   AdjustRow, PendingItem, PayrollRow, buildAdjustRows, confirmPending, correctionFor, rejectPending, snapOf, useDriverAdjustExtras, withConfirmedStart, withCorrection,
@@ -50,6 +51,8 @@ export default function DriverAdjustPage() {
   const pendingCount = rows.reduce((t, r) => t + r.pending.length, 0);
   const owingNow = rows.filter((r) => r.standing.hasStarted && r.standing.owes > 0);
   const owedBesides = rows.reduce((t, r) => t + r.owedBesides, 0);
+  // Drivers confirmed terminated here (their contract has ended, so they left the list).
+  const terminated = new Set(extras.reviews.filter((r) => r.outcome === 'terminated').map((r) => r.driver_id)).size;
 
   const shown = (tab === 'todo' ? todo : tab === 'done' ? done : tab === 'awaiting' ? awaiting : rows).filter((r) => {
     const q = search.trim().toLowerCase();
@@ -68,7 +71,7 @@ export default function DriverAdjustPage() {
       />
 
       <StatGrid cols={4}>
-        <StatCard label="Confirmed" icon={CheckCircle2} value={`${done.length} of ${rows.length}`} sub={todo.length ? `${todo.length} still to confirm` : 'Every driver is confirmed'} tone={todo.length ? undefined : 'success'} onClick={() => setTab('todo')} />
+        <StatCard label="Confirmed" icon={CheckCircle2} value={`${done.length} of ${rows.length}`} sub={`${todo.length ? `${todo.length} still to confirm` : 'Every driver is confirmed'}${terminated ? ` · ${terminated} confirmed terminated` : ''}`} tone={todo.length ? undefined : 'success'} onClick={() => setTab('todo')} />
         <StatCard label="Waiting for you" icon={AlertTriangle} value={pendingCount} sub={pendingCount ? `entries from others, ${awaiting.length} driver${awaiting.length === 1 ? '' : 's'}` : 'Nothing waiting'} tone={pendingCount ? 'attention' : undefined} onClick={() => setTab('awaiting')} />
         <StatCard label="Owe us today" icon={Wallet} value={rwf(owingNow.reduce((t, r) => t + r.standing.owes, 0))} sub={`${owingNow.length} driver${owingNow.length === 1 ? '' : 's'} with days driven and not paid`} tone={owingNow.length ? 'danger' : 'success'} />
         <StatCard label="Fines & other money owed" icon={Receipt} value={rwf(owedBesides)} sub="not paid yet" tone={owedBesides ? 'attention' : undefined} />
@@ -172,6 +175,14 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
   const [changeModel, setChangeModel] = useState(false);
   const [payFine, setPayFine] = useState<DriverFine | null>(null);
   const [allPayments, setAllPayments] = useState(false);
+  // Still working with us, or the contract was terminated (then nothing else is changed).
+  const [mode, setMode] = useState<'working' | 'terminated'>('working');
+  const [endDate, setEndDate] = useState(today);
+  const [endReason, setEndReason] = useState('');
+  const [endOther, setEndOther] = useState('');
+  const [decidedBy, setDecidedBy] = useState<string>('kivu');
+  const [canReturn, setCanReturn] = useState<string>('no');
+  const [paidOn, setPaidOn] = useState<{ id: string; date: string } | null>(null);
   const [owedForm, setOwedForm] = useState<{ kind: DriverFineKind; amount: string; date: string; vehicle: string; reason: string } | null>(null);
 
   const depNum = num(depAmount);
@@ -217,6 +228,35 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
       fine_date: owedForm.date, reason: owedForm.reason.trim() || null, created_by: profile!.id,
     }));
     if (ok) setOwedForm(null);
+  };
+
+  const endReasonText = endReason === 'other' ? endOther.trim() : CONTRACT_END_REASONS.find((r) => r.key === endReason)?.label ?? '';
+  const endBlocker = row.pending.length ? `Confirm or reject the ${row.pending.length} entr${row.pending.length === 1 ? 'y' : 'ies'} waiting for you first: after this, nothing about this driver's money can change.`
+    : !endDate ? 'Enter the date the contract was terminated.'
+    : endDate > today ? "The termination date can't be in the future."
+    : !endReasonText ? 'Say why the contract was terminated.'
+    : null;
+  const terminate = async () => {
+    const ok = await run('terminate', () => supabase.rpc('confirm_driver_terminated', {
+      p_driver: d.id,
+      p: {
+        event_date: endDate, reason_key: endReason, reason: endReasonText, notes,
+        meta: { decided_by: decidedBy, can_return: canReturn, owed: row.standing.owes, paid_through: row.standing.paidThrough, fines_unpaid: row.owedBesides },
+        before: snapOf(row.standing),
+      },
+    }));
+    if (!ok) return;
+    // Off the car and out of the fleet company in the Kivu Ride app, as every
+    // ended contract is; if it fails it waits on Under Management > To confirm.
+    supabase.functions.invoke('fleet-sync', { body: { action: 'offboard', driver_id: d.id } }).catch(() => null);
+    onClose();
+  };
+
+  // A fine (or damage, advance...) paid in full: one payment for what is left.
+  const markPaid = async (f: DriverFine, date: string) => {
+    const left = Math.max(Number(f.amount) - fineAmountPaid(f.id, finePayments), 0);
+    const ok = await run(`paid-${f.id}`, () => supabase.from('driver_fine_payments').insert({ fine_id: f.id, amount: left, paid_date: date, created_by: profile!.id }));
+    if (ok) setPaidOn(null);
   };
 
   const confirm = async () => {
@@ -268,6 +308,50 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
           </Box>
         )}
 
+        <div className="flex gap-0.5 p-0.5 bg-inset rounded-lg w-fit">
+          {([['working', 'Still working with us'], ['terminated', 'Contract terminated']] as const).map(([k, l]) => (
+            <button key={k} onClick={() => setMode(k)} className={`px-3 py-1.5 rounded-md text-small font-medium transition-all ${mode === k ? 'bg-surface-2 text-fg shadow-sm' : 'text-fg-muted'}`}>{l}</button>
+          ))}
+        </div>
+
+        {mode === 'terminated' ? (
+          <Box title="The contract was terminated" icon={UserX}>
+            <div className="space-y-3">
+              <p className="text-caption text-fg-muted">This only confirms the termination. Nothing else changes: the start date, deposit, payments and fines stay exactly as they are recorded, and from then on nobody can add, change or remove any of this driver's money (renewing the contract opens it again).</p>
+              <div className="rounded-lg bg-inset p-3 text-caption space-y-0.5">
+                <p className="font-semibold text-fg-muted">Kept as recorded today</p>
+                <p>Paid until {short(row.standing.paidThrough)} · {row.standing.owes > 0 ? <span className="text-danger font-medium">owes {rwf(row.standing.owes)}</span> : 'owes nothing'}{row.owedBesides ? <> · <span className="text-attention font-medium">{rwf(row.owedBesides)} in fines and other money unpaid</span></> : null}</p>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                <label className="block"><span className="text-caption font-semibold text-fg-muted">Terminated on</span>
+                  <DateInput value={endDate} onChange={setEndDate} max={today} /></label>
+                <label className="block"><span className="text-caption font-semibold text-fg-muted">Why</span>
+                  <select className="input w-full mt-1" value={endReason} onChange={(e) => setEndReason(e.target.value)}>
+                    <option value="">Pick a reason</option>
+                    {[...new Set(CONTRACT_END_REASONS.map((r) => r.group))].map((g) => (
+                      <optgroup key={g} label={g}>{CONTRACT_END_REASONS.filter((r) => r.group === g).map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}</optgroup>
+                    ))}
+                  </select></label>
+              </div>
+              {endReason === 'other' && <input className="input w-full" value={endOther} onChange={(e) => setEndOther(e.target.value)} placeholder="The reason" />}
+              <div className="grid sm:grid-cols-2 gap-2">
+                <label className="block"><span className="text-caption font-semibold text-fg-muted">Who ended it</span>
+                  <select className="input w-full mt-1" value={decidedBy} onChange={(e) => setDecidedBy(e.target.value)}>{CONTRACT_END_DECIDED_BY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}</select></label>
+                <label className="block"><span className="text-caption font-semibold text-fg-muted">Can they come back?</span>
+                  <select className="input w-full mt-1" value={canReturn} onChange={(e) => setCanReturn(e.target.value)}>{CONTRACT_CAN_RETURN.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}</select></label>
+              </div>
+              <textarea className="input w-full" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" />
+              {err && <p className="text-danger">{err}</p>}
+              {endBlocker && <p className="text-caption text-attention">{endBlocker}</p>}
+              <div className="flex justify-end gap-2 pt-3 border-t border-line-muted">
+                <button className="btn-ghost" onClick={onClose}>Close</button>
+                <button className="btn-primary flex items-center gap-1.5" disabled={!!busy || !!endBlocker} onClick={terminate}>
+                  {busy === 'terminate' ? <Loader2 size={14} className="animate-spin" /> : <UserX size={14} />} Confirm {d.full_name.split(' ')[0]} was terminated
+                </button>
+              </div>
+            </div>
+          </Box>
+        ) : (<>
         <div className="grid md:grid-cols-2 gap-4">
           <Box title="1 · Start" icon={CalendarClock}>
             <div className="space-y-3">
@@ -354,8 +438,21 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
                       {f.status === 'pending' && <Label tone="attention">{AWAITING_MD}</Label>}
                       <span className="tabular-nums whitespace-nowrap">{rwf(Number(f.amount))}</span>
                       {left > 0
-                        ? <><Label tone="danger">{rwf(left)} left</Label><button className="btn-ghost" onClick={() => setPayFine(f)}>Log payment</button></>
+                        ? <><Label tone="danger">{rwf(left)} left</Label>
+                            <button className="btn-secondary" disabled={!!busy} onClick={() => setPaidOn({ id: f.id, date: today })}>Paid in full</button>
+                            <button className="btn-ghost" onClick={() => setPayFine(f)}>Part payment</button></>
                         : <Label tone="success">Paid</Label>}
+                      {paidOn?.id === f.id && (
+                        <div className="basis-full flex flex-wrap items-center gap-2 pl-1">
+                          <span className="text-caption text-fg-muted">{rwf(left)} paid on</span>
+                          <DateInput value={paidOn.date} onChange={(v) => setPaidOn({ id: f.id, date: v })} max={today} />
+                          <button className="btn-ghost" onClick={() => setPaidOn(null)}>Cancel</button>
+                          <button className="btn-primary" disabled={!!busy || !paidOn.date || paidOn.date > today} onClick={() => markPaid(f, paidOn.date)}>
+                            {busy === `paid-${f.id}` && <Loader2 size={13} className="animate-spin" />} Confirm paid
+                          </button>
+                        </div>
+                      )}
+                      <FinePaymentLines payments={finePayments.filter((p) => p.fine_id === f.id)} />
                     </li>
                   );
                 })}
@@ -397,12 +494,27 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
             {busy === 'confirm' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Confirm {d.full_name.split(' ')[0]}'s numbers
           </button>
         </div>
+        </>)}
       </div>
 
       {addPayment && <LogDepositDrawer driver={confirmedDriver} deposits={allDeposits} onClose={() => setAddPayment(false)} onSaved={onChanged} />}
       {changeModel && <ChangeModelDrawer driver={d} drivers={drivers} deposits={allDeposits} onClose={() => setChangeModel(false)} onSaved={onChanged} />}
       {payFine && <LogFinePaymentDrawer fine={{ ...payFine, driver: d }} remaining={Math.max(Number(payFine.amount) - fineAmountPaid(payFine.id, finePayments), 0)} onClose={() => setPayFine(null)} onSaved={onChanged} />}
     </Modal>
+  );
+}
+
+function FinePaymentLines({ payments }: { payments: DriverFinePayment[] }) {
+  if (!payments.length) return null;
+  return (
+    <ul className="basis-full pl-4 text-caption text-fg-muted space-y-0.5">
+      {[...payments].sort((a, b) => a.paid_date.localeCompare(b.paid_date)).map((p) => (
+        <li key={p.id} className="flex flex-wrap items-center gap-2">
+          <span>Paid {rwf(Number(p.amount))} on {short(p.paid_date)}</span>
+          {p.status === 'pending' ? <Label tone="attention">{AWAITING_MD}</Label> : <Label tone="success" icon={Check}>Confirmed</Label>}
+        </li>
+      ))}
+    </ul>
   );
 }
 
