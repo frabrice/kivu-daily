@@ -85,7 +85,7 @@ export default function PersonEntity({ id, mode }: EntityViewProps) {
     <Box title="Call Center cases" icon={Headphones} right={avgReply !== null ? <span className="text-caption text-fg-muted">first reply after {durationLabel(avgReply)} on average</span> : undefined} padded={false}>
       {openCases.length === 0 ? <p className="p-4 text-body text-fg-muted">No open cases. {myCases.length} handled in total.</p> : (
         <ul className="divide-y divide-line-muted">
-          {openCases.slice(0, 8).map((c) => <li key={c.id} className="px-4 py-2 flex items-center gap-2 text-body"><EntityLink type="case" id={c.id} label={`${c.reference} · ${c.caller_name}`} /><Label tone="attention">{c.status.replace(/_/g, ' ')}</Label></li>)}
+          {openCases.slice(0, 8).map((c) => <li key={c.id} className="px-4 py-2 flex items-center gap-2 text-body"><EntityLink type="case" id={c.id} label={`${c.reference} · ${c.caller_name}`} /><span className="ml-auto shrink-0"><Label tone="attention">{c.status.replace(/_/g, ' ')}</Label></span></li>)}
         </ul>
       )}
     </Box>

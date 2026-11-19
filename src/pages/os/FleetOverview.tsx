@@ -94,7 +94,7 @@ export default function FleetOverview() {
         <Box title="Needs someone today" icon={AlertTriangle} padded={false}>
           <ul className="divide-y divide-line-muted">
             {showMoney && notPaid.map(({ d, s }) => (
-              <li key={d.id} className="flex items-center gap-2 px-4 py-2 text-body"><Wallet size={14} className="text-danger" /><EntityLink type="driver" id={d.id} label={d.full_name} /><span className="text-caption text-fg-muted">{d.vehicle?.plate_number}</span><Label tone="danger">owes {rwf(s.owes)}</Label></li>
+              <li key={d.id} className="flex items-center gap-2 px-4 py-2 text-body"><Wallet size={14} className="text-danger" /><EntityLink type="driver" id={d.id} label={d.full_name} /><span className="text-caption text-fg-muted">{d.vehicle?.plate_number}</span><span className="ml-auto shrink-0"><Label tone="danger">owes {rwf(s.owes)}</Label></span></li>
             ))}
             {noDriverCars.map((v) => (
               <li key={v.id} className="flex items-center gap-2 px-4 py-2 text-body"><CircleSlash size={14} className="text-danger" /><EntityLink type="car" id={v.id} label={v.plate_number} className="font-mono" /><span className="text-caption text-fg-muted">has no driver</span></li>
