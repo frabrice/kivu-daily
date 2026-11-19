@@ -63,7 +63,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
   const noDriver = days.filter((d) => d.state === 'no_driver').length;
   const garage = days.filter((d) => onCar.some((dr) => ['garage', 'accident'].includes(pauseOn(dr.pauses, d.day)?.reason ?? ''))).length;
   const collected30 = deposits.filter((x) => onCar.some((d) => d.id === x.driver_id) && x.paid_date > addDays(t, -30)).reduce((s, x) => s + Number(x.amount), 0);
-  const noInspection = seesDocs && !legal.loading && missingInspection(id, legal.docs);
+  const noInspection = seesDocs && !legal.loading && missingInspection(car, legal.docs);
   const expiry = car.rura_license_expiry_date;
   const expired = !!expiry && expiry < t;
   const expiresSoon = !!expiry && !expired && expiry <= addDays(t, 30);
@@ -136,6 +136,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
         { label: 'Make and model', value: [car.make, car.model].filter(Boolean).join(' ') || null },
         { label: 'Colour', value: car.color },
         { label: 'Device', value: car.device_label },
+        { label: 'Condition', value: car.brand_new ? 'Brand new when we got it' : 'Used (Kivu Ride inspection)' },
         { label: 'Owner', value: owner ? <EntityLink type="owner" id={owner.id} label={owner.full_name} /> : null },
         { label: 'Owner payout', value: car.weekly_owner_payout_amount ? `${rwf(car.weekly_owner_payout_amount)} a week` : null },
         { label: 'Management fee', value: car.monthly_management_fee_amount ? `${rwf(car.monthly_management_fee_amount)} a month` : null },
@@ -150,7 +151,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
   const inspection = seesDocs && (
     <Box title="Inspection" icon={FileSignature}>
       <LegalDocsBox docs={legal.docs.filter((x) => x.vehicle_id === id)} missing={noInspection ? 'vehicle_inspection' : null} canAdd={canEdit}
-        addKinds={noInspection ? [] : ['vehicle_inspection']} onAdd={() => setAddingInspection(true)} empty="No inspection document yet." />
+        addKinds={noInspection ? [] : ['vehicle_inspection']} onAdd={() => setAddingInspection(true)} empty={car.brand_new ? 'Brand new car — no inspection needed.' : 'No inspection document yet.'} />
     </Box>
   );
   const inspectionModal = addingInspection && <AddLegalDocModal kind="vehicle_inspection" vehicleId={id} name={car.plate_number} onClose={() => setAddingInspection(false)} onSaved={legal.reload} />;

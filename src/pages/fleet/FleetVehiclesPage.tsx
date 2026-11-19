@@ -37,7 +37,7 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
   // Kivu Ride's inspection document, uploaded when a car is added.
   const legal = useLegalDocs();
   const seesDocs = profile?.role === 'managing_director' || ['fleet', 'it', 'finance'].includes(profile?.department?.slug ?? '');
-  const noInspection = (vehicleId: string) => seesDocs && !legal.loading && missingInspection(vehicleId, legal.docs);
+  const noInspection = (v: Vehicle) => seesDocs && !legal.loading && missingInspection(v, legal.docs);
 
   const driversForVehicle = (vehicleId: string) => drivers.filter((d) => d.vehicle_id === vehicleId);
 
@@ -107,7 +107,7 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
                     {v.rura_license_status === 'provided' ? <ShieldCheck size={9} /> : <ShieldAlert size={9} />}
                     RURA {v.rura_license_status === 'provided' ? 'provided' : 'pending'}
                   </span>
-                  {noInspection(v.id) && <Label tone="danger" icon={FileSignature}>Inspection missing</Label>}
+                  {noInspection(v) && <Label tone="danger" icon={FileSignature}>Inspection missing</Label>}
                   {v.device_label && (
                     <span className="inline-flex items-center gap-1 text-micro font-medium text-brand-700 dark:text-brand-300 bg-brand/10 px-1.5 py-0.5 rounded-full">
                       <Smartphone size={9} /> {v.device_label}
@@ -148,7 +148,7 @@ function FleetVehiclesPageView({ data }: { data: ReturnType<typeof useFleetData>
           emptyLabel="No vehicles yet."
           onRowClick={(v) => peek.open({ type: 'car', id: v.id, label: v.plate_number })}
           columns={[
-            { header: 'Plate', render: (v) => <Tagged tags={noInspection(v.id) && <Label tone="danger">Inspection missing</Label>}><EntityLink type="car" id={v.id} label={v.plate_number} className="font-mono" /></Tagged> },
+            { header: 'Plate', render: (v) => <Tagged tags={noInspection(v) && <Label tone="danger">Inspection missing</Label>}><EntityLink type="car" id={v.id} label={v.plate_number} className="font-mono" /></Tagged> },
             { header: 'Make / Model', render: (v) => [v.make, v.model].filter(Boolean).join(' ') || '—' },
             {
               header: 'RURA',

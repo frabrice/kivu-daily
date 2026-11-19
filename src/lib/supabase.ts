@@ -149,6 +149,8 @@ export interface Vehicle {
   rura_license_status: RuraLicenseStatus;
   rura_license_issued_date: string | null;
   rura_license_expiry_date: string | null;
+  // Brand new when we got it: no Kivu Ride inspection document needed.
+  brand_new: boolean;
   owner_id: string | null;
   weekly_owner_payout_amount: number | null;
   monthly_management_fee_amount: number | null;

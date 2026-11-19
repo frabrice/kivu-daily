@@ -112,9 +112,10 @@ export function missingForDriver(d: Driver, docs: LegalDoc[]): LegalKind | null 
 export function ownerNeedsAgreement(ownerId: string, vehicles: Pick<Vehicle, 'owner_id' | 'operation_start_date'>[]) {
   return vehicles.some((v) => v.owner_id === ownerId && !!v.operation_start_date);
 }
-// Every car we manage needs Kivu Ride's inspection document.
-export function missingInspection(vehicleId: string, docs: Pick<LegalDoc, 'kind' | 'vehicle_id'>[]) {
-  return !docs.some((x) => x.vehicle_id === vehicleId && x.kind === 'vehicle_inspection');
+// Every car we manage needs Kivu Ride's inspection document, unless it
+// was brand new (ticked when added; the cars before RAG260T all were).
+export function missingInspection(v: Pick<Vehicle, 'id' | 'brand_new'>, docs: Pick<LegalDoc, 'kind' | 'vehicle_id'>[]) {
+  return !v.brand_new && !docs.some((x) => x.vehicle_id === v.id && x.kind === 'vehicle_inspection');
 }
 export function missingForOwner(ownerId: string, vehicles: Pick<Vehicle, 'owner_id' | 'operation_start_date'>[], docs: LegalDoc[]) {
   return ownerNeedsAgreement(ownerId, vehicles) && !docs.some((x) => x.owner_id === ownerId && x.kind === 'owner_management_agreement');

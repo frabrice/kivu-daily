@@ -44,11 +44,11 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
         const [docs, drivers, vehicles] = await Promise.all([
           supabase.from('contract_documents').select('kind, driver_id, owner_id, vehicle_id, period_start'),
           wantDrivers ? supabase.from('drivers').select('id, contract_status, vehicle_id, start_date') : Promise.resolve({ data: [] }),
-          supabase.from('vehicles').select('id, owner_id, operation_start_date'),
+          supabase.from('vehicles').select('id, brand_new, owner_id, operation_start_date'),
         ]);
         const d = (docs.data ?? []) as LegalDoc[];
         if (wantDrivers) missingContracts = ((drivers.data ?? []) as Driver[]).filter((x) => missingForDriver(x, d)).length
-          + ((vehicles.data ?? []) as Vehicle[]).filter((v) => missingInspection(v.id, d)).length;
+          + ((vehicles.data ?? []) as Vehicle[]).filter((v) => missingInspection(v, d)).length;
         if (wantOwners) {
           const v = (vehicles.data ?? []) as Vehicle[];
           missingAgreements = [...new Set(v.map((x) => x.owner_id).filter(Boolean) as string[])].filter((o) => missingForOwner(o, v, d)).length;

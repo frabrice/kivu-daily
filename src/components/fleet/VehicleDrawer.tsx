@@ -41,7 +41,9 @@ export default function VehicleDrawer({
   // saved in the same step. The id is fixed up front so the file is filed under it.
   const [newId] = useState(() => crypto.randomUUID());
   const [inspection, setInspection] = useState<LegalDraft>(emptyDraft(todayStr()));
-  const inspectionError = vehicle ? null : draftError('vehicle_inspection', inspection);
+  // A brand new car needs no inspection: the tick takes the document's place.
+  const [brandNew, setBrandNew] = useState(vehicle?.brand_new ?? false);
+  const inspectionError = vehicle || brandNew ? null : draftError('vehicle_inspection', inspection);
 
   const addDoc = () => setDocuments((d) => [...d, '']);
   const updateDoc = (i: number, text: string) => setDocuments((d) => d.map((v, idx) => (idx === i ? text : v)));
@@ -72,6 +74,7 @@ export default function VehicleDrawer({
       rura_license_status: ruraStatus,
       rura_license_issued_date: ruraIssuedDate || null,
       rura_license_expiry_date: ruraExpiryDate || null,
+      brand_new: brandNew,
       updated_at: new Date().toISOString(),
     };
     if (vehicle) {
@@ -79,7 +82,7 @@ export default function VehicleDrawer({
       setSaving(false);
       if (err) { setError(err.message); return; }
     } else {
-      const up = await uploadDraft('vehicle_inspection', newId, inspection);
+      const up = brandNew ? { doc: null } : await uploadDraft('vehicle_inspection', newId, inspection);
       if ('error' in up) { setSaving(false); setError(up.error); return; }
       const fields: Record<string, unknown> = { ...payload };
       delete fields.updated_at;
@@ -202,7 +205,11 @@ export default function VehicleDrawer({
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!editing} rows={3} className="input resize-none" placeholder="Condition, mileage, anything worth remembering…" />
         </div>
 
-        {!vehicle && editing && <LegalDocFields kind="vehicle_inspection" draft={inspection} onChange={setInspection} title="Kivu Ride inspection document *" />}
+        <label className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-small ${editing ? 'cursor-pointer' : ''} ${brandNew ? 'border-success/50 bg-success-muted' : 'border-line'}`}>
+          <input type="checkbox" checked={brandNew} disabled={!editing} onChange={(e) => setBrandNew(e.target.checked)} className="mt-0.5" />
+          <span><b className="font-medium">Brand new car</b><span className="block text-caption text-fg-muted">Tick it instead of the Kivu Ride inspection document — a new car isn't inspected.</span></span>
+        </label>
+        {!vehicle && editing && !brandNew && <LegalDocFields kind="vehicle_inspection" draft={inspection} onChange={setInspection} title="Kivu Ride inspection document *" />}
 
         {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 

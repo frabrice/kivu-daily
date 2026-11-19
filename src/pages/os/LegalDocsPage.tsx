@@ -63,7 +63,7 @@ export function LegalDocsBoard({ scope }: { scope: Scope }) {
       });
     }
     if (withDrivers) for (const v of vehicles) {
-      if (missingInspection(v.id, docs)) out.push({ key: `v${v.id}`, kind: 'vehicle_inspection', vehicleId: v.id, name: v.plate_number, context: [v.make, v.model].filter(Boolean).join(' ') || 'Car' });
+      if (missingInspection(v, docs)) out.push({ key: `v${v.id}`, kind: 'vehicle_inspection', vehicleId: v.id, name: v.plate_number, context: [v.make, v.model].filter(Boolean).join(' ') || 'Car' });
     }
     if (withOwners) for (const o of owners) {
       if (missingForOwner(o.id, vehicles, docs)) out.push({ key: `o${o.id}`, kind: 'owner_management_agreement', ownerId: o.id, name: o.full_name, context: vehicles.filter((v) => v.owner_id === o.id).map((v) => v.plate_number).join(', ') });
