@@ -7,7 +7,7 @@ import { kigaliToday } from '../../lib/kigali';
 import { CTrip, Company, Followup, METHOD_LABEL, exemptMap, loadCommissions, summarise } from '../../lib/commissions';
 import CommissionPreview from '../../components/commissions/CommissionPreview';
 import { ChartCard, DailyBars, Empty, Kpi, MiniTable, RankBars, STATUS, dayList, longDay, usePalette } from '../../components/charts/kit';
-import { Label, PageHeader } from '../../ui/kit';
+import { Label, PageHeader, Tagged } from '../../ui/kit';
 
 // Trips > Commissions: what the 10% on completed trips should bring, what
 // the app already took, what drivers owe from cash trips, and who to call.
@@ -121,7 +121,7 @@ export default function CommissionsPage() {
                 <tbody className="divide-y divide-line-muted">
                   {s.drivers.map((r) => (
                     <tr key={r.key} className="hover:bg-hover">
-                      <td className="px-3 py-2"><p className="font-medium">{r.name}{r.ours && <span className="ml-1.5"><Label tone="accent">Ours</Label></span>}</p>{r.phone && <a href={`tel:${r.phone}`} className="text-caption text-fg-muted">{r.phone}</a>}</td>
+                      <td className="px-3 py-2"><p className="font-medium"><Tagged tags={r.ours && <Label tone="accent">Ours</Label>}>{r.name}</Tagged></p>{r.phone && <a href={`tel:${r.phone}`} className="text-caption text-fg-muted">{r.phone}</a>}</td>
                       <td className="px-3 py-2 tabular-nums">{r.trips}<span className="text-fg-subtle"> · {r.cashTrips} cash</span></td>
                       <td className="px-3 py-2 tabular-nums">{rwf(r.fares)}</td>
                       <td className="px-3 py-2 tabular-nums">{rwf(r.expected)}</td>

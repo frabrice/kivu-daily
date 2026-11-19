@@ -21,7 +21,7 @@ import FinanceAdjustPanel from '../../components/finance/FinanceAdjustPanel';
 import { useAccess } from '../../os/access';
 import { EntityLink } from '../../os/EntityLink';
 import { usePageTitle } from '../../os/workspace';
-import { Box, Label, PageHeader, StatCard, StatGrid, rwf } from '../../ui/kit';
+import { Box, Label, PageHeader, StatCard, StatGrid, Tagged, rwf } from '../../ui/kit';
 
 // Finance overview (MD, 15 Oct 2026): the first page for the MD's Finance
 // and for the Finance team. What we made, spent and lost; where the money
@@ -492,7 +492,7 @@ function CarPanel({ car, colors, onClose }: { car: CarEconomics; colors: Record<
             <Table head={['Driver', 'Days on the car', 'Should have', 'Paid', 'Not paid', '']} right={[1, 2, 3, 4]}>
               {car.drivers.map((r) => (
                 <tr key={r.driver.id} className="border-t border-line-muted">
-                  <td className={td}><EntityLink type="driver" id={r.driver.id} label={r.driver.full_name} />{r.ended && <span className="ml-1.5"><Label>Left</Label></span>}</td>
+                  <td className={td}><Tagged tags={r.ended && <Label>Left</Label>}><EntityLink type="driver" id={r.driver.id} label={r.driver.full_name} /></Tagged></td>
                   <td className={num}>{r.days}</td>
                   <td className={num}>{rwf(r.expected)}</td>
                   <td className={num}>{rwf(r.collected)}</td>

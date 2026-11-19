@@ -11,7 +11,7 @@ import KpiTile from '../../components/KpiTile';
 import DataTable from '../../components/DataTable';
 import { Pager, usePaged } from '../../ui/Pager';
 import { missingForOwner, useLegalDocs } from '../../lib/legalDocs';
-import { Label } from '../../ui/kit';
+import { Label, Tagged } from '../../ui/kit';
 import SearchableSelect from '../../components/SearchableSelect';
 import VehicleOwnerDrawer from '../../components/finance/VehicleOwnerDrawer';
 import OnboardVehicleOwnerDrawer from '../../components/finance/OnboardVehicleOwnerDrawer';
@@ -234,7 +234,7 @@ function OwnersTab({
           emptyLabel="No vehicle owners on file yet."
           onRowClick={onViewOwner}
           columns={[
-            { header: 'Name', render: (o) => <span className="flex items-center gap-2">{o.full_name}{!legal.loading && missingForOwner(o.id, vehicles, legal.docs) && <Label tone="danger">Agreement missing</Label>}</span> },
+            { header: 'Name', render: (o) => <Tagged tags={!legal.loading && missingForOwner(o.id, vehicles, legal.docs) && <Label tone="danger">Agreement missing</Label>}>{o.full_name}</Tagged> },
             { header: 'Phone', render: (o) => o.phone },
             { header: 'Email', render: (o) => o.email ?? '—' },
             {

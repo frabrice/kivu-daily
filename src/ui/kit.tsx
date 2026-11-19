@@ -20,6 +20,18 @@ export function Label({ tone = 'neutral', icon: Icon, children, title }: { tone?
   return <span title={title} className={`label ${TONE[tone]}`}>{Icon && <Icon size={11} />}{children}</span>;
 }
 
+// A table cell's text with its flag labels ("Agreement missing", "Ours",
+// "Left"...) pinned to the cell's right edge, so down a column the labels
+// line up in one straight line instead of trailing names of every length.
+export function Tagged({ children, tags }: { children: ReactNode; tags?: ReactNode }) {
+  return (
+    <span className="flex items-center gap-2 min-w-0">
+      <span className="min-w-0">{children}</span>
+      {tags ? <span className="ml-auto flex shrink-0 items-center gap-1">{tags}</span> : null}
+    </span>
+  );
+}
+
 export function Counter({ n, tone }: { n: number; tone?: 'danger' | 'accent' }) {
   return <span className={`counter ${tone === 'danger' ? '!bg-danger-muted !text-danger' : tone === 'accent' ? '!bg-accent/15 !text-accent-fg' : ''}`}>{n}</span>;
 }

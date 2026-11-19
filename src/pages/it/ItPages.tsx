@@ -11,7 +11,7 @@ import {
   kigaliToday, milestoneStats, pointsOf, useItData, useMyIt, when, workOf,
 } from '../../lib/it';
 import { usePageTitle } from '../../os/workspace';
-import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, UnderlineTabs } from '../../ui/kit';
+import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, Tagged, UnderlineTabs } from '../../ui/kit';
 import { Pager, usePaged } from '../../ui/Pager';
 import { ChartCard, DailyBars, DailyLines, RankBars, usePalette } from '../../components/charts/kit';
 import IssuePanel from '../../components/it/IssuePanel';
@@ -417,7 +417,7 @@ function MilestoneDetail({ data, m, me, isLead, onBack }: { data: ItData; m: ItM
                 <tbody>
                   {paged.rows.map((i) => (
                     <tr key={i.id} onClick={() => setOpen(i.id)} className="border-t border-line-muted cursor-pointer hover:bg-hover/60">
-                      <td className={`${td} max-w-[380px]`}><span className="font-mono text-caption text-fg-muted">{keyOf(i.id)}</span> {i.title}{i.milestone_added_at && i.milestone_added_at.slice(0, 10) > m.start_date && <span className="ml-1.5"><Label tone="attention">added later</Label></span>}</td>
+                      <td className={`${td} max-w-[380px]`}><Tagged tags={i.milestone_added_at && i.milestone_added_at.slice(0, 10) > m.start_date && <Label tone="attention">added later</Label>}><span className="font-mono text-caption text-fg-muted">{keyOf(i.id)}</span> {i.title}</Tagged></td>
                       <td className={td}><StatusLabel status={i.status} /></td>
                       <td className={td}><Label tone={PRIORITY_OF[i.priority].tone}>{i.priority.toUpperCase()}</Label></td>
                       <td className={td}><AreaChips data={data} areas={i.areas} /></td>

@@ -7,7 +7,7 @@ import {
 } from '../../lib/trips';
 import { usePageTitle } from '../../os/workspace';
 import { EntityLink } from '../../os/EntityLink';
-import { Label, PageHeader, StatCard, StatGrid, UnderlineTabs, rwf } from '../../ui/kit';
+import { Label, PageHeader, StatCard, StatGrid, Tagged, UnderlineTabs, rwf } from '../../ui/kit';
 import { Pager, usePaged } from '../../ui/Pager';
 import { RangeTabs } from '../../components/charts/kit';
 import Modal from '../../components/Modal';
@@ -198,9 +198,10 @@ export default function TripsPage() {
                       <td className={`${td} max-w-[180px]`}><span className="block truncate">{t.rider_name ?? '—'}</span><span className="block text-caption text-fg-muted">{t.rider_kind === 'guest' ? 'Booked for a guest' : t.rider_kind === 'app' ? 'Rider app' : ''}</span>{companyOf.get(t.id) && <span className="mt-0.5 inline-block" title={`Added by ${biz.nameOf(tagOf.get(t.id)?.added_by)}`}><Label tone={tagOf.get(t.id)?.status === 'pending' ? 'attention' : 'info'} icon={Building2}>{companyOf.get(t.id)!.name}{tagOf.get(t.id)?.status === 'pending' ? ' · to verify' : ''}</Label></span>}</td>
                       <td className={`${td} max-w-[220px]`} onClick={(e) => e.stopPropagation()}>
                         {t.kivu_driver_id ? <EntityLink type="driver" id={t.kivu_driver_id} label={t.driver_name ?? 'Driver'} /> : <span className="block truncate">{t.driver_name ?? <span className="text-fg-subtle">No driver yet</span>}</span>}
-                        <span className="flex items-center gap-1.5 text-caption text-fg-muted">
-                          {t.kivu_vehicle_id ? <EntityLink type="car" id={t.kivu_vehicle_id} label={t.vehicle_plate ?? ''} className="font-mono" /> : <span className="font-mono">{t.vehicle_plate}</span>}
-                          {(t.kivu_driver_id || t.kivu_vehicle_id) && <Label tone="accent">Our fleet</Label>}
+                        <span className="block text-caption text-fg-muted">
+                          <Tagged tags={(t.kivu_driver_id || t.kivu_vehicle_id) && <Label tone="accent">Our fleet</Label>}>
+                            {t.kivu_vehicle_id ? <EntityLink type="car" id={t.kivu_vehicle_id} label={t.vehicle_plate ?? ''} className="font-mono" /> : <span className="font-mono">{t.vehicle_plate}</span>}
+                          </Tagged>
                         </span>
                       </td>
                       <td className={`${td} max-w-[260px]`}><span className="block truncate"><MapPin size={11} className="inline text-success mr-1" />{shortAddress(t.pickup_address)}</span><span className="block truncate text-fg-muted"><MapPin size={11} className="inline text-danger mr-1" />{shortAddress(t.destination_address)}</span></td>

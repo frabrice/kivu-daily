@@ -14,7 +14,7 @@ import DriverProfilePage from './DriverProfilePage';
 import { EntityLink } from '../../os/EntityLink';
 import { usePeek } from '../../os/peek';
 import { LEGAL_KIND, missingForDriver, useLegalDocs } from '../../lib/legalDocs';
-import { Label } from '../../ui/kit';
+import { Label, Tagged } from '../../ui/kit';
 import ExportButton from '../../components/fleet/ExportButton';
 import { kigaliToday as kTodayFast } from '../../lib/kigali';
 
@@ -189,7 +189,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
           emptyLabel="No drivers yet."
           onRowClick={(d) => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
           columns={[
-            { header: 'Name', render: (d) => { const m = missingDoc(d); return <span className="flex items-center gap-2"><EntityLink type="driver" id={d.id} label={d.full_name} />{m && <Label tone="danger">{LEGAL_KIND[m].missing}</Label>}</span>; } },
+            { header: 'Name', render: (d) => { const m = missingDoc(d); return <Tagged tags={m && <Label tone="danger">{LEGAL_KIND[m].missing}</Label>}><EntityLink type="driver" id={d.id} label={d.full_name} /></Tagged>; } },
             { header: 'Phone', render: (d) => d.phone },
             {
               header: 'Stage',

@@ -168,7 +168,7 @@ export function CompanyObjectives() {
                     return (
                       <li key={k.id} className="text-small">
                         <div className="flex items-center gap-2">
-                          <span className="flex-1">{k.title}{k.source !== 'manual' && <span className="ml-1"><Label tone="info">live</Label></span>}</span>
+                          <span className="flex-1">{k.title}</span>{k.source !== 'manual' && <Label tone="info">live</Label>}
                           {k.source === 'manual' && isAdmin ? <input defaultValue={String(k.current_value)} onBlur={(e) => e.target.value !== String(k.current_value) && saveKr(k.id, e.target.value)} className="input !w-20 !py-0.5 text-right tabular-nums" aria-label={`Current value of ${k.title}`} />
                             : <b className="tabular-nums">{val}</b>}
                           <span className="text-caption text-fg-muted whitespace-nowrap">→ {Number(k.target_value)}{k.unit ? ` ${k.unit}` : ''} <span className="text-fg-subtle">(from {Number(k.start_value)})</span></span>

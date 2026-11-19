@@ -9,7 +9,7 @@ import {
   objectiveProgress, quarterLabel, quarterOf, rwf, rwfShort, usePlanData,
 } from '../../lib/itPlan';
 import { usePageTitle } from '../../os/workspace';
-import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, UnderlineTabs } from '../../ui/kit';
+import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, Tagged, UnderlineTabs } from '../../ui/kit';
 import { RankBars, usePalette } from '../../components/charts/kit';
 import { BudgetLineModal, DecisionModal, InitiativeFormModal, ObjectiveFormModal } from '../../components/it/PlanModals';
 import { MilestoneFormModal } from '../../components/it/ItModals';
@@ -210,7 +210,7 @@ function InitiativePage({ ctx, i, onBack }: { ctx: ReturnType<typeof useCtx>; i:
               <tbody>
                 {lines.map((l) => (
                   <tr key={l.id} onClick={isLead ? () => setLine(l.id) : undefined} className={`border-t border-line-muted ${isLead ? 'cursor-pointer hover:bg-hover/60' : ''}`}>
-                    <td className={td}>{l.description}{l.committed && <span className="ml-1.5"><Label tone="info">committed</Label></span>}</td>
+                    <td className={td}><Tagged tags={l.committed && <Label tone="info">committed</Label>}>{l.description}</Tagged></td>
                     <td className={`${td} text-caption`}>{CATEGORY_LABEL[l.category]}</td>
                     <td className={`${td} text-caption text-fg-muted`}>{l.recurrence === 'monthly' ? `${rwf(Number(l.amount))} × ${l.months} months` : 'once'}</td>
                     <td className={`${td} text-right tabular-nums font-medium`}>{rwf(lineTotal(l))}</td>
