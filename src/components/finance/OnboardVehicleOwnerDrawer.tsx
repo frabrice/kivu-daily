@@ -45,6 +45,7 @@ export default function OnboardVehicleOwnerDrawer({
   // unless this owner already has one on file. The new owner's id is fixed
   // up front so the file is filed under it.
   const [newOwnerId] = useState(() => crypto.randomUUID());
+  const [ownerCreated, setOwnerCreated] = useState(false);
   const [agreement, setAgreement] = useState<LegalDraft>(emptyDraft(todayStr()));
   const { docs: legalDocs } = useLegalDocs();
   const targetOwner = mode === 'existing' ? ownerId : newOwnerId;
@@ -64,7 +65,12 @@ export default function OnboardVehicleOwnerDrawer({
     if (up && 'error' in up) { setSaving(false); setError(up.error); return; }
 
     let finalOwnerId = ownerId;
-    if (mode === 'new') {
+    // A second Save after the car step failed: the owner was already
+    // created on the first try, so carry on with it instead of creating it
+    // again ("duplicate key ... vehicle_owners_pkey", 19 Nov 2026).
+    if (mode === 'new' && ownerCreated) {
+      finalOwnerId = newOwnerId;
+    } else if (mode === 'new') {
       const { data, error: err } = await supabase.from('vehicle_owners').insert({
         id: newOwnerId,
         full_name: fullName.trim(),
@@ -76,6 +82,7 @@ export default function OnboardVehicleOwnerDrawer({
       }).select().single();
       if (err) { setSaving(false); setError(err.message); return; }
       finalOwnerId = data!.id;
+      setOwnerCreated(true);
     }
 
     const { error: err } = await supabase.rpc('onboard_vehicle_owner_with_agreement', {
@@ -87,7 +94,13 @@ export default function OnboardVehicleOwnerDrawer({
       p_monthly_management_fee: Number(monthlyFee) || MONTHLY_MANAGEMENT_FEE_DEFAULT,
     });
     setSaving(false);
-    if (err) { setError(err.message); return; }
+    if (err) {
+      // In "New owner" mode the owner exists by now, whatever failed after.
+      setError(mode === 'new'
+        ?`${err.message} (the owner ${fullName.trim()} is saved; press Save again to link the car, or pick them under Existing Owner)`
+        : err.message);
+      return;
+    }
     onSaved();
     onClose();
   };
