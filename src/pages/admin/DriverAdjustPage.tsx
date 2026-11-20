@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { SlidersHorizontal, CheckCircle2, AlertTriangle, Plus, Wallet, Receipt, HandCoins, Loader2, Search, Ban, Check, CalendarClock, Users2, UserX } from 'lucide-react';
-import { supabase, Driver, DriverDeposit, DriverFine, DriverFineKind, DriverFinePayment } from '../../lib/supabase';
+import { supabase, Driver, DriverDeposit, DriverFine, DriverFineKind, DriverFinePayment, DriverRestDay, DriverShift } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import {
   useFleetData, computeDepositStanding, driverTermsLabel, dailyRateOf, fineAmountPaid, fineKindLabel, FINE_KINDS, AWAITING_MD,
-  CONTRACT_END_REASONS, CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN,
+  CONTRACT_END_REASONS, CONTRACT_END_DECIDED_BY, CONTRACT_CAN_RETURN, DRIVER_MODELS, REST_DAYS, modelOf,
 } from '../../lib/fleet';
+import type { DriverModelKey } from '../../lib/fleet';
 import {
   AdjustRow, PendingItem, PayrollRow, buildAdjustRows, confirmPending, correctionFor, rejectPending, snapOf, useDriverAdjustExtras, withConfirmedStart, withCorrection,
 } from '../../lib/driverAdjust';
@@ -185,8 +186,32 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
   const [paidOn, setPaidOn] = useState<{ id: string; date: string } | null>(null);
   const [owedForm, setOwedForm] = useState<{ kind: DriverFineKind; amount: string; date: string; vehicle: string; reason: string } | null>(null);
 
+  // The model the driver works on, as on file; correcting it applies from the start.
+  const [tModel, setTModel] = useState<DriverModelKey>((d.model as DriverModelKey) ?? 'one_shift');
+  const [tDaily, setTDaily] = useState(String(dailyRateOf(d)));
+  const [tShift, setTShift] = useState<string>(d.shift && d.shift !== 'full' ? d.shift : '');
+  const [tRest, setTRest] = useState<string>(d.rest_day ?? '');
+  const tm = modelOf(tModel)!;
+  const history = [...(d.rate_history ?? [])].sort((a, b) => a.from.localeCompare(b.from));
+  const termsChanged = tModel !== d.model || num(tDaily) !== dailyRateOf(d)
+    || (!tm.wholeCar && (tShift || null) !== (d.shift === 'full' ? null : d.shift ?? null))
+    || (tm.restDay && (tRest || null) !== (d.rest_day ?? null));
+  const newShift: DriverShift | null = tm.wholeCar ? (d.vehicle_id ? 'full' : null) : ((tShift || null) as DriverShift | null);
+  const newRest = (tm.restDay ? tRest || null : null) as DriverRestDay | null;
+  const pickModel = (k: DriverModelKey) => {
+    setTModel(k);
+    setTDaily(String(DRIVER_MODELS[k].daily));
+    if (!DRIVER_MODELS[k].restDay) setTRest('');
+    else if (!tRest) setTRest(d.rest_day ?? '');
+  };
+
   const depNum = num(depAmount);
-  const confirmedDriver = useMemo(() => withConfirmedStart(d, start, depNum, depDate || null), [d, start, depNum, depDate]);
+  const confirmedDriver = useMemo(() => {
+    const base = withConfirmedStart(d, start, depNum, depDate || null);
+    return termsChanged
+      ? { ...base, model: tModel, shift: newShift, rest_day: newRest, rate_history: [{ from: start || d.start_date || today, daily: num(tDaily), model: tModel, rest_day: newRest }] }
+      : base;
+  }, [d, start, depNum, depDate, termsChanged, tModel, newShift, newRest, tDaily, today]);
   const sys = useMemo(() => computeDepositStanding(confirmedDriver, row.deposits, today), [confirmedDriver, row.deposits, today]);
   const until = untilText ?? sys.paidThrough ?? '';
   const adj = useMemo(() => (start ? correctionFor(confirmedDriver, row.deposits, until, today) : 0), [confirmedDriver, row.deposits, until, today, start]);
@@ -198,6 +223,9 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
   const blocker = !start ? 'Enter the start date.'
     : start > today ? "The start date can't be in the future."
     : depNum > 0 && !depDate ? 'Enter the date the deposit was paid.'
+    : termsChanged && num(tDaily) <= 0 ? 'Enter the day rate.'
+    : termsChanged && tm.restDay && !tRest ? 'Pick the rest day.'
+    : termsChanged && !tm.wholeCar && d.vehicle_id && !tShift ? 'Pick the day or the night shift.'
     : row.pending.length ? `Confirm or reject the ${row.pending.length} entr${row.pending.length === 1 ? 'y' : 'ies'} waiting for you first: they change the numbers.`
     : row.futurePayments.length ? `Fix the date of the payment dated ${short(row.futurePayments[0].paid_date)} first (it is in the future).`
     : lastPay && row.lastPayment && lastPay > row.lastPayment ? `The last payment (${short(lastPay)}) isn't recorded yet: add it under Payments first, so it counts and Finance has it.`
@@ -265,6 +293,7 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
       p: {
         start_date: start, deposit_amount: depNum, deposit_date: depNum > 0 ? depDate : null,
         last_payment_date: lastPay || null, paid_until: until || null, adjustment: adj, daily_rate: dailyRateOf(confirmedDriver),
+        terms: termsChanged ? { model: tModel, daily: num(tDaily), shift: newShift, rest_day: newRest } : null,
         we_owe_amount: num(weOwe), we_owe_note: weOweNote, driver_agrees: agrees, notes,
         before: snapOf(row.standing), after: snapOf(after),
       },
@@ -363,10 +392,40 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
                 <label className="block"><span className="text-caption font-semibold text-fg-muted">Paid on</span>
                   <DateInput value={depDate} onChange={setDepDate} max={today} disabled={depNum <= 0} /></label>
               </div>
-              <p className="text-caption text-fg-muted flex flex-wrap items-center gap-x-2">
-                <span>{driverTermsLabel(d, true)} · {rwf(dailyRateOf(d))} a day{d.rest_day ? ` · rests on ${d.rest_day[0].toUpperCase()}${d.rest_day.slice(1)}` : ' · no rest day'}</span>
-                <button className="text-accent hover:underline" onClick={() => setChangeModel(true)}>Change model</button>
-              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block"><span className="text-caption font-semibold text-fg-muted">Model</span>
+                  <select className="input w-full mt-1" value={tModel} onChange={(e) => pickModel(e.target.value as DriverModelKey)}>
+                    {(Object.keys(DRIVER_MODELS) as DriverModelKey[]).map((k) => <option key={k} value={k}>{DRIVER_MODELS[k].label}</option>)}
+                  </select></label>
+                <label className="block"><span className="text-caption font-semibold text-fg-muted">Day rate (RWF)</span>
+                  <input className="input w-full mt-1" inputMode="numeric" value={tDaily} onChange={(e) => setTDaily(e.target.value)} /></label>
+                {!tm.wholeCar && (
+                  <label className="block"><span className="text-caption font-semibold text-fg-muted">Shift</span>
+                    <select className="input w-full mt-1" value={tShift} onChange={(e) => setTShift(e.target.value)}>
+                      <option value="">{d.vehicle_id ? 'Pick' : 'No car yet'}</option>
+                      <option value="day">Day</option>
+                      <option value="night">Night</option>
+                    </select></label>
+                )}
+                <label className="block"><span className="text-caption font-semibold text-fg-muted">Rest day</span>
+                  {tm.restDay ? (
+                    <select className="input w-full mt-1" value={tRest} onChange={(e) => setTRest(e.target.value)}>
+                      <option value="">Pick</option>
+                      {REST_DAYS.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+                    </select>
+                  ) : <p className="input w-full mt-1 text-fg-muted">None (works every day)</p>}</label>
+              </div>
+              <p className="text-caption text-fg-subtle">{rwf(num(tDaily) * (tm.restDay ? 6 : 7))} a week · {tm.wholeCar ? 'the car alone' : 'shares the car'}{tm.salary ? ` · salary ${rwf(tm.salary)} a month` : ' · no salary'}</p>
+              {history.length > 1 && (
+                <div className="text-caption rounded-lg bg-inset p-2.5 space-y-0.5">
+                  <p className="font-semibold text-fg-muted">On file, the model changed during this contract:</p>
+                  {history.map((h, i) => <p key={i}>From {short(h.from)}: {DRIVER_MODELS[(h.model ?? 'one_shift') as DriverModelKey]?.label ?? h.model} · {rwf(Number(h.daily))} a day</p>)}
+                  {termsChanged && <p className="text-attention">Your correction replaces all of this with one model from the start date.</p>}
+                </div>
+              )}
+              {termsChanged
+                ? <p className="text-caption text-attention">Corrected from the start date: the driver was always on these terms, so every day is counted at this rate.</p>
+                : <p className="text-caption text-fg-muted">Matches what's on file. If the model really changed part-way, leave this and use <button className="text-accent hover:underline" onClick={() => setChangeModel(true)}>Change model</button> from the day it changed.</p>}
               {changedStart && <p className="text-caption text-attention">Changed from what's on file ({short(d.start_date)}, {d.initial_deposit_paid ? `${rwf(Number(d.initial_deposit_amount ?? 0))} on ${short(d.initial_deposit_date)}` : 'no deposit'}). Finance's copy of the deposit follows.</p>}
             </div>
           </Box>
