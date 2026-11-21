@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Book: date, guests, getting there</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button{font-family:Inter,sans-serif;cursor:pointer}
+.sec{padding:18px 18px 0}
+.lab{font-size:12px;font-weight:700;color:#6B7280}
+.dt{flex:1;border:1.5px solid #E5E7EB;border-radius:14px;padding:8px 0;text-align:center;font-size:11px;color:#6B7280;font-weight:600;background:#fff}
+.dt b{display:block;font-size:18px;color:#141B26;margin:2px 0}
+.tm{height:36px;padding:0 14px;border-radius:999px;border:1.5px solid #E5E7EB;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;background:#fff}
+.stp{width:36px;height:36px;border-radius:50%;border:1.5px solid #D1D5DB;background:#fff;font-size:20px;font-weight:600;display:flex;align-items:center;justify-content:center;color:#141B26}
+.opt{flex:1;text-align:left;border-radius:16px;padding:12px;background:#fff}
+.seg{flex:1;height:36px;border-radius:10px;border:0;font-size:13px;font-weight:600}
+.line{height:1px;background:#F0F1F4;margin:18px 18px 0}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="padding: 14px 18px 12px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F0F1F4">
+    <a href="ExperienceDetail.html" aria-label="Close" style="width: 40px; height: 40px; border-radius: 50%; background: #F3F4F6; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#141B26" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></a>
+    <img src="img/667a4cad6ffbb8235a742e62f857b10f.jpg" alt="" style="width: 40px; height: 40px; border-radius: 10px; object-fit: cover">
+    <div style="flex: 1; min-width: 0"><div style="font: 700 16px/1.2 Inter, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Sacred Forest Storytelling Walk</div><div style="font-size: 12px; color: #6B7280">with Jean M. · 3 hrs</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="lab">When</div>
+    <div style="display: flex; gap: 8px; margin-top: 10px">
+      <span class="dt" style="opacity: .4">Thu<b>26</b>Full</span>
+      <span class="dt">Fri<b>27</b>Nov</span>
+      <span class="dt" style="border: 2px solid #517A4F; background: #F3F7F2; color: #3E6340">Sat<b>28</b>Nov</span>
+      <span class="dt">Sun<b>29</b>Nov</span>
+      <span class="dt">Wed<b>2</b>Dec</span>
+    </div>
+    <div style="display: flex; gap: 8px; margin-top: 10px; align-items: center">
+      <span class="tm" style="background: #14233A; color: #fff; border-color: #14233A">09:30</span>
+      <span class="tm">14:00</span>
+      <span style="font-size: 12px; color: #6B7280; margin-left: 4px">5 places left</span>
+    </div>
+  </div>
+
+  <div class="line"></div>
+  <div class="sec" style="display: flex; align-items: center; justify-content: space-between">
+    <div><div class="lab">Guests</div><div style="font-size: 13px; color: #6B7280; margin-top: 4px">19,500 RWF each</div></div>
+    <div style="display: flex; align-items: center; gap: 12px">
+      <button class="stp" aria-label="Remove a guest" onClick="{{ less }}">−</button>
+      <b style="width: 20px; text-align: center; font-size: 18px">{{ guests }}</b>
+      <button class="stp" aria-label="Add a guest" onClick="{{ more }}">+</button>
+    </div>
+  </div>
+
+  <div class="line"></div>
+  <div class="sec">
+    <div class="lab">Getting there</div>
+    <div style="display: flex; gap: 10px; margin-top: 10px">
+      <button class="opt" onClick="{{ pickRide }}" style="{{ rideStyle }}">
+        <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3E6340" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.65 5H8.4a2 2 0 0 0-1.9 1.26L5 10 3 8"></path><path d="M7 14h.01M17 14h.01"></path><rect x="3" y="10" width="18" height="8" rx="2"></rect><path d="M5 18v2M19 18v2"></path></svg>
+        <div style="font-weight: 700; font-size: 14.5px; margin-top: 6px; color: #141B26">Add Kivu Ride</div>
+        <div style="font-size: 12px; color: #6B7280; margin-top: 2px">There and back · 93,600</div>
+      </button>
+      <button class="opt" onClick="{{ pickOwn }}" style="{{ ownStyle }}">
+        <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="2"><circle cx="12" cy="5" r="2"></circle><path d="M10 22l1-7-2-3 2-4 3 3 3 1M8 13l-2 4"></path></svg>
+        <div style="font-weight: 700; font-size: 14.5px; margin-top: 6px; color: #141B26">My own transport</div>
+        <div style="font-size: 12px; color: #6B7280; margin-top: 2px">Meet at the gate</div>
+      </button>
+    </div>
+
+    <sc-if value="{{ ride }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top: 12px; background: #F6F8F5; border: 1px solid #DCE7DA; border-radius: 16px; padding: 12px">
+        <div style="font-size: 12.5px; font-weight: 600; color: #4B5563">Pick me up from</div>
+        <div style="display: flex; gap: 6px; margin-top: 8px; background: #ECF0EB; border-radius: 12px; padding: 3px">
+          <button class="seg" onClick="{{ pickCurrent }}" style="{{ curStyle }}">Current location</button>
+          <button class="seg" onClick="{{ pickHome }}" style="{{ homeStyle }}">Home</button>
+          <a href="PickupEdit.html" class="seg" style="display: flex; align-items: center; justify-content: center; color: #4B5563">Other</a>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h3M19 12h3M12 2v3M12 19v3"></path><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+          <span style="font-size: 14px; font-weight: 600">{{ address }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #CFDDCD">
+          <span style="font-size: 13px; color: #374151">Pickup <b>07:30</b> · arrive 09:20 · back ~15:00</span>
+          <span style="font-size: 12.5px; font-weight: 700; color: #3E6340">Change</span>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ own }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top: 12px; background: #F9FAFB; border: 1px solid #EEF0F3; border-radius: 16px; padding: 12px; display: flex; gap: 10px">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#517A4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 15 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <div style="font-size: 13px; line-height: 1.5; color: #374151"><b>Meet Jean at Buhanga Eco-Park gate, 09:30.</b><br>Directions and parking info come with your booking.</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #EEF0F3; padding: 12px 18px 22px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span style="font-size: 12.5px; color: #6B7280">{{ breakdown }}</span>
+      <span style="font-size: 20px; font-weight: 700">{{ total }} <span style="font-size: 13px">RWF</span></span>
+    </div>
+    <a href="Checkout.html" style="margin-top: 10px; height: 54px; border-radius: 12px; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px">Continue to payment</a>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { guests: 2, ride: true, pick: 'current' }; }
+  renderVals() {
+    const s = this.state;
+    const fmt = (n) => n.toLocaleString('en-US');
+    const visit = 19500 * s.guests;
+    const rideFare = s.ride ? 93600 : 0;
+    const on = { border: '2px solid #517A4F', background: '#F3F7F2' };
+    const off = { border: '1.5px solid #E5E7EB', background: '#fff' };
+    const segOn = { background: '#fff', color: '#141B26', boxShadow: '0 1px 3px rgba(0,0,0,.12)' };
+    const segOff = { background: 'transparent', color: '#4B5563' };
+    return {
+      guests: s.guests,
+      ride: s.ride,
+      own: !s.ride,
+      less: () => this.setState({ guests: Math.max(1, s.guests - 1) }),
+      more: () => this.setState({ guests: Math.min(8, s.guests + 1) }),
+      pickRide: () => this.setState({ ride: true }),
+      pickOwn: () => this.setState({ ride: false }),
+      pickCurrent: () => this.setState({ pick: 'current' }),
+      pickHome: () => this.setState({ pick: 'home' }),
+      rideStyle: s.ride ? on : off,
+      ownStyle: s.ride ? off : on,
+      curStyle: s.pick === 'current' ? segOn : segOff,
+      homeStyle: s.pick === 'home' ? segOn : segOff,
+      address: s.pick === 'current' ? 'Kimihurura, KG 7 Ave (you are here)' : 'Home, Kicukiro',
+      breakdown: s.ride ? 'Visit ' + fmt(visit) + ' + ride ' + fmt(rideFare) : 'Visit ' + fmt(visit) + ', no ride',
+      total: fmt(visit + rideFare)
+    };
+  }
+}
+
+</script>
+<script>DC.boot('BookSheet', 0);</script>
+</body>
+</html>

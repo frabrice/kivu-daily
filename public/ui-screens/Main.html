@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Kivu Ride home</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.sq{width:42px;height:42px;border-radius:11px;background:#1C2D45;display:flex;align-items:center;justify-content:center;border:0;position:relative}
+.call{margin-left:auto;height:34px;padding:0 15px;border-radius:999px;border:1.5px solid #517A4F;background:#517A4F;color:#fff;font:700 15px Inter;display:flex;align-items:center;gap:7px}
+.badge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;background:#EF4444;color:#fff;font: 700 11px/20px Inter;text-align:center;border-radius:999px;border:2px solid #14233A}
+.car{position:absolute;width:30px;height:30px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center}
+.poi{position:absolute;display:flex;align-items:center;gap:4px;font:600 11.5px Inter;white-space:nowrap}
+.dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25);flex:none}
+.bus{position:absolute;width:16px;height:16px;border-radius:5px;background:#5F6B7A;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.nb{position:absolute;font:700 10px Inter;letter-spacing:1.6px;color:#4B5563}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #EDEDF1">
+  <img src="img/eaea08f07e8872ff8b0051e4b5575f73.jpg" alt="Map of Kimihurura, Kigali" style="position: absolute; left: 0; top: 0; width: 390px; height: 844px; display: block">
+  <span class="car" style="left: 274px; top: 370px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#517A4F"><path d="M5 11l2-5h10l2 5h1v6h-2v1.5h-3V17H9v1.5H6V17H4v-6z"></path></svg></span>
+  <span class="car" style="left: 67px; top: 338px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#517A4F"><path d="M5 11l2-5h10l2 5h1v6h-2v1.5h-3V17H9v1.5H6V17H4v-6z"></path></svg></span>
+  <span class="car" style="left: 87px; top: 611px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#517A4F"><path d="M5 11l2-5h10l2 5h1v6h-2v1.5h-3V17H9v1.5H6V17H4v-6z"></path></svg></span>
+  <span class="car" style="left: 179px; top: 338px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#517A4F"><path d="M5 11l2-5h10l2 5h1v6h-2v1.5h-3V17H9v1.5H6V17H4v-6z"></path></svg></span>
+  <span class="car" style="left: 294px; top: 508px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#517A4F"><path d="M5 11l2-5h10l2 5h1v6h-2v1.5h-3V17H9v1.5H6V17H4v-6z"></path></svg></span>
+  <span class="car" style="left: 127px; top: 254px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#517A4F"><path d="M5 11l2-5h10l2 5h1v6h-2v1.5h-3V17H9v1.5H6V17H4v-6z"></path></svg></span>
+  <span style="position: absolute; left: 180px; top: 455px; width: 30px; height: 30px; border-radius: 50%; background: #3B82F6; border: 3px solid #fff; box-sizing: border-box; box-shadow: 0 0 0 12px rgba(59,130,246,.18), 0 2px 6px rgba(0,0,0,.3)"></span>
+  <span style="position: absolute; left: 8px; top: 708px; font-size: 9px; color: #4B5563; background: rgba(255,255,255,.75); padding: 1px 5px; border-radius: 4px">© OpenStreetMap</span>
+
+  <div style="position: absolute; top: 0; left: 0; right: 0; background: #14233A; padding: 18px 16px 16px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <a href="Menu.html" class="sq" aria-label="Menu"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></a>
+      <a href="tel:6023" class="call"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Call us</a>
+      <button class="sq" aria-label="Notifications, 15 new"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.27 21a2 2 0 0 0 3.46 0"></path><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"></path></svg><span class="badge">15</span></button>
+    </div>
+    <a href="WhereTo.html" style="margin-top: 14px; height: 50px; border-radius: 12px; background: #fff; display: flex; align-items: center; gap: 14px; padding: 0 16px; font: 500 17px Inter; color: #8A94A6">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#517A4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 15 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+      Where to?
+    </a>
+  </div>
+
+  <div style="position: absolute; left: 50%; top: 733px; width: 84px; height: 84px; margin-left: -42px; border-radius: 50%; background: #fff; box-shadow: 0 -4px 14px rgba(20,35,58,.10)"></div>
+  <div style="position: absolute; left: 8px; right: 8px; top: 762px; height: 70px; background: #fff; border-radius: 26px; box-shadow: 0 -2px 18px rgba(20,35,58,.10)"></div>
+  <div style="position: absolute; left: 50%; top: 756px; width: 70px; height: 40px; margin-left: -35px; background: #fff"></div>
+  <a href="MrKivu.html" aria-label="Mr. Kivu" style="position: absolute; left: 50%; top: 740px; width: 58px; height: 58px; margin-left: -29px; border-radius: 50%; background: #517A4F; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(81,122,79,.35); z-index: 2"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff"></rect><path d="M5 11a7 7 0 0014 0M12 18v3"></path></svg></a>
+  <span style="position: absolute; left: 50%; top: 802px; width: 90px; margin-left: -45px; text-align: center; font-size: 14px; font-weight: 600; color: #3B4A5E; z-index: 2">Mr. Kivu</span>
+  <div style="position: absolute; left: 8px; right: 8px; top: 762px; height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; z-index: 1">
+    <a href="Main.html" style="width: 124px; height: 52px; border-radius: 12px; background: #EDF3EC; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 14px; font-weight: 600; color: #517A4F">
+      <svg aria-hidden="true" width="26" height="22" viewBox="0 0 24 20" fill="#517A4F"><path d="M4 9l2.2-5.2A2 2 0 018 2.5h8a2 2 0 011.8 1.3L20 9a2 2 0 012 2v5h-2.5v1.5a1 1 0 01-1 1h-1.5a1 1 0 01-1-1V16H8v1.5a1 1 0 01-1 1H5.5a1 1 0 01-1-1V16H2v-5a2 2 0 012-2zm2.2 0h11.6l-1.6-4H7.8zM5.5 13.5a1.5 1.5 0 103 0 1.5 1.5 0 00-3 0zm10 0a1.5 1.5 0 103 0 1.5 1.5 0 00-3 0z"></path></svg>Kivu Ride</a>
+    <span style="width: 90px" aria-hidden="true"></span>
+    <a href="ExploreHome.html" style="width: 124px; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 14px; font-weight: 600; color: #14233A">
+      <svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="#14233A"><path d="M2 19L11 5l4 5 3-4 10 13h-5l-5-6.5-2 2.5 3 4z"></path><path d="M12 9l2.5 3.5L11 19H6z" fill="#fff" opacity=".9"></path><path d="M11 5l1.5 2.4-3 1.8z" fill="#fff"></path></svg>Kivu Explore</a>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('Main', 0);</script>
+</body>
+</html>

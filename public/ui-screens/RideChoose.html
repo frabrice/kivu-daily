@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Choose driver</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button{font-family:Inter,sans-serif;cursor:pointer}
+.hd{position:absolute;top:0;left:0;right:0;background:#14233A;border-radius:0 0 24px 24px;padding:16px;box-shadow:0 10px 26px rgba(20,35,58,.22);z-index:5}
+.hr{display:flex;align-items:center;gap:12px}
+.sq{width:42px;height:42px;border-radius:11px;background:#1C2D45;display:flex;align-items:center;justify-content:center;flex:none;border:0}
+.ht{color:#fff;font-weight:700;font-size:18px;line-height:1.2}
+.hs{color:#9FB0C5;font-size:12.5px;margin-top:2px}
+.rc{margin-top:14px;background:#fff;border-radius:14px;display:flex;align-items:stretch}
+.rl{flex:1;min-width:0}
+.rr{display:flex;align-items:center;gap:12px;padding:0 14px;height:44px;font-size:14.5px;color:#141B26}
+.pd{width:10px;height:10px;border-radius:50%;background:#14233A;box-shadow:0 0 0 3px #E1E6EE;flex:none}
+.dd{width:10px;height:10px;border-radius:2px;background:#517A4F;box-shadow:0 0 0 3px #E1EBE0;flex:none}
+.osm{position:absolute;font-size:9px;color:#4B5563;background:rgba(255,255,255,.75);padding:1px 5px;border-radius:4px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:10px 16px 22px;box-shadow:0 -8px 30px rgba(20,35,58,.16)}
+.grab{width:40px;height:5px;border-radius:3px;background:#E5E7EB;margin:0 auto 12px}
+.cta{height:52px;border-radius:12px;background:#517A4F;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px}
+.sec{flex:1;height:52px;border-radius:12px;border:1px solid #D1D5DB;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;background:#fff;color:#141B26}
+.lab{font-size:13px;font-weight:600;color:#6B7280}
+.ht{color:#fff;font-weight:600;font-size:17px;line-height:1.2}
+.dr{width:100%;display:flex;gap:12px;align-items:center;border-radius:16px;padding:11px 14px;text-align:left}
+.av{width:46px;height:46px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.nm{font-weight:700;font-size:15.5px;color:#141B26}
+.sb{font-size:12.5px;color:#6B7280;margin-top:2px}
+.eta{text-align:right;flex:none}
+.eta b{display:block;font-size:16px;color:#141B26}
+.eta span{font-size:11.5px;color:#6B7280}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #EEF0EC">
+  <img src="img/eaea08f07e8872ff8b0051e4b5575f73.jpg" alt="" style="position: absolute; left: 0; top: -210px; width: 390px; height: 844px; display: block">
+  <svg aria-hidden="true" width="390" height="400" style="position: absolute; left: 0; top: 0"><circle cx="195.0" cy="260.0" r="22" fill="rgba(81,122,79,.18)"></circle><circle cx="195.0" cy="260.0" r="9" fill="#14233A" stroke="#fff" stroke-width="3.5"></circle><circle cx="195.0" cy="260.0" r="3" fill="#fff"></circle></svg>
+  <button aria-label="Eric N." onClick="{{ p1 }}" style="{{ g1 }}">EN</button>
+  <span style="position: absolute; left: 259px; top: 199px; width: 60px; text-align: center; font-size: 11px; font-weight: 700; color: #141B26; text-shadow: 0 0 3px #fff, 0 0 3px #fff">2 min</span>
+  <button aria-label="Claudine U." onClick="{{ p2 }}" style="{{ g2 }}">CU</button>
+  <span style="position: absolute; left: 52px; top: 167px; width: 60px; text-align: center; font-size: 11px; font-weight: 700; color: #141B26; text-shadow: 0 0 3px #fff, 0 0 3px #fff">3 min</span>
+  <button aria-label="Patrick H." onClick="{{ p3 }}" style="{{ g3 }}">PH</button>
+  <span style="position: absolute; left: 279px; top: 337px; width: 60px; text-align: center; font-size: 11px; font-weight: 700; color: #141B26; text-shadow: 0 0 3px #fff, 0 0 3px #fff">4 min</span>
+  <div class="hd">
+    <div class="hr"><div style="flex: 1; min-width: 0"><div class="ht">Choose your driver</div><div class="hs">Economy · 5,200 RWF</div></div></div>
+  </div>
+  <span class="osm" style="right: 8px; top: 352px">© OpenStreetMap</span>
+  <div class="sheet" style="top: 372px; padding-top: 10px">
+    <div class="grab"></div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <button class="dr" onClick="{{ p1 }}" style="{{ b1 }}"><span class="av" style="background: #14233A">EN</span><div style="flex: 1"><div class="nm">Eric N.</div><div class="sb">★ 4.9 · 1,240 trips · EN, RW</div></div><div class="eta"><b>2 min</b><span>0.6 km</span></div></button>
+      <button class="dr" onClick="{{ p2 }}" style="{{ b2 }}"><span class="av" style="background: #14233A">CU</span><div style="flex: 1"><div class="nm">Claudine U.</div><div class="sb">★ 5.0 · 860 trips · EN, FR, RW</div></div><div class="eta"><b>3 min</b><span>1.0 km</span></div></button>
+      <button class="dr" onClick="{{ p3 }}" style="{{ b3 }}"><span class="av" style="background: #14233A">PH</span><div style="flex: 1"><div class="nm">Patrick H.</div><div class="sb">★ 4.8 · 2,010 trips · RW, SW</div></div><div class="eta"><b>4 min</b><span>1.3 km</span></div></button>
+    </div>
+    <div style="margin-top: 10px; font-size: 12.5px; color: #6B7280; line-height: 1.5; padding: 0 2px">Your past drivers show first when they are near.</div>
+    <a href="RideOnWay.html" class="cta" style="position: absolute; left: 16px; right: 16px; bottom: 22px">{{ cta }}</a>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { d: 1 }; }
+  renderVals() {
+    const d = this.state.d;
+    const on = { border: '2px solid #517A4F', background: '#F3F7F2' };
+    const off = { border: '1.5px solid #EEF0F3', background: '#fff' };
+    const P = [[269, 155, "#14233A"], [62, 123, "#14233A"], [289, 293, "#14233A"]];
+    const pin = (i) => ({ position: 'absolute', left: P[i - 1][0] + 'px', top: P[i - 1][1] + 'px', width: '40px', height: '40px', borderRadius: '50%', background: P[i - 1][2], color: '#fff', font: '800 13px Inter', border: '3px solid #fff', padding: 0, boxShadow: d === i ? '0 0 0 4px #517A4F, 0 4px 12px rgba(0,0,0,.3)' : '0 2px 8px rgba(0,0,0,.3)' });
+    const names = { 1: 'Eric · 2 min', 2: 'Claudine · 3 min', 3: 'Patrick · 4 min' };
+    return {
+      p1: () => this.setState({ d: 1 }), p2: () => this.setState({ d: 2 }), p3: () => this.setState({ d: 3 }),
+      b1: d === 1 ? on : off, b2: d === 2 ? on : off, b3: d === 3 ? on : off,
+      g1: pin(1), g2: pin(2), g3: pin(3),
+      cta: 'Request ' + names[d]
+    };
+  }
+}
+
+</script>
+<script>DC.boot('RideChoose', 0);</script>
+</body>
+</html>

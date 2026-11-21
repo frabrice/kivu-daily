@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Change pickup</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.lab{font-size:11px;font-weight:700;color:#8A94A6}
+.pl{display:flex;gap:14px;align-items:center;height:62px}
+.pl+.pl{border-top:1px solid #F0F1F4}
+.pi{width:36px;height:36px;border-radius:50%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;flex:none}
+.nm{font-weight:600;font-size:15.5px}
+.sb{font-size:12.5px;color:#8A94A6;margin-top:2px}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="background: #14233A; padding: 16px; border-radius: 0 0 24px 24px; box-shadow: 0 10px 26px rgba(20,35,58,.22); position: relative; z-index: 2">
+    <div style="display: flex; gap: 12px; align-items: center"><div style="flex: 1; min-width: 0"><div style="color: #fff; font-weight: 700; font-size: 18px; line-height: 1.2">Change pickup</div><div style="color: #9FB0C5; font-size: 12.5px; margin-top: 2px">Where should the driver meet you?</div></div></div>
+    <div style="margin-top: 14px; background: #fff; border-radius: 14px; display: flex; align-items: center">
+      <div style="flex: 1; min-width: 0; position: relative"><span style="position: absolute; left: 18px; top: 31px; height: 26px; border-left: 2px dotted #C3CAD4"></span>
+        <label style="display: flex; align-items: center; gap: 12px; padding: 0 14px; height: 50px; border-bottom: 1px solid #F0F1F4; box-shadow: inset 3px 0 0 #517A4F; border-radius: 12px 0 0 0"><span style="width: 10px; height: 10px; border-radius: 50%; background: #14233A; box-shadow: 0 0 0 3px #E1E6EE; flex: none"></span><input placeholder="Search a pickup place" aria-label="Pickup" style="border: 0; outline: none; font: 600 16px Inter; flex: 1; min-width: 0; color: #141B26; background: transparent"></label>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 0 14px; height: 50px; font-size: 14.5px; font-weight: 700"><span style="width: 10px; height: 10px; border-radius: 2px; background: #517A4F; box-shadow: 0 0 0 3px #E1EBE0; flex: none"></span>Kimironko</div>
+      </div><span aria-label="Swap pickup and destination" style="width: 36px; height: 36px; border-radius: 50%; background: #F3F4F6; display: flex; align-items: center; justify-content: center; margin: 0 10px; flex: none"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16"></path></svg></span>
+    </div>
+  </div>
+
+  <div style="padding: 18px 20px 0">
+    <a href="WhereTo.html" class="pl"><span class="pi" style="background: #DBEAFE"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#517A4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h3M19 12h3M12 2v3M12 19v3"></path><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div style="flex: 1"><div class="nm">Use my current location</div><div class="sb">KG 644 St, Kimihurura</div></div></a>
+    <a href="WhereTo.html" class="pl"><span class="pi" style="background: url(img/eaea08f07e8872ff8b0051e4b5575f73.jpg) 50% 52% / 260px auto; box-shadow: inset 0 0 0 1px #E5E7EB"><span style="width: 10px; height: 10px; border-radius: 50%; background: #14233A; border: 2px solid #fff"></span></span><div style="flex: 1"><div class="nm">Choose on the map</div><div class="sb">Move the pin to your gate</div></div></a>
+  </div>
+  <div style="padding: 18px 20px 0">
+    <div class="lab">Saved</div>
+    <a href="WhereTo.html" class="pl"><span class="pi"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .71-1.53l7-6a2 2 0 0 1 2.58 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></span><div style="flex: 1"><div class="nm">Home</div><div class="sb">Kicukiro</div></div></a>
+    <a href="WhereTo.html" class="pl"><span class="pi"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect x="2" y="6" width="20" height="14" rx="2"></rect></svg></span><div style="flex: 1"><div class="nm">Work</div><div class="sb">Norrsken House, Nyarugenge</div></div></a>
+  </div>
+  <div style="padding: 18px 20px 0">
+    <div class="lab">Recent</div>
+    <a href="WhereTo.html" class="pl"><span class="pi"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></span><div style="flex: 1"><div class="nm">Kigali Convention Centre</div><div class="sb">KG 2 Roundabout</div></div></a>
+    <a href="WhereTo.html" class="pl"><span class="pi"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></span><div style="flex: 1"><div class="nm">Kigali Heights</div><div class="sb">KG 7 Ave</div></div></a>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('RidePickup', 0);</script>
+</body>
+</html>

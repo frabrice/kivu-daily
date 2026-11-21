@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Change pickup</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.pl{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #EEF0F3}
+.pi{width:38px;height:38px;border-radius:50%;background:#F1F3F6;display:flex;align-items:center;justify-content:center;flex:none}
+.pr{margin-left:auto;font-size:13px;font-weight:700;color:#141B26;text-align:right}
+.pr span{display:block;font-size:11px;font-weight:500;color:#6B7280}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #EEF1F4">
+  <svg aria-hidden="true" width="390" height="844" viewBox="0 0 390 844" style="position: absolute; inset: 0">
+    <g stroke="#D7DCE3" stroke-width="2" fill="none"><path d="M0 120 C 120 160, 220 80, 400 140"></path><path d="M90 0 L 140 360"></path><path d="M260 0 L 300 360"></path><path d="M0 260 L 400 220"></path></g>
+  </svg>
+  <span style="position: absolute; left: 180px; top: 170px; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #3B82F6; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,.25)"></span>
+  <a href="BookSheet.html" aria-label="Back" style="position: absolute; top: 16px; left: 16px; width: 44px; height: 44px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,.15)"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141B26" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></a>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; top: 280px; background: #fff; border-radius: 26px 26px 0 0; padding: 12px 18px 0">
+    <div style="width: 44px; height: 5px; border-radius: 3px; background: #D9DCE1; margin: 0 auto 12px"></div>
+    <div style="font: 700 20px Inter, sans-serif">Where should we pick you up?</div>
+    <label style="margin-top: 12px; height: 48px; border-radius: 12px; background: #F1F3F6; display: flex; align-items: center; gap: 10px; padding: 0 14px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><input placeholder="Hotel, address or place" style="border: 0; outline: none; background: transparent; font: 15px Inter; flex: 1"></label>
+    <a href="BookSheet.html" class="pl"><span class="pi" style="background: #E0ECFF"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h3M19 12h3M12 2v3M12 19v3"></path><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div><div style="font-weight: 700; font-size: 15px">Where I am now</div><div style="font-size: 12.5px; color: #6B7280">Kimihurura, KG 7 Ave</div></div><div class="pr">95,200<span>return</span></div></a>
+    <a href="BookSheet.html" class="pl"><span class="pi"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .71-1.53l7-6a2 2 0 0 1 2.58 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></span><div><div style="font-weight: 700; font-size: 15px">Home</div><div style="font-size: 12.5px; color: #6B7280">Kicukiro · saved in Kivu Ride</div></div><div class="pr">93,600<span>return</span></div></a>
+    <a href="BookSheet.html" class="pl"><span class="pi"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect x="2" y="6" width="20" height="14" rx="2"></rect></svg></span><div><div style="font-weight: 700; font-size: 15px">Work</div><div style="font-size: 12.5px; color: #6B7280">Norrsken House, Nyarugenge</div></div><div class="pr">94,100<span>return</span></div></a>
+    <a href="BookSheet.html" class="pl" style="border: 0"><span class="pi"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 15 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg></span><div><div style="font-weight: 700; font-size: 15px">Kigali Convention Centre</div><div style="font-size: 12.5px; color: #6B7280">Recent</div></div><div class="pr">93,600<span>return</span></div></a>
+    <div style="margin-top: 8px; background: #F6F7F9; border-radius: 14px; padding: 12px; font-size: 13px; color: #374151; line-height: 1.5">The fare updates as you choose. Tap a place and you are back on the booking sheet, nothing else to fill.</div>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('PickupEdit', 0);</script>
+</body>
+</html>

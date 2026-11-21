@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Messages</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.chip{height:34px;padding:0 14px;border-radius:999px;border:1px solid #E5E7EB;background:#fff;font-size:13.5px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none}
+.cv{display:flex;gap:12px;padding:14px 18px;align-items:flex-start}
+.cv+.cv{border-top:1px solid #F3F4F6}
+.av{width:48px;height:48px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex:none;position:relative}
+.nm{font-weight:700;font-size:15px}
+.role{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:2px}
+.pv{font-size:13.5px;color:#4B5563;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-size:11.5px;font-weight:600;color:#374151;background:#F3F4F6;border-radius:999px;padding:3px 9px}
+.tm{font-size:12px;color:#9CA3AF;white-space:nowrap}
+.un{min-width:20px;height:20px;border-radius:999px;background:#517A4F;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:6px;margin-left:auto}
+.gh{font-size:12px;font-weight:700;color:#9CA3AF;padding:16px 18px 4px}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="background: #14233A; color: #fff; padding: 16px 16px 16px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="Menu.html" aria-label="Back" style="width: 42px; height: 42px; border-radius: 11px; background: #1C2D45; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></a>
+      <div style="flex: 1; font: 700 22px Inter, sans-serif">Messages</div>
+    </div>
+    <label style="margin-top: 14px; height: 44px; border-radius: 12px; background: #1C2D45; display: flex; align-items: center; gap: 10px; padding: 0 14px"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9FB0C5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><input placeholder="Search messages" style="border: 0; outline: none; background: transparent; font: 15px Inter; color: #fff; flex: 1"></label>
+  </div>
+  <div style="display: flex; gap: 8px; padding: 12px 18px 0; overflow: hidden">
+    <span class="chip" style="background: #14233A; border-color: #14233A; color: #fff; font-weight: 700">All</span><span class="chip">Hosts &amp; guides</span><span class="chip">Upcoming trips</span><span class="chip">Support</span>
+  </div>
+
+  <div class="gh">Upcoming trips</div>
+  <a href="Chat.html" class="cv" style="background: #F9FAFB">
+    <span class="av" style="background: #517A4F">JM<span style="position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; border-radius: 50%; background: #517A4F; border: 2px solid #fff"></span></span>
+    <div style="flex: 1; min-width: 0"><div style="display: flex; justify-content: space-between"><div class="nm">Jean M.<span class="role" style="background: #EDF3EC; color: #3E6340">Host</span></div><span class="tm">10:24</span></div><div class="pv" style="color: #141B26; font-weight: 600">Murakoze! I'll wait for you at the gate at 09:30.</div><div style="display: flex; align-items: center"><span class="bk">Sat 28 Nov · Forest walk</span><span class="un">2</span></div></div>
+  </a>
+  <a href="Chat.html" class="cv">
+    <span class="av" style="background: #14233A">G1</span>
+    <div style="flex: 1; min-width: 0"><div style="display: flex; justify-content: space-between"><div class="nm">[Guide name]<span class="role" style="background: #F3F7F2; color: #3E6340">Guide</span></div><span class="tm">Mon</span></div><div class="pv">Bring binoculars if you have them.</div><span class="bk">Sat 5 Dec · Akagera Big Five</span></div>
+  </a>
+  <div class="cv" style="opacity: .55">
+    <span class="av" style="background: #14233A">DR</span>
+    <div style="flex: 1; min-width: 0"><div style="display: flex; justify-content: space-between"><div class="nm">Your driver<span class="role" style="background: #EDF3EC; color: #3E6340">Kivu Ride</span></div></div><div class="pv">Opens on the morning of your trip</div><span class="bk">Sat 28 Nov · pickup 07:30</span></div>
+  </div>
+
+  <div class="gh">Support</div>
+  <a href="Chat.html" class="cv">
+    <span class="av" style="background: #517A4F"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 13a8 8 0 0116 0v4a2 2 0 01-2 2h-1v-6h3M4 13v4a2 2 0 002 2h1v-6H4"></path></svg></span>
+    <div style="flex: 1; min-width: 0"><div style="display: flex; justify-content: space-between"><div class="nm">Kivu Ride Call Center</div><span class="tm">Yesterday</span></div><div class="pv">Your pickup is confirmed for 07:30. Call 6023 anytime.</div></div>
+  </a>
+
+  <div class="gh">Past</div>
+  <a href="Chat.html" class="cv">
+    <span class="av" style="background: #14233A">NB</span>
+    <div style="flex: 1; min-width: 0"><div style="display: flex; justify-content: space-between"><div class="nm">[Guide name]<span class="role" style="background: #F3F7F2; color: #3E6340">Guide</span></div><span class="tm">8 Nov</span></div><div class="pv">Thank you for coming! Hope to see you again.</div><span class="bk">Nyandungu birdwatching · done</span></div>
+  </a>
+  <div style="position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; font-size: 11.5px; color: #9CA3AF">Phone numbers stay private. Every chat is linked to its booking.</div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('Inbox', 0);</script>
+</body>
+</html>

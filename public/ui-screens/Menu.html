@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Menu</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.it{display:flex;align-items:center;gap:14px;padding:12px 4px;font-size:15px;font-weight:600;color:#E8EDF4}
+.ic{width:38px;height:38px;border-radius:12px;background:#22344D;display:flex;align-items:center;justify-content:center;flex:none}
+.sub{font-size:12px;font-weight:500;color:#9FB0C5;margin-top:1px}
+.tag{margin-left:auto;font-size:11px;font-weight:700;border-radius:999px;padding:3px 8px}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #fff; background: #5D6672">
+  <div style="position: absolute; top: 0; bottom: 0; left: 0; width: 318px; background: #14233A; padding: 20px 18px; box-shadow: 10px 0 30px rgba(0,0,0,.3)">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <span style="width: 52px; height: 52px; border-radius: 50%; background: #517A4F; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px">AN</span>
+      <div style="flex: 1"><div style="font-weight: 700; font-size: 17px">Aline N.</div><div style="font-size: 12.5px; color: #9FB0C5">One account: rides + Explore</div></div>
+      <a href="ExploreHome.html" aria-label="Close menu" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></a>
+    </div>
+    <a href="Passport.html" style="margin-top: 16px; display: block; background: linear-gradient(135deg, #2A3F2E, #22344D); border: 1px solid #2F5A45; border-radius: 16px; padding: 12px 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center"><span style="font: 700 16px Inter, sans-serif">Rwanda Passport</span><span style="font-size: 12px; font-weight: 700; color: #9DBF9A">3 / 30 districts</span></div>
+      <div style="height: 6px; border-radius: 3px; background: #2B3D55; margin-top: 8px"><div style="width: 10%; height: 6px; border-radius: 3px; background: #517A4F"></div></div>
+      <div style="font-size: 12px; color: #9FB0C5; margin-top: 6px">Next stamp: Rubavu · 1 free ride at 5</div>
+    </a>
+    <div style="margin-top: 8px">
+      <a href="Trips.html" class="it"><span class="ic"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M3 10h18"></path></svg></span><div>My trips<div class="sub">Sat 28 Nov · Buhanga</div></div><span class="tag" style="background: #517A4F">1</span></a>
+      <a href="ExploreHome.html" class="it"><span class="ic"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"></path></svg></span>Saved places</a>
+      <a href="Inbox.html" class="it"><span class="ic"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>Messages<span class="tag" style="background: #517A4F">1</span></a>
+      <a href="PlanDay.html" class="it"><span class="ic"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 19l5-14 5 9 3-5 3 10z"></path></svg></span><div>Plan a day<div class="sub">Several stops, one driver, one price</div></div></a>
+      <div class="it"><span class="ic"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="8" width="18" height="13" rx="2"></rect><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1s6 1 6 1 6 2 6-1-4-3-6 1"></path></svg></span><div>Gift an experience<div class="sub">They pick the date, the ride is included</div></div></div>
+      <div class="it"><span class="ic"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span><div>Payment<div class="sub">MTN MoMo · 078 ••• 171 (default)</div></div></div>
+      <div class="it"><span class="ic" style="font-size: 12px; font-weight: 700">RWF</span><div style="flex: 1">Prices</div><span style="display: inline-flex; background: #22344D; border-radius: 999px; padding: 3px; font-size: 12px; font-weight: 700"><span style="padding: 5px 10px; border-radius: 999px; background: #fff; color: #14233A">RWF</span><span style="padding: 5px 10px">USD</span></span></div>
+    </div>
+    <a href="CreateStart.html" style="margin-top: 10px; display: flex; gap: 12px; align-items: center; background: #517A4F; border-radius: 16px; padding: 14px">
+      <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"></path></svg>
+      <div><div style="font-weight: 700; font-size: 15.5px">Become a creator</div><div style="font-size: 12px; color: #EDF3EC">Share your area's story. Earn from every guest.</div></div>
+    </a>
+    <a href="tel:6023" style="position: absolute; left: 18px; right: 18px; bottom: 20px; height: 48px; border-radius: 14px; border: 2px solid #517A4F; color: #517A4F; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700">Help · Call 6023</a>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('Menu', 0);</script>
+</body>
+</html>

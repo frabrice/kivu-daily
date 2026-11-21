@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Sent: what happens next</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.s{display:flex;gap:14px}
+.ax{display:flex;flex-direction:column;align-items:center;width:28px;flex:none}
+.ax b{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.ax i{flex:1;width:2px;background:#E5E7EB;margin:4px 0}
+.t{font-weight:700;font-size:15px}
+.d{font-size:13px;color:#6B7280;margin-top:2px;padding-bottom:18px}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="text-align: center; padding: 40px 24px 0">
+    <span style="width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; background: #517A4F; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 10px #EDF3EC"><svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"></path></svg></span>
+    <div style="font: 700 26px Inter, sans-serif; margin-top: 22px">Your story is on its way</div>
+    <div style="font-size: 14px; color: #6B7280; margin-top: 6px; line-height: 1.5">Thank you, Jean. Here is what happens next.</div>
+  </div>
+  <div style="padding: 26px 26px 0">
+    <div class="s"><div class="ax"><b style="background: #517A4F; color: #fff">✓</b><i></i></div><div><div class="t">Sent</div><div class="d">Today · we have your story, photos and details</div></div></div>
+    <div class="s"><div class="ax"><b style="background: #EDF3EC; color: #3E6340; box-shadow: 0 0 0 4px #F3F7F2">2</b><i></i></div><div><div class="t">A call from our team</div><div class="d">Within 2 days, on 078 ••• 171</div></div></div>
+    <div class="s"><div class="ax"><b style="background: #F3F4F6; color: #6B7280">3</b><i></i></div><div><div class="t">We visit you</div><div class="d">Safety check, the walk itself, professional photos, final price</div></div></div>
+    <div class="s"><div class="ax"><b style="background: #F3F4F6; color: #6B7280">4</b></div><div><div class="t">You go live on Kivu Explore</div><div class="d" style="padding-bottom: 0">Guests book with the ride to you. You get your host dashboard and are paid by MoMo.</div></div></div>
+  </div>
+  <div style="position: absolute; left: 18px; right: 18px; bottom: 22px; display: flex; flex-direction: column; gap: 10px">
+    <a href="Inbox.html" style="height: 52px; border-radius: 12px; border: 1.5px solid #D1D5DB; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px">Track it in Messages</a>
+    <a href="ExploreHome.html" style="height: 54px; border-radius: 12px; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px">Back to Kivu Explore</a>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('CreateSent', 0);</script>
+</body>
+</html>

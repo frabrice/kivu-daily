@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Step 1: about you</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.lab{font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;display:block}
+.in{height:48px;border-radius:12px;border:1.5px solid #E5E7EB;display:flex;align-items:center;padding:0 14px;font:15px Inter;color:#141B26;background:#fff;width:100%;box-sizing:border-box}
+.pre{background:#F9FAFB;color:#374151}
+.f{margin-top:14px}
+.ch{height:34px;padding:0 13px;border-radius:999px;border:1.5px solid #E5E7EB;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;background:#fff}
+.ch.on{border-color:#517A4F;background:#F3F7F2;color:#3E6340}
+.hint{font-size:11.5px;color:#9CA3AF;margin-top:5px}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 1000px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="padding: 14px 18px 0; display: flex; align-items: center; gap: 12px">
+    <a href="CreateStart.html" aria-label="Back" style="width: 40px; height: 40px; border-radius: 50%; background: #F3F4F6; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141B26" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></a>
+    <div style="flex: 1"><div style="font-size: 12px; font-weight: 700; color: #517A4F">Step 1 of 5 · Host</div><div style="display: flex; gap: 4px; margin-top: 6px"><span style="flex: 1; height: 4px; border-radius: 2px; background: #517A4F"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #E5E7EB"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #E5E7EB"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #E5E7EB"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #E5E7EB"></span></div></div>
+  </div>
+  <div style="padding: 18px 18px 0">
+    <div style="font: 700 24px Inter, sans-serif">About you</div>
+    <div style="font-size: 13.5px; color: #6B7280; margin-top: 4px">Guests see this on your profile.</div>
+    <div style="display: flex; gap: 14px; align-items: center; margin-top: 16px">
+      <span style="width: 72px; height: 72px; border-radius: 50%; border: 2px dashed #D1D5DB; display: flex; align-items: center; justify-content: center; flex: none"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"></path><circle cx="12" cy="13" r="3"></circle></svg></span>
+      <div><div style="font-weight: 700; font-size: 14.5px">Add a photo of you</div><div style="font-size: 12.5px; color: #6B7280; margin-top: 2px">Face clearly visible, no sunglasses</div></div>
+    </div>
+    <div class="f"><span class="lab">Full name</span><div class="in pre">Jean M.</div><div class="hint">From your Kivu Ride account</div></div>
+    <div style="display: flex; gap: 10px">
+      <div class="f" style="flex: 1"><span class="lab">Phone</span><div class="in pre">078 ••• 171</div></div>
+      <div class="f" style="flex: 1.2"><span class="lab">Email (optional)</span><input class="in" placeholder="you@email.com"></div>
+    </div>
+    <div class="f"><span class="lab">Languages you speak</span><div style="display: flex; flex-wrap: wrap; gap: 8px"><span class="ch on">Kinyarwanda ✓</span><span class="ch on">English ✓</span><span class="ch">French</span><span class="ch">Swahili</span><span class="ch">+ Other</span></div></div>
+    <div style="display: flex; gap: 10px">
+      <div class="f" style="flex: 1"><span class="lab">Years of experience</span><div class="in" style="justify-content: space-between"><span style="font-size: 20px; color: #9CA3AF">−</span><b>8</b><span style="font-size: 20px; color: #9CA3AF">+</span></div></div>
+      <div class="f" style="flex: 1.2"><span class="lab">Where you operate</span><div class="in" style="justify-content: space-between">Musanze-Volcanoes<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></div></div>
+    </div>
+    <div class="f"><span class="lab">What do you offer?</span><div style="display: flex; flex-wrap: wrap; gap: 8px"><span class="ch on">Culture &amp; history ✓</span><span class="ch on">Nature walks ✓</span><span class="ch">Food &amp; cooking</span><span class="ch">Crafts &amp; art</span><span class="ch">Farm life</span><span class="ch">Homestay</span><span class="ch">Lakes &amp; water</span></div></div>
+  </div>
+  <a href="CreateStory.html" style="position: absolute; left: 18px; right: 18px; bottom: 22px; height: 54px; border-radius: 12px; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px">Next: tell your story</a>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('CreateAbout', 1);</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>The evening before</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.nt{background:rgba(255,255,255,.92);color:#141B26;border-radius:18px;padding:11px 13px;font-size:13px;line-height:1.4}
+.ap{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#6B7280;font-weight:600;margin-bottom:4px}
+.li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EEF0F3;font-size:14px}
+.li span{color:#6B7280}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #fff; background: #0E1622">
+  <img src="img/20c2986f368581b788167dcb35bb9cd7.jpg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .45">
+  <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,22,34,.4), rgba(14,22,34,.85))"></div>
+  <div style="position: relative; text-align: center; padding-top: 36px">
+    <div style="font-size: 15px; font-weight: 600; opacity: .85">Friday 27 November</div>
+    <div style="font-size: 64px; font-weight: 300; letter-spacing: -1px; line-height: 1.1">19:00</div>
+  </div>
+  <div style="position: relative; padding: 18px 12px 0; display: flex; flex-direction: column; gap: 8px">
+    <div class="nt"><div class="ap"><span style="width: 18px; height: 18px; border-radius: 5px; background: #517A4F"></span>KIVU RIDE · now</div><b>Tomorrow: your forest walk</b><br>Driver [name] · electric SUV [plate] · at Home, Kicukiro, 07:30.</div>
+    <div class="nt" style="opacity: .9"><div class="ap"><span style="width: 18px; height: 18px; border-radius: 5px; background: #3B82F6"></span>SMS · KIVU RIDE · now</div>Kivu Ride: Ejo 07:30, umushoferi [name] azakugeraho. Same message by SMS, for phones without data.</div>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: #fff; color: #141B26; border-radius: 26px 26px 0 0; padding: 14px 18px 22px">
+    <div style="width: 44px; height: 5px; border-radius: 3px; background: #D9DCE1; margin: 0 auto 12px"></div>
+    <div style="display: flex; gap: 12px; align-items: center">
+      <span style="width: 54px; height: 54px; border-radius: 50%; background: #14233A; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700">DR</span>
+      <div style="flex: 1"><div style="font: 700 18px Inter, sans-serif">Tomorrow at 07:30</div><div style="font-size: 13px; color: #6B7280">[Driver name] · rated by riders · speaks EN, RW</div></div>
+    </div>
+    <div style="margin-top: 8px">
+      <div class="li"><span>Car</span><b>Electric SUV · [plate]</b></div>
+      <div class="li"><span>Pickup</span><b>Home, Kicukiro · 07:30</b></div>
+      <div class="li"><span>Meet Jean</span><b>Buhanga gate · 09:30</b></div>
+      <div class="li" style="border: 0"><span>Bring</span><b>Walking shoes, rain jacket</b></div>
+    </div>
+    <div style="display: flex; gap: 8px; margin-top: 10px">
+      <a href="Trips.html" style="flex: 1.2; height: 50px; border-radius: 12px; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px">All good, see you</a>
+      <a href="TripManage.html" style="flex: 1; height: 50px; border-radius: 12px; border: 1.5px solid #D1D5DB; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">Something changed</a>
+    </div>
+    <div style="text-align: center; font-size: 11.5px; color: #6B7280; margin-top: 8px">Tapping "All good" tells the driver and Jean you're coming</div>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('TripEve', 0);</script>
+</body>
+</html>

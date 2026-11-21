@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Trip day, live</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.rb{width:44px;height:44px;border-radius:50%;background:#F1F3F6;display:flex;align-items:center;justify-content:center;border:0}
+.s{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#6B7280;width:80px;text-align:center}
+.d{width:14px;height:14px;border-radius:50%;background:#D1D5DB}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #EEF1F4">
+  <svg aria-hidden="true" width="390" height="844" viewBox="0 0 390 844" style="position: absolute; inset: 0">
+    <g stroke="#D7DCE3" stroke-width="2" fill="none"><path d="M0 200 C 120 240, 220 160, 400 220"></path><path d="M100 0 L 150 500"></path><path d="M280 0 L 320 500"></path><path d="M0 380 L 400 330"></path></g>
+    <path d="M90 120 C 140 200, 200 230, 230 300 S 250 380, 210 420" stroke="#517A4F" stroke-width="6" fill="none" stroke-linecap="round"></path>
+    <circle cx="210" cy="420" r="12" fill="#3B82F6" stroke="#fff" stroke-width="4"></circle>
+  </svg>
+  <span style="position: absolute; left: 118px; top: 170px; width: 40px; height: 40px; border-radius: 50%; background: #14233A; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,.3)"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9DBF9A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.65 5H8.4a2 2 0 0 0-1.9 1.26L5 10 3 8"></path><path d="M7 14h.01M17 14h.01"></path><rect x="3" y="10" width="18" height="8" rx="2"></rect><path d="M5 18v2M19 18v2"></path></svg></span>
+  <div style="position: absolute; top: 16px; left: 14px; right: 14px; background: #14233A; color: #fff; border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 12px">
+    <div style="flex: 1"><div style="font-size: 11px; color: #9DBF9A; font-weight: 700">Saturday · trip day</div><div style="font: 700 19px Inter, sans-serif">Your driver is 6 min away</div></div>
+    <a href="tel:6023" style="height: 38px; padding: 0 12px; border-radius: 999px; border: 2px solid #517A4F; color: #517A4F; display: flex; align-items: center; font-weight: 700; font-size: 13px">Call us</a>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 26px 26px 0 0; padding: 12px 18px 24px; box-shadow: 0 -8px 30px rgba(20,35,58,.15)">
+    <div style="width: 44px; height: 5px; border-radius: 3px; background: #D9DCE1; margin: 0 auto 12px"></div>
+    <div style="display: flex; gap: 12px; align-items: center">
+      <span style="width: 54px; height: 54px; border-radius: 50%; background: #14233A; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700">DR</span>
+      <div style="flex: 1"><div style="font-weight: 700; font-size: 16px">[Driver name]</div><div style="font-size: 13px; color: #6B7280">Electric SUV · [plate] · 100% charged</div></div>
+      <button class="rb" aria-label="Call driver"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
+      <button class="rb" aria-label="Message driver"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></button>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 18px; position: relative">
+      <div style="position: absolute; left: 40px; right: 40px; top: 6px; height: 3px; background: #E5E7EB"><div style="width: 12%; height: 3px; background: #517A4F"></div></div>
+      <div class="s" style="position: relative; color: #3E6340"><span class="d" style="background: #517A4F; box-shadow: 0 0 0 5px rgba(34,176,75,.2)"></span>Pickup<br>07:30</div>
+      <div class="s" style="position: relative"><span class="d"></span>Buhanga<br>09:30</div>
+      <div class="s" style="position: relative"><span class="d"></span>Ride home<br>13:00</div>
+    </div>
+    <a href="CreatorProfile.html" style="margin-top: 16px; display: flex; gap: 12px; align-items: center; background: #F3F7F2; border-radius: 16px; padding: 12px">
+      <span style="width: 40px; height: 40px; border-radius: 50%; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">JM</span>
+      <div style="flex: 1; font-size: 13.5px"><b>Jean is ready at the gate</b><br><span style="color: #374151">He sees your arrival time live: 09:25</span></div>
+    </a>
+    <div style="display: flex; gap: 8px; margin-top: 12px">
+      <button style="flex: 1; height: 48px; border-radius: 14px; border: 1.5px solid #D1D5DB; background: #fff; font: 700 14px Inter">Share trip with family</button>
+      <a href="RateImpact.html" style="flex: 1; height: 48px; border-radius: 14px; background: #14233A; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">After the trip →</a>
+    </div>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('TripLive', 0);</script>
+</body>
+</html>

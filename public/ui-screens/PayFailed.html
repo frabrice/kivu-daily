@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>If payment fails</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.op{display:flex;gap:12px;align-items:center;border:1.5px solid #E5E7EB;border-radius:16px;padding:12px 14px}
+.ic{width:40px;height:40px;border-radius:12px;background:#F1F3F6;display:flex;align-items:center;justify-content:center;flex:none}
+.t{font-weight:700;font-size:15px}
+.s{font-size:12.5px;color:#6B7280;margin-top:1px}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="background: #14233A; color: #fff; padding: 22px 20px 26px">
+    <span style="width: 50px; height: 50px; border-radius: 50%; background: #517A4F; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="2.6"><path d="M12 7v6M12 16.5v.5"></path></svg></span>
+    <div style="font: 700 25px/1.15 Inter, sans-serif; margin-top: 12px">MoMo didn't go through</div>
+    <div style="font-size: 14px; color: #C9D3E0; margin-top: 6px">MTN said: not enough balance. Nothing was taken from your account.</div>
+    <div style="margin-top: 12px; display: inline-flex; align-items: center; gap: 8px; background: #1B2D47; border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700; color: #9DBF9A">
+      <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9DBF9A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>Your 2 places are still held · 7:10</div>
+  </div>
+  <div style="padding: 16px 18px 0; display: flex; flex-direction: column; gap: 10px">
+    <a href="Approve.html" class="op" style="border: 2px solid #517A4F; background: #F3F7F2"><span class="ic" style="background: #F3F4F6"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span><div style="flex: 1"><div class="t">Try again · 078 ••• 171</div><div class="s">After topping up, or if the prompt timed out</div></div></a>
+    <a href="Approve.html" class="op"><span class="ic" style="background: #F3F4F6"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span><div style="flex: 1"><div class="t">Pay with Airtel Money</div><div class="s">073 ••• 402 · saved</div></div></a>
+    <a href="Booked.html" class="op"><span class="ic"><svg aria-hidden="true" width="20" height="16" viewBox="0 0 24 18" fill="none" stroke="#14233A" stroke-width="2"><rect x="1" y="1" width="22" height="16" rx="3"></rect><path d="M1 6h22M5 12h5"></path></svg></span><div style="flex: 1"><div class="t">Pay by card</div><div class="s">Visa or Mastercard, on a secure page</div></div></a>
+    <label class="op"><span class="ic"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span><div style="flex: 1"><div class="t">Another number</div><input placeholder="+250 7__ ___ ___" style="border: 0; outline: none; font: 13px Inter; color: #141B26; margin-top: 2px; width: 100%"></div></label>
+    <a href="SplitPay.html" class="op"><span class="ic" style="background: #F3F7F2"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3E6340" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"></path></svg></span><div style="flex: 1"><div class="t">Ask someone to pay</div><div class="s">Send a pay link by WhatsApp or SMS. They pay, you're booked.</div></div></a>
+  </div>
+  <div style="position: absolute; left: 18px; right: 18px; bottom: 26px">
+    <a href="tel:6023" style="height: 50px; border-radius: 12px; border: 2px solid #517A4F; color: #3E6340; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px">Need help? Call 6023</a>
+    <div style="text-align: center; font-size: 12px; color: #6B7280; margin-top: 8px">If the hold ends, the places go back on Jean's calendar.</div>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('PayFailed', 0);</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Step 5: check and send</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.f{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #EEF0F3;font-size:14px}
+.f span{color:#6B7280}
+.f b{display:flex;gap:8px;align-items:center}
+.ed{font-size:12px;font-weight:700;color:#517A4F}
+.nx{display:flex;gap:12px;padding:7px 0;font-size:13.5px;color:#374151}
+.n{width:26px;height:26px;border-radius:50%;background:#14233A;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 1000px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="padding: 16px 18px 0; display: flex; align-items: center; gap: 12px">
+    <a href="CreatePayout.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid #E5E7EB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141B26" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></a>
+    <span style="font-size: 12px; font-weight: 700; color: #3E6340;">Step 5 of 5 · Check and send</span>
+  </div>
+  <div style="padding: 0 18px">
+    <div style="font: 700 25px/1.15 Inter, sans-serif; margin-top: 12px">Here is how guests will see it</div>
+    <div style="font-size: 13px; color: #6B7280; margin-top: 4px">Mr. Kivu wrote this from your voice note. Change anything.</div>
+    <div style="margin-top: 14px; border-radius: 16px; overflow: hidden; box-shadow: 0 6px 22px rgba(20,35,58,.14)">
+      <div style="position: relative; height: 150px"><img src="img/667a4cad6ffbb8235a742e62f857b10f.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block"><span style="position: absolute; left: 10px; top: 10px; background: #fff; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; display: flex; gap: 5px; align-items: center"><span style="width: 6px; height: 6px; border-radius: 50%; background: #517A4F"></span>Experience · Draft</span></div>
+      <div style="padding: 12px 14px 14px">
+        <div style="font-size: 10px; color: #6B7280; font-weight: 700">Buhanga forest · Musanze</div>
+        <div style="font: 700 18px/1.2 Inter, sans-serif; margin-top: 3px">Buhanga Sacred Forest Storytelling Walk</div>
+        <div style="font-size: 13px; color: #374151; line-height: 1.5; margin-top: 6px">Walk the paths where Rwanda's kings were crowned, with a storyteller who grew up at the forest edge.</div>
+      </div>
+    </div>
+    <div style="margin-top: 10px">
+      <div class="f"><span>How long</span><b>3 hours <span class="ed">Edit</span></b></div>
+      <div class="f"><span>Group size</span><b>Up to 8 <span class="ed">Edit</span></b></div>
+      <div class="f"><span>Your price</span><b>19,500 RWF / person <span class="ed">Edit</span></b></div>
+      <div class="f"><span>When you are free</span><b>Sat, Sun · 09:30, 14:00 <span class="ed">Edit</span></b></div>
+    </div>
+    <div style="font-weight: 700; font-size: 15px; margin-top: 18px">What happens next</div>
+    <div style="margin-top: 6px">
+      <div class="nx"><span class="n">1</span>Our team calls you within 2 days</div>
+      <div class="nx"><span class="n">2</span>We visit: safety, photos, the story, the price</div>
+      <div class="nx"><span class="n">3</span>You go live on Kivu Explore, with the ride to you</div>
+      <div class="nx"><span class="n" style="background: #517A4F">4</span>You are paid by MoMo after every visit</div>
+    </div>
+  </div>
+  <a href="CreateSent.html" style="position: absolute; left: 18px; right: 18px; bottom: 22px; height: 56px; border-radius: 12px; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px">Send to the Kivu Explore team</a>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('CreateDraft', 1);</script>
+</body>
+</html>

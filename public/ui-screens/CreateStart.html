@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Become a creator: start</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button{font-family:Inter,sans-serif;cursor:pointer}
+.role{flex:1;text-align:left;border-radius:18px;padding:14px;background:#fff}
+.need{display:flex;gap:12px;align-items:center;padding:9px 0;font-size:14px}
+.ni{width:34px;height:34px;border-radius:10px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;flex:none}
+.st{display:flex;gap:10px;align-items:center;font-size:13px;color:#374151}
+.st b{width:22px;height:22px;border-radius:50%;background:#14233A;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="position: relative; height: 210px">
+    <img src="img/aaba7acf507fb3efb307a052975f1ffc.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,35,58,.45), rgba(20,35,58,.85))"></div>
+    <a href="Menu.html" aria-label="Back" style="position: absolute; top: 14px; left: 14px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></a>
+    <div style="position: absolute; left: 18px; right: 18px; bottom: 18px; color: #fff">
+      <div style="font: 700 26px/1.15 Inter, sans-serif">Share your place. Earn from every guest.</div>
+      <div style="font-size: 13.5px; color: #D7DEE8; margin-top: 6px">Our team helps you publish it, and Kivu Ride brings the guests to you.</div>
+    </div>
+  </div>
+  <div style="padding: 18px 18px 0">
+    <div style="font-size: 12px; font-weight: 700; color: #6B7280">I want to be a</div>
+    <div style="display: flex; gap: 10px; margin-top: 10px">
+      <button class="role" onClick="{{ pickHost }}" style="{{ hostBox }}"><div style="font-weight: 700; font-size: 16px">Host</div><div style="font-size: 12.5px; color: #6B7280; margin-top: 3px; line-height: 1.35">Experiences in your area, or a homestay</div></button>
+      <button class="role" onClick="{{ pickGuide }}" style="{{ guideBox }}"><div style="font-weight: 700; font-size: 16px">Guide</div><div style="font-size: 12.5px; color: #6B7280; margin-top: 3px; line-height: 1.35">Lead visitors at parks, sites and journeys</div></button>
+    </div>
+    <div style="font-size: 12px; font-weight: 700; color: #6B7280; margin-top: 20px">Have these ready · about 10 minutes</div>
+    <div style="margin-top: 4px">
+      <div class="need"><span class="ni"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>A clear photo of you</div>
+      <div class="need"><span class="ni"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="12" r="2.5"></circle><path d="M14 10h4M14 14h3"></path></svg></span>Your national ID</div>
+      <div class="need"><span class="ni"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14233A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"></path><circle cx="12" cy="13" r="3"></circle></svg></span>{{ photos }}</div>
+      <div class="need"><span class="ni"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span>A MoMo number to receive payments</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding: 12px 14px; background: #F9FAFB; border-radius: 16px">
+      <div class="st"><b>1</b>About you</div><div class="st"><b>2</b>Tell your story (voice is fine)</div><div class="st"><b>3</b>{{ step3 }}</div><div class="st"><b>4</b>When you're free, and how you get paid</div><div class="st"><b>5</b>Check and send</div>
+    </div>
+  </div>
+  <a href="CreateAbout.html" style="position: absolute; left: 18px; right: 18px; bottom: 22px; height: 54px; border-radius: 12px; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px">Start</a>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { role: 'host' }; }
+  renderVals() {
+    const h = this.state.role === 'host';
+    const on = { border: '2px solid #517A4F', background: '#F3F7F2' };
+    const off = { border: '1.5px solid #E5E7EB', background: '#fff' };
+    return {
+      pickHost: () => this.setState({ role: 'host' }), pickGuide: () => this.setState({ role: 'guide' }),
+      hostBox: h ? on : off, guideBox: h ? off : on,
+      photos: h ? '3 or more photos of your place or activity' : 'Your guide certificate or park licence, if you have one',
+      step3: h ? 'Your experience or stay: details and price' : 'What you guide, where, and your rate'
+    };
+  }
+}
+
+</script>
+<script>DC.boot('CreateStart', 0);</script>
+</body>
+</html>

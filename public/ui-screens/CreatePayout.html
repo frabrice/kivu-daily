@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Step 4: availability and payout</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.h{font:700 18px Inter, sans-serif;margin-top:22px}
+.d{width:40px;height:40px;border-radius:50%;border:1.5px solid #E5E7EB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#6B7280}
+.d.on{background:#14233A;border-color:#14233A;color:#fff}
+.ch{height:34px;padding:0 13px;border-radius:999px;border:1.5px solid #E5E7EB;font-size:13px;font-weight:600;display:inline-flex;align-items:center;background:#fff}
+.ch.on{border-color:#517A4F;background:#F3F7F2;color:#3E6340}
+.box{border:1.5px solid #E5E7EB;border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+.up{flex:1;height:76px;border-radius:12px;border:2px dashed #D1D5DB;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#6B7280;gap:4px}
+.ck{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;padding:6px 0;color:#374151}
+.cb{width:20px;height:20px;border-radius:6px;background:#517A4F;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 1000px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="padding: 14px 18px 0; display: flex; align-items: center; gap: 12px">
+    <a href="CreateDetails.html" aria-label="Back" style="width: 40px; height: 40px; border-radius: 50%; background: #F3F4F6; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141B26" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></a>
+    <div style="flex: 1"><div style="font-size: 12px; font-weight: 700; color: #517A4F">Step 4 of 5 · Availability and payout</div><div style="display: flex; gap: 4px; margin-top: 6px"><span style="flex: 1; height: 4px; border-radius: 2px; background: #517A4F"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #517A4F"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #517A4F"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #517A4F"></span><span style="flex: 1; height: 4px; border-radius: 2px; background: #E5E7EB"></span></div></div>
+  </div>
+  <div style="padding: 4px 18px 0">
+    <div class="h">When are you free?</div>
+    <div style="display: flex; justify-content: space-between; margin-top: 12px"><span class="d">M</span><span class="d">T</span><span class="d">W</span><span class="d">T</span><span class="d">F</span><span class="d on">S</span><span class="d on">S</span></div>
+    <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap"><span class="ch on">09:30</span><span class="ch on">14:00</span><span class="ch">+ Add a time</span></div>
+    <div style="font-size: 12px; color: #6B7280; margin-top: 8px">Guests can only book these times. Change them anytime, or block a day you're busy.</div>
+
+    <div class="h">How you get paid</div>
+    <div class="box" style="margin-top: 12px"><span style="width: 36px; height: 36px; border-radius: 50%; background: #F3F4F6; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span><div style="flex: 1"><div style="font-weight: 700; font-size: 15px">078 ••• 171</div><div style="font-size: 12px; color: #6B7280">Name on account: Jean M.</div></div><span style="font-size: 13px; font-weight: 700; color: #3E6340">Change</span></div>
+    <div style="font-size: 12px; color: #6B7280; margin-top: 8px">Paid by MoMo after each visit, with a statement in your host dashboard.</div>
+
+    <div class="h">Verify it's you</div>
+    <div style="display: flex; gap: 10px; margin-top: 12px"><span class="up"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"></path></svg>ID front</span><span class="up"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 10h10M7 14h6"></path></svg>ID back</span></div>
+    <div style="font-size: 12px; color: #6B7280; margin-top: 8px">Only our team sees this. Guests never do.</div>
+
+    <div class="h">Agreements</div>
+    <div style="margin-top: 8px">
+      <div class="ck"><span class="cb"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>I follow the Kivu Explore host code of conduct</div>
+      <div class="ck"><span class="cb"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>I keep guests safe and follow the safety briefing</div>
+      <div class="ck"><span class="cb" style="background: #fff; border: 2px solid #D1D5DB"></span>I agree to the terms and to how my data is used</div>
+    </div>
+  </div>
+  <a href="CreateDraft.html" style="position: absolute; left: 18px; right: 18px; bottom: 22px; height: 54px; border-radius: 12px; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px">Next: check and send</a>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('CreatePayout', 1);</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Book now: finding the nearest driver</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button{font-family:Inter,sans-serif;cursor:pointer}
+.hd{position:absolute;top:0;left:0;right:0;background:#14233A;border-radius:0 0 24px 24px;padding:16px;box-shadow:0 10px 26px rgba(20,35,58,.22);z-index:5}
+.hr{display:flex;align-items:center;gap:12px}
+.sq{width:42px;height:42px;border-radius:11px;background:#1C2D45;display:flex;align-items:center;justify-content:center;flex:none;border:0}
+.ht{color:#fff;font-weight:700;font-size:18px;line-height:1.2}
+.hs{color:#9FB0C5;font-size:12.5px;margin-top:2px}
+.rc{margin-top:14px;background:#fff;border-radius:14px;display:flex;align-items:stretch}
+.rl{flex:1;min-width:0}
+.rr{display:flex;align-items:center;gap:12px;padding:0 14px;height:44px;font-size:14.5px;color:#141B26}
+.pd{width:10px;height:10px;border-radius:50%;background:#14233A;box-shadow:0 0 0 3px #E1E6EE;flex:none}
+.dd{width:10px;height:10px;border-radius:2px;background:#517A4F;box-shadow:0 0 0 3px #E1EBE0;flex:none}
+.osm{position:absolute;font-size:9px;color:#4B5563;background:rgba(255,255,255,.75);padding:1px 5px;border-radius:4px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:10px 16px 22px;box-shadow:0 -8px 30px rgba(20,35,58,.16)}
+.grab{width:40px;height:5px;border-radius:3px;background:#E5E7EB;margin:0 auto 12px}
+.cta{height:52px;border-radius:12px;background:#517A4F;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px}
+.sec{flex:1;height:52px;border-radius:12px;border:1px solid #D1D5DB;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;background:#fff;color:#141B26}
+.lab{font-size:13px;font-weight:600;color:#6B7280}
+.ht{color:#fff;font-weight:600;font-size:17px;line-height:1.2}
+.pl1{position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(81,122,79,.28);animation:pu 2s ease-out infinite;transform:scale(.2)}
+@keyframes pu{to{transform:scale(1);opacity:0}}
+.bar{width:45%;height:100%;border-radius:3px;background:#517A4F;animation:mv 1.6s ease-in-out infinite alternate}
+@keyframes mv{from{margin-left:0}to{margin-left:55%}}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #EEF0EC">
+  <img src="img/dbae7c6cce3935f468ac924b9c4b48bc.jpg" alt="" style="position: absolute; left: 0; top: 0px; width: 390px; height: 844px; display: block">
+  <svg aria-hidden="true" width="390" height="844" viewBox="0 0 390 844" style="position: absolute; left: 0; top: 0">
+    <path d="M61.1 320.0 L60.9 320.4 L64.7 320.0 L65.5 319.9 L66.1 319.8 L67.1 319.5 L71.2 317.7 L73.8 316.9 L75.5 316.4 L77.9 316.0 L81.8 315.5 L84.7 314.8 L87.0 314.0 L87.3 310.3 L87.4 307.2 L87.5 305.5 L87.6 304.0 L88.0 301.5 L88.5 299.2 L89.8 298.3 L91.1 297.5 L92.1 296.9 L93.1 296.5 L94.4 296.2 L96.2 296.1 L97.0 296.1 L98.0 296.0 L99.3 296.0 L101.0 296.2 L101.2 296.2 L102.1 296.2 L103.2 296.5 L104.8 297.0 L105.5 297.4 L106.2 297.8 L106.8 298.2 L108.1 299.0 L109.1 299.7 L110.3 300.5 L112.0 302.0 L112.5 302.4 L113.6 302.9 L115.4 303.7 L116.1 304.0 L116.7 304.4 L117.3 304.9 L117.8 305.8 L118.6 307.4 L119.5 309.7 L120.2 310.9 L120.9 312.3 L122.7 314.9 L123.7 316.3 L124.9 318.0 L126.0 319.7 L126.7 321.1 L127.6 323.1 L128.4 325.3 L128.0 326.1 L127.7 327.0 L127.2 327.8 L126.6 328.8 L125.9 330.2 L125.3 331.9 L124.9 333.4 L124.8 335.3 L125.0 336.6 L125.1 337.5 L125.5 338.7 L126.1 339.7 L127.2 340.7 L127.5 341.0 L128.4 341.7 L129.5 342.4 L130.8 343.3 L134.8 345.3 L137.2 346.3 L138.7 347.1 L139.5 347.6 L140.0 348.2 L140.7 349.0 L141.4 350.0 L141.8 351.4 L141.7 353.0 L141.0 355.4 L141.9 356.1 L142.5 356.7 L143.4 357.8 L144.0 360.0 L144.5 361.3 L145.4 363.5 L147.4 361.9 L152.2 357.9 L154.5 356.3 L156.0 355.3 L157.6 354.6 L159.1 354.1 L160.9 353.6 L163.1 353.1 L165.3 352.7 L171.1 352.2 L171.9 352.2 L173.7 352.0 L176.5 351.7 L177.3 351.5 L178.0 351.2 L178.7 350.6 L179.4 349.9 L179.7 349.5 L180.7 348.4 L180.9 348.1 L181.1 347.7 L181.2 347.3 L181.2 346.8 L181.1 346.3 L180.8 345.9 L180.7 344.6 L180.7 343.6 L181.5 342.8 L182.2 342.2 L183.0 341.6 L184.4 340.7 L185.8 339.8 L186.7 339.0 L190.2 336.5 L192.0 335.2 L193.5 334.2 L194.6 333.4 L196.4 332.6 L199.2 331.3 L204.6 329.2 L209.0 327.4 L210.8 326.7 L217.8 323.8 L219.0 323.3 L225.3 320.7 L226.8 320.1 L227.6 319.9 L233.4 317.6 L237.4 316.0 L239.8 315.1 L243.1 313.7 L246.8 312.2 L248.4 311.5 L249.5 310.9 L250.1 310.4 L250.7 309.9 L251.4 309.0 L252.2 307.6 L254.9 302.7 L255.1 302.4 L256.0 300.9 L257.4 299.1 L258.7 297.8 L259.5 297.1 L260.0 296.7 L260.1 296.6 L261.6 295.4 L263.2 294.5 L264.3 293.7 L265.9 292.5 L267.5 291.4 L268.9 292.1 L269.9 292.8 L270.7 293.5 L272.5 294.5 L276.5 297.8 L279.1 299.2 L283.0 301.3 L284.7 297.8 L286.6 294.7 L287.7 293.3 L288.1 292.8 L288.7 292.2 L290.5 290.6 L292.9 288.8 L297.3 285.7 L297.6 285.4 L299.4 284.3 L299.6 284.2 L301.2 283.5 L303.6 282.9 L306.5 282.0 L308.2 281.6 L312.8 280.4 L314.5 279.6 L316.0 278.8 L318.0 277.4 L319.2 276.4 L320.3 275.3 L321.5 273.5 L322.6 271.6 L323.3 270.5 L325.4 266.8 L328.7 260.2 L328.9 260.0" stroke="#fff" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+    <path d="M61.1 320.0 L60.9 320.4 L64.7 320.0 L65.5 319.9 L66.1 319.8 L67.1 319.5 L71.2 317.7 L73.8 316.9 L75.5 316.4 L77.9 316.0 L81.8 315.5 L84.7 314.8 L87.0 314.0 L87.3 310.3 L87.4 307.2 L87.5 305.5 L87.6 304.0 L88.0 301.5 L88.5 299.2 L89.8 298.3 L91.1 297.5 L92.1 296.9 L93.1 296.5 L94.4 296.2 L96.2 296.1 L97.0 296.1 L98.0 296.0 L99.3 296.0 L101.0 296.2 L101.2 296.2 L102.1 296.2 L103.2 296.5 L104.8 297.0 L105.5 297.4 L106.2 297.8 L106.8 298.2 L108.1 299.0 L109.1 299.7 L110.3 300.5 L112.0 302.0 L112.5 302.4 L113.6 302.9 L115.4 303.7 L116.1 304.0 L116.7 304.4 L117.3 304.9 L117.8 305.8 L118.6 307.4 L119.5 309.7 L120.2 310.9 L120.9 312.3 L122.7 314.9 L123.7 316.3 L124.9 318.0 L126.0 319.7 L126.7 321.1 L127.6 323.1 L128.4 325.3 L128.0 326.1 L127.7 327.0 L127.2 327.8 L126.6 328.8 L125.9 330.2 L125.3 331.9 L124.9 333.4 L124.8 335.3 L125.0 336.6 L125.1 337.5 L125.5 338.7 L126.1 339.7 L127.2 340.7 L127.5 341.0 L128.4 341.7 L129.5 342.4 L130.8 343.3 L134.8 345.3 L137.2 346.3 L138.7 347.1 L139.5 347.6 L140.0 348.2 L140.7 349.0 L141.4 350.0 L141.8 351.4 L141.7 353.0 L141.0 355.4 L141.9 356.1 L142.5 356.7 L143.4 357.8 L144.0 360.0 L144.5 361.3 L145.4 363.5 L147.4 361.9 L152.2 357.9 L154.5 356.3 L156.0 355.3 L157.6 354.6 L159.1 354.1 L160.9 353.6 L163.1 353.1 L165.3 352.7 L171.1 352.2 L171.9 352.2 L173.7 352.0 L176.5 351.7 L177.3 351.5 L178.0 351.2 L178.7 350.6 L179.4 349.9 L179.7 349.5 L180.7 348.4 L180.9 348.1 L181.1 347.7 L181.2 347.3 L181.2 346.8 L181.1 346.3 L180.8 345.9 L180.7 344.6 L180.7 343.6 L181.5 342.8 L182.2 342.2 L183.0 341.6 L184.4 340.7 L185.8 339.8 L186.7 339.0 L190.2 336.5 L192.0 335.2 L193.5 334.2 L194.6 333.4 L196.4 332.6 L199.2 331.3 L204.6 329.2 L209.0 327.4 L210.8 326.7 L217.8 323.8 L219.0 323.3 L225.3 320.7 L226.8 320.1 L227.6 319.9 L233.4 317.6 L237.4 316.0 L239.8 315.1 L243.1 313.7 L246.8 312.2 L248.4 311.5 L249.5 310.9 L250.1 310.4 L250.7 309.9 L251.4 309.0 L252.2 307.6 L254.9 302.7 L255.1 302.4 L256.0 300.9 L257.4 299.1 L258.7 297.8 L259.5 297.1 L260.0 296.7 L260.1 296.6 L261.6 295.4 L263.2 294.5 L264.3 293.7 L265.9 292.5 L267.5 291.4 L268.9 292.1 L269.9 292.8 L270.7 293.5 L272.5 294.5 L276.5 297.8 L279.1 299.2 L283.0 301.3 L284.7 297.8 L286.6 294.7 L287.7 293.3 L288.1 292.8 L288.7 292.2 L290.5 290.6 L292.9 288.8 L297.3 285.7 L297.6 285.4 L299.4 284.3 L299.6 284.2 L301.2 283.5 L303.6 282.9 L306.5 282.0 L308.2 281.6 L312.8 280.4 L314.5 279.6 L316.0 278.8 L318.0 277.4 L319.2 276.4 L320.3 275.3 L321.5 273.5 L322.6 271.6 L323.3 270.5 L325.4 266.8 L328.7 260.2 L328.9 260.0" stroke="#14233A" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+    <circle cx="61.1" cy="320.0" r="9" fill="#14233A" stroke="#fff" stroke-width="3.5"></circle><circle cx="61.1" cy="320.0" r="3" fill="#fff"></circle>
+    <rect x="319.9" y="251.0" width="18" height="18" rx="4" fill="#517A4F" stroke="#fff" stroke-width="3.5"></rect>
+  </svg>
+  <span class="pl1" style="left: -8.899999999999999px; top: 250.0px"></span><span class="pl1" style="left: -8.899999999999999px; top: 250.0px; animation-delay: 1s"></span>
+  <div class="hd">
+    <div class="hr"><div style="flex: 1; min-width: 0"><div class="ht">Finding your driver</div><div class="hs">Economy · 3 drivers near you</div></div></div>
+  </div>
+  <span class="osm" style="right: 8px; top: 520px">© OpenStreetMap</span>
+  <a href="RideOnWay.html" class="sheet" style="display: block; color: #141B26">
+    <div class="grab"></div>
+    <div style="display: flex; align-items: center; gap: 12px"><span style="width: 44px; height: 44px; border-radius: 50%; background: #EDF3EC; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="#517A4F"><path d="M5 11l2-5h10l2 5h1v6h-2v1.5h-3V17H9v1.5H6V17H4v-6z"></path></svg></span><div style="flex: 1"><div style="font-weight: 700; font-size: 16px">Asking the nearest driver</div><div style="font-size: 13px; color: #6B7280; margin-top: 2px">Usually under a minute</div></div></div>
+    <div style="height: 6px; border-radius: 3px; background: #EEF0F3; margin-top: 16px; overflow: hidden"><div class="bar"></div></div>
+    <div style="margin-top: 16px; border: 1px solid #EEF0F3; border-radius: 16px; padding: 4px 0">
+      <div class="rr" style="border-bottom: 1px solid #F0F1F4"><span class="pd"></span><span style="flex: 1; color: #374151">KG 644 St, Kimihurura</span></div>
+      <div class="rr"><span class="dd"></span><b style="flex: 1">Kimironko Market</b><span style="font-weight: 700">5,200 RWF</span></div>
+    </div>
+    <div style="margin-top: 14px; height: 50px; border-radius: 12px; border: 1.5px solid #FCA5A5; color: #B91C1C; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px">Cancel request</div>
+  </a>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('RideFinding', 0);</script>
+</body>
+</html>

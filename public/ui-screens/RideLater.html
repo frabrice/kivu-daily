@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Book for later</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+button{font-family:Inter,sans-serif;cursor:pointer}
+.hd{position:absolute;top:0;left:0;right:0;background:#14233A;border-radius:0 0 24px 24px;padding:16px;box-shadow:0 10px 26px rgba(20,35,58,.22);z-index:5}
+.hr{display:flex;align-items:center;gap:12px}
+.sq{width:42px;height:42px;border-radius:11px;background:#1C2D45;display:flex;align-items:center;justify-content:center;flex:none;border:0}
+.ht{color:#fff;font-weight:700;font-size:18px;line-height:1.2}
+.hs{color:#9FB0C5;font-size:12.5px;margin-top:2px}
+.rc{margin-top:14px;background:#fff;border-radius:14px;display:flex;align-items:stretch}
+.rl{flex:1;min-width:0}
+.rr{display:flex;align-items:center;gap:12px;padding:0 14px;height:44px;font-size:14.5px;color:#141B26}
+.pd{width:10px;height:10px;border-radius:50%;background:#14233A;box-shadow:0 0 0 3px #E1E6EE;flex:none}
+.dd{width:10px;height:10px;border-radius:2px;background:#517A4F;box-shadow:0 0 0 3px #E1EBE0;flex:none}
+.osm{position:absolute;font-size:9px;color:#4B5563;background:rgba(255,255,255,.75);padding:1px 5px;border-radius:4px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:10px 16px 22px;box-shadow:0 -8px 30px rgba(20,35,58,.16)}
+.grab{width:40px;height:5px;border-radius:3px;background:#E5E7EB;margin:0 auto 12px}
+.cta{height:52px;border-radius:12px;background:#517A4F;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px}
+.sec{flex:1;height:52px;border-radius:12px;border:1px solid #D1D5DB;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;background:#fff;color:#141B26}
+.lab{font-size:13px;font-weight:600;color:#6B7280}
+.ht{color:#fff;font-weight:600;font-size:17px;line-height:1.2}
+.dc{flex:1;height:58px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11.5px;font-weight:600}
+.dc b{font-size:15px;margin-top:2px}
+.st{width:48px;height:48px;border-radius:50%;border:1.5px solid #D1D5DB;background:#fff;font-size:22px;font-weight:600;display:flex;align-items:center;justify-content:center;color:#141B26}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #F6F7F5">
+  <div class="hd" style="position: relative">
+    <div class="hr"><div style="flex: 1; min-width: 0"><div class="ht">Book for later</div><div class="hs">Economy · 5,200 RWF</div></div></div>
+    <a href="WhereTo.html" class="rc">
+      <div class="rl"><div class="rr" style="border-bottom: 1px solid #F0F1F4"><span class="pd"></span><span style="flex: 1; color: #374151">KG 644 St, Kimihurura</span></div><div class="rr"><span class="dd"></span><b style="flex: 1">Kimironko Market</b></div></div>
+      <span style="display: flex; align-items: center; padding: 0 14px; border-left: 1px solid #F0F1F4; font-size: 13px; font-weight: 700; color: #517A4F">Edit</span>
+    </a>
+  </div>
+  <div style="padding: 22px 18px 0">
+    <div class="lab">Day</div>
+    <div style="display: flex; gap: 8px; margin-top: 10px">
+      <button class="dc" onClick="{{ d0 }}" style="{{ s0 }}">Today<b>Thu 19</b></button>
+      <button class="dc" onClick="{{ d1 }}" style="{{ s1 }}">Tomorrow<b>Fri 20</b></button>
+      <button class="dc" onClick="{{ d2 }}" style="{{ s2 }}">Saturday<b>Sat 21</b></button>
+      <button class="dc" style="border: 1.5px solid #E5E7EB; background: #fff; color: #6B7280">Other<b>…</b></button>
+    </div>
+    <div class="lab" style="margin-top: 24px">Pickup time</div>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; background: #fff; border: 1.5px solid #E5E7EB; border-radius: 16px; padding: 14px 16px">
+      <button class="st" aria-label="15 minutes earlier" onClick="{{ earlier }}">−</button>
+      <div style="text-align: center"><div style="font-size: 40px; font-weight: 700; letter-spacing: -1px">{{ time }}</div><div style="font-size: 12.5px; color: #6B7280">arrive around {{ arrive }}</div></div>
+      <button class="st" aria-label="15 minutes later" onClick="{{ later }}">+</button>
+    </div>
+    <div style="margin-top: 16px; display: flex; gap: 10px; align-items: flex-start; background: #EDF3EC; border-radius: 14px; padding: 12px 14px; font-size: 13px; color: #2F4A2E; line-height: 1.5">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#517A4F" stroke-width="1.8" style="flex: none; margin-top: 1px" stroke-linecap="round" stroke-linejoin="round"><path d="M10.27 21a2 2 0 0 0 3.46 0"></path><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"></path></svg>
+      We send your driver's name and car 30 minutes before. Change or cancel anytime in My trips.
+    </div>
+  </div>
+  <div style="position: absolute; left: 16px; right: 16px; bottom: 22px">
+    <a href="RideScheduled.html" class="cta">Schedule for {{ when }}</a>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { day: 1, mins: 450 }; }
+  renderVals() {
+    const s = this.state;
+    const f = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+    const on = { border: '2px solid #517A4F', background: '#F3F7F2', color: '#3E6340' };
+    const off = { border: '1.5px solid #E5E7EB', background: '#fff', color: '#6B7280' };
+    const days = ['today', 'tomorrow', 'Saturday'];
+    return {
+      d0: () => this.setState({ day: 0 }), d1: () => this.setState({ day: 1 }), d2: () => this.setState({ day: 2 }),
+      s0: s.day === 0 ? on : off, s1: s.day === 1 ? on : off, s2: s.day === 2 ? on : off,
+      earlier: () => this.setState({ mins: Math.max(300, s.mins - 15) }),
+      later: () => this.setState({ mins: Math.min(1380, s.mins + 15) }),
+      time: f(s.mins), arrive: f(s.mins + 15),
+      when: days[s.day] + ', ' + f(s.mins)
+    };
+  }
+}
+
+</script>
+<script>DC.boot('RideLater', 0);</script>
+</body>
+</html>

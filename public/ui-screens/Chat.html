@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Chat linked to the booking</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.me{align-self:flex-end;max-width:262px;background:#14233A;color:#fff;border-radius:18px 18px 4px 18px;padding:10px 13px;font-size:14px;line-height:1.45}
+.th{align-self:flex-start;max-width:270px;background:#F3F4F6;border-radius:18px 18px 18px 4px;padding:10px 13px;font-size:14px;line-height:1.45}
+.tm{font-size:11px;color:#9CA3AF;margin-top:3px}
+.sys{align-self:center;font-size:11.5px;color:#6B7280;background:#F9FAFB;border:1px solid #F0F1F4;border-radius:999px;padding:5px 12px}
+.qr{flex:none;height:34px;padding:0 13px;border-radius:999px;border:1.5px solid #E5E7EB;font-size:13px;font-weight:600;display:inline-flex;align-items:center;background:#fff;white-space:nowrap}
+.ib{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;border:0;background:#F3F4F6}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F0F1F4">
+    <a href="Inbox.html" aria-label="Back to messages" style="width: 40px; height: 40px; border-radius: 50%; background: #F3F4F6; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141B26" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></a>
+    <a href="CreatorProfile.html" style="display: flex; gap: 10px; align-items: center; flex: 1">
+      <span style="width: 42px; height: 42px; border-radius: 50%; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">JM</span>
+      <div><div style="font-weight: 700; font-size: 15.5px">Jean M.</div><div style="font-size: 12px; color: #3E6340">Host · online · replies in under 1 h</div></div>
+    </a>
+  </div>
+  <a href="Trips.html" style="margin: 10px 14px 0; display: flex; gap: 10px; align-items: center; background: #F3F7F2; border: 1px solid #DCE7DA; border-radius: 14px; padding: 8px 10px">
+    <img src="img/667a4cad6ffbb8235a742e62f857b10f.jpg" alt="" style="width: 40px; height: 40px; border-radius: 10px; object-fit: cover">
+    <div style="flex: 1"><div style="font-weight: 700; font-size: 13.5px">Forest walk · Sat 28 Nov, 09:30</div><div style="font-size: 12px; color: #6B7280">2 guests · KX-28114 · paid</div></div>
+    <span style="font-size: 12.5px; font-weight: 700; color: #3E6340">View</span>
+  </a>
+  <div style="padding: 14px 16px 0; display: flex; flex-direction: column; gap: 8px">
+    <span class="sys">Booking confirmed · Thu 19 Nov</span>
+    <div class="me">Hello Jean! We are two. Is the walk OK if it rains?</div>
+    <div class="th">Yego, it goes ahead in light rain. Bring a jacket, the paths can be muddy.<div class="tm">Translated from Kinyarwanda · See original</div></div>
+    <div class="me">Perfect. Can we buy some crafts after?</div>
+    <div class="th">Yes, women from the village sell baskets at the gate. Murakoze! I'll wait for you at the gate at 09:30.<div class="tm">10:24</div></div>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #F0F1F4; padding: 10px 14px 20px">
+    <div style="display: flex; gap: 8px; overflow: hidden"><span class="qr">Where do we park?</span><span class="qr">Running late</span><span class="qr">Thank you</span></div>
+    <div style="display: flex; gap: 8px; align-items: center; margin-top: 10px">
+      <button class="ib" aria-label="Send a photo"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"></path><circle cx="12" cy="13" r="3"></circle></svg></button>
+      <label style="flex: 1; height: 44px; border-radius: 999px; background: #F3F4F6; display: flex; align-items: center; padding: 0 16px"><input placeholder="Message Jean" style="border: 0; outline: none; background: transparent; font: 15px Inter; flex: 1"></label>
+      <button class="ib" aria-label="Record a voice note" style="background: #517A4F"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff"></rect><path d="M5 11a7 7 0 0014 0M12 18v3"></path></svg></button>
+    </div>
+    <div style="text-align: center; font-size: 11px; color: #9CA3AF; margin-top: 8px">Numbers stay private · keep payments in the app</div>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('Chat', 0);</script>
+</body>
+</html>

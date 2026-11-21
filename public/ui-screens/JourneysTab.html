@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Journeys tab</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.sq{width:42px;height:42px;border-radius:11px;background:#1C2D45;display:flex;align-items:center;justify-content:center;border:0;position:relative}
+.call{margin-left:auto;height:34px;padding:0 15px;border-radius:999px;border:1.5px solid #517A4F;background:#517A4F;color:#fff;font:700 15px Inter;display:flex;align-items:center;gap:7px}
+.badge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;background:#EF4444;color:#fff;font: 700 11px/20px Inter;text-align:center;border-radius:999px;border:2px solid #14233A}
+.tab{height:38px;padding:0 16px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;font-size:15px;color:#4B5563}
+.chip{height:34px;padding:0 14px;border-radius:999px;border:1px solid #E5E7EB;background:#fff;font-size:13.5px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none}
+.chip i{font-style:normal;color:#9CA3AF;font-size:12px}
+.sh{display:flex;justify-content:space-between;align-items:flex-end;padding:0 16px}
+.st{font:700 20px Inter, sans-serif}
+.ss{font-size:12.5px;color:#4B5563;margin-top:2px}
+.ul{width:32px;height:3px;border-radius:2px;background:#517A4F;margin-top:8px}
+.va{font-size:12.5px;color:#4B5563;display:flex;gap:12px;white-space:nowrap}
+.row{display:flex;gap:12px;padding:12px 16px 0;overflow:hidden}
+.card{width:140px;flex:none;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(20,35,58,.10);display:block}
+.ph{position:relative;height:96px}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.bdg{position:absolute;left:7px;top:7px;background:#fff;border-radius:999px;padding:3px 8px 3px 7px;font-size:10px;font-weight:600;display:flex;align-items:center;gap:4px;color:#141B26}
+.bdg i{width:6px;height:6px;border-radius:50%;background:#517A4F}
+.bd{padding:9px 10px 10px}
+.lc{font-size:9px;color:#6B7280;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct{font-family:Inter, sans-serif;font-weight:700;font-size:14px;line-height:1.18;margin-top:4px;height:33px;overflow:hidden}
+.pr{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:8px;border-top:1px solid #F0F1F4;font-size:10.5px;color:#6B7280}
+.pr b{font-size:13px;color:#141B26}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="background: #14233A; padding: 18px 16px 14px; display: flex; align-items: center; gap: 10px">
+    <a href="Menu.html" class="sq" aria-label="Menu"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></a>
+    <a href="tel:6023" class="call"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Call us</a>
+    <button class="sq" aria-label="Notifications, 15 new"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.27 21a2 2 0 0 0 3.46 0"></path><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"></path></svg><span class="badge">15</span></button>
+  </div>
+  <nav aria-label="Explore sections" style="display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #F0F1F4">
+    <a href="ExploreHome.html" class="tab"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m16.24 7.76-1.8 5.41a2 2 0 0 1-1.27 1.27L7.76 16.24l1.8-5.41a2 2 0 0 1 1.27-1.27z"></path></svg>Local</a>
+    <a href="JourneysTab.html" class="tab" style="border: 2px solid #517A4F; color: #3E6340; font-weight: 700"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3E6340" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.11 5.55a2 2 0 0 0 1.78 0l3.66-1.83A1 1 0 0 1 21 4.62v12.76a1 1 0 0 1-.55.9l-4.56 2.27a2 2 0 0 1-1.78 0l-4.22-2.1a2 2 0 0 0-1.78 0l-3.66 1.83A1 1 0 0 1 3 19.38V6.62a1 1 0 0 1 .55-.9l4.56-2.27a2 2 0 0 1 1.78 0z"></path><path d="M15 5.76v15M9 3.24v15"></path></svg>Journeys</a>
+    <a href="AttractionsTab.html" class="tab"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7"></path><path d="M12 2l8 5H4z"></path></svg>Attractions</a>
+  </nav>
+  <div style="display: flex; gap: 10px; padding: 12px 16px 0">
+    <div style="flex: 1; border-radius: 999px; padding: 2px; background: #E5E7EB">
+      <label style="height: 44px; border-radius: 999px; background: #fff; display: flex; align-items: center; gap: 10px; padding: 0 5px 0 15px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><input placeholder="Search multi-day journeys..." style="border: 0; outline: none; font: 15px Inter; flex: 1; min-width: 0"><a href="MrKivu.html" aria-label="Search by voice" style="width: 34px; height: 34px; border-radius: 50%; background: #EDF3EC; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#517A4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"></path></svg></a></label>
+    </div>
+    <button aria-label="Filters" style="width: 48px; height: 48px; border-radius: 50%; border: 1px solid #E5E7EB; background: #fff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"></path></svg></button>
+  </div>
+  <div style="display: flex; gap: 8px; padding: 12px 16px 0; overflow: hidden">
+    <span class="chip" style="background: #517A4F; border-color: #517A4F; color: #fff; font-weight: 700">All</span><span class="chip">Culture, Royal &amp; Heritage <i>16</i></span><span class="chip">Lakes &amp; Kivu Shores</span>
+  </div>
+
+  <div class="sh" style="margin-top: 20px"><div><div class="st">One-Day Journeys</div><div class="ss">A full story, back in time for dinner</div></div><div class="va"><span style="color: #517A4F; font-weight: 600">See all</span></div></div>
+  <div class="row">
+    <a href="JourneyDetail.html" class="card"><div class="ph"><img src="img/d1a27f459f39c06c73e9ffcf06d8b33c.jpg" alt=""><span class="bdg">Journey</span></div><div class="bd"><div class="lc">Eastern Province</div><div class="ct">Akagera Big Five Day Journey</div><div class="pr"><span><b>234,000</b> /person</span><span>1 day</span></div></div></a>
+    <a href="JourneyDetail.html" class="card"><div class="ph"><img src="img/2fe680e44f23d7825df2908e8187f0cd.jpg" alt=""><span class="bdg">Journey</span></div><div class="bd"><div class="lc">Southern Province</div><div class="ct">Huye Culture and Museum Journey</div><div class="pr"><span><b>45,500</b> /person</span><span>1 day</span></div></div></a>
+    <a href="JourneyDetail.html" class="card"><div class="ph"><img src="img/aaba7acf507fb3efb307a052975f1ffc.jpg" alt=""><span class="bdg">Journey</span></div><div class="bd"><div class="lc">Eastern Province</div><div class="ct">Imigongo Art &amp; Eastern Culture</div><div class="pr"><span><b>58,500</b></span><span>1 day</span></div></div></a>
+  </div>
+
+  <div class="sh" style="margin-top: 24px"><div><div class="st">Two-Day Journeys</div><div class="ss">One night away, two days of discovery</div></div><div class="va"><span style="color: #517A4F; font-weight: 600">See all</span></div></div>
+  <div class="row">
+    <a href="JourneyDetail.html" class="card"><div class="ph"><img src="img/44615779e52ac86bc7075c7f2d4f9580.jpg" alt=""><span class="bdg">Journey</span></div><div class="bd"><div class="lc">Bugesera</div><div class="ct">Bugesera Lakes &amp; Remembrance</div><div class="pr"><span><b>143,000</b> /person</span><span>2 days</span></div></div></a>
+    <a href="JourneyDetail.html" class="card"><div class="ph"><img src="img/0859e387b86165f0db6fb7abfb8b2823.jpg" alt=""><span class="bdg">Journey</span></div><div class="bd"><div class="lc">Kigali</div><div class="ct">Kigali Weekend Like a Local</div><div class="pr"><span><b>117,000</b> /person</span><span>2 days</span></div></div></a>
+    <a href="JourneyDetail.html" class="card"><div class="ph"><img src="img/d1a27f459f39c06c73e9ffcf06d8b33c.jpg" alt=""><span class="bdg">Journey</span></div><div class="bd"><div class="lc">Eastern Province</div><div class="ct">Akagera Wildlife &amp; Community</div><div class="pr"><span><b>338,000</b></span><span>2 days</span></div></div></a>
+  </div>
+
+  <div style="position: absolute; left: 50%; top: 733px; width: 84px; height: 84px; margin-left: -42px; border-radius: 50%; background: #fff; box-shadow: 0 -4px 14px rgba(20,35,58,.10)"></div>
+  <div style="position: absolute; left: 8px; right: 8px; top: 762px; height: 70px; background: #fff; border-radius: 26px; box-shadow: 0 -2px 18px rgba(20,35,58,.10)"></div>
+  <div style="position: absolute; left: 50%; top: 756px; width: 70px; height: 40px; margin-left: -35px; background: #fff"></div>
+  <a href="MrKivu.html" aria-label="Mr. Kivu" style="position: absolute; left: 50%; top: 740px; width: 58px; height: 58px; margin-left: -29px; border-radius: 50%; background: #517A4F; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(81,122,79,.35); z-index: 2"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff"></rect><path d="M5 11a7 7 0 0014 0M12 18v3"></path></svg></a>
+  <span style="position: absolute; left: 50%; top: 802px; width: 90px; margin-left: -45px; text-align: center; font-size: 14px; font-weight: 600; color: #3B4A5E; z-index: 2">Mr. Kivu</span>
+  <div style="position: absolute; left: 8px; right: 8px; top: 762px; height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; z-index: 1">
+    <a href="Main.html" style="width: 124px; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 14px; font-weight: 600; color: #3B4A5E"><svg aria-hidden="true" width="26" height="22" viewBox="0 0 24 20" fill="#3B4A5E"><path d="M4 9l2.2-5.2A2 2 0 018 2.5h8a2 2 0 011.8 1.3L20 9a2 2 0 012 2v5h-2.5v1.5a1 1 0 01-1 1h-1.5a1 1 0 01-1-1V16H8v1.5a1 1 0 01-1 1H5.5a1 1 0 01-1-1V16H2v-5a2 2 0 012-2zm2.2 0h11.6l-1.6-4H7.8zM5.5 13.5a1.5 1.5 0 103 0 1.5 1.5 0 00-3 0zm10 0a1.5 1.5 0 103 0 1.5 1.5 0 00-3 0z"></path></svg>Kivu Ride</a>
+    <span style="width: 90px" aria-hidden="true"></span>
+    <a href="ExploreHome.html" style="width: 124px; height: 52px; border-radius: 12px; background: #EDF3EC; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 14px; font-weight: 600; color: #517A4F"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#517A4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m16.24 7.76-1.8 5.41a2 2 0 0 1-1.27 1.27L7.76 16.24l1.8-5.41a2 2 0 0 1 1.27-1.27z"></path></svg>Kivu Explore</a>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('JourneysTab', 0);</script>
+</body>
+</html>

@@ -1,0 +1,693 @@
+{
+ "version": "2026-11-21",
+ "source": "Kivu Explore App Screens (Claude Design canvas)",
+ "sections": [
+  {
+   "id": "ride",
+   "title": "Kivu Ride",
+   "subtitle": "The home screen first, then a ride in 3 taps",
+   "screens": [
+    "Main",
+    "WhereTo",
+    "RidePickup",
+    "RideOptions",
+    "RideFinding",
+    "RideOnWay",
+    "RideChoose",
+    "RideLater",
+    "RideScheduled"
+   ],
+   "notes": [
+    "Kivu Ride in 3 taps\n\n1. Home (01): tap 'Where to?' and type (01b). Tap the pickup line to change it (R1).\n2. Tap a place: one screen with Economy or Comfort and the price (R2).\n3. Book now: we find the nearest driver (R3, R4).\n\nOr from the same screen:\nChoose driver: pick from drivers near you on the map (R5).\nBook for later: day + time, driver confirmed 30 min before (R6, R7).\n\nMaps: real OpenStreetMap streets of Kimihurura and the real road route to Kimironko Market.\nDesign rules: navy + logo green #517A4F, Inter only, one button shape (52 px, 12 px corners), one main button per screen, no brand-colour payment logos.\nFares, minutes and drivers are samples until real Kivu Ride data is plugged in."
+   ]
+  },
+  {
+   "id": "explore",
+   "title": "Kivu Explore",
+   "subtitle": "Landing: the only screens with the bottom menu",
+   "screens": [
+    "ExploreHome",
+    "ExploreFull",
+    "JourneysTab",
+    "AttractionsTab",
+    "Story",
+    "MrKivu",
+    "Menu"
+   ],
+   "notes": [
+    "Navigation rule\n\nThe bottom menu (Kivu Ride · Mr. Kivu · Kivu Explore) shows ONLY on the landing screens: 01, 02 and 04 (and 01b, which is the home screen while typing).\n\nOnce a rider opens a story or a listing, the menu disappears. The screen has a back button at the top and one action bar at the bottom. The menu comes back when they return to Explore home.",
+    "Sample content\n\nListing names, photos and base prices come from the live Tahura platform (shown in RWF at 1,300 per USD; locals see RWF, a USD switch is in the menu). Kigali to Musanze ride = 93,600 RWF return, from Transport Zones.\n\nHost names, story text and the Passport are placeholders until real hosts are signed.",
+    "Explore in the Kivu Ride brand\n\nSame layout as before: Local · Journeys · Attractions tabs, search with mic, category chips, sections with See all, the same cards.\nNow in Kivu colours only: navy and the logo green #517A4F. One font (Inter). No orange or blue.\n\nAdded, one each, nothing crowded:\n1. Stories from locals (the innovation).\n2. One 'This Saturday' pick.\n3. Within reach today: 1 h / 2 h / 3 h by EV.\n4. Meet the creators + Become a creator.\n5. Homestays as 'opening soon' until verified.\n\nTap a tab to switch: 02 Local, 02c Journeys, 02d Attractions."
+   ]
+  },
+  {
+   "id": "listings",
+   "title": "Listings",
+   "subtitle": "The story first, no bottom menu",
+   "screens": [
+    "ExperienceDetail",
+    "JourneyDetail",
+    "AttractionDetail",
+    "CreatorProfile",
+    "HomestayDetail"
+   ],
+   "notes": [
+    "Why Explore is different\n\nLocal people create new destinations (a walk, a craft, a recipe, a hill, a story). We verify them. Riders book the visit and the electric ride together.\n\nDesign rule: the person and the story first, the price second, the ride always visible."
+   ]
+  },
+  {
+   "id": "booking",
+   "title": "Booking",
+   "subtitle": "The visit and the ride, one payment",
+   "screens": [
+    "BookSheet",
+    "PickupEdit",
+    "Checkout",
+    "Approve",
+    "Booked",
+    "PayFailed",
+    "SplitPay"
+   ],
+   "notes": [
+    "Booking in 3 taps\n\nTap 1 · Reserve on the listing (or Book this place on a story).\nTap 2 · Pick a date in ONE sheet. Everything else is already filled in: guests from last time, pickup from saved places, ride on, pickup time worked out from the start time, your MoMo number from your Kivu Ride account.\nTap 3 · Pay. Approve the MoMo prompt on your phone. The app moves on by itself when InTouch confirms; no 'I paid' button.\n\nThe places are held for 10 minutes while you pay, so nobody else takes them.\nOnly dates the host's calendar allows are shown, so there is no waiting for the host to accept.\n\nToday on Tahura: 2 steps, a full calendar, a map pin, a zone dropdown, a fee breakdown and a payment method choice. About 12 taps."
+   ]
+  },
+  {
+   "id": "after",
+   "title": "After booking",
+   "subtitle": "Never left wondering",
+   "screens": [
+    "Trips",
+    "TripEve",
+    "TripLive",
+    "RateImpact",
+    "Passport",
+    "TripManage",
+    "Inbox",
+    "Chat"
+   ],
+   "notes": [
+    "After booking: what the rider always knows\n\nBooked → the trip pass (12).\nAny time → My trips, with a countdown (12b).\nEvening before, 19:00 → one message with driver, plate, pickup time and what to bring (12c). Sent by push AND SMS.\nTrip day → live car, live host status (13).\nAfter → rate, tip, impact card, a Passport stamp (14, 15).\nIf plans change → move the date in one tap, cancel with refund to MoMo, or get help from the Call Center 6023 (16).\n\nThe Call Center sees the same trip on Kivu Daily, so nobody has to repeat their story."
+   ]
+  },
+  {
+   "id": "creator",
+   "title": "Plan a day & creators",
+   "subtitle": "One driver all day · Become a creator",
+   "screens": [
+    "PlanDay",
+    "CreateStart",
+    "CreateAbout",
+    "CreateStory",
+    "CreateDetails",
+    "CreatePayout",
+    "CreateDraft",
+    "CreateSent"
+   ],
+   "notes": []
+  }
+ ],
+ "screens": [
+  {
+   "id": "Main",
+   "code": "01",
+   "title": "Kivu Ride home",
+   "section": "ride",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "ExploreHome",
+    "Main",
+    "Menu",
+    "MrKivu",
+    "WhereTo"
+   ]
+  },
+  {
+   "id": "WhereTo",
+   "code": "01b",
+   "title": "Typed \"Kimironko\": fares + what starts there",
+   "section": "ride",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "ExperienceDetail",
+    "ExploreFull",
+    "RideLater",
+    "RideOptions",
+    "RidePickup"
+   ]
+  },
+  {
+   "id": "RidePickup",
+   "code": "R1",
+   "title": "Change pickup",
+   "section": "ride",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "WhereTo"
+   ]
+  },
+  {
+   "id": "RideOptions",
+   "code": "R2",
+   "title": "Choose ride: Economy or Comfort",
+   "section": "ride",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "RideChoose",
+    "RideFinding",
+    "RideLater",
+    "WhereTo"
+   ]
+  },
+  {
+   "id": "RideFinding",
+   "code": "R3",
+   "title": "Book now: finding the nearest driver",
+   "section": "ride",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "RideOnWay"
+   ]
+  },
+  {
+   "id": "RideOnWay",
+   "code": "R4",
+   "title": "Driver on the way",
+   "section": "ride",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Chat",
+    "Main"
+   ]
+  },
+  {
+   "id": "RideChoose",
+   "code": "R5",
+   "title": "Choose driver",
+   "section": "ride",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "RideOnWay"
+   ]
+  },
+  {
+   "id": "RideLater",
+   "code": "R6",
+   "title": "Book for later",
+   "section": "ride",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "RideScheduled",
+    "WhereTo"
+   ]
+  },
+  {
+   "id": "RideScheduled",
+   "code": "R7",
+   "title": "Ride scheduled",
+   "section": "ride",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Main",
+    "Trips"
+   ]
+  },
+  {
+   "id": "ExploreHome",
+   "code": "02",
+   "title": "Kivu Explore home",
+   "section": "explore",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "AttractionsTab",
+    "ExperienceDetail",
+    "ExploreHome",
+    "JourneysTab",
+    "Main",
+    "Menu",
+    "MrKivu",
+    "Story"
+   ]
+  },
+  {
+   "id": "ExploreFull",
+   "code": "02b",
+   "title": "Local tab, scroll inside",
+   "section": "explore",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "AttractionsTab",
+    "CreateStart",
+    "CreatorProfile",
+    "ExperienceDetail",
+    "ExploreHome",
+    "HomestayDetail",
+    "JourneysTab",
+    "Main",
+    "Menu",
+    "MrKivu",
+    "Story"
+   ]
+  },
+  {
+   "id": "JourneysTab",
+   "code": "02c",
+   "title": "Journeys tab",
+   "section": "explore",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "AttractionsTab",
+    "ExploreHome",
+    "JourneyDetail",
+    "JourneysTab",
+    "Main",
+    "Menu",
+    "MrKivu"
+   ]
+  },
+  {
+   "id": "AttractionsTab",
+   "code": "02d",
+   "title": "Attractions tab",
+   "section": "explore",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "AttractionDetail",
+    "AttractionsTab",
+    "ExploreHome",
+    "JourneysTab",
+    "Main",
+    "Menu",
+    "MrKivu"
+   ]
+  },
+  {
+   "id": "Story",
+   "code": "03",
+   "title": "A local's story",
+   "section": "explore",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "BookSheet",
+    "ExperienceDetail",
+    "ExploreHome"
+   ]
+  },
+  {
+   "id": "MrKivu",
+   "code": "04",
+   "title": "Mr. Kivu plans the day",
+   "section": "explore",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "BookSheet",
+    "ExploreHome",
+    "Main",
+    "MrKivu"
+   ]
+  },
+  {
+   "id": "Menu",
+   "code": "05",
+   "title": "Menu",
+   "section": "explore",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "CreateStart",
+    "ExploreHome",
+    "Inbox",
+    "Passport",
+    "PlanDay",
+    "Trips"
+   ]
+  },
+  {
+   "id": "ExperienceDetail",
+   "code": "06",
+   "title": "Experience page",
+   "section": "listings",
+   "h": 2600,
+   "interactive": true,
+   "links": [
+    "BookSheet",
+    "CreatorProfile",
+    "ExploreHome",
+    "PlanDay"
+   ]
+  },
+  {
+   "id": "JourneyDetail",
+   "code": "07",
+   "title": "Journey page",
+   "section": "listings",
+   "h": 2050,
+   "interactive": true,
+   "links": [
+    "BookSheet",
+    "CreatorProfile",
+    "JourneysTab"
+   ]
+  },
+  {
+   "id": "AttractionDetail",
+   "code": "08",
+   "title": "Attraction page",
+   "section": "listings",
+   "h": 2000,
+   "interactive": true,
+   "links": [
+    "AttractionsTab",
+    "BookSheet",
+    "CreatorProfile"
+   ]
+  },
+  {
+   "id": "CreatorProfile",
+   "code": "09",
+   "title": "Host / guide profile",
+   "section": "listings",
+   "h": 2140,
+   "interactive": true,
+   "links": [
+    "BookSheet",
+    "Chat",
+    "ExperienceDetail",
+    "HomestayDetail",
+    "Story"
+   ]
+  },
+  {
+   "id": "HomestayDetail",
+   "code": "09b",
+   "title": "Homestay page",
+   "section": "listings",
+   "h": 2100,
+   "interactive": true,
+   "links": [
+    "BookSheet",
+    "CreatorProfile",
+    "ExploreFull"
+   ]
+  },
+  {
+   "id": "BookSheet",
+   "code": "10",
+   "title": "Book: date, guests, getting there",
+   "section": "booking",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Checkout",
+    "ExperienceDetail",
+    "PickupEdit"
+   ]
+  },
+  {
+   "id": "PickupEdit",
+   "code": "10b",
+   "title": "Change pickup",
+   "section": "booking",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "BookSheet"
+   ]
+  },
+  {
+   "id": "Checkout",
+   "code": "11a",
+   "title": "Payment: MoMo, Airtel or card",
+   "section": "booking",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Approve",
+    "BookSheet",
+    "Booked"
+   ]
+  },
+  {
+   "id": "Approve",
+   "code": "11b",
+   "title": "Approve on your phone",
+   "section": "booking",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Booked",
+    "PayFailed"
+   ]
+  },
+  {
+   "id": "Booked",
+   "code": "12",
+   "title": "Payment successful: 3 next steps",
+   "section": "booking",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Chat",
+    "ExploreHome",
+    "Trips"
+   ]
+  },
+  {
+   "id": "PayFailed",
+   "code": "11c",
+   "title": "If payment fails",
+   "section": "booking",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Approve",
+    "Booked",
+    "SplitPay"
+   ]
+  },
+  {
+   "id": "SplitPay",
+   "code": "10c",
+   "title": "Split with friends",
+   "section": "booking",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Approve",
+    "BookSheet"
+   ]
+  },
+  {
+   "id": "Trips",
+   "code": "12b",
+   "title": "My trips",
+   "section": "after",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Booked",
+    "ExperienceDetail",
+    "Menu",
+    "SplitPay",
+    "TripManage"
+   ]
+  },
+  {
+   "id": "TripEve",
+   "code": "12c",
+   "title": "The evening before",
+   "section": "after",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "TripManage",
+    "Trips"
+   ]
+  },
+  {
+   "id": "TripLive",
+   "code": "13",
+   "title": "Trip day, live",
+   "section": "after",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "CreatorProfile",
+    "RateImpact"
+   ]
+  },
+  {
+   "id": "RateImpact",
+   "code": "14",
+   "title": "Rate + your impact",
+   "section": "after",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Passport"
+   ]
+  },
+  {
+   "id": "Passport",
+   "code": "15",
+   "title": "Rwanda Passport",
+   "section": "after",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "ExperienceDetail",
+    "Menu"
+   ]
+  },
+  {
+   "id": "TripManage",
+   "code": "16",
+   "title": "Change, cancel or get help",
+   "section": "after",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Booked",
+    "Inbox",
+    "PickupEdit",
+    "Trips"
+   ]
+  },
+  {
+   "id": "Inbox",
+   "code": "17",
+   "title": "Messages",
+   "section": "after",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "Chat",
+    "Menu"
+   ]
+  },
+  {
+   "id": "Chat",
+   "code": "17b",
+   "title": "Chat linked to the booking",
+   "section": "after",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "CreatorProfile",
+    "Inbox",
+    "Trips"
+   ]
+  },
+  {
+   "id": "PlanDay",
+   "code": "16",
+   "title": "Plan a day: one driver, one price",
+   "section": "creator",
+   "h": 1000,
+   "interactive": true,
+   "links": [
+    "BookSheet",
+    "Menu"
+   ]
+  },
+  {
+   "id": "CreateStart",
+   "code": "18",
+   "title": "Become a creator: start",
+   "section": "creator",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "CreateAbout",
+    "Menu"
+   ]
+  },
+  {
+   "id": "CreateAbout",
+   "code": "18a",
+   "title": "Step 1: about you",
+   "section": "creator",
+   "h": 1000,
+   "interactive": true,
+   "links": [
+    "CreateStart",
+    "CreateStory"
+   ]
+  },
+  {
+   "id": "CreateStory",
+   "code": "18b",
+   "title": "Step 2: tell your story",
+   "section": "creator",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "CreateAbout",
+    "CreateDetails"
+   ]
+  },
+  {
+   "id": "CreateDetails",
+   "code": "18c",
+   "title": "Step 3: your offer",
+   "section": "creator",
+   "h": 1150,
+   "interactive": true,
+   "links": [
+    "CreatePayout",
+    "CreateStory"
+   ]
+  },
+  {
+   "id": "CreatePayout",
+   "code": "18d",
+   "title": "Step 4: availability and payout",
+   "section": "creator",
+   "h": 1000,
+   "interactive": true,
+   "links": [
+    "CreateDetails",
+    "CreateDraft"
+   ]
+  },
+  {
+   "id": "CreateDraft",
+   "code": "18e",
+   "title": "Step 5: check and send",
+   "section": "creator",
+   "h": 1000,
+   "interactive": true,
+   "links": [
+    "CreatePayout",
+    "CreateSent"
+   ]
+  },
+  {
+   "id": "CreateSent",
+   "code": "18f",
+   "title": "Sent: what happens next",
+   "section": "creator",
+   "h": 844,
+   "interactive": true,
+   "links": [
+    "ExploreHome",
+    "Inbox"
+   ]
+  }
+ ]
+}

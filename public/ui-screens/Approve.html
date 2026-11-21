@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Approve on your phone</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.st{display:flex;gap:12px;align-items:center;font-size:14.5px;font-weight:600;padding:8px 0}
+.dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #fff; background: #14233A">
+  <div style="padding: 22px 20px 0; text-align: center">
+    <div style="font-size: 12px; font-weight: 700; color: #9DBF9A">Last step</div>
+    <div style="font: 700 28px/1.15 Inter, sans-serif; margin-top: 8px">Approve on your phone</div>
+    <div style="font-size: 14px; color: #9FB0C5; margin-top: 8px">MTN MoMo sent a prompt to 078 ••• 171</div>
+  </div>
+  <div style="margin: 24px auto 0; width: 230px; background: #0B1320; border-radius: 34px; padding: 12px; box-shadow: 0 20px 40px rgba(0,0,0,.4)">
+    <div style="background: #1F2937; border-radius: 24px; padding: 18px 14px; min-height: 230px; display: flex; flex-direction: column; justify-content: center">
+      <div style="background: #fff; color: #141B26; border-radius: 14px; padding: 14px; font-size: 13px; line-height: 1.5">
+        <div style="font-weight: 700">MTN MoMo</div>
+        Pay <b>132,600 RWF</b> to <b>KIVU RIDE</b> for booking KX-28114?<br>Enter your PIN:
+        <div style="margin-top: 8px; height: 30px; border-bottom: 2px solid #141B26; letter-spacing: 8px; font-weight: 700">••••</div>
+        <div style="display: flex; justify-content: flex-end; gap: 16px; margin-top: 10px; font-weight: 700; color: #0E7490"><span>Cancel</span><span>Send</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="margin: 26px 24px 0; background: #1B2D47; border-radius: 16px; padding: 10px 16px">
+    <div class="st"><span class="dot" style="background: #517A4F"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>Visit held for you · Sat 28, 09:30</div>
+    <div class="st"><span class="dot" style="background: #517A4F; box-shadow: 0 0 0 5px rgba(81,122,79,.2)"><span style="width: 8px; height: 8px; border-radius: 50%; background: #fff"></span></span>Waiting for your PIN · 1:42</div>
+    <div class="st" style="color: #6B7C93"><span class="dot" style="border: 2px solid #3A4E6B"></span>Booking confirmed, Jean and Dispatch told</div>
+  </div>
+  <a href="Booked.html" style="position: absolute; left: 24px; right: 24px; bottom: 92px; display: flex; align-items: center; gap: 10px; background: #1B2D47; border-radius: 14px; padding: 12px 14px; font-size: 13px; color: #C9D3E0; line-height: 1.4">
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9DBF9A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>
+    <span>You don't need to tap anything here. This screen moves on by itself when MoMo confirms.</span></a>
+  <div style="position: absolute; left: 0; right: 0; bottom: 40px; text-align: center; font-size: 13px; color: #9FB0C5">No prompt? <a href="PayFailed.html" style="color: #fff; font-weight: 700">Send it again</a> · or dial *182*7*1#</div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('Approve', 0);</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Split with friends</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.p{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #EEF0F3}
+.av{width:44px;height:44px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.amt{font-weight:700;font-size:15px;text-align:right}
+.st{display:block;font-size:11.5px;font-weight:700;margin-top:2px}
+.seg{flex:1;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:700}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #fff">
+  <div style="padding: 16px 18px 0; display: flex; align-items: center; gap: 12px">
+    <a href="BookSheet.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid #E5E7EB; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141B26" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></a>
+    <div><div style="font: 700 22px Inter, sans-serif">Split the cost</div><div style="font-size: 12.5px; color: #6B7280">Everyone pays their share by MoMo</div></div>
+  </div>
+  <div style="margin: 16px 18px 0; background: #14233A; color: #fff; border-radius: 16px; padding: 14px 16px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 13px; color: #9FB0C5">Sat 28 Nov · walk + ride</span><b style="font-size: 20px">132,600 RWF</b></div>
+    <div style="display: flex; gap: 6px; margin-top: 12px; background: #22344D; border-radius: 12px; padding: 4px">
+      <span class="seg" style="background: #fff; color: #14233A">Split evenly</span><span class="seg" style="color: #C9D3E0">Custom amounts</span>
+    </div>
+  </div>
+  <div style="padding: 6px 18px 0">
+    <div class="p"><span class="av" style="background: #517A4F">AN</span><div style="flex: 1"><div style="font-weight: 700; font-size: 15px">You</div><div style="font-size: 12.5px; color: #6B7280">078 ••• 171</div></div><div class="amt">66,300<span class="st" style="color: #3E6340">Pay now</span></div></div>
+    <div class="p"><span class="av" style="background: #14233A">EK</span><div style="flex: 1"><div style="font-weight: 700; font-size: 15px">[Friend from contacts]</div><div style="font-size: 12.5px; color: #6B7280">Gets a MoMo request by SMS</div></div><div class="amt">66,300<span class="st" style="color: #6B7280">Waiting</span></div></div>
+    <button style="margin-top: 12px; width: 100%; height: 48px; border-radius: 14px; border: 1.5px dashed #D1D5DB; background: #fff; font: 700 14px Inter; color: #3B4A5E">+ Add a person (adds a guest)</button>
+    <div style="margin-top: 16px; background: #F6F7F9; border-radius: 16px; padding: 14px; font-size: 13px; line-height: 1.6; color: #374151">
+      <b style="color: #141B26">How it works</b><br>
+      Your places stay held while friends pay, up to 2 hours.<br>
+      Booked as soon as everyone has paid.<br>
+      If someone doesn't pay in time, you can cover their share or drop their place.
+    </div>
+  </div>
+  <a href="Approve.html" style="position: absolute; left: 18px; right: 18px; bottom: 26px; height: 56px; border-radius: 12px; background: #517A4F; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px">Pay my share · 66,300 RWF</a>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('SplitPay', 0);</script>
+</body>
+</html>

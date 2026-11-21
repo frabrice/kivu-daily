@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>My trips</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+html,body{overflow:hidden}
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.ok{font-size:11.5px;font-weight:700;border-radius:999px;padding:4px 9px;white-space:nowrap}
+.btn{flex:1;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.past{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #EEF0F3}
+.past img{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none}
+</style>
+
+<style>
+html,body{margin:0;background:#fff;-webkit-tap-highlight-color:transparent}
+html[data-tall="1"],html[data-tall="1"] body{overflow-y:auto!important;overflow-x:hidden!important;height:auto}
+#dc-root{width:390px}
+a[data-missing]{cursor:default}
+</style>
+</head>
+<body>
+<div id="dc-root"></div>
+<script type="text/x-dc-template" id="dc-tpl"><div style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: Inter, sans-serif; color: #141B26; background: #F6F7F9">
+  <div style="background: #14233A; color: #fff; padding: 16px 16px 16px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="Menu.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 12px; background: #22344D; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></a>
+      <div style="font: 700 22px Inter, sans-serif; flex: 1">My trips</div>
+      <a href="tel:6023" style="height: 38px; padding: 0 12px; border-radius: 999px; border: 2px solid #517A4F; color: #517A4F; display: flex; align-items: center; font-weight: 700; font-size: 13px">Call us</a>
+    </div>
+    <div style="display: flex; gap: 4px; background: #22344D; border-radius: 12px; padding: 4px; margin-top: 14px">
+      <span style="flex: 1; height: 36px; border-radius: 9px; background: #fff; color: #14233A; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">Upcoming · 2</span>
+      <span style="flex: 1; height: 36px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; color: #C9D3E0">Past · 3</span>
+    </div>
+  </div>
+  <div style="padding: 14px 14px 0">
+    <div style="background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 4px 18px rgba(20,35,58,.08)">
+      <div style="position: relative; height: 110px"><img src="img/667a4cad6ffbb8235a742e62f857b10f.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block"><span style="position: absolute; left: 12px; top: 12px; background: #14233A; color: #fff; border-radius: 12px; padding: 6px 10px; font-size: 11px; font-weight: 700; text-align: center">In<b style="display: block; font-size: 20px">9 days</b></span></div>
+      <div style="padding: 12px 14px 14px">
+        <div style="font-size: 11px; font-weight: 700; color: #3E6340">Sat 28 Nov · pickup 07:30 · 2 guests</div>
+        <div style="font: 700 18px/1.2 Inter, sans-serif; margin-top: 4px">Sacred Forest Storytelling Walk</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px">
+          <span class="ok" style="background: #F3F7F2; color: #3E6340">✓ Paid</span>
+          <span class="ok" style="background: #F3F7F2; color: #3E6340">✓ Jean has seen it</span>
+          <span class="ok" style="background: #F1F3F6; color: #3B4A5E">Driver shared Fri 19:00</span>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 12px">
+          <a href="Booked.html" class="btn" style="background: #14233A; color: #fff">Open trip pass</a>
+          <a href="TripManage.html" class="btn" style="border: 1.5px solid #D1D5DB">Change or cancel</a>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top: 12px; background: #fff; border-radius: 16px; padding: 12px; display: flex; gap: 12px; align-items: center; border: 1.5px solid #E5E7EB">
+      <img src="img/d1a27f459f39c06c73e9ffcf06d8b33c.jpg" alt="" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover">
+      <div style="flex: 1"><div style="font-size: 11px; font-weight: 700; color: #374151">SAT 5 DEC · WAITING FOR 1 FRIEND</div><div style="font-weight: 700; font-size: 14.5px; margin-top: 2px">Akagera Big Five Day</div><div style="font-size: 12px; color: #6B7280">You paid your share · places held 1 h 20</div></div>
+      <a href="SplitPay.html" style="font-size: 12.5px; font-weight: 700; color: #3E6340">Remind</a>
+    </div>
+    <div style="font-weight: 700; font-size: 14px; margin-top: 18px">Recently</div>
+    <div class="past"><img src="img/29a178c16a6f65ffc70bafd11d13389c.jpg" alt=""><div style="flex: 1"><div style="font-weight: 700; font-size: 14px">Nyandungu Birdwatching</div><div style="font-size: 12px; color: #6B7280">Sun 8 Nov · you rated 5 · receipt PDF</div></div><a href="ExperienceDetail.html" style="height: 36px; padding: 0 12px; border-radius: 10px; background: #F3F7F2; color: #3E6340; display: flex; align-items: center; font-weight: 700; font-size: 13px">Book again</a></div>
+  </div>
+</div></script>
+<script src="player.js"></script>
+<script>
+
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+
+</script>
+<script>DC.boot('Trips', 0);</script>
+</body>
+</html>
