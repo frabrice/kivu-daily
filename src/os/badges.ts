@@ -9,6 +9,7 @@ import { BadgeKey } from './registry';
 import { LegalDoc, missingForDriver, missingForOwner, missingInspection } from '../lib/legalDocs';
 import type { Driver, Vehicle } from '../lib/supabase';
 import { kigaliToday as kTodayFast } from '../lib/kigali';
+import { computeMissing, loadMissingData } from '../lib/missing';
 
 const head = async (q: PromiseLike<{ count: number | null }>) => (await q).count ?? 0;
 const today = () => kTodayFast();
@@ -69,7 +70,9 @@ export function useBadges(a: Access): Partial<Record<BadgeKey, number>> {
           + list.reduce((t, d) => t + (d.balance_adjustments ?? []).filter((x) => x.status === 'pending').length, 0)
           + list.filter((d) => !reviewed.has(d.id)).length;
       }
-      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits, missingContracts, missingAgreements, itInbox, itProposed, planBudgets, driverAdjust };
+      // Admin -> Missing (MD): cars, owners and drivers on contract with something missing.
+      const missing = a.isMd ? computeMissing(await loadMissingData()).filter((r) => !r.ended).length : 0;
+      return { pendingPauses, openIssues, pendingFinance, myOpenTasks, overdueDeposits: pendingDeposits, missingContracts, missingAgreements, itInbox, itProposed, planBudgets, driverAdjust, missing };
     },
   });
   return { myCases, unreadComments, carFollowups, ...(q.data ?? {}) };

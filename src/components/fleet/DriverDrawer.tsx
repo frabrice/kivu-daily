@@ -65,6 +65,9 @@ export default function DriverDrawer({
   const { docs: legalDocs } = useLegalDocs();
   const hasContract = legalDocs.some((x) => x.driver_id === driverId && x.kind === 'driver_contract' && (!x.period_start || x.period_start === startDate));
   const needContract = editing && !!vehicleId && !!startDate && driver?.contract_status !== 'ended' && !hasContract;
+  // Optional (MD, 23 Nov 2026): the car can be linked without it; it then
+  // shows under Admin -> Missing. Only a contract that is attached is checked.
+  const withContract = needContract && !!contract.file;
 
   const replacementOptions = availableForReplacement(drivers, driver?.id).map((d) => ({ id: d.id, label: d.full_name, sublabel: d.phone }));
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
@@ -105,13 +108,13 @@ export default function DriverDrawer({
       setError('Every driver on this model must be assigned a weekly rest day.');
       return;
     }
-    if (needContract) {
+    if (withContract) {
       const cErr = draftError('driver_contract', contract);
       if (cErr) { setError(cErr); return; }
     }
     setSaving(true);
     setError('');
-    const up = needContract ? await uploadDraft('driver_contract', driverId, contract) : null;
+    const up = withContract ? await uploadDraft('driver_contract', driverId, contract) : null;
     if (up && 'error' in up) { setSaving(false); setError(up.error); return; }
     const payload = {
       full_name: fullName.trim(),
@@ -369,7 +372,7 @@ export default function DriverDrawer({
           </div>
         )}
 
-        {needContract && <LegalDocFields kind="driver_contract" draft={contract} onChange={setContract} title="Signed and stamped contract *" />}
+        {needContract && <LegalDocFields kind="driver_contract" draft={contract} onChange={setContract} title="Signed and stamped contract (optional — if you don't have it now, it shows under Admin → Missing)" />}
         {editing && !vehicleId && <p className="text-caption text-fg-muted">The signed and stamped contract is asked for when the driver is put on a car.</p>}
         {editing && vehicleId && hasContract && <p className="text-caption text-success">Signed and stamped contract on file for this contract.</p>}
 
@@ -389,7 +392,7 @@ export default function DriverDrawer({
             ) : <span />}
             <div className="flex gap-2">
               <button onClick={() => (driver ? setEditing(false) : onClose())} className="btn-ghost">Cancel</button>
-              <button onClick={save} disabled={saving || !fullName.trim() || !phone.trim() || vehicleFull || (initialDepositPaid && (!initialDepositDate || !Number(initialDepositAmount))) || !restDay} className="btn-primary disabled:opacity-50">
+              <button onClick={save} disabled={saving || !fullName.trim() || !phone.trim() || vehicleFull || (initialDepositPaid && (!initialDepositDate || !Number(initialDepositAmount))) || (terms.restDay && !restDay)} className="btn-primary disabled:opacity-50">
                 {saving ? 'Saving…' : driver ? 'Save Changes' : 'Add Driver'}
               </button>
             </div>

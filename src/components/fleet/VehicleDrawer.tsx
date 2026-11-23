@@ -43,7 +43,10 @@ export default function VehicleDrawer({
   const [inspection, setInspection] = useState<LegalDraft>(emptyDraft(todayStr()));
   // A brand new car needs no inspection: the tick takes the document's place.
   const [brandNew, setBrandNew] = useState(vehicle?.brand_new ?? false);
-  const inspectionError = vehicle || brandNew ? null : draftError('vehicle_inspection', inspection);
+  // Optional (MD, 23 Nov 2026): a car can be saved without it; it then shows
+  // under Admin -> Missing. Only a document that is attached is checked.
+  const withInspection = !vehicle && !brandNew && !!inspection.file;
+  const inspectionError = withInspection ? draftError('vehicle_inspection', inspection) : null;
 
   const addDoc = () => setDocuments((d) => [...d, '']);
   const updateDoc = (i: number, text: string) => setDocuments((d) => d.map((v, idx) => (idx === i ? text : v)));
@@ -82,7 +85,7 @@ export default function VehicleDrawer({
       setSaving(false);
       if (err) { setError(err.message); return; }
     } else {
-      const up = brandNew ? { doc: null } : await uploadDraft('vehicle_inspection', newId, inspection);
+      const up = withInspection ? await uploadDraft('vehicle_inspection', newId, inspection) : { doc: null };
       if ('error' in up) { setSaving(false); setError(up.error); return; }
       const fields: Record<string, unknown> = { ...payload };
       delete fields.updated_at;
@@ -209,7 +212,7 @@ export default function VehicleDrawer({
           <input type="checkbox" checked={brandNew} disabled={!editing} onChange={(e) => setBrandNew(e.target.checked)} className="mt-0.5" />
           <span><b className="font-medium">Brand new car</b><span className="block text-caption text-fg-muted">Tick it instead of the Kivu Ride inspection document — a new car isn't inspected.</span></span>
         </label>
-        {!vehicle && editing && !brandNew && <LegalDocFields kind="vehicle_inspection" draft={inspection} onChange={setInspection} title="Kivu Ride inspection document *" />}
+        {!vehicle && editing && !brandNew && <LegalDocFields kind="vehicle_inspection" draft={inspection} onChange={setInspection} title="Kivu Ride inspection document (optional — if you don't have it now, it shows under Admin → Missing)" />}
 
         {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
 

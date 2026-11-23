@@ -50,7 +50,8 @@ export default function OnboardVehicleOwnerDrawer({
   const { docs: legalDocs } = useLegalDocs();
   const targetOwner = mode === 'existing' ? ownerId : newOwnerId;
   const hasAgreement = mode === 'existing' && !!ownerId && legalDocs.some((x) => x.owner_id === ownerId && x.kind === 'owner_management_agreement');
-  const agreementError = hasAgreement && !agreement.file ? null : draftError('owner_management_agreement', agreement);
+  // Optional (MD, 23 Nov 2026): without it the owner shows under Admin -> Missing.
+  const agreementError = agreement.file ? draftError('owner_management_agreement', agreement) : null;
 
   const weeklyPayout = (Number(dailyPayout) || DAILY_OWNER_PAYOUT_DEFAULT) * OWNER_PAYOUT_DAYS_PER_WEEK;
   const canSave = (mode === 'existing'
@@ -201,7 +202,7 @@ export default function OnboardVehicleOwnerDrawer({
         {hasAgreement && !agreement.file
           ? <p className="text-caption text-success">This owner's signed and stamped management agreement is already on file. Attach a new one below only if this car has its own.</p>
           : null}
-        <LegalDocFields kind="owner_management_agreement" draft={agreement} onChange={setAgreement} title={hasAgreement ? 'Management agreement for this car (optional)' : 'Management agreement — signed and stamped *'} />
+        <LegalDocFields kind="owner_management_agreement" draft={agreement} onChange={setAgreement} title={hasAgreement ? 'Management agreement for this car (optional)' : "Management agreement — signed and stamped (optional — if you don't have it now, it shows under Admin → Missing)"} />
         {!error && agreementError && <p className="text-caption text-fg-muted">{agreementError}</p>}
 
         {error && <div className="text-caption text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</div>}
