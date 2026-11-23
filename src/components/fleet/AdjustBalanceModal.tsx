@@ -68,16 +68,17 @@ export default function AdjustBalanceModal({ driver, deposits, onClose, onSaved 
     <Modal open onClose={onClose} title={`Adjust ${driver.full_name}'s numbers`} subtitle="Recorded with your name, the date, the reason and the numbers before and after" maxWidth="max-w-lg">
       <div className="space-y-4 text-small">
         <div className="grid grid-cols-3 gap-2">
-          {([['Owes now', rwf(before.owes)], ['Behind this week', rwf(before.weekBehind)], ['Next payment', before.nextDueDate ? formatDateLabelSafe(before.nextDueDate) : '—']] as [string, string][]).map(([l, v]) => (
+          {([['Owes now', rwf(before.owes)], before.dailyRule ? ['Paid to', before.paidThrough ? formatDateLabelSafe(before.paidThrough) : '—'] : ['Behind this week', rwf(before.weekBehind)], ['Next payment', before.nextDueDate ? formatDateLabelSafe(before.nextDueDate) : '—']] as [string, string][]).map(([l, v]) => (
             <div key={l} className="rounded-lg bg-inset p-2 text-center"><p className="text-micro text-fg-muted">{l} today</p><p className="font-semibold">{v}</p></div>
           ))}
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-3">
+        <div className={`grid gap-3 ${before.dailyRule ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
           <label className="block"><span className="text-caption font-semibold text-fg-muted">Owes should be</span>
             <input className="input w-full mt-1" inputMode="numeric" value={owesText} onChange={(e) => fromOwes(e.target.value)} /></label>
-          <label className="block"><span className="text-caption font-semibold text-fg-muted">Behind should be</span>
-            <input className="input w-full mt-1" inputMode="numeric" value={behindText} onChange={(e) => fromBehind(e.target.value)} /></label>
+          {/* No "behind on the week" under the daily rule (MD, 23 Nov 2026). */}
+          {!before.dailyRule && <label className="block"><span className="text-caption font-semibold text-fg-muted">Behind should be</span>
+            <input className="input w-full mt-1" inputMode="numeric" value={behindText} onChange={(e) => fromBehind(e.target.value)} /></label>}
           <label className="block"><span className="text-caption font-semibold text-fg-muted">May drive until</span>
             <input type="date" className="input w-full mt-1" value={until} min={today} max={new Date(Date.now() + 60 * 86_400_000).toISOString().slice(0, 10)} onChange={(e) => setUntil(e.target.value)} /></label>
         </div>
@@ -88,7 +89,7 @@ export default function AdjustBalanceModal({ driver, deposits, onClose, onSaved 
             <p className="font-semibold flex items-center gap-1.5"><SlidersHorizontal size={14} /> What will be recorded</p>
             {amount !== 0 && <p>{amount > 0 ? `A credit of ${rwf(amount)}` : `A charge of ${rwf(-amount)}`} on the driver's account (not money received: Finance's cash does not change).</p>}
             {until && <p>The driver may drive until {formatDateLabelSafe(until)}.</p>}
-            <p className="text-fg-muted">After: owes {rwf(after.owes)} · behind {rwf(after.weekBehind)} · next payment {after.nextDueDate ? formatDateLabelSafe(after.nextDueDate) : '—'} · {after.isCleared ? 'cleared to drive' : 'not cleared to drive'}</p>
+            <p className="text-fg-muted">After: owes {rwf(after.owes)} · {after.dailyRule ? `paid to ${after.paidThrough ? formatDateLabelSafe(after.paidThrough) : '—'}` : `behind ${rwf(after.weekBehind)}`} · next payment {after.nextDueDate ? formatDateLabelSafe(after.nextDueDate) : '—'} · {after.isCleared ? 'cleared to drive' : 'not cleared to drive'}</p>
           </div>
         )}
 

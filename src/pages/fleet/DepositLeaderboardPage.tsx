@@ -49,7 +49,7 @@ function DepositLeaderboardView({ data }: { data: ReturnType<typeof useFleetData
       <div>
         <h2 className="text-base font-semibold flex items-center gap-2"><Trophy size={16} className="text-amber-600 dark:text-amber-300" /> Weekly Deposit Leaderboard</h2>
         <p className="text-caption text-fg-subtle mt-0.5">
-          Every driver pays by Sunday for the Monday–Sunday week ahead. Unpaid on Monday means not cleared to drive, and every working day lost costs {DEPOSIT_LATE_PENALTY_PER_DAY} points.
+          Every driver pays for the next day the day before (the same day is tolerated), any amount. A working day not paid by the end of that day is lost — the car is taken back — and costs {DEPOSIT_LATE_PENALTY_PER_DAY} points.
         </p>
       </div>
 

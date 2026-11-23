@@ -106,7 +106,7 @@ function tips(s: Awaited<ReturnType<typeof snapshot>>): Tip[] {
   if (s.expectedWeek > 0 && rate < 95) {
     out.push({ weight: 100 - rate, text: `<b>Collections are at ${rate}%</b> of what this week's driving should have brought in (${rwf(s.collectedWeek)} of ${rwf(s.expectedWeek)}). ${plural(s.owingDrivers.length, "driver")} owe ${rwf(s.owes)} for days already worked${s.owingDrivers.length ? ` — start with ${s.owingDrivers.sort((a, b) => b.s.owes - a.s.owes).slice(0, 3).map((r) => esc(r.d.full_name)).join(", ")}` : ""}. Ask Janviere to call them before noon.` });
   } else if (s.expectedWeek > 0) {
-    out.push({ weight: 1, text: `Collections are on track this week: ${rwf(s.collectedWeek)} in (${rate}% of what driving so far should bring). Keep the Sunday rhythm.` });
+    out.push({ weight: 1, text: `Collections are on track this week: ${rwf(s.collectedWeek)} in (${rate}% of what driving so far should bring). Keep every driver paying the day before.` });
   }
   if (s.emptySlots > 0) {
     const weekly = s.emptySlots * DAILY_DEPOSIT_RATE * 6;

@@ -1,6 +1,6 @@
 import {
   computeDepositStanding, firstSundayPayment, sundayOf, shiftDay, dailyRateOf, weeklyAmountOf, driverShiftShort,
-  SUNDAY_RULE_START, type BalanceAdjustment, type DepositStanding, type RestDayKey,
+  SUNDAY_RULE_START, DAILY_RULE_START, type BalanceAdjustment, type DepositStanding, type RestDayKey,
 } from "../_shared/depositRules.ts";
 import { ALL_DAYS, Block, Built, cached, Ctx, day, esc, hm, personName, plural, RuleDef, rows, rwf, Tone } from "./core.ts";
 
@@ -45,7 +45,44 @@ export async function activeStandings(ctx: Ctx, today = ctx.today): Promise<Stan
 export const car = (d: DriverRow) => `${d.vehicle?.plate_number ?? "—"}${d.shift || d.model === "solo_car" ? ` (${driverShiftShort(d).toLowerCase()})` : ""}`;
 const switchoverSunday = shiftDay(SUNDAY_RULE_START, -1);
 
+// Daily rule (MD, 23 Nov 2026): every driver pays for the next day, the day
+// before (the same day is tolerated). Every morning: who pays today; every
+// evening: who still hasn't paid for tomorrow (or for today).
+async function dailyLists(key: "call" | "unpaid", ctx: Ctx): Promise<Built[]> {
+  const all = await activeStandings(ctx);
+  const tomorrow = shiftDay(ctx.today, 1);
+  const due = all
+    .filter((r) => !r.s.pausedToday && r.s.nextDueAmount > 0 && (key === "call"
+      ? (r.s.nextDueDate ?? "9999") <= ctx.today
+      : (r.s.nextUnpaidDay ?? "9999") <= tomorrow))
+    .sort((a, b) => (a.s.nextUnpaidDay ?? "").localeCompare(b.s.nextUnpaidDay ?? "") || b.s.nextDueAmount - a.s.nextDueAmount);
+  if (due.length === 0) return [];
+  const total = due.reduce((s, r) => s + r.s.nextDueAmount, 0);
+  const forDay = (r: StandingRow) => (r.s.nextUnpaidDay ?? "") < ctx.today ? `<b style="color:#b91c1c;">unpaid since ${day(r.s.nextUnpaidDay)}</b>`
+    : r.s.nextUnpaidDay === ctx.today ? `<b style="color:#b45309;">today</b>` : day(r.s.nextUnpaidDay);
+  const tbl = {
+    head: ["Driver", "Phone", "Car", "Paid to", "To pay", "For"],
+    rows: due.map((r) => [esc(r.d.full_name), esc(r.d.phone ?? "—"), esc(car(r.d)), r.s.paidThrough ? day(r.s.paidThrough) : "—", rwf(r.s.nextDueAmount), forDay(r)]),
+  };
+  return [key === "call"
+    ? {
+        subject: `Pay today: ${plural(due.length, "driver")}, ${rwf(total)}`,
+        heading: `Drivers who pay today — ${day(ctx.today)}`,
+        intro: "Each driver below must pay today for the next day they work (paying on the morning of that day is tolerated). Please remind each one. A day not paid by the end of that day is lost and the car is taken back.",
+        table: tbl,
+        inApp: `Pay today: ${plural(due.length, "driver")}, ${rwf(total)}`,
+      }
+    : {
+        subject: `Still unpaid for tomorrow: ${plural(due.length, "driver")}, ${rwf(total)} — call tonight`,
+        heading: "Not paid for tomorrow yet",
+        intro: "These drivers haven't paid for tomorrow (or for today). Please call them tonight — if tomorrow isn't paid by tomorrow, the car is taken back.",
+        table: tbl,
+        inApp: `Still unpaid for tomorrow: ${plural(due.length, "driver")}`,
+      }];
+}
+
 async function sundayLists(key: "call" | "unpaid", ctx: Ctx, force: boolean): Promise<Built[]> {
+  if (ctx.today >= DAILY_RULE_START) return dailyLists(key, ctx);
   if (!force && sundayOf(ctx.today) < switchoverSunday) return [];
   const ruleInForce = ctx.today >= SUNDAY_RULE_START;
   const all = await activeStandings(ctx);
@@ -84,9 +121,13 @@ async function sundayLists(key: "call" | "unpaid", ctx: Ctx, force: boolean): Pr
 
 async function notCleared(kind: "monday" | "daily" | "summary", ctx: Ctx, force: boolean): Promise<Built[]> {
   if (!force && ctx.today < SUNDAY_RULE_START) return [];
+  const dailyRule = ctx.today >= DAILY_RULE_START;
+  // Daily rule: one list every morning (kind "daily", every day); the Monday ones aren't needed.
+  if (dailyRule && kind !== "daily") return [];
   const all = await activeStandings(ctx);
-  // Owes = days already worked unpaid; Behind = rest of the week unpaid.
-  const blocked = all.filter((r) => !r.s.isCleared).sort((a, b) => b.s.owes - a.s.owes || b.s.weekBehind - a.s.weekBehind);
+  // Owes = days already worked unpaid; Behind = rest of the week unpaid (weekly rule only).
+  // Daily rule: blocked = a day already gone unpaid (today unpaid is still tolerated today).
+  const blocked = all.filter((r) => !r.s.isCleared && !(dailyRule && r.s.payToday)).sort((a, b) => b.s.owes - a.s.owes || b.s.weekBehind - a.s.weekBehind);
   const total = blocked.reduce((s, r) => s + r.s.weekBehind, 0);
   const owesTotal = blocked.reduce((s, r) => s + r.s.owes, 0);
   if (kind === "summary") {
@@ -101,6 +142,13 @@ async function notCleared(kind: "monday" | "daily" | "summary", ctx: Ctx, force:
         }];
   }
   if (blocked.length === 0) return [];
+  if (dailyRule) return [{
+    subject: `Take the car back: ${plural(blocked.length, "driver")} drove a day unpaid (${rwf(owesTotal)} owed)`,
+    heading: "Days gone unpaid — car taken back until paid",
+    intro: "Each driver below has a working day that ended without being paid. Fleet: take the car back until they pay. Janviere: call each one now.",
+    table: { head: ["Driver", "Phone", "Car", "Paid to", "Owes", "Days lost this week"], rows: blocked.map((r) => [esc(r.d.full_name), esc(r.d.phone ?? "—"), esc(car(r.d)), r.s.paidThrough ? day(r.s.paidThrough) : "—", rwf(r.s.owes), String(r.s.current?.daysLost ?? 0)]) },
+    inApp: `Take the car back: ${plural(blocked.length, "driver")} (${rwf(owesTotal)} owed)`,
+  }];
   const monday = kind === "monday";
   return [{
     subject: `${monday ? "Not cleared to drive today" : "Still not cleared"}: ${plural(blocked.length, "driver")} (${rwf(total)} behind)`,
@@ -162,8 +210,11 @@ async function paymentsMorning(ctx: Ctx): Promise<Built[]> {
     }];
   }
 
-  const notCleared = owing.filter((r) => !r.s.isCleared).length;
-  const tone = (r: StandingRow): Tone => (!r.s.isCleared || r.s.owes > 0 ? "danger" : "warning");
+  const dailyRule = ctx.today >= DAILY_RULE_START;
+  // Daily rule: today unpaid is still tolerated this morning (amber); a day already gone unpaid is red.
+  const tolerated = (r: StandingRow) => dailyRule && r.s.payToday;
+  const notCleared = owing.filter((r) => !r.s.isCleared && !tolerated(r)).length;
+  const tone = (r: StandingRow): Tone => (tolerated(r) ? "warning" : !r.s.isCleared || r.s.owes > 0 ? "danger" : "warning");
   const last = (r: StandingRow) => {
     const l = [...r.deps].sort((a, b) => b.paid_date.localeCompare(a.paid_date))[0];
     return l ? `${day(l.paid_date)}<br><span style="color:#6b7280;">${rwf(l.amount)}${l.status === "pending" ? " · not confirmed" : ""}</span>` : "None";
@@ -172,24 +223,30 @@ async function paymentsMorning(ctx: Ctx): Promise<Built[]> {
     subject: `Driver payments ${day(ctx.today)}: ${plural(owing.length, "driver")} owe money, ${notCleared} not cleared — ${rwf(behindTotal)} unpaid`,
     heading: `${plural(owing.length, "driver")} owe${owing.length === 1 ? "s" : ""} us money today`,
     intro: `Every driver below owes us money. They stay on this report every morning until they pay in full or their contract is ended — we don't lose a single day.`,
-    alert: { tone: "danger", text: `<b>Henry:</b> the ${plural(notCleared, "red row")} ${notCleared === 1 ? "is" : "are"} <b>not cleared to drive</b> — keep ${notCleared === 1 ? "that car" : "those cars"} off the road until they pay in full. Amber rows can still drive but haven't paid the rest of the week. <b>Janviere:</b> call every driver below this morning. Log each payment in Kivu Daily the moment it arrives.` },
+    alert: dailyRule
+      ? { tone: "danger", text: `<b>Henry:</b> the ${plural(notCleared, "red row")} drove a day without paying — keep ${notCleared === 1 ? "that car" : "those cars"} off the road until they pay. Amber rows haven't paid for today yet: today at the latest, or the car comes back tonight. <b>Janviere:</b> call every driver below this morning. Log each payment in Kivu Daily the moment it arrives.` }
+      : { tone: "danger", text: `<b>Henry:</b> the ${plural(notCleared, "red row")} ${notCleared === 1 ? "is" : "are"} <b>not cleared to drive</b> — keep ${notCleared === 1 ? "that car" : "those cars"} off the road until they pay in full. Amber rows can still drive but haven't paid the rest of the week. <b>Janviere:</b> call every driver below this morning. Log each payment in Kivu Daily the moment it arrives.` },
     stats: [
       { label: "Not cleared", value: `${notCleared} / ${all.length}`, sub: `${plural(owing.length, "driver")} owe money`, tone: notCleared ? "danger" : "warning" },
       { label: "Owed (days driven)", value: rwf(owesTotal), tone: owesTotal > 0 ? "danger" : undefined },
-      { label: "Behind this week", value: rwf(behindTotal), tone: "warning" },
+      dailyRule
+        ? { label: "Pay today (tolerated)", value: String(owing.filter(tolerated).length), tone: "warning" }
+        : { label: "Behind this week", value: rwf(behindTotal), tone: "warning" },
       { label: "Working days lost", value: String(daysLost) },
     ],
     table: (() => {
       const showLost = owing.some((r) => (r.s.current?.daysLost ?? 0) > 0);
-      const status = (r: StandingRow) => r.s.isCleared
+      const status = (r: StandingRow) => tolerated(r)
+        ? `<span style="color:#b45309;font-weight:600;white-space:nowrap;">Pay today</span>`
+        : r.s.isCleared
         ? `<span style="color:#b45309;font-weight:600;white-space:nowrap;">Behind</span>`
         : `<span style="color:#b91c1c;font-weight:600;white-space:nowrap;">Not cleared</span>`;
       return {
-        head: ["Driver", "Status", ...(showLost ? ["Days lost"] : []), "Owes", "Behind", "Last payment"],
+        head: ["Driver", "Status", ...(showLost ? ["Days lost"] : []), "Owes", dailyRule ? "Paid to" : "Behind", "Last payment"],
         rows: owing.map((r) => [
           `<b>${esc(r.d.full_name)}</b><br><span style="color:#6b7280;font-size:12px;">${esc(car(r.d))} · ${esc(r.d.phone ?? "no phone")}</span>`,
           status(r), ...(showLost ? [String(r.s.current?.daysLost ?? 0)] : []),
-          r.s.owes > 0 ? rwf(r.s.owes) : "—", rwf(r.s.weekBehind), last(r),
+          r.s.owes > 0 ? rwf(r.s.owes) : "—", dailyRule ? (r.s.paidThrough ? day(r.s.paidThrough) : "—") : rwf(r.s.weekBehind), last(r),
         ]),
         align: ["left", "left", ...(showLost ? ["right" as const] : []), "right", "right", "left"] as ("left" | "right")[],
         tones: owing.map(tone),
@@ -197,7 +254,9 @@ async function paymentsMorning(ctx: Ctx): Promise<Built[]> {
       };
     })(),
     blocks,
-    footnote: "Owes = working days already driven this week that aren't paid (30,000 RWF a day). Behind = what's still unpaid for the whole week. Being cleared to drive needs Behind at zero.",
+    footnote: dailyRule
+      ? "Each driver pays for the next day, the day before (the same day is tolerated). Owes = working days started and not paid. Paid to = the last day their payments cover."
+      : "Owes = working days already driven this week that aren't paid (30,000 RWF a day). Behind = what's still unpaid for the whole week. Being cleared to drive needs Behind at zero.",
     inApp: `Driver payments: ${plural(owing.length, "driver")} owe money, ${notCleared} not cleared`,
   }];
 }
@@ -230,11 +289,13 @@ export const driverRules: Record<string, RuleDef> = {
   },
 
   driver_payments_morning: { kind: "scheduled", days: ALL_DAYS, at: hm(6, 30), build: (ctx) => paymentsMorning(ctx) },
-  driver_call_list: { kind: "scheduled", days: [6], at: hm(9), build: (ctx, f) => sundayLists("call", ctx, f) },
-  driver_still_unpaid: { kind: "scheduled", days: [7], at: hm(18), build: (ctx, f) => sundayLists("unpaid", ctx, f) },
+  // Daily rule (from 23 Nov 2026): the call list every morning, the still-unpaid list every
+  // evening, and the not-cleared list every morning (the Monday-only ones send nothing).
+  driver_call_list: { kind: "scheduled", days: ALL_DAYS, at: hm(9), build: (ctx, f) => sundayLists("call", ctx, f) },
+  driver_still_unpaid: { kind: "scheduled", days: ALL_DAYS, at: hm(18), build: (ctx, f) => sundayLists("unpaid", ctx, f) },
   driver_not_cleared_monday: { kind: "scheduled", days: [1], at: hm(7), build: (ctx, f) => notCleared("monday", ctx, f) },
   driver_not_cleared_summary: { kind: "scheduled", days: [1], at: hm(7), build: (ctx, f) => notCleared("summary", ctx, f) },
-  driver_not_cleared_daily: { kind: "scheduled", days: [2, 3, 4, 5, 6, 7], at: hm(7), build: (ctx, f) => notCleared("daily", ctx, f) },
+  driver_not_cleared_daily: { kind: "scheduled", days: ALL_DAYS, at: hm(7), build: (ctx, f) => notCleared("daily", ctx, f) },
 
   driver_escalation: {
     kind: "scheduled", days: ALL_DAYS, at: hm(7),
@@ -294,7 +355,9 @@ export const driverRules: Record<string, RuleDef> = {
         intro: d.start_date && first
           ? `${esc(d.full_name)} (${esc(d.phone ?? "no phone")}) starts on <b>${day(d.start_date)}</b>${d.rest_day ? `, resting on ${d.rest_day}s` : ""}.`
             + (d.model === "solo_car" ? "<br><br>On <b>Solo car</b>: has the car alone every day (45,000 a day, no rest day, no monthly salary)." : d.shift === "full" ? "<br><br>Works <b>both shifts</b> of the car (day and night)." : "")
-            + `<br><br><b>${rwf(weeklyAmountOf(d))}</b> is due before the first shift${d.initial_deposit_paid ? " (already recorded as paid)" : ""}, then <b>${rwf(first.amount)}</b> by ${day(first.date)}, then ${rwf(weeklyAmountOf(d))} every Sunday.`
+            + (ctx.today >= DAILY_RULE_START
+              ? `<br><br>Pays <b>${rwf(dailyRateOf(d))}</b> for each ${d.rest_day ? "working " : ""}day before driving it — the day before (the morning of the day is tolerated), starting with ${day(d.start_date)}. Any amount is accepted; ${rwf(weeklyAmountOf(d))} covers a week.`
+              : `<br><br><b>${rwf(weeklyAmountOf(d))}</b> is due before the first shift${d.initial_deposit_paid ? " (already recorded as paid)" : ""}, then <b>${rwf(first.amount)}</b> by ${day(first.date)}, then ${rwf(weeklyAmountOf(d))} every Sunday.`)
           : `${esc(d.full_name)} was added without a start date yet — their payment schedule starts once one is set.`,
         inApp: `New driver ${d.full_name}${d.start_date ? ` starts ${day(d.start_date)}` : ""}`,
       };

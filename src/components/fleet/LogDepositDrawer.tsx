@@ -14,8 +14,10 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
   const { profile } = useAuth();
   const driverDeposits = useMemo(() => deposits.filter((d) => d.driver_id === driver.id), [deposits, driver.id]);
   const before = useMemo(() => computeDepositStanding(driver, driverDeposits), [driver, driverDeposits]);
-  // Suggest clearing the whole week (Behind); otherwise what's due Sunday.
-  const suggested = before.weekBehind > 0 ? before.weekBehind : before.nextDueAmount > 0 ? before.nextDueAmount : weeklyAmountOf(driver);
+  // Daily rule: suggest what clears them (owed) or the next day. Before it:
+  // the whole week (Behind), otherwise what's due Sunday.
+  const suggested = before.dailyRule ? (before.owes > 0 ? before.owes : before.nextDueAmount || weeklyAmountOf(driver))
+    : before.weekBehind > 0 ? before.weekBehind : before.nextDueAmount > 0 ? before.nextDueAmount : weeklyAmountOf(driver);
   const [amount, setAmount] = useState(String(suggested));
   const [paidDate, setPaidDate] = useState(todayStr());
   const [paymentMethod, setPaymentMethod] = useState<DepositPaymentMethod>('momo');
@@ -34,8 +36,13 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
   const clearedText = after.ruleInForce
     ? (before.isCleared ? 'Still cleared' : 'Clears them to drive')
     : (before.isCleared ? 'Still up to date' : 'Brings them up to date');
+  // Daily rule (MD, 23 Nov 2026): any amount; it pays the next days in turn.
   const effect = !after.hasStarted
     ? null
+    : after.dailyRule
+      ? (!after.isCleared
+          ? { tone: 'text-amber-500', text: `Still owes ${formatRwf(after.owes)} for ${after.payToday ? 'today' : 'days already started'} — not cleared to drive yet.` }
+          : { tone: 'text-emerald-600 dark:text-emerald-400', text: `${clearedText} · paid to ${after.paidThrough ? formatDateLabelSafe(after.paidThrough) : '—'} · next ${formatRwf(after.nextDueAmount)} by ${dueSunday}.` })
     : !after.isCleared
       ? { tone: 'text-amber-500', text: `Still behind ${formatRwf(after.weekBehind)} on the week${after.owes > 0 ? ` and owes ${formatRwf(after.owes)} for days worked` : ''}${after.ruleInForce ? ' — not cleared to drive yet' : ''}.` }
       : after.weekBehind > 0
@@ -70,7 +77,11 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
             <label className="block text-caption font-medium mb-1.5 text-fg-muted">Amount (RWF)</label>
             <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="input" />
             <p className="text-micro text-fg-subtle mt-1">
-              {before.weekBehind > 0
+              {before.dailyRule
+                ? (before.owes > 0
+                    ? `Owes ${formatRwf(before.owes)} for ${before.payToday ? 'today' : 'days already started'} — that much clears them to drive. Any amount is accepted.`
+                    : `Paid to ${before.paidThrough ? formatDateLabelSafe(before.paidThrough) : '—'} · next ${formatRwf(before.nextDueAmount)} by ${before.nextDueDate ? formatDateLabelSafe(before.nextDueDate) : '—'}. Any amount is accepted; more days just go further ahead.`)
+              : before.weekBehind > 0
                 ? `Behind ${formatRwf(before.weekBehind)} on the week${before.owes > 0 ? ` · owes ${formatRwf(before.owes)} for days already worked` : ''}${before.ruleInForce ? ' — the full amount clears them to drive' : ''}.`
                 : before.nextDueAmount > 0
                   ? `${formatRwf(before.nextDueAmount)} due by Sunday ${before.nextDueDate ? formatDateLabelSafe(before.nextDueDate) : ''}.`
@@ -84,7 +95,7 @@ export default function LogDepositDrawer({ driver, deposits, onClose, onSaved }:
           <div>
             <label className="block text-caption font-medium mb-1.5 text-fg-muted">Date Paid</label>
             <DateInput value={paidDate} onChange={setPaidDate} />
-            <p className="text-micro text-fg-subtle mt-1">Every driver pays by Sunday for the Monday–Sunday week ahead.</p>
+            <p className="text-micro text-fg-subtle mt-1">{before.dailyRule ? 'Each driver pays for the next day the day before (the same day is tolerated). Any amount counts.' : 'Every driver pays by Sunday for the Monday–Sunday week ahead.'}</p>
           </div>
           <div>
             <label className="block text-caption font-medium mb-1.5 text-fg-muted">Payment Method</label>

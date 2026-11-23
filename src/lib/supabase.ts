@@ -212,6 +212,8 @@ export interface Driver {
   shift: DriverShift | null;
   model: DriverModel;
   rest_day: DriverRestDay | null;
+  // The weekday they usually pay on (MD, 23 Nov 2026) - a reminder only.
+  payment_day?: PaymentDay | null;
   contract_status: DriverContractStatus;
   replaced_driver_id: string | null;
   // Current contract (set on renewal): payments before this date belong to the old contract.

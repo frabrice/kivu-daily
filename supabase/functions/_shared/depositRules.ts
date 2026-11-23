@@ -1,7 +1,16 @@
-// The driver weekly-payment rule, in one place with no dependencies, so
+// The driver payment rule, in one place with no dependencies, so
 // the web app (src/lib/fleet.ts re-exports all of this) and the email
 // notification engine (notifications-run) can never disagree about who
 // owes what or who is cleared to drive.
+//
+// PAY FOR THE NEXT DAY (MD, 23 Nov 2026 - DAILY_RULE_START): there is no
+// common pay day and no full week to pay any more. A driver pays for the
+// day they are going to work, the day before (paying on the morning of
+// that day is tolerated). Any amount counts, even part of a day; a week or
+// more just moves their next pay day further out, so each driver has their
+// own pay day. A working day not paid by the end of that day is a lost day
+// and the car is taken back. Days before DAILY_RULE_START keep the weekly
+// (Sunday) reading below, so past scores don't change.
 //
 // Every driver pays on the same day: by Sunday, for the Monday-Sunday
 // week ahead. Each working day costs 30,000 and the weekly rest day is
@@ -104,6 +113,10 @@ export const SUNDAY_RULE_START = '2026-10-12';
 // first day of the week you start working when you've already paid").
 // Before it, a Monday payment was assumed made before the shift.
 export const MONDAY_LATE_FROM = '2026-10-19';
+
+// From this day on, the "pay for the next day" rule replaces the Sunday
+// rule (MD, 23 Nov 2026). A Monday, so the weekly periods end the Sunday before.
+export const DAILY_RULE_START = '2026-11-23';
 
 // Every working day lost to an unpaid week costs 30 points - there's no
 // reward for paying on time, only a cost for being late. Counted only
@@ -221,8 +234,18 @@ export interface DepositStanding {
   weekBehind: number;
   isCleared: boolean;
   owedNow: number;
+  // When the next payment should be made. Under the daily rule: the day
+  // before the first working day not paid yet (paying on that day itself
+  // is tolerated); today or earlier when today isn't paid.
   nextDueDate: string | null;
   nextDueAmount: number;
+  // Daily rule: true from DAILY_RULE_START.
+  dailyRule: boolean;
+  // Daily rule: the first working day not paid for yet (the day the next payment is for).
+  nextUnpaidDay: string | null;
+  // Daily rule: today is a working day not paid yet - paying today is
+  // tolerated; not paid by tonight, the day is lost and the car taken back.
+  payToday: boolean;
   daysLost: number;
   score: number;
   onTimeWeeks: number;
@@ -345,7 +368,10 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
   if (!start || start > today) {
     return {
       hasStarted: false, ruleInForce, periods: [], current: null, totalPaid, adjusted, graceUntil, paidThrough: null, pausedToday: null, pausedDaysThisWeek: 0, owes: 0, weekBehind: 0,
-      isCleared: true, owedNow: 0, nextDueDate: start, nextDueAmount: Math.max(weekly - totalPaid, 0),
+      isCleared: true, owedNow: 0, nextDueDate: start,
+      // Daily rule: the start day must be paid for before it begins.
+      nextDueAmount: start && start >= DAILY_RULE_START ? Math.max(dailyRateOn(driver, start) - totalPaid - adjusted, 0) : Math.max(weekly - totalPaid, 0),
+      dailyRule: today >= DAILY_RULE_START, nextUnpaidDay: start, payToday: false,
       daysLost: 0, score: 0, onTimeWeeks: 0, lateWeeks: 0,
     };
   }
@@ -368,7 +394,11 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     raw.push({ start, end: sundayOf(start), required: weekly, isStartSegment: true });
   }
   const firstMonday = isoWeekday(start) === 1 ? start : shiftDay(mondayOf(start), 7);
-  for (let m = firstMonday < SUNDAY_RULE_START ? SUNDAY_RULE_START : firstMonday; m <= today; m = shiftDay(m, 7)) {
+  // Under the daily rule the weekly (Sunday) weeks stop the Sunday before DAILY_RULE_START.
+  const dailyRule = today >= DAILY_RULE_START;
+  const weeksUntil = dailyRule ? shiftDay(DAILY_RULE_START, -1) : today;
+  if (dailyRule && raw.length && raw[0].start >= DAILY_RULE_START) raw.length = 0;
+  for (let m = firstMonday < SUNDAY_RULE_START ? SUNDAY_RULE_START : firstMonday; m <= weeksUntil; m = shiftDay(m, 7)) {
     raw.push({ start: m, end: shiftDay(m, 6), required: costThrough(shiftDay(m, 6)), isStartSegment: false });
   }
 
@@ -389,6 +419,13 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     const state: DepositPeriodState = clearedDate ? (daysLost > 0 ? 'late' : 'on_time') : 'open';
     return { ...p, clearedDate, daysLost, state };
   });
+
+  if (dailyRule) {
+    return dailyStanding({
+      driver, today, start, rest, pauses, pausesAndGrace, payments, totalPaid, adjusted, graceUntil, paidToDate, costThrough, clearedOn,
+      weeklyPeriods: periods,
+    });
+  }
 
   const current = periods.length > 0 ? periods[periods.length - 1] : null;
   const owes = Math.max(costThrough(today) - paidToDate, 0);
@@ -417,6 +454,85 @@ export function computeDepositStanding(driver: DepositDriverLike, deposits: Depo
     owedNow,
     nextDueDate,
     nextDueAmount,
+    dailyRule: false,
+    nextUnpaidDay: null,
+    payToday: false,
+    daysLost,
+    score: -DEPOSIT_LATE_PENALTY_PER_DAY * daysLost,
+    onTimeWeeks: periods.filter((p) => p.state === 'on_time').length,
+    lateWeeks: periods.filter((p) => p.state === 'late').length,
+  };
+}
+
+// The "pay for the next day" rule (from DAILY_RULE_START). Each working day
+// must be paid by the end of that day at the latest (the day before is the
+// rule, the same day is tolerated); otherwise it is lost. Weeks before the
+// rule keep their weekly reading (weeklyPeriods); the days from the rule on
+// are grouped Monday-Sunday only so the weekly history screens still read.
+function dailyStanding(x: {
+  driver: DepositDriverLike; today: string; start: string; rest: RestDayRule; pauses: PauseLike[]; pausesAndGrace: PauseLike[];
+  payments: { date: string; amount: number }[]; totalPaid: number; adjusted: number; graceUntil: string | null; paidToDate: number;
+  costThrough: (d: string) => number; clearedOn: (required: number) => string | null; weeklyPeriods: DepositPeriod[];
+}): DepositStanding {
+  const { driver, today, start, rest, pauses, pausesAndGrace, totalPaid, adjusted, graceUntil, paidToDate, costThrough, clearedOn } = x;
+  const rateOn = (d: string) => dailyRateOn(driver, d);
+  const costs = (d: string) => !isRestDay(rest, d) && !pauseOn(pauses, d);
+  const paidThrough = paidThroughDate(start, rest, paidToDate, pauses, rateOn);
+  // The first working day not paid for yet - the day the next payment is for.
+  let nextUnpaidDay = paidThrough ? shiftDay(paidThrough, 1) : start;
+  for (let i = 0; i < 400 && !costs(nextUnpaidDay); i++) nextUnpaidDay = shiftDay(nextUnpaidDay, 1);
+  // Part of a day already paid towards it counts (MD: any amount is accepted).
+  const leftover = Math.max(paidToDate - (paidThrough ? costThrough(paidThrough) : 0), 0);
+  const owes = Math.max(costThrough(today) - paidToDate, 0);
+  const payToday = nextUnpaidDay === today && owes > 0;
+  const nextDueDate = graceUntil ?? (nextUnpaidDay <= today ? today : shiftDay(nextUnpaidDay, -1));
+  const nextDueAmount = nextUnpaidDay <= today ? owes : Math.max(rateOn(nextUnpaidDay) - leftover, 0);
+
+  // Day by day from the rule: a working day is lost when it wasn't paid by
+  // the end of that day (today, while still unpaid, isn't lost yet).
+  const from = start > DAILY_RULE_START ? start : DAILY_RULE_START;
+  const lostOn = (d: string) => {
+    if (!costs(d) || pauseOn(pausesAndGrace, d)) return false;
+    const paidBy = clearedOn(costThrough(d));
+    return paidBy ? paidBy > d : d < today;
+  };
+  const weeks: DepositPeriod[] = [];
+  for (let m = mondayOf(from); m <= today; m = shiftDay(m, 7)) {
+    const ws = m < from ? from : m;
+    const we = shiftDay(m, 6);
+    const last = we < today ? we : today;
+    let lost = 0;
+    for (let d = ws; d <= last; d = shiftDay(d, 1)) if (lostOn(d)) lost++;
+    const required = costThrough(last);
+    const cleared = clearedOn(required);
+    const clearedDate = cleared && cleared <= today ? cleared : null;
+    const state: DepositPeriodState = lost > 0 ? 'late' : clearedDate || required === 0 ? 'on_time' : 'open';
+    weeks.push({ start: ws, end: we, required, clearedDate, daysLost: lost, state, isStartSegment: false });
+  }
+  const periods = [...x.weeklyPeriods, ...weeks];
+  const daysLost = periods.reduce((s, p) => s + p.daysLost, 0);
+
+  return {
+    hasStarted: true,
+    ruleInForce: true,
+    periods,
+    current: periods.length ? periods[periods.length - 1] : null,
+    totalPaid,
+    adjusted,
+    graceUntil,
+    paidThrough,
+    pausedToday: pauseOn(pauses, today),
+    pausedDaysThisWeek: countDays(mondayOf(today), sundayOf(today), (d) => !isRestDay(rest, d) && !!pauseOn(pauses, d) && d >= start),
+    owes,
+    // No more "behind on the week": only days already started and not paid count.
+    weekBehind: 0,
+    isCleared: owes === 0 || !!graceUntil,
+    owedNow: owes,
+    nextDueDate,
+    nextDueAmount,
+    dailyRule: true,
+    nextUnpaidDay,
+    payToday,
     daysLost,
     score: -DEPOSIT_LATE_PENALTY_PER_DAY * daysLost,
     onTimeWeeks: periods.filter((p) => p.state === 'on_time').length,

@@ -103,7 +103,8 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
   const status = isEnded ? <Label tone="neutral" icon={UserX}>Contract ended</Label>
     : pausedNow ? <Label tone="attention" icon={PauseCircle}>Paused · {PAUSE_REASON_LABEL[(pausedNow.reason ?? 'other') as keyof typeof PAUSE_REASON_LABEL]}</Label>
     : !driver.start_date ? <Label>Not started</Label>
-    : standing.isCleared ? <Label tone="success">Paid up</Label> : <Label tone="danger">Not paid up</Label>;
+    : standing.isCleared ? <Label tone="success">Paid up</Label>
+    : standing.payToday ? <Label tone="attention">Pay today</Label> : <Label tone="danger">Not paid up</Label>;
 
   const cells: HeatCell[] = days.map((d) => ({
     day: d.day, state: d.state,
@@ -132,6 +133,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
         { label: 'Stage', value: stage ? <span style={{ color: stage.color }} className="font-medium">{stage.label}</span> : null },
         { label: 'Started', value: driver.start_date ? formatDateLabelSafe(driver.start_date) : 'Not set' },
         { label: 'Rest day', value: restDay ? <span className="flex items-center gap-1"><BedDouble size={12} />{restDay}</span> : 'Not set' },
+        { label: 'Usual pay day', value: driver.payment_day ? REST_DAYS.find((r) => r.key === driver.payment_day)?.label ?? driver.payment_day : 'Not set' },
         { label: 'Initial deposit', value: driver.initial_deposit_paid ? `${rwf(driver.initial_deposit_amount ?? 0)}${driver.initial_deposit_date ? ` · ${formatDateLabelSafe(driver.initial_deposit_date)}` : ''}` : 'Not paid' },
         { label: 'Notes', value: driver.notes },
       ]} />
@@ -140,9 +142,10 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
 
   const stats = (
     <StatGrid cols={mode === 'peek' ? 2 : 3}>
-      <StatCard label="Owes now" icon={Wallet} value={rwf(standing.owes)} tone={standing.owes ? 'danger' : undefined} sub={standing.weekBehind ? `${rwf(standing.weekBehind)} behind this week` : 'Nothing behind this week'} />
+      <StatCard label="Owes now" icon={Wallet} value={rwf(standing.owes)} tone={standing.owes ? (standing.payToday ? 'attention' : 'danger') : undefined}
+        sub={standing.dailyRule ? (standing.paidThrough ? `Paid to ${formatDateLabelSafe(standing.paidThrough)}` : 'Nothing paid yet') : standing.weekBehind ? `${rwf(standing.weekBehind)} behind this week` : 'Nothing behind this week'} />
       <StatCard label="Next payment" icon={CalendarClock} value={standing.nextDueDate ? formatDateLabelSafe(standing.nextDueDate) : '—'}
-        sub={standing.graceUntil ? `May drive until then (adjusted)` : standing.nextDueAmount ? `${rwf(standing.nextDueAmount)} due` : 'Nothing due'} />
+        sub={standing.graceUntil ? `May drive until then (adjusted)` : standing.nextDueAmount ? `${rwf(standing.nextDueAmount)} due${standing.dailyRule && standing.nextUnpaidDay ? ` for ${formatDateLabelSafe(standing.nextUnpaidDay)}` : ''}` : 'Nothing due'} />
       <StatCard label="Days worked · fully paid" icon={CalendarCheck2} value={contractDays ? `${contractDays.worked} · ${contractDays.paid}` : '—'} tone={contractDays && contractDays.paid < contractDays.worked ? 'danger' : undefined}
         sub={contractDays ? (contractDays.worked - contractDays.paid ? `${contractDays.worked - contractDays.paid} working day${contractDays.worked - contractDays.paid === 1 ? '' : 's'} not paid since the start` : 'Every working day paid since the start') : 'Not started'} />
       <StatCard label="Paid on time (90 days)" icon={CircleDollarSign} value={reliability === null ? '—' : `${reliability}%`} tone={reliability !== null && reliability < 80 ? 'danger' : 'success'} sub={`${paid90} paid · ${unpaid90} driven unpaid`} />

@@ -27,20 +27,20 @@ const FINANCE_ENTRY: HelpEntry = {
       ],
     },
     {
-      heading: 'Driver Weekly Deposits — How The Math Works',
+      heading: 'Driver Payments — Pay For The Next Day',
       body: [
-        'Each managed car has two shift drivers (day and night). Each pays 30,000 RWF/day for 6 days = 180,000 RWF/week — the weekly deposit amount. Together the two drivers collect 360,000 RWF/week per car into BK. This is the car\'s operating remittance, not a refundable deposit — it\'s what funds the owner\'s payout and Kivu\'s margin.',
-        'Every driver pays on the same day: by Sunday, for the Monday–Sunday week ahead. The rest day is free, so a week is 6 working days × 30,000 = 180,000. This rule starts with payments due Sunday 11 October 2026 (first check Monday 12 October).',
-        'Monday morning is the check: a driver who hasn\'t paid for every working day up to the coming Sunday is "Not cleared to drive". A payment logged on Monday still counts as on time (assumed paid before the shift). Each working day spent uncleared is a day lost and costs 30 points on the Leaderboard; a rest day missed while unpaid doesn\'t count.',
-        'A new driver pays 180,000 upfront on their start day, before the first shift — the initial deposit is this payment. On their first Sunday they top up the working days already driven (start day through Sunday × 30,000), and from then on pay 180,000 every Sunday. Example: start Friday → 180,000 Friday, then 90,000 Sunday (Fri, Sat, Sun), then 180,000 every Sunday. The Add Driver form shows this schedule as soon as you enter the start date and rest day.',
-        'Deposits can be logged in installments — they simply add up. Each logged payment shows how far the running total now covers ("Through Sun 18 Oct"), and the Log Deposit form pre-fills what the driver owes and previews what the payment covers before you save it.',
-        'Status colors are the same everywhere: red when not cleared, amber when cleared but Sunday\'s payment is due today or tomorrow, green when next week is already paid, grey otherwise.',
+        'Each driver pays a day rate for every working day: 30,000 on one shift (one rest day free), 60,000 on both shifts (one rest day free), 45,000 on Solo car (every day). This is the car\'s operating remittance, not a refundable deposit — it\'s what funds the owner\'s payout and Kivu\'s margin.',
+        'From 23 November 2026 there is no common pay day and no full week to pay: a driver pays for the day they are going to work, the day before. Paying on the morning of that day is tolerated. Any amount is accepted — one day, a few days or a week — so each driver has their own pay day: the day their money runs out.',
+        'A working day not paid by the end of that day is a day lost: the car is taken back until they pay, and it costs 30 points on the Leaderboard. A rest day or an approved day off costs nothing. Days before 23 November keep the old Sunday reading.',
+        'Every driver page shows "Paid to <date>" and the next payment: the amount and the day to pay it by (the day before the first unpaid day). Each driver can also have a "Usual pay day" set on their form, as a reminder for whoever follows up payments.',
+        'Deposits can be logged in installments — they simply add up, and part of a day counts towards it. The Log Deposit form pre-fills what the driver owes (or the next day) and previews how far the payment covers before you save it.',
+        'Status colors are the same everywhere: red when a day has gone unpaid, amber when today isn\'t paid yet (still tolerated today) or the next payment is due today or tomorrow, green otherwise.',
       ],
     },
     {
       heading: 'One Driver on Both Shifts',
       body: [
-        'A driver can work both the day and the night shift of a car. Pick "Both shifts" as their shift: they pay 60,000 per working day, 360,000 for the week, by the start of each week (the same Sunday rule), and no other driver can be put on that car.',
+        'A driver can work both the day and the night shift of a car. Pick "Both shifts" as their shift: they pay 60,000 per working day, each day paid before it is driven (the same rule as everyone), and no other driver can be put on that car.',
         'Everything adds up automatically: what they owe, their payment calendar, cars working, Finance\'s expected collections, days off (60,000 a day not charged) and the morning payment emails.',
       ],
     },

@@ -43,8 +43,10 @@ export function fleetMetrics(day: string, f: FleetInput): Metric[] {
   for (const d of f.deposits) byDriver.set(d.driver_id, [...(byDriver.get(d.driver_id) ?? []), d]);
   const standings = active.map((d) => ({ d, s: computeDepositStanding(d, byDriver.get(d.id) ?? [], day) }));
   const sunday = isoWeekday(day) === 7;
-  const notCleared = standings.filter((x) => x.s.ruleInForce && !x.s.isCleared);
-  const dueToday = sunday ? standings.filter((x) => x.s.nextDueAmount > 0) : [];
+  // Daily rule (MD, 23 Nov 2026): not cleared = a day already gone unpaid; today unpaid is still tolerated today.
+  const notCleared = standings.filter((x) => x.s.ruleInForce && !x.s.isCleared && !(x.s.dailyRule && x.s.payToday));
+  const daily = standings.some((x) => x.s.dailyRule);
+  const dueToday = daily ? standings.filter((x) => x.s.nextDueAmount > 0 && x.s.nextDueDate === day) : sunday ? standings.filter((x) => x.s.nextDueAmount > 0) : [];
   const paidToday = f.deposits.filter((d) => d.paid_date === day);
   const left = f.contractEvents.filter((e) => e.event_type === 'ended' && e.event_date === day);
   const started = f.drivers.filter((d) => d.start_date === day);
@@ -66,7 +68,8 @@ export function fleetMetrics(day: string, f: FleetInput): Metric[] {
   const collected = paidToday.reduce((s, d) => s + Number(d.amount), 0);
   return [
     { key: 'active_drivers', label: 'Drivers on contract', value: active.length, auto: true, group: 'Money' },
-    ...(sunday ? [{ key: 'due_today', label: 'Due today (Sunday, last day)', value: dueToday.length, unit: 'drivers', auto: true, group: 'Money' }] : []),
+    ...(daily ? [{ key: 'due_today', label: 'Pay today (for tomorrow or today)', value: dueToday.length, unit: 'drivers', auto: true, group: 'Money' }]
+      : sunday ? [{ key: 'due_today', label: 'Due today (Sunday, last day)', value: dueToday.length, unit: 'drivers', auto: true, group: 'Money' }] : []),
     { key: 'paid_today', label: 'Payments received today', value: paidToday.length, auto: true, group: 'Money' },
     { key: 'collected_today', label: 'Money collected today', value: collected, unit: 'RWF', auto: true, group: 'Money' },
     { key: 'not_cleared', label: 'Not cleared — car must be taken back', value: notCleared.length, unit: 'drivers', auto: true, note: notCleared.slice(0, 8).map((x) => x.d.full_name.trim().split(' ')[0]).join(', ') || null, group: 'Money' },

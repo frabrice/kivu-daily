@@ -192,8 +192,8 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
           <section className="rounded-lg bg-inset border border-line-muted p-3 grid sm:grid-cols-3 gap-3 text-small">
             <div><p className="text-caption text-fg-muted flex items-center gap-1"><Wallet size={11} /> Paid in for this contract</p><p className="font-semibold tabular-nums">{formatRwf(preview.totalPaid)}</p></div>
             <div><p className="text-caption text-fg-muted flex items-center gap-1"><CalendarCheck size={11} /> Paid through</p><p className="font-semibold">{preview.paidThrough ? formatDateLabelSafe(preview.paidThrough) : 'Not covered yet'}</p></div>
-            <div><p className="text-caption text-fg-muted flex items-center gap-1"><RotateCcw size={11} /> Next payment</p><p className="font-semibold">{preview.nextDueAmount > 0 ? `${formatRwf(preview.nextDueAmount)} by ${preview.nextDueDate ? formatDateLabelSafe(preview.nextDueDate) : '—'}` : 'Nothing due this week'}</p></div>
-            {!preview.isCleared && <p className="sm:col-span-3 text-danger">Not cleared to drive on the start date — {formatRwf(preview.weekBehind)} short for the first week.</p>}
+            <div><p className="text-caption text-fg-muted flex items-center gap-1"><RotateCcw size={11} /> Next payment</p><p className="font-semibold">{preview.nextDueAmount > 0 ? `${formatRwf(preview.nextDueAmount)} by ${preview.nextDueDate ? formatDateLabelSafe(preview.nextDueDate) : '—'}` : 'Nothing due yet'}</p></div>
+            {!preview.isCleared && <p className="sm:col-span-3 text-danger">Not cleared to drive on the start date — {formatRwf(preview.dailyRule ? preview.owedNow : preview.weekBehind)} short{preview.dailyRule ? '' : ' for the first week'}.</p>}
           </section>
         )}
 
@@ -211,7 +211,7 @@ export default function RenewContractDrawer({ driver, drivers, vehicles, deposit
             <label className="block">
               <span className={label}>Agreed next payment date (optional)</span>
               <DateInput value={agreedNext} onChange={setAgreedNext} />
-              <span className="block text-caption text-fg-subtle mt-1">Only if you agreed something different from the usual Sunday rule.</span>
+              <span className="block text-caption text-fg-subtle mt-1">Only if you agreed something different from the usual rule (each day paid before it is driven).</span>
             </label>
             <label className="block">
               <span className={label}>Notes</span>

@@ -146,6 +146,7 @@ export default function DriverAdjustPage() {
 function Standing({ row }: { row: AdjustRow }) {
   const s = row.standing;
   if (!s.hasStarted) return <span className="text-fg-subtle">Not started</span>;
+  if (s.dailyRule && s.payToday) return <Label tone="attention">Pay today {rwf(s.owes)}</Label>;
   if (s.owes > 0) return <Label tone="danger">Owes {rwf(s.owes)}</Label>;
   if (s.weekBehind > 0) return <Label tone="attention">Behind {rwf(s.weekBehind)}</Label>;
   return <Label tone="success">Up to date</Label>;
@@ -440,7 +441,7 @@ function DriverAdjustModal({ row, drivers, allDeposits, finePayments, vehicles, 
                   {adj > 0 ? `A credit of ${rwf(adj)}` : `A charge of ${rwf(-adj)}`} will be recorded to make this right. It is not money received: Finance's cash doesn't change.
                 </p>
               ) : <p className="text-caption text-success">Matches the payments on file: no correction.</p>}
-              <p className="text-caption text-fg-muted">After: {after.owes > 0 ? <span className="text-danger font-medium">owes {rwf(after.owes)}</span> : 'owes nothing'} · {after.weekBehind > 0 ? `behind ${rwf(after.weekBehind)}` : 'not behind'} · next payment {short(after.nextDueDate)}</p>
+              <p className="text-caption text-fg-muted">After: {after.owes > 0 ? <span className="text-danger font-medium">owes {rwf(after.owes)}</span> : 'owes nothing'} · {after.dailyRule ? `paid to ${short(after.paidThrough)}` : after.weekBehind > 0 ? `behind ${rwf(after.weekBehind)}` : 'not behind'} · next payment {short(after.nextDueDate)}{after.dailyRule && after.nextUnpaidDay ? ` (for ${short(after.nextUnpaidDay)})` : ''}</p>
             </div>
           </Box>
         </div>

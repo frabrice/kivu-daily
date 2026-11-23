@@ -85,7 +85,7 @@ export default function ChangeModelDrawer({ driver, drivers, deposits, onClose, 
     m.salary ? `Monthly salary: ${formatRwf(m.salary)}` : 'No monthly salary from Kivu Ride',
     m.wholeCar ? `Has ${plate} alone — no second driver on the car` : `Drives the ${picked.shift} shift only — the other shift goes to another driver`,
     m.restDay ? `Rest day: ${REST_DAYS.find((r) => r.key === restDay)?.label ?? '—'}, free` : 'No rest day: every day is paid, only approved pauses (sick, garage) are free',
-    'Same Sunday payment rule: the week ahead paid by Sunday',
+    'Same payment rule: each day paid before it is driven (the day before; the same day is tolerated)',
     'The driver has read and signed the contract amendment',
   ] : [];
   const allAgreed = terms.length > 0 && terms.every((x) => agreed.includes(x));

@@ -97,6 +97,7 @@ export function computeMissing({ vehicles, owners, drivers, docs, reviewed }: Mi
       if (!d.vehicle_id) things.push({ label: 'Car' });
       if (!d.phone?.trim()) things.push({ label: 'Phone' });
       if (!d.start_date) things.push({ label: 'Start date' });
+      if (!d.payment_day) things.push({ label: 'Usual pay day' });
       if (!reviewed.has(d.id)) things.push({ label: 'Money not confirmed (Driver Adjust)' });
     } else if (paper) {
       things.push({ label: 'Termination letter', paper });

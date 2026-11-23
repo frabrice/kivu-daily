@@ -274,6 +274,8 @@ export type DepositTier = 'red' | 'yellow' | 'green' | 'neutral';
 // coming week. Neutral: up to date, mid-week, nothing to flag yet.
 export function depositStandingTier(s: DepositStanding, today: string = todayStr()): DepositTier {
   if (!s.hasStarted) return 'neutral';
+  // Daily rule: paying for today on the day itself is tolerated (amber), a day already gone unpaid is red.
+  if (s.dailyRule && s.payToday) return 'yellow';
   if (!s.isCleared || s.owes > 0) return 'red';
   if (s.weekBehind > 0) return 'yellow';
   if (s.nextDueAmount <= 0) return 'green';
@@ -305,11 +307,22 @@ export function formatRwf(amount: number): string {
   return `${amount.toLocaleString()} RWF`;
 }
 
+// Under the daily rule (from DAILY_RULE_START): "Pay today", "Not paid",
+// "Pays tomorrow", "Paid to <date>". Before it, the weekly labels:
 // The badge on the right: Behind = the whole week still unpaid (it should
 // have been paid on the week's first day). The red "Owes" line beside the
 // name is depositOwesLabel.
 export function depositStandingLabel(s: DepositStanding, today: string = todayStr()): string {
   if (!s.hasStarted) return 'Not started';
+  if (s.dailyRule) {
+    const lost = s.current?.daysLost ?? 0;
+    if (s.payToday) return 'Pay today';
+    if (!s.isCleared) return `Not paid${lost > 0 ? ` · ${lost}d lost` : ''}`;
+    const days = s.nextDueDate ? daysUntilDate(today, s.nextDueDate) : null;
+    if (days === 0) return 'Pays today for tomorrow';
+    if (days === 1) return 'Pays tomorrow';
+    return s.paidThrough ? `Paid to ${dayShort(s.paidThrough)}` : 'Cleared to drive';
+  }
   if (s.weekBehind > 0) {
     const lost = s.ruleInForce ? s.current?.daysLost ?? 0 : 0;
     return `Behind ${formatRwf(s.weekBehind)}${lost > 0 ? ` · ${lost}d lost` : ''}`;
@@ -327,6 +340,15 @@ export function depositStandingLabel(s: DepositStanding, today: string = todaySt
 // "due today" on that Sunday, and "not cleared" once Monday has come unpaid.
 export function nextPaymentText(s: DepositStanding, today: string = todayStr()): { text: string; tone: 'danger' | 'attention' | 'muted' | 'good' } | null {
   if (!s.hasStarted) return s.nextDueDate ? { text: `First payment ${formatRwf(s.nextDueAmount)} on ${dayShort(s.nextDueDate)}`, tone: 'muted' } : null;
+  // Daily rule: pay for the next day, the day before (the same day is tolerated).
+  if (s.dailyRule) {
+    const forDay = s.nextUnpaidDay ? dayShort(s.nextUnpaidDay) : '';
+    if (s.graceUntil) return { text: `May drive until ${dayShort(s.graceUntil)} (adjusted)`, tone: 'attention' };
+    if (s.payToday) return { text: `Today (${forDay}) isn't paid: ${formatRwf(s.nextDueAmount)} today at the latest, or the car is taken back`, tone: 'attention' };
+    if (!s.isCleared) return { text: `Not paid since ${forDay}: owes ${formatRwf(s.owes)} — no car until paid`, tone: 'danger' };
+    if (s.nextDueDate === today) return { text: `Pays today for ${forDay}: ${formatRwf(s.nextDueAmount)}`, tone: 'attention' };
+    return { text: `Paid to ${s.paidThrough ? dayShort(s.paidThrough) : '—'} · next ${formatRwf(s.nextDueAmount)} by ${s.nextDueDate ? dayShort(s.nextDueDate) : '—'} for ${forDay}`, tone: 'good' };
+  }
   if (s.ruleInForce && !s.isCleared) return { text: `Not cleared: ${formatRwf(s.owedNow)} was due by Sunday — no car until paid`, tone: 'danger' };
   if (s.nextDueAmount > 0 && s.nextDueDate) {
     return s.nextDueDate === today

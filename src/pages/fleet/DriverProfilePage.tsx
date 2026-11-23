@@ -77,6 +77,10 @@ export default function DriverProfilePage({
   const tier = depositStandingTier(standing);
   const tierStyle = DEPOSIT_TIER_STYLE[tier];
   const totalDepositCount = driverDeposits.length + (driver.initial_deposit_paid ? 1 : 0);
+  // MD, 23 Nov 2026: each day paid before it's driven; their usual pay day if set.
+  const payRuleText = standing.dailyRule
+    ? `Pays for the next day${driver.payment_day ? ` · usually on ${driver.payment_day[0].toUpperCase()}${driver.payment_day.slice(1)}` : ''}`
+    : 'Pays every Sunday';
   const scoredWeeks = standing.onTimeWeeks + standing.lateWeeks;
   const onTimeRate = scoredWeeks > 0 ? Math.round((standing.onTimeWeeks / scoredWeeks) * 100) : null;
 
@@ -207,7 +211,7 @@ export default function DriverProfilePage({
             <p className="text-small font-medium">
               {driver.start_date ? formatDateLabelSafe(driver.start_date) : <span className="text-fg-subtle font-normal">Not set</span>}
             </p>
-            {driver.start_date && showMoney && <p className="text-micro text-brand-600 dark:text-brand-300 mt-0.5">Pays every Sunday</p>}
+            {driver.start_date && showMoney && <p className="text-micro text-brand-600 dark:text-brand-300 mt-0.5">{payRuleText}</p>}
           </div>
           {showMoney && (
           <div className="card p-2.5 bg-inset ">
@@ -310,7 +314,7 @@ export default function DriverProfilePage({
             <p className="text-caption font-semibold uppercase tracking-wide text-fg-subtle flex items-center gap-1.5"><Wallet size={13} /> Deposits</p>
             {!isEnded && driver.start_date && (
               <span className="inline-flex items-center gap-1 text-micro font-medium text-brand-600 dark:text-brand-300 bg-brand/10 px-2 py-0.5 rounded-full">
-                Pays every Sunday
+                {payRuleText}
               </span>
             )}
           </div>

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, SunMoon, BedDouble, FileText } from 'lucide-react';
-import { supabase, Driver, DriverStage, Vehicle, DriverModel, DriverRestDay, DriverDocument } from '../../lib/supabase';
+import { supabase, Driver, DriverStage, Vehicle, DriverModel, DriverRestDay, DriverDocument, PaymentDay } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { MANUAL_STAGES, REST_DAYS, availableForReplacement, firstSundayPayment, formatRwf, formatDateLabelSafe, shiftLabel, driverShiftShort, carSeats, seatFree, DRIVER_MODELS, modelWeekly } from '../../lib/fleet';
+import { MANUAL_STAGES, REST_DAYS, availableForReplacement, formatRwf, formatDateLabelSafe, shiftLabel, driverShiftShort, carSeats, seatFree, DRIVER_MODELS, modelWeekly } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import SearchableSelect from '../SearchableSelect';
@@ -51,6 +51,7 @@ export default function DriverDrawer({
   const [shift, setShift] = useState<'day' | 'night' | ''>(driver?.shift === 'day' || driver?.shift === 'night' ? driver.shift : '');
   const [model, setModel] = useState<DriverModel>(driver?.model ?? 'one_shift');
   const [restDay, setRestDay] = useState<DriverRestDay | ''>(driver?.rest_day ?? '');
+  const [paymentDay, setPaymentDay] = useState<PaymentDay | ''>(driver?.payment_day ?? '');
   const [replacedDriverId, setReplacedDriverId] = useState(driver?.replaced_driver_id ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -130,6 +131,8 @@ export default function DriverDrawer({
       shift: vehicleId ? (terms.wholeCar ? 'full' : shift || null) : null,
       rest_day: terms.restDay ? restDay || null : null,
       replaced_driver_id: replacedDriverId || null,
+      // Sent only when it changed, so saving never depends on the column being there.
+      ...(paymentDay !== (driver?.payment_day ?? '') ? { payment_day: paymentDay || null } : {}),
       updated_at: new Date().toISOString(),
       // Before the contract starts the model is free to change: its terms are the contract's first entry.
       ...(modelLocked ? {} : {
@@ -254,19 +257,24 @@ export default function DriverDrawer({
           <p className="p-2.5 rounded-lg border border-line text-caption text-fg-muted flex items-center gap-1.5"><BedDouble size={11} /> {terms.label}: no rest day, every day is a working day.</p>
         )}
 
-        {!driver && startDate && (restDay || !terms.restDay) && (() => {
-          const first = firstSundayPayment(startDate, terms.restDay ? (restDay || null) : null, terms.daily);
-          return (
-            <div className="p-2.5 rounded-lg border border-brand/30 bg-brand/5">
-              <p className="text-caption font-medium mb-1">Payment schedule</p>
-              <p className="text-micro text-fg-muted leading-relaxed">
-                {formatRwf(weekly)} on {formatDateLabelSafe(startDate)} before the first shift
-                {' → '}{formatRwf(first.amount)} by Sunday {formatDateLabelSafe(first.date)}
-                {' → '}{formatRwf(weekly)} every Sunday after ({terms.label.toLowerCase()}: {formatRwf(terms.daily)} a {terms.restDay ? 'working day' : 'day'}).
-              </p>
-            </div>
-          );
-        })()}
+        {!driver && startDate && (restDay || !terms.restDay) && (
+          <div className="p-2.5 rounded-lg border border-brand/30 bg-brand/5">
+            <p className="text-caption font-medium mb-1">Payment rule</p>
+            <p className="text-micro text-fg-muted leading-relaxed">
+              Pays for each day before driving it: {formatRwf(terms.daily)} a {terms.restDay ? 'working day' : 'day'}, at the latest on the morning of that day — first for {formatDateLabelSafe(startDate)}.
+              Any amount is welcome (a week is {formatRwf(weekly)}); a day not paid by the end of that day is lost and the car is taken back.
+            </p>
+          </div>
+        )}
+
+        <div>
+          <label className="block text-caption font-medium mb-1.5 text-fg-muted">Usual pay day</label>
+          <select value={paymentDay} onChange={(e) => setPaymentDay(e.target.value as PaymentDay | '')} disabled={!editing} className="input">
+            <option value="">Not set</option>
+            {REST_DAYS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+          </select>
+          <p className="text-micro text-fg-subtle mt-1">The day they usually pay on — a reminder for whoever follows up payments. Being cleared to drive still depends on what they have paid.</p>
+        </div>
 
         <div className={`p-2.5 rounded-lg border space-y-2 ${initialDepositPaid ? 'border-brand/30 bg-brand/5' : 'border-line '}`}>
           <label className="flex items-center gap-2.5">
@@ -292,7 +300,7 @@ export default function DriverDrawer({
                 <label className="block text-micro font-medium mb-1 text-fg-muted">Amount (RWF)</label>
                 <input type="number" value={initialDepositAmount} onChange={(e) => setInitialDepositAmount(e.target.value)} disabled={!editing} className="input" />
               </div>
-              <p className="text-micro text-fg-subtle col-span-2">This is the {formatRwf(weekly)} paid upfront on the start day. Weekly payments are due every Sunday from then on; payroll counts from Start Date.</p>
+              <p className="text-micro text-fg-subtle col-span-2">What was paid before the first shift (any amount; {formatRwf(weekly)} covers a week). From then on each day is paid before it is driven; payroll counts from Start Date.</p>
             </div>
           )}
         </div>

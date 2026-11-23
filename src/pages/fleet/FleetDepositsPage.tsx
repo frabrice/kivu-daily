@@ -61,7 +61,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
             <Wallet size={16} className="text-blue-600 dark:text-blue-300" /> Deposits
             {overdueCount > 0 && <span className="text-micro font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{overdueCount}</span>}
           </h2>
-          <p className="text-caption text-fg-subtle mt-0.5">Every driver pays 180,000 by Sunday for the Monday–Sunday week ahead (360,000 for a driver on both shifts). Unpaid on Monday means not cleared to drive.</p>
+          <p className="text-caption text-fg-subtle mt-0.5">Each driver pays for the next day the day before (the same day is tolerated) — any amount, so each has their own pay day. A day not paid by the end of that day is lost and the car is taken back.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
