@@ -109,7 +109,8 @@ async function syncRoster(db: Any, now: number) {
     const d = drivers.find((x) => x.id === id);
     if (!d?.start_date) return null;
     const s = computeDepositStanding(d.raw, ((deps ?? []) as Any[]).filter((x) => x.driver_id === id), today);
-    return s.isCleared ? null : "Not cleared to drive (payment)";
+    // Daily rule (MD, 23 Nov 2026): paying for today on the day itself is tolerated.
+    return s.isCleared || (s.dailyRule && s.payToday) ? null : "Not cleared to drive (payment)";
   };
   const rows = (["day", "night"] as ShiftKey[]).flatMap((shift) => expectedFor(hours, shift, currentShiftDay(hours, shift, now), drivers, freelance, blockedOf)).map((e) => ({
     key: e.key, kind: e.kind, driver_id: e.driverId, freelancer_id: e.freelancerId, name: e.name, phone: e.phone, plate: e.plate, vehicle_id: e.vehicleId,
