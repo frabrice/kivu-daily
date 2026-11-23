@@ -125,6 +125,17 @@ const REST_ISO: Record<string, number> = { monday: 1, tuesday: 2, wednesday: 3, 
 // Asked for every day of a period for every driver, so the payments are
 // sorted once per driver and each "paid through" date is worked out once
 // per total paid (it only changes when a payment comes in).
+// A Driver Adjust confirmation (the MD confirming what a driver really paid,
+// reason "Driver Adjust: paid until ...") corrects the driver's whole history,
+// so its credit or charge counts from their start date here - not from the
+// day it was confirmed, which would show every earlier day as unpaid.
+// Other adjustments (Adjust button) keep their own date.
+function judgedPayments(d: Driver, deps: DriverDeposit[]) {
+  const confirmations = new Set((d.balance_adjustments ?? []).filter((a) => a.kind === 'amount' && (a.reason ?? '').startsWith('Driver Adjust:')).map((a) => a.at));
+  return contractPayments(d, deps)
+    .map((p) => (p.adjustment && confirmations.has(p.order) && d.start_date ? { ...p, date: d.start_date } : p))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.order.localeCompare(b.order));
+}
 const dayJudges = new WeakMap<DriverDeposit[], WeakMap<Driver, { pays: { date: string; amount: number }[]; through: Map<number, string | null> }>>();
 export function driverDay(d: Driver, deps: DriverDeposit[], day: string): DriverDayState {
   const rest = restDayOn(d, day);
@@ -133,7 +144,7 @@ export function driverDay(d: Driver, deps: DriverDeposit[], day: string): Driver
   let byDriver = dayJudges.get(deps);
   if (!byDriver) { byDriver = new WeakMap(); dayJudges.set(deps, byDriver); }
   let j = byDriver.get(d);
-  if (!j) { j = { pays: contractPayments(d, deps), through: new Map() }; byDriver.set(d, j); }
+  if (!j) { j = { pays: judgedPayments(d, deps), through: new Map() }; byDriver.set(d, j); }
   let paid = 0;
   for (const p of j.pays) { if (p.date > day) break; paid += p.amount; }
   let through = j.through.get(paid);
