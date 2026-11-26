@@ -195,9 +195,9 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
                   <DepositRow key={row.driver.id} row={row} today={today} deposits={deposits}
                     actions={!row.isEnded && (
                       <>
-                        {canCall && <button onClick={() => setCalling({ driver: row.driver, owes: row.standing.owes, mode: 'call' })} className="btn-secondary" title="Log a call, a promise, or take the car back"><PhoneCall size={14} /> Log call</button>}
-                        {canTake && row.taken && <button onClick={() => setCalling({ driver: row.driver, owes: row.standing.owes, mode: 'return' })} className="btn-secondary"><KeyRound size={14} /> Give back</button>}
-                        {canEdit && <button onClick={() => setLoggingDepositFor(row.driver)} className="btn-primary"><Banknote size={14} /> Log deposit</button>}
+                        {canCall && <button onClick={() => setCalling({ driver: row.driver, owes: row.standing.owes, mode: 'call' })} className="btn-secondary whitespace-nowrap" title="Log a call, a promise, or take the car back"><PhoneCall size={14} /> Log call</button>}
+                        {canTake && row.taken && <button onClick={() => setCalling({ driver: row.driver, owes: row.standing.owes, mode: 'return' })} className="btn-secondary whitespace-nowrap"><KeyRound size={14} /> Give back</button>}
+                        {canEdit && <button onClick={() => setLoggingDepositFor(row.driver)} className="btn-primary whitespace-nowrap"><Banknote size={14} /> Log deposit</button>}
                       </>
                     )} />
                 ))}
@@ -220,6 +220,10 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
   );
 }
 
+// No full day paid yet: say whether part of the first day is (e.g. 40,000 of 45,000).
+const paidNothingText = (s: ReturnType<typeof computeDepositStanding>) =>
+  s.totalPaid + s.adjusted > 0 ? `Part of a day (${(s.totalPaid + s.adjusted).toLocaleString('en-US')})` : 'Nothing paid';
+
 interface Row {
   driver: Driver; standing: ReturnType<typeof computeDepositStanding>; status: MoneyStatus; isEnded: boolean; late: boolean; calledToday: boolean;
   taken: ReturnType<typeof carTaken>; call: ReturnType<typeof latestCall>; last: ReturnType<typeof lastPayment>; pendingDeposit: boolean; promise: ReturnType<typeof promiseState>;
@@ -231,7 +235,7 @@ function DepositRow({ row, today, deposits, actions }: { row: Row; today: string
   const style = STATUS_STYLE[status.key];
   const next = !row.isEnded && s.hasStarted ? nextPaymentText(s) : null;
   return (
-    <div className={`relative flex flex-col lg:grid lg:grid-cols-[minmax(220px,1.35fr)_minmax(150px,0.9fr)_minmax(170px,1fr)_minmax(140px,0.8fr)_minmax(220px,1.4fr)_auto] lg:items-center gap-3 lg:gap-4 pl-5 pr-4 py-3.5 hover:bg-hover/40 transition-colors ${row.isEnded ? 'opacity-60' : ''}`}>
+    <div className={`relative flex flex-col lg:grid lg:grid-cols-[minmax(200px,1.2fr)_minmax(125px,0.7fr)_minmax(150px,0.85fr)_minmax(115px,0.65fr)_minmax(230px,1.7fr)_auto] lg:items-center gap-3 lg:gap-4 pl-5 pr-4 py-3.5 hover:bg-hover/40 transition-colors ${row.isEnded ? 'opacity-60' : ''}`}>
       <span className={`absolute left-0 top-0 bottom-0 w-1 ${style.bar}`} aria-hidden />
 
       {/* Who */}
@@ -258,7 +262,7 @@ function DepositRow({ row, today, deposits, actions }: { row: Row; today: string
       <Field label="Paid to · next" className="hidden lg:block">
         {row.isEnded ? <span className="text-fg-subtle">—</span> : (
           <>
-            <p className="font-medium">{s.paidThrough ? formatDateLabelSafe(s.paidThrough) : <span className="text-fg-subtle">Nothing paid</span>}</p>
+            <p className="font-medium">{s.paidThrough ? formatDateLabelSafe(s.paidThrough) : <span className="text-fg-subtle">{paidNothingText(s)}</span>}</p>
             {next && <p className={`text-caption truncate ${next.tone === 'danger' ? 'text-danger' : next.tone === 'attention' ? 'text-attention' : 'text-fg-muted'}`} title={next.text}>
               {s.nextDueAmount > 0 && s.nextDueDate ? `${s.nextDueAmount.toLocaleString('en-US')} by ${formatDateLabelSafe(s.nextDueDate)}` : next.text}</p>}
           </>
@@ -275,7 +279,7 @@ function DepositRow({ row, today, deposits, actions }: { row: Row; today: string
 
       {/* Phone-size summary of the two columns above */}
       <div className="lg:hidden grid grid-cols-2 gap-3">
-        <Field label="Paid to">{s.paidThrough ? formatDateLabelSafe(s.paidThrough) : '—'}{s.nextDueAmount > 0 && s.nextDueDate && !row.isEnded ? <p className="text-caption text-fg-muted">next {s.nextDueAmount.toLocaleString('en-US')} by {formatDateLabelSafe(s.nextDueDate)}</p> : null}</Field>
+        <Field label="Paid to">{s.paidThrough ? formatDateLabelSafe(s.paidThrough) : paidNothingText(s)}{s.nextDueAmount > 0 && s.nextDueDate && !row.isEnded ? <p className="text-caption text-fg-muted">next {s.nextDueAmount.toLocaleString('en-US')} by {formatDateLabelSafe(s.nextDueDate)}</p> : null}</Field>
         <Field label="Last paid">{row.last ? <>{formatDateLabelSafe(row.last.date)}<p className="text-caption text-fg-muted">{row.last.amount.toLocaleString('en-US')} RWF</p></> : 'Never'}</Field>
       </div>
 

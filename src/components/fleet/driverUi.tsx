@@ -91,7 +91,7 @@ export function CallChip({ call, line, state }: { call: PaymentCall; line: { tex
   return (
     <span title={line.text} className={`inline-flex items-start gap-1.5 rounded-md px-2 py-1 text-caption font-medium max-w-full ${CALL_TONE[line.tone]}`}>
       <Icon size={13} className="shrink-0 mt-px" />
-      <span className="truncate">{line.text}</span>
+      <span className="line-clamp-2 break-words">{line.text}</span>
       {state === 'kept' && <span className="sr-only">kept</span>}
     </span>
   );
