@@ -343,6 +343,10 @@ Deno.serve(async (req: Request) => {
     const { error: staleError } = await db.rpc("auto_close_stale_shifts");
     if (staleError) summary.errors.push(`auto_close_stale_shifts: ${staleError.message}`);
 
+    // ---- Driver payment promises: due in 30 minutes / broken (MD, 26 Nov 2026) ----
+    const { error: promiseError } = await db.rpc("flag_payment_promises");
+    if (promiseError) summary.errors.push(`flag_payment_promises: ${promiseError.message}`);
+
     // ---- Two-hour response check (Script Book standard) ----
     const { error: overdueError } = await db.rpc("flag_response_overdue");
     if (overdueError) summary.errors.push(`flag_response_overdue: ${overdueError.message}`);

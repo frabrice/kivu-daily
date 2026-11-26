@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import {
   Banknote, BedDouble, CalendarOff, Car, CircleDollarSign, FileText, Gavel, History, LayoutGrid, PauseCircle, Pencil, Phone, Truck,
-  UserX, Wallet, XCircle, RotateCcw, FileSignature, SunMoon, SlidersHorizontal, CalendarClock, CalendarCheck2,
+  UserX, Wallet, XCircle, RotateCcw, FileSignature, SunMoon, SlidersHorizontal, CalendarClock, CalendarCheck2, PhoneCall, KeyRound, CarFront,
 } from 'lucide-react';
+import LogCallDrawer from '../../components/fleet/LogCallDrawer';
+import { usePaymentCalls, callsOf, latestCall, carTaken, callLine, promiseState, lastPayment, toneClass, canTakeCar, OUTCOME_LABEL, callDay, callTime } from '../../lib/paymentCalls';
+import { kigaliToday } from '../../lib/kigali';
 import { useAccess } from '../../os/access';
 import AdjustBalanceModal from '../../components/fleet/AdjustBalanceModal';
 import { EntityViewProps } from '../../os/peek';
@@ -11,7 +14,7 @@ import { useAuth } from '../../lib/auth';
 import { useDuties } from '../../lib/callTickets';
 import {
   useFleetData, canEditFleet, canChangeDriverModel, driverTermsLabel, canRecordPause, computeDepositStanding, STAGES, effectiveStage, REST_DAYS, PAUSE_REASON_LABEL, formatDateLabelSafe,
-  fineAmountPaid, pauseOn, CONTRACT_EVENT_LABEL } from '../../lib/fleet';
+  fineAmountPaid, pauseOn, CONTRACT_EVENT_LABEL, canSeeDriverPayments } from '../../lib/fleet';
 import { addDays, driverDay, endDateOf, onContract, today } from '../../lib/performance';
 import { Box, Details, EmptyState, Heatmap, HeatCell, Label, ObjectLayout, PageHeader, StatCard, StatGrid, Timeline, TimelineItem, UnderlineTabs, rwf } from '../../ui/kit';
 import DriverProfilePage from '../fleet/DriverProfilePage';
@@ -26,7 +29,7 @@ import ChangeModelDrawer from '../../components/fleet/ChangeModelDrawer';
 import { AddLegalDocModal, LegalDocsBox } from '../../components/legal/LegalDocFields';
 import { LEGAL_KIND, LegalKind, missingForDriver, useLegalDocs } from '../../lib/legalDocs';
 
-type Tab = 'overview' | 'money' | 'contract' | 'cases' | 'documents';
+type Tab = 'overview' | 'money' | 'promises' | 'contract' | 'cases' | 'documents';
 const DAY_COLOR = { paid: '#2a78d6', unpaid: '#eb6834', paused: '#1baf7a', rest: 'rgb(var(--c-line-strong))', none: 'rgb(var(--c-line-muted))' };
 
 // A driver as one object: who they are, how they pay, their days off,
@@ -52,6 +55,13 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
   const canEdit = canEditFleet(profile);
   const canChangeModel = canChangeDriverModel(profile);
   const canPause = canRecordPause(profile, duties);
+  // Calls, promises and the car taken back (MD, 26 Nov 2026).
+  const { calls, reload: reloadCalls } = usePaymentCalls();
+  const [calling, setCalling] = useState<'call' | 'take' | 'return' | null>(null);
+  const isFollowup = duties.driver_payment_followup?.profile_id === profile?.id;
+  const canCall = canEdit || profile?.department?.slug === 'finance' || isFollowup;
+  const canTake = canTakeCar(profile, isFollowup);
+  const showMoney = canSeeDriverPayments(profile);
   useEntityMeta('driver', id, mode, driver?.full_name, driver?.vehicle?.plate_number);
 
   const t = today();
@@ -100,7 +110,12 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
   const pausedNow = pauseOn(driver.pauses, t);
   const weekly = Array.from({ length: 8 }, (_, w) => deps.filter((d) => d.paid_date > addDays(t, -7 * (8 - w)) && d.paid_date <= addDays(t, -7 * (7 - w))).reduce((s, d) => s + Number(d.amount), 0));
 
-  const status = isEnded ? <Label tone="neutral" icon={UserX}>Contract ended</Label>
+  const myCalls = callsOf(calls, id);
+  const taken = carTaken(calls, id);
+  const lastCall = latestCall(calls, id);
+  const lastPaid = lastPayment(driver, deps);
+  const todayK = kigaliToday();
+  const status = !isEnded && taken ? <Label tone="danger" icon={CarFront}>Car taken back</Label> : isEnded ? <Label tone="neutral" icon={UserX}>Contract ended</Label>
     : pausedNow ? <Label tone="attention" icon={PauseCircle}>Paused · {PAUSE_REASON_LABEL[(pausedNow.reason ?? 'other') as keyof typeof PAUSE_REASON_LABEL]}</Label>
     : !driver.start_date ? <Label>Not started</Label>
     : standing.isCleared ? <Label tone="success">Paid up</Label>
@@ -141,7 +156,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
   );
 
   const stats = (
-    <StatGrid cols={mode === 'peek' ? 2 : 3}>
+    <StatGrid cols={mode === 'peek' ? 2 : 4}>
       <StatCard label="Owes now" icon={Wallet} value={rwf(standing.owes)} tone={standing.owes ? (standing.payToday ? 'attention' : 'danger') : undefined}
         sub={standing.dailyRule ? (standing.paidThrough ? `Paid to ${formatDateLabelSafe(standing.paidThrough)}` : 'Nothing paid yet') : standing.weekBehind ? `${rwf(standing.weekBehind)} behind this week` : 'Nothing behind this week'} />
       <StatCard label="Next payment" icon={CalendarClock} value={standing.nextDueDate ? formatDateLabelSafe(standing.nextDueDate) : '—'}
@@ -150,6 +165,10 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
         sub={contractDays ? (contractDays.worked - contractDays.paid ? `${contractDays.worked - contractDays.paid} working day${contractDays.worked - contractDays.paid === 1 ? '' : 's'} not paid since the start` : 'Every working day paid since the start') : 'Not started'} />
       <StatCard label="Paid on time (90 days)" icon={CircleDollarSign} value={reliability === null ? '—' : `${reliability}%`} tone={reliability !== null && reliability < 80 ? 'danger' : 'success'} sub={`${paid90} paid · ${unpaid90} driven unpaid`} />
       <StatCard label="Days lost (30 days)" icon={XCircle} value={count(last30, 'unpaid')} tone={count(last30, 'unpaid') ? 'danger' : undefined} sub={`${count(last30, 'paused')} days off · ${count(last30, 'rest')} rest days`} />
+      <StatCard label="Last paid" icon={Banknote} value={lastPaid ? formatDateLabelSafe(lastPaid.date) : 'Never'} sub={lastPaid ? `${rwf(lastPaid.amount)}${lastPaid.pending ? ' · not confirmed yet' : ''}` : 'No payment recorded'} />
+      <StatCard label="Latest call / promise" icon={PhoneCall} value={taken ? 'Car taken back' : lastCall ? OUTCOME_LABEL[lastCall.outcome] : 'No call yet'}
+        tone={taken || (lastCall && promiseState(lastCall, deposits) === 'broken') ? 'danger' : lastCall && promiseState(lastCall, deposits) === 'pending' ? 'attention' : undefined}
+        sub={taken ? callLine(taken, deposits, todayK).text : lastCall ? callLine(lastCall, deposits, todayK).text : 'Log one with "Log call"'} onClick={mode === 'page' ? () => setTab('promises') : undefined} />
       <StatCard label="Paid in total" icon={Banknote} value={rwf(standing.totalPaid)} spark={weekly} sub={[finesOwed ? `${rwf(finesOwed)} fines unpaid` : 'Last 8 weeks', standing.adjusted ? `${standing.adjusted > 0 ? '+' : '−'}${rwf(Math.abs(standing.adjusted))} adjusted` : ''].filter(Boolean).join(' · ')} />
     </StatGrid>
   );
@@ -174,6 +193,8 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
       </>}
       actions={mode === 'page' && <>
         {canEdit && !isEnded && <button onClick={() => setLogging(true)} className="btn-primary"><Banknote size={14} /> Log payment</button>}
+        {canCall && !isEnded && driver.start_date && <button onClick={() => setCalling('call')} className="btn-secondary"><PhoneCall size={14} /> Log call</button>}
+        {canTake && !isEnded && taken && <button onClick={() => setCalling('return')} className="btn-secondary"><KeyRound size={14} /> Give car back</button>}
         {canPause && !isEnded && <button onClick={() => setPausing(true)} className="btn-secondary"><CalendarOff size={14} /> Days off</button>}
         {canAdjust && !isEnded && driver.start_date && <button onClick={() => setAdjusting(true)} className="btn-secondary"><SlidersHorizontal size={14} /> Adjust</button>}
         {canEdit && <button onClick={() => setEditing(true)} className="btn-secondary"><Pencil size={14} /> Edit</button>}
@@ -190,6 +211,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
     {pausing && <PauseDrawer driver={driver} drivers={drivers} onClose={() => setPausing(false)} onSaved={() => { setPausing(false); reload(); }} />}
     {ending && <EndContractDrawer driver={driver} deposits={deposits} fines={fines} finePayments={finePayments} onClose={() => setEnding(false)} onSaved={reload} />}
     {shifting && <ChangeModelDrawer driver={driver} drivers={drivers} deposits={deposits} onClose={() => setShifting(false)} onSaved={() => { reload(); legal.reload(); }} />}
+    {calling && <LogCallDrawer driver={driver} owes={standing.owes} mode={calling} canTake={canTake} onClose={() => setCalling(null)} onSaved={reloadCalls} />}
     {adjusting && <AdjustBalanceModal driver={driver} deposits={deps} onClose={() => setAdjusting(false)} onSaved={reload} />}
     {adding && <AddLegalDocModal kind={adding} driverId={driver.id} name={driver.full_name} onClose={() => setAdding(null)} onSaved={legal.reload} />}
     {renewing && <RenewContractDrawer driver={driver} drivers={drivers} vehicles={vehicles} deposits={deposits} contractEvents={contractEvents} onClose={() => setRenewing(false)} onSaved={reload} />}
@@ -214,6 +236,7 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
       <UnderlineTabs value={tab} onChange={setTab} tabs={[
         { key: 'overview', label: 'Overview', icon: LayoutGrid },
         { key: 'money', label: 'Payments & contract', icon: Wallet, count: deps.length },
+        ...(showMoney ? [{ key: 'promises' as Tab, label: 'Calls & promises', icon: PhoneCall, count: myCalls.length }] : []),
         { key: 'contract', label: 'Contract papers', icon: FileSignature, count: missingDoc ? 1 : myLegal.length, tone: missingDoc ? 'danger' : undefined },
         { key: 'cases', label: 'Calls & cases', icon: FileText },
         { key: 'documents', label: 'Documents', icon: Car, count: driverDocuments.filter((d) => d.driver_id === id).length },
@@ -228,6 +251,30 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
       {tab === 'money' && (
         <DriverProfilePage embedded driver={driver} drivers={drivers} deposits={deposits} fines={fines} finePayments={finePayments} contractEvents={contractEvents} vehicles={vehicles}
           canEdit={canEdit} onBack={() => setTab('overview')} onEdit={() => setEditing(true)} reload={reload} />
+      )}
+      {tab === 'promises' && (
+        <Box title="Calls, promises and the car" icon={PhoneCall} right={canCall && !isEnded ? <button onClick={() => setCalling('call')} className="btn-secondary h-8"><PhoneCall size={13} /> Log call</button> : null}>
+          {myCalls.length === 0 ? <p className="text-body text-fg-muted">No call recorded yet. Every call about money goes here: what they said, what they promised and by when, and if the car was taken back.</p> : (
+            <ul className="divide-y divide-line-muted">
+              {myCalls.map((c) => {
+                const line = callLine(c, deposits, todayK);
+                const st = promiseState(c, deposits);
+                return (
+                  <li key={c.id} className="py-2.5 flex items-start gap-3">
+                    <span className="text-caption text-fg-muted tabular-nums w-28 shrink-0">{callDay(c.happened_at)} · {callTime(c.happened_at)}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-body font-medium flex items-center gap-2 flex-wrap">{OUTCOME_LABEL[c.outcome]}
+                        {st && <Label tone={st === 'kept' ? 'success' : st === 'broken' ? 'danger' : 'attention'}>{st === 'kept' ? 'Kept' : st === 'broken' ? 'Broken' : 'Waiting'}</Label>}</p>
+                      <p className={`text-caption ${toneClass(line.tone)}`}>{line.text}</p>
+                      {c.note && (c.outcome === 'promised' || c.outcome === 'car_taken' || c.outcome === 'car_returned') && <p className="text-caption text-fg-muted">“{c.note}”</p>}
+                      {c.owed_at_call ? <p className="text-micro text-fg-subtle">Owed {rwf(c.owed_at_call)} at the time</p> : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Box>
       )}
       {tab === 'contract' && (
         <Box title="Contract papers" icon={FileSignature}>

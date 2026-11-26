@@ -166,7 +166,16 @@ async function notCleared(kind: "monday" | "daily" | "summary", ctx: Ctx, force:
 // Rodrigue (Finance). A driver stays on it every day until they pay in
 // full or their contract ends. Never sent to the Call Center.
 async function paymentsMorning(ctx: Ctx): Promise<Built[]> {
-  const [all, drivers, deposits] = await Promise.all([activeStandings(ctx), loadDrivers(ctx), loadDeposits(ctx)]);
+  const [all, drivers, deposits, recentCalls] = await Promise.all([activeStandings(ctx), loadDrivers(ctx), loadDeposits(ctx),
+    rows<PaymentCallRow>(ctx.db.from("driver_payment_calls").select("*").gte("happened_at", new Date(Date.now() - 7 * 86400_000).toISOString()).order("happened_at", { ascending: false }))]);
+  // The latest call with each driver this week, shown under their name.
+  const CALL_WORD: Record<string, string> = { promised: "Promised", paid: "Paid on the call", no_answer: "No answer", refused: "Refused", wrong_number: "Wrong number", car_taken: "Car taken back", car_returned: "Car given back" };
+  const lastCallOf = (id: string) => {
+    const c = recentCalls.find((x) => x.driver_id === id);
+    if (!c) return "";
+    const what = c.outcome === "promised" ? `Promised ${c.promised_amount ? rwf(c.promised_amount) : ""} by ${day(dayOf(c.promised_at))} ${hourOf(c.promised_at)}` : CALL_WORD[c.outcome] ?? c.outcome;
+    return `<br><span style="color:#6b7280;font-size:12px;">Last call ${day(dayOf(c.happened_at))} ${hourOf(c.happened_at)}: ${esc(what)}</span>`;
+  };
   const owing = all.filter((r) => !r.s.isCleared || r.s.owes > 0 || r.s.weekBehind > 0)
     .sort((a, b) => Number(a.s.isCleared) - Number(b.s.isCleared) || (b.s.current?.daysLost ?? 0) - (a.s.current?.daysLost ?? 0) || b.s.owes - a.s.owes || b.s.weekBehind - a.s.weekBehind);
   const pending = deposits.filter((d) => d.status === "pending").sort((a, b) => a.paid_date.localeCompare(b.paid_date));
@@ -244,7 +253,7 @@ async function paymentsMorning(ctx: Ctx): Promise<Built[]> {
       return {
         head: ["Driver", "Status", ...(showLost ? ["Days lost"] : []), "Owes", dailyRule ? "Paid to" : "Behind", "Last payment"],
         rows: owing.map((r) => [
-          `<b>${esc(r.d.full_name)}</b><br><span style="color:#6b7280;font-size:12px;">${esc(car(r.d))} · ${esc(r.d.phone ?? "no phone")}</span>`,
+          `<b>${esc(r.d.full_name)}</b><br><span style="color:#6b7280;font-size:12px;">${esc(car(r.d))} · ${esc(r.d.phone ?? "no phone")}</span>${lastCallOf(r.d.id)}`,
           status(r), ...(showLost ? [String(r.s.current?.daysLost ?? 0)] : []),
           r.s.owes > 0 ? rwf(r.s.owes) : "—", dailyRule ? (r.s.paidThrough ? day(r.s.paidThrough) : "—") : rwf(r.s.weekBehind), last(r),
         ]),
@@ -259,6 +268,23 @@ async function paymentsMorning(ctx: Ctx): Promise<Built[]> {
       : "Owes = working days already driven this week that aren't paid (30,000 RWF a day). Behind = what's still unpaid for the whole week. Being cleared to drive needs Behind at zero.",
     inApp: `Driver payments: ${plural(owing.length, "driver")} owe money, ${notCleared} not cleared`,
   }];
+}
+
+interface PaymentCallRow {
+  id: string; driver_id: string; outcome: string; promised_amount: number | null; promised_at: string | null;
+  car_location: string | null; note: string | null; happened_at: string; created_by: string | null;
+}
+const kigaliParts = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() + 2 * 3600_000).toISOString() : "");
+const hourOf = (iso: string | null) => kigaliParts(iso).slice(11, 16) || "—";
+const dayOf = (iso: string | null) => kigaliParts(iso).slice(0, 10) || null;
+async function callWithDriver(ctx: Ctx, callId: string) {
+  const { data: c } = await ctx.db.from("driver_payment_calls").select("*").eq("id", callId).maybeSingle();
+  if (!c) return null;
+  const [drivers, deposits] = await Promise.all([loadDrivers(ctx), loadDeposits(ctx)]);
+  const d = drivers.find((x) => x.id === c.driver_id);
+  if (!d) return null;
+  const s = computeDepositStanding(d, deposits.filter((x) => x.driver_id === d.id), ctx.today);
+  return { c: c as PaymentCallRow, d, s, by: c.created_by ? personName(ctx, c.created_by) : null };
 }
 
 export const PAUSE_REASON: Record<string, string> = {
@@ -383,6 +409,64 @@ export const driverRules: Record<string, RuleDef> = {
         intro: `${esc(d.full_name)}'s contract ended on ${day((payload.event_date as string) ?? ctx.today)}${payload.reason ? ` — ${esc(String(payload.reason))}` : ""}. No more payment reminders will go out for them.`
           + `<br><br>${owed > 0 ? `Balance still owed: <b>${rwf(owed)}</b>.` : "No balance owed."}`,
         inApp: `Contract ended: ${d.full_name}${owed > 0 ? ` (owes ${rwf(owed)})` : ""}`,
+      };
+    },
+  },
+
+  // Calls, promises and cars taken back (MD, 26 Nov 2026) - raised by
+  // flag_payment_promises() every run and by the driver_payment_calls trigger.
+  driver_promise_due: {
+    kind: "event",
+    sample: async (ctx) => { const c = (await rows<PaymentCallRow>(ctx.db.from("driver_payment_calls").select("id").eq("outcome", "promised").limit(1)))[0]; return c ? { call_id: c.id } : null; },
+    build: async (payload, ctx) => {
+      const x = await callWithDriver(ctx, String(payload.call_id));
+      if (!x) return null;
+      const { c, d, s } = x;
+      const amount = c.promised_amount ? rwf(c.promised_amount) : "the money";
+      return {
+        subject: `Promise due at ${hourOf(c.promised_at)}: ${d.full_name} — ${amount}`,
+        heading: `${esc(d.full_name)} promised to pay by ${hourOf(c.promised_at)}`,
+        intro: `${esc(d.full_name)} (${esc(car(d))}, ${esc(d.phone ?? "no phone")}) promised <b>${amount}</b> by <b>${hourOf(c.promised_at)}</b> on ${day(dayOf(c.promised_at))}, and it isn't in yet.`
+          + `${c.note ? `<br><br>What they said: “${esc(c.note)}”` : ""}<br><br>They owe ${rwf(s.owes)} now. Call them, and log the payment in Kivu Daily as soon as it arrives.`,
+        inApp: `${d.full_name}: ${amount} promised by ${hourOf(c.promised_at)}`,
+      };
+    },
+  },
+
+  driver_promise_broken: {
+    kind: "event",
+    sample: async (ctx) => { const c = (await rows<PaymentCallRow>(ctx.db.from("driver_payment_calls").select("id").eq("outcome", "promised").limit(1)))[0]; return c ? { call_id: c.id } : null; },
+    build: async (payload, ctx) => {
+      const x = await callWithDriver(ctx, String(payload.call_id));
+      if (!x) return null;
+      const { c, d, s, by } = x;
+      const amount = c.promised_amount ? rwf(c.promised_amount) : "to pay";
+      return {
+        subject: `Broke promise: ${d.full_name} — ${amount} by ${hourOf(c.promised_at)} not paid`,
+        heading: `${esc(d.full_name)} broke their promise`,
+        intro: `${esc(d.full_name)} (${esc(car(d))}, ${esc(d.phone ?? "no phone")}) promised ${by ? `${esc(by)} ` : ""}<b>${amount}</b> by <b>${hourOf(c.promised_at)}</b> on ${day(dayOf(c.promised_at))}. The time has passed and the money hasn't come in.`
+          + `<br><br>They owe <b>${rwf(s.owes)}</b>. Decide whether to take the car back (Deposits → Log call → Take the car).`,
+        alert: { tone: "danger", text: `Owes ${rwf(s.owes)} · paid to ${s.paidThrough ? day(s.paidThrough) : "—"}` },
+        inApp: `Broke promise: ${d.full_name}, ${amount} by ${hourOf(c.promised_at)}`,
+      };
+    },
+  },
+
+  driver_car_taken: {
+    kind: "event",
+    sample: async (ctx) => { const c = (await rows<PaymentCallRow>(ctx.db.from("driver_payment_calls").select("id").in("outcome", ["car_taken", "car_returned"]).limit(1)))[0]; return c ? { call_id: c.id } : null; },
+    build: async (payload, ctx) => {
+      const x = await callWithDriver(ctx, String(payload.call_id));
+      if (!x) return null;
+      const { c, d, s, by } = x;
+      const taken = c.outcome === "car_taken";
+      return {
+        subject: `${taken ? "Car taken back" : "Car given back"}: ${d.vehicle?.plate_number ?? "car"} — ${d.full_name}`,
+        heading: `${taken ? "Car taken back from" : "Car given back to"} ${esc(d.full_name)}`,
+        intro: `${esc(by ?? "Someone")} ${taken ? "took back" : "gave back"} <b>${esc(d.vehicle?.plate_number ?? "the car")}</b> ${taken ? "from" : "to"} ${esc(d.full_name)} on ${day(dayOf(c.happened_at))} at ${hourOf(c.happened_at)}.`
+          + `${c.car_location ? `<br>Where the car is: ${esc(c.car_location)}.` : ""}${c.note ? `<br>Note: ${esc(c.note)}` : ""}`
+          + `<br><br>${s.owes > 0 ? `They owe <b>${rwf(s.owes)}</b>.` : "They owe nothing now."} Paid to ${s.paidThrough ? day(s.paidThrough) : "—"}.`,
+        inApp: `${taken ? "Car taken back" : "Car given back"}: ${d.vehicle?.plate_number ?? ""} (${d.full_name})`,
       };
     },
   },

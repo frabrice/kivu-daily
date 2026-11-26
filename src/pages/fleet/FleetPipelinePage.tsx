@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Search, Plus, Phone, Car, Truck } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL, driverShiftShort, driverTermsLabel, DRIVER_MODELS } from '../../lib/fleet';
+import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL, driverShiftShort, driverTermsLabel, DRIVER_MODELS, computeDepositStanding, depositStandingTier, depositStandingLabel, DEPOSIT_TIER_STYLE, formatDateLabelSafe, DepositTier } from '../../lib/fleet';
+import { usePaymentCalls, latestCall, carTaken, callLine, promiseState, lastPayment, toneClass } from '../../lib/paymentCalls';
+import { driverDay, addDays } from '../../lib/performance';
 import { isPausedOn } from '../../components/fleet/PauseList';
 
 const kigaliToday = kTodayFast();
@@ -54,10 +56,39 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
   const [viewingDriverId, setViewingDriverId] = useState<string | null>(null);
   const viewingDriver = viewingDriverId ? drivers.find((d) => d.id === viewingDriverId) ?? null : null;
 
+  // Each driver's money in one line per column (drivers on contract who have started).
+  const showMoney = canSeeDriverPayments(profile);
+  const { calls } = usePaymentCalls();
+  const today = kTodayFast();
+  const money = useMemo(() => {
+    const out = new Map<string, { tier: DepositTier; label: string; owes: number; next: string | null; last: ReturnType<typeof lastPayment>; call: { text: string; tone: 'danger' | 'attention' | 'good' | 'muted' } | null; taken: boolean; lost30: number; promiseDue: string | null }>();
+    if (!showMoney) return out;
+    for (const d of drivers) {
+      if (d.contract_status === 'ended' || !d.start_date) continue;
+      const mine = deposits.filter((x) => x.driver_id === d.id);
+      const s = computeDepositStanding(d, mine);
+      const c = latestCall(calls, d.id);
+      let lost30 = 0;
+      for (let i = 1; i <= 30; i++) { const day = addDays(today, -i); if (day >= d.start_date && driverDay(d, mine, day) === 'unpaid') lost30++; }
+      out.set(d.id, {
+        tier: depositStandingTier(s), label: depositStandingLabel(s), owes: s.owes,
+        next: s.hasStarted && s.nextDueDate && s.nextDueAmount > 0 ? `${s.nextDueAmount.toLocaleString()} by ${formatDateLabelSafe(s.nextDueDate)}` : null,
+        last: lastPayment(d, mine), call: c ? callLine(c, deposits, today) : null, taken: !!carTaken(calls, d.id), lost30,
+        promiseDue: c && promiseState(c, deposits) === 'pending' ? c.promised_at : null,
+      });
+    }
+    return out;
+  }, [drivers, deposits, calls, showMoney, today]);
+
+  // Sort: by name, by who owes most, or by the earliest promise due.
+  const [sortBy, setSortBy] = useState<'name' | 'owes' | 'promise'>('name');
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return drivers.filter((d) => (!modelFilter || d.model === modelFilter) && (!q || d.full_name.toLowerCase().includes(q) || d.phone.includes(q)));
-  }, [drivers, search, modelFilter]);
+    const rows = drivers.filter((d) => (!modelFilter || d.model === modelFilter) && (!q || d.full_name.toLowerCase().includes(q) || d.phone.includes(q)));
+    if (sortBy === 'owes') return [...rows].sort((a, b) => (money.get(b.id)?.owes ?? -1) - (money.get(a.id)?.owes ?? -1));
+    if (sortBy === 'promise') return [...rows].sort((a, b) => (money.get(a.id)?.promiseDue ?? '9').localeCompare(money.get(b.id)?.promiseDue ?? '9'));
+    return rows;
+  }, [drivers, search, modelFilter, sortBy, money]);
 
   const byStage = useMemo(() => {
     const map: Record<string, Driver[]> = { applying: [], raw: [], ready: [], active: [], flagged: [], inactive: [] };
@@ -107,6 +138,13 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
           <p className="text-caption text-fg-subtle mt-0.5">Every driver from application through active service.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {showMoney && view === 'table' && (
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="input !w-auto !py-1.5" aria-label="Sort">
+              <option value="name">Sort: name</option>
+              <option value="owes">Sort: owes most</option>
+              <option value="promise">Sort: promise due first</option>
+            </select>
+          )}
           <ViewToggle value={view} onChange={setView} />
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
@@ -204,6 +242,16 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
             },
             { header: 'Vehicle', render: (d) => d.vehicle ? <EntityLink type="car" id={d.vehicle.id} label={d.vehicle.plate_number} className="font-mono" /> : '—' },
             { header: 'Model', render: (d) => (d.shift || d.model !== 'one_shift' ? driverTermsLabel(d) : 'One shift') },
+            // Money at a glance (MD, 26 Nov 2026) - never shown to the Call Center.
+            ...(showMoney ? [
+              { header: 'Payment', render: (d: Driver) => { const m = money.get(d.id); if (!m) return <span className="text-fg-subtle">—</span>;
+                return <span className="flex flex-col gap-0.5"><span className={`text-micro font-medium px-1.5 py-0.5 rounded-full w-fit ${DEPOSIT_TIER_STYLE[m.tier].badge}`}>{m.taken ? 'Car taken back' : m.label}</span>{m.owes > 0 && <span className="text-micro font-semibold text-red-600 dark:text-red-400">Owes {m.owes.toLocaleString()}</span>}</span>; } },
+              { header: 'Next payment', render: (d: Driver) => { const m = money.get(d.id); return m?.next ? <span className="text-caption whitespace-nowrap">{m.next}</span> : <span className="text-fg-subtle">—</span>; } },
+              { header: 'Last paid', render: (d: Driver) => { const m = money.get(d.id); return m?.last ? <span className="text-caption whitespace-nowrap">{formatDateLabelSafe(m.last.date)} · <b>{m.last.amount.toLocaleString()}</b>{m.last.pending ? <span className="text-amber-600"> · unconfirmed</span> : ''}</span> : <span className="text-fg-subtle text-caption">{m ? 'Never' : '—'}</span>; } },
+              { header: 'Pay day', render: (d: Driver) => <span className="text-caption">{d.payment_day ? d.payment_day[0].toUpperCase() + d.payment_day.slice(1, 3) : '—'}</span> },
+              { header: 'Latest call', render: (d: Driver) => { const m = money.get(d.id); return m?.call ? <span className={`text-caption block max-w-[260px] truncate ${toneClass(m.call.tone)}`} title={m.call.text}>{m.call.text}</span> : <span className="text-fg-subtle text-caption">—</span>; } },
+              { header: 'Lost (30d)', className: 'text-right', render: (d: Driver) => { const m = money.get(d.id); return m && m.lost30 ? <span className="text-caption font-semibold text-red-600 dark:text-red-400 tabular-nums">{m.lost30}</span> : <span className="text-fg-subtle text-caption">{m ? '0' : '—'}</span>; } },
+            ] : []),
             {
               header: '',
               className: 'text-right',
