@@ -8,11 +8,18 @@ import { supabase, Driver, Vehicle } from './supabase';
 // Ride inspection document, uploaded when the car is added. Files live in the private
 // 'legal-docs' bucket; rows in contract_documents.
 
-export type LegalKind = 'driver_contract' | 'driver_contract_amendment' | 'driver_termination_letter' | 'owner_management_agreement' | 'vehicle_inspection';
+export type LegalKind = 'driver_contract' | 'driver_contract_amendment' | 'driver_termination_letter' | 'owner_management_agreement' | 'vehicle_inspection'
+  | 'vehicle_yellow_card' | 'vehicle_insurance' | 'vehicle_rura_license';
+// A car's papers (MD, 26 Nov 2026): the inspection, its yellow card, insurance and RURA licence.
+export const CAR_PAPERS = ['vehicle_inspection', 'vehicle_yellow_card', 'vehicle_insurance', 'vehicle_rura_license'] as const;
+// Papers that run out: the form asks when, and an expired one counts as missing.
+export const EXPIRING: LegalKind[] = ['vehicle_insurance', 'vehicle_rura_license'];
+export const isCarPaper = (k: LegalKind) => k.startsWith('vehicle_');
 export interface LegalDoc {
   id: string; kind: LegalKind; driver_id: string | null; owner_id: string | null; vehicle_id: string | null; contract_event_id: string | null;
   period_start: string | null; document_date: string; signed: boolean; stamped: boolean; delivered_how: string | null;
   file_path: string; file_name: string; notes: string | null; uploaded_by: string | null; uploaded_at: string;
+  expires_on?: string | null;
 }
 
 export const LEGAL_KIND: Record<LegalKind, { label: string; plural: string; sealed: boolean; missing: string }> = {
@@ -21,6 +28,9 @@ export const LEGAL_KIND: Record<LegalKind, { label: string; plural: string; seal
   driver_termination_letter: { label: 'Termination letter', plural: 'Driver termination letters', sealed: false, missing: 'Termination letter missing' },
   owner_management_agreement: { label: 'Management agreement', plural: 'Owner management agreements', sealed: true, missing: 'Agreement missing' },
   vehicle_inspection: { label: 'Inspection document', plural: 'Car inspections', sealed: false, missing: 'Inspection missing' },
+  vehicle_yellow_card: { label: 'Yellow card', plural: 'Yellow cards', sealed: false, missing: 'Yellow card missing' },
+  vehicle_insurance: { label: 'Insurance', plural: 'Insurance', sealed: false, missing: 'Insurance missing' },
+  vehicle_rura_license: { label: 'RURA licence', plural: 'RURA licences', sealed: false, missing: 'RURA licence missing' },
 };
 
 export const DELIVERED_HOW = [
@@ -32,8 +42,8 @@ export const DELIVERED_HOW = [
 ] as const;
 
 // ------------------------------------------------------------ the form's value
-export interface LegalDraft { file: File | null; documentDate: string; signed: boolean; stamped: boolean; deliveredHow: string; notes: string }
-export const emptyDraft = (date: string): LegalDraft => ({ file: null, documentDate: date, signed: false, stamped: false, deliveredHow: '', notes: '' });
+export interface LegalDraft { file: File | null; documentDate: string; signed: boolean; stamped: boolean; deliveredHow: string; notes: string; expiresOn?: string }
+export const emptyDraft = (date: string): LegalDraft => ({ file: null, documentDate: date, signed: false, stamped: false, deliveredHow: '', notes: '', expiresOn: '' });
 
 export function draftError(kind: LegalKind, d: LegalDraft): string | null {
   const what = LEGAL_KIND[kind].label.toLowerCase();
@@ -42,6 +52,7 @@ export function draftError(kind: LegalKind, d: LegalDraft): string | null {
   if (!d.documentDate) return `Enter the date on the ${what}.`;
   if (LEGAL_KIND[kind].sealed && !(d.signed && d.stamped)) return `The ${what} must be signed and stamped — tick both once it is.`;
   if (kind === 'driver_termination_letter' && !d.deliveredHow) return 'Say how the letter was given to the driver.';
+  if (EXPIRING.includes(kind) && !d.expiresOn) return `Enter the date the ${what} expires.`;
   return null;
 }
 
@@ -57,6 +68,7 @@ export async function uploadDraft(kind: LegalKind, ownerOrDriverId: string, d: L
     doc: {
       file_path: path, file_name: file.name, document_date: d.documentDate, signed: d.signed, stamped: d.stamped,
       delivered_how: kind === 'driver_termination_letter' ? d.deliveredHow : null, notes: d.notes.trim() || null,
+      expires_on: EXPIRING.includes(kind) ? d.expiresOn || null : null,
     },
   };
 }
@@ -116,6 +128,21 @@ export function ownerNeedsAgreement(ownerId: string, vehicles: Pick<Vehicle, 'ow
 // was brand new (ticked when added; the cars before RAG260T all were).
 export function missingInspection(v: Pick<Vehicle, 'id' | 'brand_new'>, docs: Pick<LegalDoc, 'kind' | 'vehicle_id'>[]) {
   return !v.brand_new && !docs.some((x) => x.vehicle_id === v.id && x.kind === 'vehicle_inspection');
+}
+// Every paper a car still needs (MD, 26 Nov 2026): the inspection (not for a
+// brand new car), the yellow card, the insurance and the RURA licence - the
+// newest of each counts; an insurance or licence past its date is "expired".
+export function missingCarPapers(v: Pick<Vehicle, 'id' | 'brand_new'>, docs: Pick<LegalDoc, 'kind' | 'vehicle_id' | 'document_date' | 'expires_on'>[], today: string):
+  { kind: LegalKind; expired: string | null }[] {
+  const out: { kind: LegalKind; expired: string | null }[] = [];
+  for (const kind of CAR_PAPERS) {
+    if (kind === 'vehicle_inspection' && v.brand_new) continue;
+    const newest = docs.filter((x) => x.vehicle_id === v.id && x.kind === kind)
+      .sort((a, b) => (b.expires_on ?? b.document_date).localeCompare(a.expires_on ?? a.document_date))[0];
+    if (!newest) out.push({ kind, expired: null });
+    else if (EXPIRING.includes(kind) && newest.expires_on && newest.expires_on < today) out.push({ kind, expired: newest.expires_on });
+  }
+  return out;
 }
 export function missingForOwner(ownerId: string, vehicles: Pick<Vehicle, 'owner_id' | 'operation_start_date'>[], docs: LegalDoc[]) {
   return ownerNeedsAgreement(ownerId, vehicles) && !docs.some((x) => x.owner_id === ownerId && x.kind === 'owner_management_agreement');

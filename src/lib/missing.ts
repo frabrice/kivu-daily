@@ -1,5 +1,5 @@
 import { supabase, Driver, Vehicle, VehicleOwner } from './supabase';
-import { LegalDoc, LegalKind, missingForDriver, missingForOwner, missingInspection } from './legalDocs';
+import { LEGAL_KIND, LegalDoc, LegalKind, missingCarPapers, missingForDriver, missingForOwner } from './legalDocs';
 import { kigaliToday } from './kigali';
 
 // Admin -> Missing (MD, 23 Nov 2026): papers are optional when a car, an
@@ -59,14 +59,15 @@ export function computeMissing({ vehicles, owners, drivers, docs, reviewed }: Mi
 
   for (const v of vehicles) {
     const things: MissingThing[] = [];
-    if (missingInspection(v, docs)) things.push({ label: 'Inspection document', paper: 'vehicle_inspection' });
+    // Papers (MD, 26 Nov 2026): inspection, yellow card, insurance, RURA licence - missing or expired.
+    for (const m of missingCarPapers(v, docs, today)) {
+      things.push({ label: m.expired ? `${LEGAL_KIND[m.kind].label} expired ${day(m.expired)}` : LEGAL_KIND[m.kind].label, paper: m.kind });
+    }
     if (!v.owner_id) things.push({ label: 'Owner' });
     else {
       if (!v.operation_start_date) things.push({ label: 'Operation start date' });
       if (!v.weekly_owner_payout_amount) things.push({ label: 'Owner payout amount' });
     }
-    if (v.rura_license_status !== 'provided') things.push({ label: 'RURA licence' });
-    else if (v.rura_license_expiry_date && v.rura_license_expiry_date < today) things.push({ label: `RURA licence expired ${day(v.rura_license_expiry_date)}` });
     if (things.length) {
       const on = driversOn(v.id);
       rows.push({

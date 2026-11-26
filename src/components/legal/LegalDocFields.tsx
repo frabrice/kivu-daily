@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BadgeCheck, ExternalLink, FileSignature, FileText, Paperclip, Plus, Stamp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { DELIVERED_HOW, LEGAL_KIND, LegalDoc, LegalDraft, LegalKind, emptyDraft, openLegalDoc, uploadDraft } from '../../lib/legalDocs';
+import { DELIVERED_HOW, EXPIRING, LEGAL_KIND, LegalDoc, LegalDraft, LegalKind, emptyDraft, openLegalDoc, uploadDraft } from '../../lib/legalDocs';
 import { todayStr } from '../../lib/utils';
 import Modal from '../Modal';
 import { Label } from '../../ui/kit';
@@ -28,6 +28,11 @@ export function LegalDocFields({ kind, draft, onChange, title }: { kind: LegalKi
         <label className="block"><span className={label}>Date on the document *</span>
           <input type="date" value={draft.documentDate} max={todayStr()} onChange={(e) => set({ documentDate: e.target.value })} className="input" />
         </label>
+        {EXPIRING.includes(kind) && (
+          <label className="block"><span className={label}>Expires on *</span>
+            <input type="date" value={draft.expiresOn ?? ''} onChange={(e) => set({ expiresOn: e.target.value })} className="input" />
+          </label>
+        )}
         {kind === 'driver_termination_letter' && (
           <label className="block"><span className={label}>How it was given *</span>
             <select value={draft.deliveredHow} onChange={(e) => set({ deliveredHow: e.target.value })} className="input">
@@ -63,8 +68,9 @@ export function AddLegalDocModal({ kind, driverId, ownerId, vehicleId, name, onC
     setBusy(true); setError('');
     const up = await uploadDraft(kind, (driverId ?? ownerId ?? vehicleId)!, draft);
     if ('error' in up) { setBusy(false); setError(up.error); return; }
+    // Any car paper (inspection, yellow card, insurance, RURA licence) goes through add_vehicle_document.
     const { error: err } = vehicleId
-      ? await supabase.rpc('add_vehicle_inspection', { p_vehicle: vehicleId, d: up.doc })
+      ? await supabase.rpc('add_vehicle_document', { p_vehicle: vehicleId, p_kind: kind, d: up.doc })
       : ownerId
       ? await supabase.rpc('add_owner_agreement', { p_owner: ownerId, d: up.doc })
       : await supabase.rpc('add_driver_document', { p_driver: driverId, p_kind: kind, d: up.doc });
@@ -109,7 +115,7 @@ export function LegalDocsBox({ docs, missing, canAdd, addKinds, onAdd, empty = '
               <FileText size={15} className="text-fg-subtle" />
               <span className="min-w-0 flex-1">
                 <span className="block text-body font-medium">{LEGAL_KIND[x.kind].label}</span>
-                <span className="block text-caption text-fg-muted">Dated {day(x.document_date)}{x.period_start ? ` · contract from ${day(x.period_start)}` : ''}{x.delivered_how ? ` · ${DELIVERED_HOW.find((o) => o.key === x.delivered_how)?.label ?? x.delivered_how}` : ''}{x.notes ? ` · ${x.notes}` : ''}</span>
+                <span className="block text-caption text-fg-muted">Dated {day(x.document_date)}{x.expires_on ? ` · expires ${day(x.expires_on)}` : ''}{x.period_start ? ` · contract from ${day(x.period_start)}` : ''}{x.delivered_how ? ` · ${DELIVERED_HOW.find((o) => o.key === x.delivered_how)?.label ?? x.delivered_how}` : ''}{x.notes ? ` · ${x.notes}` : ''}</span>
               </span>
               {LEGAL_KIND[x.kind].sealed && x.signed && x.stamped && <Label tone="success" icon={BadgeCheck}>Signed & stamped</Label>}
               <button onClick={async () => setError((await openLegalDoc(x.file_path)) ?? '')} className="btn-ghost text-caption"><ExternalLink size={13} /> Open</button>

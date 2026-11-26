@@ -12,7 +12,7 @@ import { Box, Details, EmptyState, Heatmap, Label, ObjectLayout, PageHeader, Sta
 import VehicleDrawer from '../../components/fleet/VehicleDrawer';
 import CarDriverHistory from '../../components/fleet/CarDriverHistory';
 import { AddLegalDocModal, LegalDocsBox } from '../../components/legal/LegalDocFields';
-import { missingInspection, useLegalDocs } from '../../lib/legalDocs';
+import { CAR_PAPERS, LEGAL_KIND, LegalKind, missingCarPapers, useLegalDocs } from '../../lib/legalDocs';
 
 type Tab = 'overview' | 'money';
 const COLOR: Record<CarDayState | 'none', string> = { working: '#2a78d6', unpaid: '#eb6834', paused: '#1baf7a', rest: 'rgb(var(--c-line-strong))', no_driver: '#a3a3a3', none: 'rgb(var(--c-line-muted))' };
@@ -32,7 +32,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
   // Kivu Ride's inspection document: seen by Fleet, IT, Finance and the MD (as all contract papers).
   const seesDocs = profile?.role === 'managing_director' || ['fleet', 'it', 'finance'].includes(profile?.department?.slug ?? '');
   const legal = useLegalDocs();
-  const [addingInspection, setAddingInspection] = useState(false);
+  const [addingPaper, setAddingPaper] = useState<LegalKind | null>(null);
   useEntityMeta('car', id, mode, car?.plate_number, [car?.make, car?.model].filter(Boolean).join(' '));
 
   const money = useQuery({
@@ -63,7 +63,8 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
   const noDriver = days.filter((d) => d.state === 'no_driver').length;
   const garage = days.filter((d) => onCar.some((dr) => ['garage', 'accident'].includes(pauseOn(dr.pauses, d.day)?.reason ?? ''))).length;
   const collected30 = deposits.filter((x) => onCar.some((d) => d.id === x.driver_id) && x.paid_date > addDays(t, -30)).reduce((s, x) => s + Number(x.amount), 0);
-  const noInspection = seesDocs && !legal.loading && missingInspection(car, legal.docs);
+  // All the car's papers still missing or expired (inspection, yellow card, insurance, RURA licence).
+  const missingPapers = seesDocs && !legal.loading ? missingCarPapers(car, legal.docs, t) : [];
   const expiry = car.rura_license_expiry_date;
   const expired = !!expiry && expiry < t;
   const expiresSoon = !!expiry && !expired && expiry <= addDays(t, 30);
@@ -84,7 +85,7 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
   const header = (
     <PageHeader
       avatar={<span className="w-11 h-11 rounded-lg bg-surface-2 border border-line flex items-center justify-center shrink-0"><Car size={20} className="text-fg-muted" /></span>}
-      title={<span className="font-mono">{car.plate_number}</span>} labels={<>{status}{expired && <Label tone="danger" icon={FileWarning}>Licence expired</Label>}{expiresSoon && <Label tone="attention" icon={FileWarning}>Licence expires soon</Label>}{noInspection && <Label tone="danger" icon={FileSignature}>Inspection missing</Label>}</>}
+      title={<span className="font-mono">{car.plate_number}</span>} labels={<>{status}{expired && <Label tone="danger" icon={FileWarning}>Licence expired</Label>}{expiresSoon && <Label tone="attention" icon={FileWarning}>Licence expires soon</Label>}{missingPapers.map((m) => <Label key={m.kind} tone="danger" icon={FileSignature}>{m.expired ? `${LEGAL_KIND[m.kind].label} expired` : LEGAL_KIND[m.kind].missing}</Label>)}</>}
       meta={<>
         <span>{[car.make, car.model, car.color].filter(Boolean).join(' · ') || 'No make/model'}</span>
         {owner && <span>Owner <EntityLink type="owner" id={owner.id} label={owner.full_name} /></span>}
@@ -148,13 +149,16 @@ export default function CarEntity({ id, mode }: EntityViewProps) {
     </Box>
   );
 
+  // The car's papers: inspection, yellow card, insurance, RURA licence (MD, 26 Nov 2026).
   const inspection = seesDocs && (
-    <Box title="Inspection" icon={FileSignature}>
-      <LegalDocsBox docs={legal.docs.filter((x) => x.vehicle_id === id)} missing={noInspection ? 'vehicle_inspection' : null} canAdd={canEdit}
-        addKinds={noInspection ? [] : ['vehicle_inspection']} onAdd={() => setAddingInspection(true)} empty={car.brand_new ? 'Brand new car — no inspection needed.' : 'No inspection document yet.'} />
+    <Box title="Papers" icon={FileSignature}>
+      <LegalDocsBox docs={legal.docs.filter((x) => x.vehicle_id === id)} missing={missingPapers[0]?.kind ?? null} canAdd={canEdit}
+        addKinds={CAR_PAPERS.filter((k) => !(k === 'vehicle_inspection' && car.brand_new) && k !== missingPapers[0]?.kind)} onAdd={setAddingPaper}
+        empty={'No papers yet: yellow card, insurance, RURA licence' + (car.brand_new ? '' : ' and the inspection') + '.'} />
+      {missingPapers.length > 1 && <p className="text-caption text-danger mt-2">Also missing: {missingPapers.slice(1).map((m) => (m.expired ? `${LEGAL_KIND[m.kind].label} (expired ${formatDateLabelSafe(m.expired)})` : LEGAL_KIND[m.kind].label)).join(', ')}.</p>}
     </Box>
   );
-  const inspectionModal = addingInspection && <AddLegalDocModal kind="vehicle_inspection" vehicleId={id} name={car.plate_number} onClose={() => setAddingInspection(false)} onSaved={legal.reload} />;
+  const inspectionModal = addingPaper && <AddLegalDocModal kind={addingPaper} vehicleId={id} name={car.plate_number} onClose={() => setAddingPaper(null)} onSaved={legal.reload} />;
 
   const history = <CarDriverHistory carId={id} drivers={drivers} vehicles={vehicles} contractEvents={contractEvents} compact={mode === 'peek'} />;
 
