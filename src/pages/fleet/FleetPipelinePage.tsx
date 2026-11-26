@@ -1,24 +1,22 @@
 import { useState, useMemo } from 'react';
-import { Search, Plus, Phone, Car, Truck } from 'lucide-react';
+import { Search, Plus, Phone, Truck, FileSignature, ArrowDownWideNarrow, PauseCircle } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
-import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL, driverShiftShort, driverTermsLabel, DRIVER_MODELS, computeDepositStanding, depositStandingTier, depositStandingLabel, DEPOSIT_TIER_STYLE, formatDateLabelSafe, DepositTier } from '../../lib/fleet';
-import { usePaymentCalls, latestCall, carTaken, callLine, promiseState, lastPayment, toneClass } from '../../lib/paymentCalls';
+import { useFleetData, STAGES, effectiveStage, canEditFleet, canSeeDriverPayments, PAUSE_REASON_LABEL, driverShiftShort, DRIVER_MODELS, computeDepositStanding, formatDateLabelSafe, DepositStanding } from '../../lib/fleet';
+import { usePaymentCalls, latestCall, carTaken, callLine, promiseState, lastPayment, PaymentCall } from '../../lib/paymentCalls';
 import { driverDay, addDays } from '../../lib/performance';
 import { isPausedOn } from '../../components/fleet/PauseList';
-
-const kigaliToday = kTodayFast();
 import { Driver } from '../../lib/supabase';
 import ViewToggle, { ViewMode } from '../../components/ViewToggle';
-import DataTable from '../../components/DataTable';
 import EntryActions from '../../components/EntryActions';
 import DriverDrawer from '../../components/fleet/DriverDrawer';
 import DriverProfilePage from './DriverProfilePage';
 import { EntityLink } from '../../os/EntityLink';
 import { usePeek } from '../../os/peek';
 import { LEGAL_KIND, missingForDriver, useLegalDocs } from '../../lib/legalDocs';
-import { Label, Tagged } from '../../ui/kit';
+import { Pager, usePaged } from '../../ui/Pager';
 import ExportButton from '../../components/fleet/ExportButton';
-import { kigaliToday as kTodayFast } from '../../lib/kigali';
+import { kigaliToday } from '../../lib/kigali';
+import { moneyStatus, MoneyStatus, StatusPill, DriverAvatar, PlateChip, Amount, CallChip, STATUS_STYLE } from '../../components/fleet/driverUi';
 
 interface DriverDrawerState { driver: Driver | null; startEditing: boolean }
 
@@ -38,6 +36,13 @@ function FleetPipelinePageWithData() {
   return <FleetPipelinePageView data={useFleetData()} />;
 }
 
+// Which drivers to show: everyone on a contract (the default), or one stage.
+type Scope = 'contract' | 'all' | 'applying' | 'raw' | 'ready' | 'active' | 'flagged' | 'inactive';
+
+interface Money { standing: DepositStanding; status: MoneyStatus; last: ReturnType<typeof lastPayment>; call: PaymentCall | null; taken: PaymentCall | null; lost30: number; promiseDue: string | null }
+
+// Drivers (redesigned MD, 26 Nov 2026): find anyone fast, and see each
+// driver's car, money, last payment and latest call on one line.
 function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData> }) {
   const { profile } = useAuth();
   const peek = usePeek();
@@ -47,6 +52,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
   const missingDoc = (d: Driver) => (legal.loading ? null : missingForDriver(d, legal.docs));
   const [view, setView] = useState<ViewMode>('table');
   const [search, setSearch] = useState('');
+  const [scope, setScope] = useState<Scope>('contract');
   // All models, or one (One shift, Both shifts, Solo car).
   const [modelFilter, setModelFilter] = useState<string>('');
   const [driverDrawer, setDriverDrawer] = useState<DriverDrawerState | null>(null);
@@ -56,25 +62,25 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
   const [viewingDriverId, setViewingDriverId] = useState<string | null>(null);
   const viewingDriver = viewingDriverId ? drivers.find((d) => d.id === viewingDriverId) ?? null : null;
 
-  // Each driver's money in one line per column (drivers on contract who have started).
+  // Each driver's money (never shown to the Call Center).
   const showMoney = canSeeDriverPayments(profile);
   const { calls } = usePaymentCalls();
-  const today = kTodayFast();
+  const today = kigaliToday();
   const money = useMemo(() => {
-    const out = new Map<string, { tier: DepositTier; label: string; owes: number; next: string | null; last: ReturnType<typeof lastPayment>; call: { text: string; tone: 'danger' | 'attention' | 'good' | 'muted' } | null; taken: boolean; lost30: number; promiseDue: string | null }>();
+    const out = new Map<string, Money>();
     if (!showMoney) return out;
     for (const d of drivers) {
-      if (d.contract_status === 'ended' || !d.start_date) continue;
+      if (!d.start_date) continue;
+      const ended = d.contract_status === 'ended';
       const mine = deposits.filter((x) => x.driver_id === d.id);
-      const s = computeDepositStanding(d, mine);
-      const c = latestCall(calls, d.id);
+      const standing = computeDepositStanding(d, mine);
+      const taken = ended ? null : carTaken(calls, d.id);
+      const call = latestCall(calls, d.id);
       let lost30 = 0;
-      for (let i = 1; i <= 30; i++) { const day = addDays(today, -i); if (day >= d.start_date && driverDay(d, mine, day) === 'unpaid') lost30++; }
+      if (!ended) for (let i = 1; i <= 30; i++) { const day = addDays(today, -i); if (day >= d.start_date && driverDay(d, mine, day) === 'unpaid') lost30++; }
       out.set(d.id, {
-        tier: depositStandingTier(s), label: depositStandingLabel(s), owes: s.owes,
-        next: s.hasStarted && s.nextDueDate && s.nextDueAmount > 0 ? `${s.nextDueAmount.toLocaleString()} by ${formatDateLabelSafe(s.nextDueDate)}` : null,
-        last: lastPayment(d, mine), call: c ? callLine(c, deposits, today) : null, taken: !!carTaken(calls, d.id), lost30,
-        promiseDue: c && promiseState(c, deposits) === 'pending' ? c.promised_at : null,
+        standing, status: moneyStatus(standing, { ended, taken: !!taken, today }), last: lastPayment(d, mine), call, taken, lost30,
+        promiseDue: call && promiseState(call, deposits) === 'pending' ? call.promised_at : null,
       });
     }
     return out;
@@ -82,13 +88,16 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
 
   // Sort: by name, by who owes most, or by the earliest promise due.
   const [sortBy, setSortBy] = useState<'name' | 'owes' | 'promise'>('name');
+  const inScope = (d: Driver, s: Scope) => s === 'all' || (s === 'contract' ? d.contract_status === 'active' : effectiveStage(d) === s);
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const rows = drivers.filter((d) => (!modelFilter || d.model === modelFilter) && (!q || d.full_name.toLowerCase().includes(q) || d.phone.includes(q)));
-    if (sortBy === 'owes') return [...rows].sort((a, b) => (money.get(b.id)?.owes ?? -1) - (money.get(a.id)?.owes ?? -1));
-    if (sortBy === 'promise') return [...rows].sort((a, b) => (money.get(a.id)?.promiseDue ?? '9').localeCompare(money.get(b.id)?.promiseDue ?? '9'));
-    return rows;
-  }, [drivers, search, modelFilter, sortBy, money]);
+    const rows = drivers.filter((d) => inScope(d, scope) && (!modelFilter || d.model === modelFilter)
+      && (!q || d.full_name.toLowerCase().includes(q) || d.phone.includes(q) || (d.vehicle?.plate_number ?? '').toLowerCase().includes(q)));
+    const byName = (a: Driver, b: Driver) => a.full_name.localeCompare(b.full_name);
+    if (sortBy === 'owes') return [...rows].sort((a, b) => (money.get(b.id)?.standing.owes ?? -1) - (money.get(a.id)?.standing.owes ?? -1) || byName(a, b));
+    if (sortBy === 'promise') return [...rows].sort((a, b) => (money.get(a.id)?.promiseDue ?? '9').localeCompare(money.get(b.id)?.promiseDue ?? '9') || byName(a, b));
+    return [...rows].sort(byName);
+  }, [drivers, search, scope, modelFilter, sortBy, money]);
 
   const byStage = useMemo(() => {
     const map: Record<string, Driver[]> = { applying: [], raw: [], ready: [], active: [], flagged: [], inactive: [] };
@@ -96,196 +105,239 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
     return map;
   }, [filtered]);
 
-  if (loading) return <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-6 gap-3">{STAGES.map((s) => <div key={s.key} className="h-40 skeleton rounded-xl" />)}</div>;
+  const paged = usePaged(filtered, { key: 'fleet-drivers', reset: `${search}${scope}${modelFilter}${sortBy}` });
+
+  if (loading) return <div className="space-y-3"><div className="h-16 skeleton rounded-card" />{[0, 1, 2, 3].map((i) => <div key={i} className="h-14 skeleton rounded-card" />)}</div>;
 
   if (viewingDriver) {
     return (
       <>
-        <DriverProfilePage
-          driver={viewingDriver}
-          drivers={drivers}
-          deposits={deposits}
-          fines={fines}
-          finePayments={finePayments}
-          contractEvents={contractEvents}
-          vehicles={vehicles}
-          canEdit={canEdit}
-          onBack={() => setViewingDriverId(null)}
-          onEdit={() => setDriverDrawer({ driver: viewingDriver, startEditing: true })}
-          reload={reload}
-        />
-        {driverDrawer && (
-          <DriverDrawer
-            driver={driverDrawer.driver}
-            startEditing={driverDrawer.startEditing}
-            vehicles={vehicles}
-            drivers={drivers}
-            driverDocuments={driverDocuments}
-            canEdit={canEdit}
-            onClose={() => setDriverDrawer(null)}
-            onSaved={reload}
-          />
-        )}
+        <DriverProfilePage driver={viewingDriver} drivers={drivers} deposits={deposits} fines={fines} finePayments={finePayments} contractEvents={contractEvents} vehicles={vehicles}
+          canEdit={canEdit} onBack={() => setViewingDriverId(null)} onEdit={() => setDriverDrawer({ driver: viewingDriver, startEditing: true })} reload={reload} />
+        {driverDrawer && <DriverDrawer driver={driverDrawer.driver} startEditing={driverDrawer.startEditing} vehicles={vehicles} drivers={drivers} driverDocuments={driverDocuments} canEdit={canEdit} onClose={() => setDriverDrawer(null)} onSaved={reload} />}
       </>
     );
   }
 
+  const scopes: { key: Scope; label: string; color?: string }[] = [
+    { key: 'contract', label: 'On contract' },
+    ...STAGES.map((s) => ({ key: s.key as Scope, label: s.label, color: s.color })),
+    { key: 'all', label: 'Everyone' },
+  ];
+  const countOf = (s: Scope) => drivers.filter((d) => inScope(d, s) && (!modelFilter || d.model === modelFilter)).length;
+  const open = (d: Driver) => peek.open({ type: 'driver', id: d.id, label: d.full_name });
+  const pausedReason = (d: Driver) => { const p = (d.pauses ?? []).find((x) => isPausedOn(x, today)); return p ? PAUSE_REASON_LABEL[p.reason] : null; };
+  const stageOf = (d: Driver) => STAGES.find((st) => st.key === effectiveStage(d))!;
+  const th = 'text-micro font-semibold uppercase tracking-wide text-fg-subtle px-3 py-2.5 text-left whitespace-nowrap bg-inset/60';
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2.5">
-        <div>
-          <h2 className="text-base font-semibold flex items-center gap-2"><Truck size={16} className="text-blue-600 dark:text-blue-300" /> Driver Pipeline</h2>
-          <p className="text-caption text-fg-subtle mt-0.5">Every driver from application through active service.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {showMoney && view === 'table' && (
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="input !w-auto !py-1.5" aria-label="Sort">
-              <option value="name">Sort: name</option>
-              <option value="owes">Sort: owes most</option>
-              <option value="promise">Sort: promise due first</option>
-            </select>
-          )}
-          <ViewToggle value={view} onChange={setView} />
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or phone" className="input pl-8 w-full sm:w-52" />
+      {/* Header */}
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div className="flex items-start gap-3">
+          <span className="w-10 h-10 rounded-lg bg-accent-muted text-accent-fg flex items-center justify-center shrink-0"><Truck size={19} /></span>
+          <div>
+            <h2 className="text-h2 font-semibold leading-tight">Drivers</h2>
+            <p className="text-body text-fg-muted mt-0.5">Every driver from application to the road — their car, money and latest call.</p>
           </div>
-          <select value={modelFilter} onChange={(e) => setModelFilter(e.target.value)} className="input w-auto" aria-label="Model">
-            <option value="">All models</option>
-            {Object.entries(DRIVER_MODELS).map(([k, m]) => <option key={k} value={k}>{m.label} ({drivers.filter((d) => d.model === k && d.contract_status === 'active').length})</option>)}
-          </select>
+        </div>
+        <div className="flex items-center gap-2">
           <ExportButton initial="drivers" />
-          {canEdit && (
-            <button onClick={() => setDriverDrawer({ driver: null, startEditing: true })} className="btn-primary flex items-center gap-1.5 whitespace-nowrap">
-              <Plus size={14} /> Add Driver
-            </button>
-          )}
+          {canEdit && <button onClick={() => setDriverDrawer({ driver: null, startEditing: true })} className="btn-primary"><Plus size={14} /> Add driver</button>}
         </div>
       </div>
 
+      {/* Toolbar */}
+      <div className="card p-3 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="relative flex-1 min-w-[200px]">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone or plate" className="input !pl-8" aria-label="Search" />
+          </label>
+          <div className="flex gap-0.5 p-0.5 bg-inset rounded-md border border-line-muted" role="group" aria-label="Model">
+            {[['', 'All models'] as const, ...Object.entries(DRIVER_MODELS).map(([k, m]) => [k, m.label] as const)].map(([k, l]) => (
+              <button key={k} onClick={() => setModelFilter(k)} className={`px-2.5 h-7 rounded text-caption font-medium whitespace-nowrap ${modelFilter === k ? 'bg-surface-2 text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}>{l}</button>
+            ))}
+          </div>
+          {showMoney && view === 'table' && (
+            <label className="relative">
+              <ArrowDownWideNarrow size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" />
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="input !w-auto !pl-8" aria-label="Sort">
+                <option value="name">Name</option>
+                <option value="owes">Owes most</option>
+                <option value="promise">Promise due first</option>
+              </select>
+            </label>
+          )}
+          <ViewToggle value={view} onChange={setView} />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {scopes.map((s) => {
+            const on = scope === s.key;
+            return (
+              <button key={s.key} onClick={() => setScope(s.key)}
+                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border text-caption font-medium transition-colors ${on ? 'border-accent bg-accent-muted text-accent-fg' : 'border-line text-fg-muted hover:bg-hover hover:text-fg'}`}>
+                {s.color && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />}
+                {s.label}
+                <span className={`tabular-nums ${on ? '' : 'text-fg-subtle'}`}>{countOf(s.key)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Board by stage */}
       {view === 'cards' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-3">
           {STAGES.map((stage) => (
-            <div key={stage.key} className="space-y-2">
-              <div className="flex items-center gap-1.5 px-0.5">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: stage.color }} />
-                <p className="text-micro font-semibold uppercase tracking-wide text-fg-muted">{stage.label}</p>
-                <span className="text-micro text-fg-subtle">{byStage[stage.key].length}</span>
+            <div key={stage.key} className="rounded-card bg-inset/60 border border-line-muted p-2 space-y-2">
+              <div className="flex items-center gap-2 px-1 pt-0.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: stage.color }} />
+                <p className="text-body font-semibold">{stage.label}</p>
+                <span className="counter ml-auto">{byStage[stage.key].length}</span>
               </div>
-              <div className="space-y-1.5 min-h-[40px]">
-                {byStage[stage.key].map((d) => (
-                  <div
-                    key={d.id}
-                    onClick={() => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
-                    className="w-full card p-2.5 text-left cursor-pointer hover:shadow-md hover:border-brand/30 transition-all"
-                  >
-                    <div className="flex items-start justify-between gap-1.5">
-                      <p className="text-caption font-medium truncate">{d.full_name}</p>
-                      <EntryActions
-                        onView={() => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
-                        onEdit={() => setDriverDrawer({ driver: d, startEditing: true })}
-                        canEdit={canEdit}
-                      />
+              {byStage[stage.key].map((d) => {
+                const m = money.get(d.id);
+                const paused = pausedReason(d);
+                const miss = missingDoc(d);
+                return (
+                  <div key={d.id} onClick={() => open(d)} className="card p-3 cursor-pointer hover:border-line-strong hover:shadow-md transition-all space-y-2">
+                    <div className="flex items-start gap-2.5">
+                      <DriverAvatar name={d.full_name} status={m?.status} size={32} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-body font-semibold truncate">{d.full_name}</p>
+                        <p className="text-caption text-fg-subtle flex items-center gap-1"><Phone size={11} /> {d.phone}</p>
+                      </div>
+                      <span onClick={(e) => e.stopPropagation()}><EntryActions onView={() => open(d)} onEdit={() => setDriverDrawer({ driver: d, startEditing: true })} canEdit={canEdit} /></span>
                     </div>
-                    {missingDoc(d) && <p className="text-micro text-danger font-medium mt-0.5">{LEGAL_KIND[missingDoc(d)!].missing}</p>}
-                    <p className="text-micro text-fg-subtle flex items-center gap-1 mt-0.5">
-                      <Phone size={10} /> {d.phone}
-                    </p>
-                    {(() => {
-                      const p = (d.pauses ?? []).find((x) => isPausedOn(x, kigaliToday));
-                      return p ? <p className="text-micro font-semibold text-amber-700 dark:text-amber-300 mt-1">Paused · {PAUSE_REASON_LABEL[p.reason]}</p> : null;
-                    })()}
-                    {d.vehicle ? (
-                      <p className="text-micro text-brand-600 dark:text-brand-300 flex items-center gap-1 mt-1">
-                        <Car size={10} /> {d.vehicle.plate_number}
-                        {d.shift && <span className="text-fg-subtle">· {driverShiftShort(d)}</span>}
-                      </p>
-                    ) : (
-                      <p className="text-micro text-fg-subtle mt-1">
-                        {d.initial_deposit_paid && canSeeDriverPayments(profile) ? 'Deposit paid · no vehicle' : 'No vehicle'}
-                      </p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <PlateChip plate={d.vehicle?.plate_number} />
+                      {d.vehicle && <span className="text-caption text-fg-subtle">{driverShiftShort(d)}</span>}
+                    </div>
+                    {(m || paused || miss) && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {m && <StatusPill status={m.status} size="sm" />}
+                        {m && m.standing.owes > 0 && m.status.key !== 'ended' && <span className="text-caption font-semibold text-danger">{m.standing.owes.toLocaleString('en-US')}</span>}
+                        {paused && <span className="label border-done/30 bg-done-muted text-done !h-5 !text-micro"><PauseCircle size={11} /> {paused}</span>}
+                        {miss && <span className="label border-danger/30 bg-danger-muted text-danger !h-5 !text-micro"><FileSignature size={11} /> {LEGAL_KIND[miss].missing}</span>}
+                      </div>
                     )}
                   </div>
-                ))}
-                {byStage[stage.key].length === 0 && (
-                  <div className="h-12 rounded-lg border border-dashed border-line flex items-center justify-center">
-                    <p className="text-micro text-fg-subtle ">Empty</p>
-                  </div>
-                )}
-              </div>
+                );
+              })}
+              {byStage[stage.key].length === 0 && <p className="text-caption text-fg-subtle text-center py-4">Nobody</p>}
             </div>
           ))}
         </div>
       )}
 
-      {view === 'table' && (
-        <DataTable
-          pageKey="fleet-drivers"
-          noun="drivers"
-          rows={filtered}
-          keyFn={(d) => d.id}
-          emptyLabel="No drivers yet."
-          onRowClick={(d) => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
-          columns={[
-            { header: 'Name', render: (d) => { const m = missingDoc(d); return <Tagged tags={m && <Label tone="danger">{LEGAL_KIND[m].missing}</Label>}><EntityLink type="driver" id={d.id} label={d.full_name} /></Tagged>; } },
-            { header: 'Phone', render: (d) => d.phone },
-            {
-              header: 'Stage',
-              render: (d) => {
-                const s = STAGES.find((st) => st.key === effectiveStage(d))!;
-                return (
-                  <span className="text-micro font-medium px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${s.color}20`, color: s.color }}>
-                    {s.label}
-                  </span>
-                );
-              },
-            },
-            { header: 'Vehicle', render: (d) => d.vehicle ? <EntityLink type="car" id={d.vehicle.id} label={d.vehicle.plate_number} className="font-mono" /> : '—' },
-            { header: 'Model', render: (d) => (d.shift || d.model !== 'one_shift' ? driverTermsLabel(d) : 'One shift') },
-            // Money at a glance (MD, 26 Nov 2026) - never shown to the Call Center.
-            ...(showMoney ? [
-              { header: 'Payment', render: (d: Driver) => { const m = money.get(d.id); if (!m) return <span className="text-fg-subtle">—</span>;
-                return <span className="flex flex-col gap-0.5"><span className={`text-micro font-medium px-1.5 py-0.5 rounded-full w-fit ${DEPOSIT_TIER_STYLE[m.tier].badge}`}>{m.taken ? 'Car taken back' : m.label}</span>{m.owes > 0 && <span className="text-micro font-semibold text-red-600 dark:text-red-400">Owes {m.owes.toLocaleString()}</span>}</span>; } },
-              { header: 'Next payment', render: (d: Driver) => { const m = money.get(d.id); return m?.next ? <span className="text-caption whitespace-nowrap">{m.next}</span> : <span className="text-fg-subtle">—</span>; } },
-              { header: 'Last paid', render: (d: Driver) => { const m = money.get(d.id); return m?.last ? <span className="text-caption whitespace-nowrap">{formatDateLabelSafe(m.last.date)} · <b>{m.last.amount.toLocaleString()}</b>{m.last.pending ? <span className="text-amber-600"> · unconfirmed</span> : ''}</span> : <span className="text-fg-subtle text-caption">{m ? 'Never' : '—'}</span>; } },
-              { header: 'Pay day', render: (d: Driver) => <span className="text-caption">{d.payment_day ? d.payment_day[0].toUpperCase() + d.payment_day.slice(1, 3) : '—'}</span> },
-              { header: 'Latest call', render: (d: Driver) => { const m = money.get(d.id); return m?.call ? <span className={`text-caption block max-w-[260px] truncate ${toneClass(m.call.tone)}`} title={m.call.text}>{m.call.text}</span> : <span className="text-fg-subtle text-caption">—</span>; } },
-              { header: 'Lost (30d)', className: 'text-right', render: (d: Driver) => { const m = money.get(d.id); return m && m.lost30 ? <span className="text-caption font-semibold text-red-600 dark:text-red-400 tabular-nums">{m.lost30}</span> : <span className="text-fg-subtle text-caption">{m ? '0' : '—'}</span>; } },
-            ] : []),
-            {
-              header: '',
-              className: 'text-right',
-              render: (d) => (
-                <EntryActions
-                  onView={() => peek.open({ type: 'driver', id: d.id, label: d.full_name })}
-                  onEdit={() => setDriverDrawer({ driver: d, startEditing: true })}
-                  canEdit={canEdit}
-                />
-              ),
-            },
-          ]}
-        />
+      {/* Table */}
+      {view === 'table' && filtered.length > 0 && (
+        <>
+          <div className="card p-0 overflow-x-auto">
+            <table className="w-full border-collapse min-w-[980px]">
+              <thead>
+                <tr className="border-b border-line">
+                  <th className={th}>Driver</th>
+                  <th className={th}>Car</th>
+                  {showMoney && <><th className={th}>Payment</th><th className={th}>Next payment</th><th className={th}>Last paid</th><th className={th}>Latest call</th><th className={`${th} text-right`}>Lost · 30d</th></>}
+                  <th className={th}><span className="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line-muted">
+                {paged.rows.map((d) => {
+                  const m = money.get(d.id);
+                  const stage = stageOf(d);
+                  const miss = missingDoc(d);
+                  const paused = pausedReason(d);
+                  const ended = d.contract_status === 'ended';
+                  return (
+                    <tr key={d.id} onClick={() => open(d)} className={`cursor-pointer hover:bg-hover/60 transition-colors ${ended ? 'opacity-60' : ''}`}>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2.5 min-w-[220px]">
+                          <DriverAvatar name={d.full_name} status={m?.status} size={34} />
+                          <div className="min-w-0">
+                            <p className="text-body font-semibold truncate" onClick={(e) => e.stopPropagation()}><EntityLink type="driver" id={d.id} label={d.full_name} /></p>
+                            <p className="text-caption text-fg-subtle flex items-center gap-2 flex-wrap">
+                              <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: stage.color }} />{stage.label}</span>
+                              <span className="tabular-nums">{d.phone}</span>
+                            </p>
+                            {(miss || paused) && (
+                              <p className="flex gap-1 mt-1 flex-wrap">
+                                {paused && <span className="label border-done/30 bg-done-muted text-done !h-5 !text-micro"><PauseCircle size={11} /> {paused}</span>}
+                                {miss && <span className="label border-danger/30 bg-danger-muted text-danger !h-5 !text-micro"><FileSignature size={11} /> {LEGAL_KIND[miss].missing}</span>}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        <PlateChip plate={d.vehicle?.plate_number} />
+                        <p className="text-caption text-fg-subtle mt-1">{driverShiftShort(d) || 'One shift'}</p>
+                      </td>
+                      {showMoney && (
+                        <>
+                          <td className="px-3 py-2.5 whitespace-nowrap">
+                            {m ? (<>
+                              <StatusPill status={m.status} size="sm" />
+                              {m.standing.owes > 0 && !ended && <p className="text-caption mt-1">owes <Amount value={m.standing.owes} size="sm" tone="text-danger" /></p>}
+                              {m.standing.owes === 0 && m.standing.paidThrough && !ended && <p className="text-caption text-fg-subtle mt-1">paid to {formatDateLabelSafe(m.standing.paidThrough)}</p>}
+                            </>) : <span className="text-caption text-fg-subtle">Not started</span>}
+                          </td>
+                          <td className="px-3 py-2.5 whitespace-nowrap">
+                            {m && !ended && m.standing.hasStarted && m.standing.nextDueDate && m.standing.nextDueAmount > 0 ? (<>
+                              <p className="text-body font-medium tabular-nums">{m.standing.nextDueAmount.toLocaleString('en-US')} <span className="text-micro text-fg-subtle">RWF</span></p>
+                              <p className={`text-caption ${m.standing.nextDueDate <= today ? 'text-attention font-medium' : 'text-fg-subtle'}`}>by {formatDateLabelSafe(m.standing.nextDueDate)}{d.payment_day ? ` · usually ${d.payment_day.slice(0, 3)}` : ''}</p>
+                            </>) : <span className="text-caption text-fg-subtle">—</span>}
+                          </td>
+                          <td className="px-3 py-2.5 whitespace-nowrap">
+                            {m?.last ? (<>
+                              <p className="text-body font-medium">{formatDateLabelSafe(m.last.date)}</p>
+                              <p className="text-caption text-fg-subtle tabular-nums">{m.last.amount.toLocaleString('en-US')} RWF{m.last.pending ? <span className="text-attention"> · unconfirmed</span> : ''}</p>
+                            </>) : <span className="text-caption text-fg-subtle">{m ? 'Never' : '—'}</span>}
+                          </td>
+                          <td className="px-3 py-2.5 max-w-[280px]">
+                            {m?.taken ? <CallChip call={m.taken} line={callLine(m.taken, deposits, today)} />
+                              : m?.call ? <CallChip call={m.call} line={callLine(m.call, deposits, today)} />
+                              : <span className="text-caption text-fg-subtle">—</span>}
+                          </td>
+                          <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                            {m && !ended ? <LostBar n={m.lost30} /> : <span className="text-caption text-fg-subtle">—</span>}
+                          </td>
+                        </>
+                      )}
+                      <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                        <EntryActions onView={() => open(d)} onEdit={() => setDriverDrawer({ driver: d, startEditing: true })} canEdit={canEdit} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <Pager pager={paged.pager} noun="drivers" />
+        </>
       )}
 
-      {drivers.length === 0 && (
+      {filtered.length === 0 && (
         <div className="card p-12 text-center">
           <Truck size={26} className="text-fg-subtle mx-auto mb-2" />
-          <p className="text-small text-fg-subtle">No drivers yet.</p>
+          <p className="text-body text-fg-muted">{drivers.length ? 'No driver matches.' : 'No drivers yet.'}</p>
         </div>
       )}
 
-      {driverDrawer && (
-        <DriverDrawer
-          driver={driverDrawer.driver}
-          startEditing={driverDrawer.startEditing}
-          vehicles={vehicles}
-          drivers={drivers}
-          driverDocuments={driverDocuments}
-          canEdit={canEdit}
-          onClose={() => setDriverDrawer(null)}
-          onSaved={reload}
-        />
-      )}
+      {driverDrawer && <DriverDrawer driver={driverDrawer.driver} startEditing={driverDrawer.startEditing} vehicles={vehicles} drivers={drivers} driverDocuments={driverDocuments} canEdit={canEdit} onClose={() => setDriverDrawer(null)} onSaved={reload} />}
     </div>
+  );
+}
+
+// Working days lost in the last 30: the number and a small bar out of 30.
+function LostBar({ n }: { n: number }) {
+  const tone = n === 0 ? STATUS_STYLE.paid : n <= 3 ? STATUS_STYLE.pay_today : STATUS_STYLE.late;
+  return (
+    <span className="inline-flex items-center gap-2 justify-end">
+      <span className="w-14 h-1.5 rounded-full bg-inset overflow-hidden"><span className={`block h-full rounded-full ${tone.bar}`} style={{ width: `${Math.max(n ? 8 : 0, Math.min(100, (n / 30) * 100))}%` }} /></span>
+      <span className={`text-body font-semibold tabular-nums w-5 text-right ${n ? tone.text : 'text-fg-subtle'}`}>{n}</span>
+    </span>
   );
 }
