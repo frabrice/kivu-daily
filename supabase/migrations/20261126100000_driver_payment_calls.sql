@@ -44,6 +44,10 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
 $$;
 GRANT EXECUTE ON FUNCTION is_driver_payment_followup() TO authenticated;
 
+-- New tables aren't exposed to the API on their own in this project: grant explicitly.
+GRANT SELECT, INSERT, UPDATE, DELETE ON driver_payment_calls TO authenticated;
+GRANT ALL ON driver_payment_calls TO service_role;
+
 ALTER TABLE driver_payment_calls ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS dpc_select ON driver_payment_calls;
 CREATE POLICY dpc_select ON driver_payment_calls FOR SELECT TO authenticated USING (
@@ -98,6 +102,7 @@ BEGIN
   END LOOP;
 END $$;
 REVOKE EXECUTE ON FUNCTION flag_payment_promises() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION flag_payment_promises() TO service_role;
 REVOKE EXECUTE ON FUNCTION paid_since_call(uuid, timestamptz) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION paid_since_call(uuid, timestamptz) TO authenticated;
 
