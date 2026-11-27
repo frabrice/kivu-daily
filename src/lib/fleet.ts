@@ -154,11 +154,10 @@ export const STAGES: { key: DriverStage; label: string; color: string }[] = [
   { key: 'inactive', label: 'Inactive', color: '#6b7280' },
 ];
 
-// What Fleet can actually pick by hand - 'active' is excluded because
-// it's computed, never a manual choice. Used by DriverDrawer's stage
-// picker so the dropdown can't offer a value that would just be
-// silently overridden by effectiveStage() anyway.
-export const MANUAL_STAGES = STAGES.filter((s) => s.key !== 'active');
+// What Fleet can pick by hand. 'Active' is back in the list (MD, 27 Nov
+// 2026): a driver on a car can be made Active from the form even before
+// their first payment is recorded. Without a car it still shows as Ready.
+export const MANUAL_STAGES = STAGES;
 
 interface StageLike {
   stage: DriverStage;
@@ -177,7 +176,8 @@ interface StageLike {
 // 'ready' rather than trusting the stale stored value.
 export function effectiveStage<T extends StageLike>(driver: T): DriverStage {
   // A renewed driver whose only money is credit carried from the old contract counts too.
-  const isActive = driver.contract_status === 'active' && !!driver.vehicle_id && (driver.initial_deposit_paid || Number(driver.opening_credit ?? 0) > 0);
+  // Or Fleet made them Active by hand (MD, 27 Nov 2026) - still only while on a car.
+  const isActive = driver.contract_status === 'active' && !!driver.vehicle_id && (driver.initial_deposit_paid || Number(driver.opening_credit ?? 0) > 0 || driver.stage === 'active');
   if (isActive) return 'active';
   return driver.stage === 'active' ? 'ready' : driver.stage;
 }

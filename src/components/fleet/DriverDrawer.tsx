@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, SunMoon, BedDouble, FileText } from 'lucide-react';
-import { supabase, Driver, DriverStage, Vehicle, DriverModel, DriverRestDay, DriverDocument, PaymentDay } from '../../lib/supabase';
+import { Trash2, Flag, Pencil, CalendarDays, Sun, Moon, SunMoon, BedDouble, FileText, UserX, ArrowRightLeft } from 'lucide-react';
+import { supabase, Driver, DriverShift, DriverStage, Vehicle, DriverModel, DriverRestDay, DriverDocument, PaymentDay } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import { timeAgo, todayStr } from '../../lib/utils';
-import { MANUAL_STAGES, REST_DAYS, availableForReplacement, formatRwf, formatDateLabelSafe, shiftLabel, driverShiftShort, carSeats, seatFree, DRIVER_MODELS, modelWeekly } from '../../lib/fleet';
+import { effectiveStage, MANUAL_STAGES, REST_DAYS, availableForReplacement, formatRwf, formatDateLabelSafe, shiftLabel, driverShiftShort, carSeats, seatFree, DRIVER_MODELS, modelWeekly } from '../../lib/fleet';
 import Modal from '../Modal';
 import DateInput from '../DateInput';
 import SearchableSelect from '../SearchableSelect';
@@ -44,7 +44,7 @@ export default function DriverDrawer({
   const [initialDepositPaid, setInitialDepositPaid] = useState(driver?.initial_deposit_paid ?? false);
   const [initialDepositDate, setInitialDepositDate] = useState(driver?.initial_deposit_date ?? '');
   const [initialDepositAmount, setInitialDepositAmount] = useState(driver?.initial_deposit_amount ? String(driver.initial_deposit_amount) : String(modelWeekly(driver?.model ?? 'one_shift')));
-  const [stage, setStage] = useState<DriverStage>(driver?.stage === 'active' ? 'ready' : driver?.stage ?? 'applying');
+  const [stage, setStage] = useState<DriverStage>(driver ? effectiveStage(driver) : 'applying');
   const [notes, setNotes] = useState(driver?.notes ?? '');
   const [vehicleId, setVehicleId] = useState(driver?.vehicle_id ?? '');
   // One shift: 'day' or 'night' on a car; a whole-car model is always 'full'.
@@ -57,6 +57,12 @@ export default function DriverDrawer({
   const [error, setError] = useState('');
   const [flagOpen, setFlagOpen] = useState(false);
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
+  // A car whose seat is taken can still be picked (MD, 27 Nov 2026): Kivu
+  // Daily asks whether to replace the driver on it, and whether to move them
+  // to another car. If not moved, they stay with no car.
+  const [replacing, setReplacing] = useState<string[]>([]);
+  const [moves, setMoves] = useState<Record<string, { vehicleId: string; shift: DriverShift }>>({});
+  const [ask, setAsk] = useState<{ seat: DriverShift; ids: string[] } | null>(null);
   // A driver put on a car must have their signed and stamped contract on
   // file for this contract (MD, 15 Oct 2026). The id is fixed up front so
   // the file and the driver are saved under the same id.
@@ -72,15 +78,44 @@ export default function DriverDrawer({
 
   const replacementOptions = availableForReplacement(drivers, driver?.id).map((d) => ({ id: d.id, label: d.full_name, sublabel: d.phone }));
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
+  // The drivers as they will be after this save: anyone being replaced is
+  // off this car (on the car they are moved to, or on none).
+  const pool = drivers.map((d) => (replacing.includes(d.id) ? { ...d, vehicle_id: moves[d.id]?.vehicleId ?? null, shift: moves[d.id]?.shift ?? null } : d));
+  const byId = (id: string) => drivers.find((d) => d.id === id);
   // A car has a day seat and a night seat; a driver on both shifts takes the whole car.
-  const seats = vehicleId ? carSeats(vehicleId, drivers, driver?.id) : null;
-  const vehicleFull = !!selectedVehicle && !seatFree(vehicleId, 'day', drivers, driver?.id) && !seatFree(vehicleId, 'night', drivers, driver?.id);
+  const seats = vehicleId ? carSeats(vehicleId, pool, driver?.id) : null;
+  // Who sits where this driver wants to go.
+  const sittingOn = (seat: DriverShift): Driver[] => {
+    if (!seats) return [];
+    const list = seat === 'full' ? [seats.day, seats.night] : [seats[seat]];
+    return [...new Map(list.filter((d): d is Driver => !!d).map((d) => [d.id, d])).values()];
+  };
+  const pickCar = (id: string) => { setVehicleId(id); setShift(''); setReplacing([]); setMoves({}); setAsk(null); };
+  const confirmReplace = () => {
+    if (!ask) return;
+    setReplacing((r) => [...new Set([...r, ...ask.ids])]);
+    if (ask.seat !== 'full') setShift(ask.seat);
+    setAsk(null);
+  };
+  const carLabel = (v: Vehicle) => `${v.plate_number}${v.make || v.model ? ` — ${[v.make, v.model].filter(Boolean).join(' ')}` : ''}`;
+  // Cars a replaced driver can be moved to: a free seat that fits how they drive.
+  const moveOptions = (d: Driver) => vehicles.filter((v) => v.id !== vehicleId).flatMap((v) => (
+    d.shift === 'full'
+      ? (seatFree(v.id, 'full', pool, d.id) ? [{ value: `${v.id}|full`, label: `${carLabel(v)} (whole car)` }] : [])
+      : (['day', 'night'] as const).filter((sh) => seatFree(v.id, sh, pool, d.id)).map((sh) => ({ value: `${v.id}|${sh}`, label: `${carLabel(v)} · ${shiftLabel(sh)}` }))
+  ));
+  const setMove = (id: string, value: string) => setMoves((m) => {
+    const next = { ...m };
+    if (!value) delete next[id];
+    else { const [vid, sh] = value.split('|'); next[id] = { vehicleId: vid, shift: sh as DriverShift }; }
+    return next;
+  });
   const terms = DRIVER_MODELS[model];
   const weekly = modelWeekly(model);
   // Once a contract has started, its model changes with "Change model" on the
   // driver's page (or a renewal), so the days before keep their terms (rate_history).
   const modelLocked = !!driver?.start_date && driver.start_date <= todayStr();
-  const wholeCarFree = !!vehicleId && seatFree(vehicleId, 'full', drivers, driver?.id);
+  const wholeCarFree = !!vehicleId && seatFree(vehicleId, 'full', pool, driver?.id);
   const pickModel = (m: DriverModel) => {
     // Keep the upfront amount in step with the model unless someone typed their own.
     if (!initialDepositAmount || (Object.keys(DRIVER_MODELS) as DriverModel[]).some((k) => String(modelWeekly(k)) === initialDepositAmount)) setInitialDepositAmount(String(modelWeekly(m)));
@@ -109,6 +144,10 @@ export default function DriverDrawer({
       setError('Every driver on this model must be assigned a weekly rest day.');
       return;
     }
+    if (stage === 'active' && !vehicleId) {
+      setError('Pick their car to make them Active. A driver without a car shows as Ready.');
+      return;
+    }
     if (withContract) {
       const cErr = draftError('driver_contract', contract);
       if (cErr) { setError(cErr); return; }
@@ -117,6 +156,19 @@ export default function DriverDrawer({
     setError('');
     const up = withContract ? await uploadDraft('driver_contract', driverId, contract) : null;
     if (up && 'error' in up) { setSaving(false); setError(up.error); return; }
+    // First free the seat: whoever is being replaced moves to the car picked for them, or to none.
+    for (const id of replacing) {
+      const d = byId(id);
+      if (!d || d.vehicle_id !== vehicleId) continue;
+      const to = moves[id];
+      const { error: mErr } = await supabase.from('drivers').update({
+        vehicle_id: to?.vehicleId ?? null,
+        shift: to?.shift ?? null,
+        ...(!to && d.stage === 'active' ? { stage: 'ready' } : {}),
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+      if (mErr) { setSaving(false); setError(`Couldn't take ${d.full_name} off the car: ${mErr.message}`); return; }
+    }
     const payload = {
       full_name: fullName.trim(),
       phone: phone.trim(),
@@ -206,7 +258,11 @@ export default function DriverDrawer({
           <select value={stage} onChange={(e) => setStage(e.target.value as DriverStage)} disabled={!editing} className="input">
             {MANUAL_STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
-          <p className="text-micro text-fg-subtle mt-1">Active isn't picked here — it happens automatically once this driver has a vehicle and a paid deposit.</p>
+          <p className={`text-micro mt-1 ${stage === 'active' && !vehicleId ? 'text-attention' : 'text-fg-subtle'}`}>
+            {stage === 'active'
+              ? (vehicleId ? 'Active: on the car below and driving.' : 'To be Active they need a car — pick it under Assigned Vehicle.')
+              : 'A driver also becomes Active on their own once they have a car and a paid deposit.'}
+          </p>
         </div>
 
         {!driver && (
@@ -307,16 +363,16 @@ export default function DriverDrawer({
 
         <div>
           <label className="block text-caption font-medium mb-1.5 text-fg-muted">Assigned Vehicle</label>
-          <select value={vehicleId} onChange={(e) => { setVehicleId(e.target.value); setShift(''); }} disabled={!editing} className="input">
+          <select value={vehicleId} onChange={(e) => pickCar(e.target.value)} disabled={!editing} className="input">
             <option value="">No vehicle assigned</option>
             {vehicles.map((v) => {
               const others = drivers.filter((d) => d.vehicle_id === v.id && d.id !== driver?.id && d.contract_status === 'active');
               const full = !seatFree(v.id, 'day', drivers, driver?.id) && !seatFree(v.id, 'night', drivers, driver?.id) && v.id !== driver?.vehicle_id;
               return (
-                <option key={v.id} value={v.id} disabled={full}>
-                  {v.plate_number}{v.make || v.model ? ` — ${[v.make, v.model].filter(Boolean).join(' ')}` : ''}
+                <option key={v.id} value={v.id}>
+                  {carLabel(v)}
                   {others.length > 0 ? ` (${others.map((d) => `${d.full_name}: ${driverShiftShort(d)}`).join(', ')})` : ''}
-                  {full ? ' — full' : ''}
+                  {full ? ' — taken' : ''}
                 </option>
               );
             })}
@@ -335,30 +391,71 @@ export default function DriverDrawer({
                 </p>
               )}
               {terms.wholeCar ? (
-                <p className={`text-micro flex items-center gap-1.5 ${wholeCarFree ? 'text-fg-muted' : 'text-danger'}`}>
-                  <SunMoon size={12} />
-                  {wholeCarFree
-                    ? `${terms.label}: has this car alone, day and night. No other driver can be on it.`
-                    : `${terms.label} needs the car to itself: ${(seats?.full ?? seats?.day ?? seats?.night)?.full_name ?? 'another driver'} is on it.`}
-                </p>
+                <div className="space-y-1.5">
+                  <p className={`text-micro flex items-center gap-1.5 ${wholeCarFree ? 'text-fg-muted' : 'text-danger'}`}>
+                    <SunMoon size={12} />
+                    {wholeCarFree
+                      ? `${terms.label}: has this car alone, day and night. No other driver can be on it.`
+                      : `${terms.label} needs the car to itself: ${sittingOn('full').map((d) => d.full_name).join(' and ')} ${sittingOn('full').length > 1 ? 'are' : 'is'} on it.`}
+                  </p>
+                  {!wholeCarFree && editing && !ask && (
+                    <button type="button" onClick={() => setAsk({ seat: 'full', ids: sittingOn('full').map((d) => d.id) })} className="btn-secondary text-caption">
+                      <ArrowRightLeft size={12} /> Replace {sittingOn('full').map((d) => d.full_name).join(' and ')}
+                    </button>
+                  )}
+                </div>
               ) : (
                 <div>
                   <p className="text-micro font-medium text-fg-muted mb-1">Shift</p>
                   <div className="grid grid-cols-2 gap-2">
                     {(['day', 'night'] as const).map((s) => {
-                      const free = seatFree(vehicleId, s, drivers, driver?.id);
+                      const free = seatFree(vehicleId, s, pool, driver?.id);
                       const taken = seats?.full ?? seats?.[s];
                       return (
-                        <button key={s} type="button" disabled={!editing || !free} onClick={() => setShift(s)}
-                          className={`p-2 rounded-lg border text-left text-caption disabled:opacity-40 disabled:cursor-not-allowed ${shift === s ? 'border-brand bg-brand/10' : 'border-line '}`}>
+                        <button key={s} type="button" disabled={!editing}
+                          onClick={() => (free ? setShift(s) : setAsk({ seat: s, ids: sittingOn(s).map((d) => d.id) }))}
+                          className={`p-2 rounded-lg border text-left text-caption disabled:cursor-not-allowed ${shift === s ? 'border-brand bg-brand/10' : free ? 'border-line' : 'border-dashed border-line text-fg-muted'}`}>
                           <span className="flex items-center gap-1.5 font-medium">{s === 'day' ? <Sun size={12} /> : <Moon size={12} />}{shiftLabel(s)}</span>
-                          <span className="block text-micro text-fg-subtle mt-0.5">{!free && taken ? taken.full_name : `${formatRwf(weekly)}/week`}</span>
+                          <span className="block text-micro text-fg-subtle mt-0.5">{!free && taken ? `${taken.full_name} · tap to replace` : `${formatRwf(weekly)}/week`}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
               )}
+
+              {ask && (
+                <div className="p-2.5 rounded-lg border border-attention/40 bg-attention-muted space-y-2">
+                  <p className="text-caption">
+                    <b>{ask.ids.map((id) => byId(id)?.full_name).join(' and ')}</b> {ask.ids.length > 1 ? 'are' : 'is'} on {selectedVehicle.plate_number}
+                    {ask.seat === 'full' ? '' : ` (${shiftLabel(ask.seat).toLowerCase()})`}. Replace them with {fullName.trim() || 'this driver'}?
+                  </p>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={confirmReplace} className="btn-primary text-caption">Yes, replace</button>
+                    <button type="button" onClick={() => setAsk(null)} className="btn-ghost text-caption">No</button>
+                  </div>
+                </div>
+              )}
+
+              {replacing.map((id) => {
+                const d = byId(id);
+                if (!d) return null;
+                const opts = moveOptions(d);
+                const cur = moves[id] ? `${moves[id].vehicleId}|${moves[id].shift}` : '';
+                return (
+                  <div key={id} className="p-2.5 rounded-lg border border-line bg-surface space-y-1.5">
+                    <p className="text-caption flex items-center gap-1.5"><UserX size={12} className="text-attention" /> <b>{d.full_name}</b> comes off {selectedVehicle.plate_number}. Give them another car?</p>
+                    <select value={cur} onChange={(e) => setMove(id, e.target.value)} className="input">
+                      <option value="">No — leave {d.full_name.split(' ')[0]} without a car</option>
+                      {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <p className="text-micro text-fg-subtle">
+                      {opts.length === 0 ? 'No other car has a free seat for them right now.' : cur ? 'They move when you save.' : 'Their contract keeps running; they show as Ready until they get a car.'}
+                      {' '}<button type="button" onClick={() => { setReplacing((r) => r.filter((x) => x !== id)); setMove(id, ''); setShift(''); }} className="text-brand-600 dark:text-brand-300 hover:underline">Undo</button>
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -400,7 +497,7 @@ export default function DriverDrawer({
             ) : <span />}
             <div className="flex gap-2">
               <button onClick={() => (driver ? setEditing(false) : onClose())} className="btn-ghost">Cancel</button>
-              <button onClick={save} disabled={saving || !fullName.trim() || !phone.trim() || vehicleFull || (initialDepositPaid && (!initialDepositDate || !Number(initialDepositAmount))) || (terms.restDay && !restDay)} className="btn-primary disabled:opacity-50">
+              <button onClick={save} disabled={saving || !!ask || !fullName.trim() || !phone.trim() || (!!vehicleId && terms.wholeCar && !wholeCarFree) ||(initialDepositPaid && (!initialDepositDate || !Number(initialDepositAmount))) || (terms.restDay && !restDay)} className="btn-primary disabled:opacity-50">
                 {saving ? 'Saving…' : driver ? 'Save Changes' : 'Add Driver'}
               </button>
             </div>

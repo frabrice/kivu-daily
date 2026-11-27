@@ -103,11 +103,10 @@ export interface Department {
   created_at: string;
 }
 
-// 'active' is never stored - it's computed by effectiveStage() in
-// lib/fleet.ts from vehicle_id + initial_deposit_paid + contract_status.
-// Included here because that's still a value driver.stage can display as
-// once computed, even though the DB CHECK constraint no longer allows
-// writing it directly.
+// 'active' is worked out by effectiveStage() in lib/fleet.ts from
+// vehicle_id + initial_deposit_paid + contract_status, and since 27 Nov
+// 2026 can also be stored when Fleet picks it by hand (counts only while
+// the driver is on a car).
 export type DriverStage = 'applying' | 'raw' | 'ready' | 'active' | 'flagged' | 'inactive';
 export type RuraLicenseStatus = 'pending' | 'provided';
 // 'full' = the whole car: both shifts, or Solo car (see DriverModel).
