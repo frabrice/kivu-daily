@@ -18,6 +18,8 @@ const STATUS_COLOR: Record<MoneyStatusKey, string> = {
   taken: RED, late: RED, pay_today: ORANGE_TXT, due_soon: TEAL, paid: GREEN_TXT, paused: VIOLET_TXT, ended: MUTED, not_started: MUTED,
 };
 
+// Ended contracts are listed for this many days after they end.
+const ENDED_DAYS = 30;
 const rwf = (n: number) => `${Math.round(n).toLocaleString('en-US')} RWF`;
 const dayLong = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const dayShort = (d: string | null | undefined) => (d ? new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '—');
@@ -56,13 +58,22 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
   const now = new Date();
   const today = kigaliToday();
   const yesterday = addDays(today, -1);
-  const [dr, dep, pr, pc, logo] = await Promise.all([
+  const endedSince = addDays(today, -ENDED_DAYS);
+  const [dr, dep, pr, pc, logo, ev, cars, rv] = await Promise.all([
     supabase.from('drivers').select('*, vehicle:vehicles(plate_number), pauses:driver_pauses(*)'),
     supabase.from('driver_deposits').select('*'),
     supabase.from('profiles').select('id, full_name'),
     supabase.from('driver_payment_calls').select('*, author:profiles!driver_payment_calls_created_by_fkey(full_name)').order('happened_at', { ascending: false }).limit(2000),
     smallLogo(),
+    // Contracts that ended recently (MD, 27 Nov 2026), and the car each was on last.
+    supabase.from('driver_contract_events').select('*').eq('event_type', 'ended').gte('event_date', endedSince).order('event_date', { ascending: false }),
+    supabase.from('driver_car_assignments').select('driver_id, from_date, vehicle:vehicles(plate_number)').order('from_date', { ascending: false }),
+    supabase.from('driver_money_reviews').select('driver_id, outcome, created_at').order('created_at', { ascending: false }),
   ]);
+  // Confirmed terminated in Driver Adjust: their money is closed (nothing chased or changed any more).
+  const latestReview = new Map<string, string>();
+  for (const r of (rv.data ?? []) as { driver_id: string; outcome: string }[]) if (!latestReview.has(r.driver_id)) latestReview.set(r.driver_id, r.outcome);
+  const moneyClosed = (driverId: string) => latestReview.get(driverId) === 'terminated';
   if (dr.error) throw new Error(dr.error.message);
   if (dep.error) throw new Error(dep.error.message);
   const drivers = (dr.data as Driver[]) ?? [];
@@ -114,6 +125,50 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
 
   const generatedAt = `${dayLong(today)} at ${timeOf(now.toISOString())} (Kigali time)`;
 
+  // ---- Contracts ended in the last ENDED_DAYS days: when, why, and what they still owe
+  type EndEvent = { id: string; driver_id: string; event_date: string; reason: string; details: string | null; meta: Record<string, unknown> | null };
+  const lastCarOf = new Map<string, string>();
+  for (const a of (cars.data ?? []) as unknown as { driver_id: string; vehicle: { plate_number: string } | null }[]) {
+    if (!lastCarOf.has(a.driver_id) && a.vehicle?.plate_number) lastCarOf.set(a.driver_id, a.vehicle.plate_number);
+  }
+  const seenEnded = new Set<string>();
+  const ended = ((ev.data ?? []) as EndEvent[]).filter((e) => {
+    const d = driverOf.get(e.driver_id);
+    if (!d || d.contract_status !== 'ended' || seenEnded.has(e.driver_id)) return false; // still ended, latest end only
+    seenEnded.add(e.driver_id);
+    return true;
+  }).map((e) => {
+    const d = driverOf.get(e.driver_id)!;
+    const owedAtEnd = Number(e.meta?.owed ?? 0);
+    const paidAfter = deposits.filter((x) => x.driver_id === d.id && x.paid_date > e.event_date).reduce((s, x) => s + Number(x.amount), 0);
+    const finesUnpaid = Number(e.meta?.fines_unpaid ?? 0);
+    const decided = String(e.meta?.decided_by ?? '');
+    const closed = moneyClosed(d.id);
+    return {
+      d, e, plate: d.vehicle?.plate_number ?? lastCarOf.get(d.id) ?? '—', closed,
+      stillOwes: closed ? 0 : Math.max(owedAtEnd - paidAfter, 0), owedAtEnd, paidAfter, finesUnpaid,
+      decided: decided === 'driver' ? 'The driver left' : decided === 'mutual' ? 'Agreed together' : 'Kivu Ride ended it',
+      paidThrough: (e.meta?.paid_through as string | null) ?? null,
+    };
+  });
+  const endedOwed = ended.reduce((s, x) => s + x.stillOwes, 0);
+  const endedOpen = ended.filter((x) => !x.closed);
+  const endedClosed = ended.filter((x) => x.closed);
+  const endedTable = (list: typeof ended) => list.length ? table(['Driver and car', 'Ended', 'Why', 'Money at the end'], list.map((x) => [
+    { stack: [{ text: x.d.full_name, bold: true, fontSize: 8.5 }, { text: x.plate, fontSize: 7.5, color: MUTED }] },
+    { stack: [{ text: dayShort(x.e.event_date), fontSize: 8.5 }, { text: x.decided, fontSize: 7.5, color: MUTED }] },
+    { stack: [{ text: x.e.reason, fontSize: 8 }, ...(x.e.details ? [{ text: x.e.details, fontSize: 7.5, color: MUTED }] : [])] },
+    x.closed ? { stack: [
+      { text: 'Money closed', bold: true, fontSize: 8.5, color: MUTED },
+      { text: `${x.owedAtEnd > 0 ? `${rwf(x.owedAtEnd)} on record when it ended — not chased. ` : ''}Confirmed terminated in Driver Adjust.`, fontSize: 7.5, color: MUTED },
+    ] } : { stack: [
+      x.stillOwes > 0
+        ? { text: `Still owes ${rwf(x.stillOwes)}`, bold: true, fontSize: 8.5, color: RED }
+        : { text: x.owedAtEnd > 0 ? 'Paid what was owed' : 'Owed nothing', bold: true, fontSize: 8.5, color: GREEN_TXT },
+      { text: [x.owedAtEnd > 0 ? `Owed ${rwf(x.owedAtEnd)} when it ended` : null, x.paidAfter > 0 ? `paid ${rwf(x.paidAfter)} since` : null, x.paidThrough ? `paid until ${dayShort(x.paidThrough)}` : null, x.finesUnpaid > 0 ? `fines unpaid ${rwf(x.finesUnpaid)}` : null].filter(Boolean).join(' · ') || '—', fontSize: 7.5, color: MUTED },
+    ] },
+  ]), { widths: [110, 78, '*', 150] }) : null;
+
   // ---- The status table of one group
   const groupTable = (rs: typeof rows) => table(['Driver and car', 'Where they stand, in simple words', 'Last payment', 'Latest call'], rs.map((r) => [
     { stack: [{ text: r.d.full_name, bold: true, fontSize: 8.5, color: INK }, { text: `${r.d.vehicle?.plate_number ?? '—'} · ${driverShiftShort(r.d) || 'One shift'}`, fontSize: 7.5, color: MUTED }] },
@@ -150,7 +205,8 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
       { text: `Of the ${started.length} drivers on the road, ${paidUp} are paid up right now. ` },
       ...(lateCount ? [{ text: `${plural(lateCount, 'driver')} owe ${rwf(lateOwed)} for days already driven`, bold: true, color: RED }, { text: count('taken') ? `, ${count('taken')} of them with the car taken back. ` : '. ' }] : [{ text: 'Nobody owes money for days already driven. ' }]),
       ...(count('pay_today') ? [{ text: `${plural(count('pay_today'), 'more driver')} must still pay ${rwf(todayOwed)} for today. `, color: ORANGE_TXT }] : []),
-      ...(count('due_soon') ? [{ text: `${plural(count('due_soon'), 'driver')} must pay today or tomorrow for the next day.` }] : []),
+      ...(count('due_soon') ? [{ text: `${plural(count('due_soon'), 'driver')} must pay today or tomorrow for the next day. ` }] : []),
+      ...(ended.length ? [{ text: `${plural(ended.length, 'contract')} ended in the last ${ENDED_DAYS} days${endedClosed.length ? ` (${endedClosed.length} closed in Driver Adjust)` : ''}` }, { text: endedOwed ? `; the others still owe ${rwf(endedOwed)}.` : '.', color: endedOwed ? RED : INK }] : []),
     ]),
     table(['Group', 'Drivers', 'Owed'], GROUPS.filter((g) => count(g.key)).map((g) => [
       { text: g.title, color: STATUS_COLOR[g.key], bold: true, fontSize: 8.5 }, String(count(g.key)),
@@ -185,6 +241,19 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
       ];
     }),
 
+    { stack: [
+      h1(`Contracts ended (last ${ENDED_DAYS} days)`, '5'),
+      para(ended.length
+        ? `${plural(ended.length, 'driver')} stopped in the last ${ENDED_DAYS} days. They no longer drive for us, but what they still owe is shown so it can be collected.${endedOwed ? ` Together they still owe ${rwf(endedOwed)}.` : ''}`
+        : `No driver stopped in the last ${ENDED_DAYS} days.`),
+      ...(endedOpen.length ? [endedTable(endedOpen)] : ended.length ? [] : [note(`No contract ended in the last ${ENDED_DAYS} days.`)]),
+      ...(endedClosed.length ? [
+        h2(`Confirmed terminated in Driver Adjust (${endedClosed.length})`),
+        note('Their money was closed when the termination was confirmed: nothing is chased, added or corrected any more. The amount shown is only what the system had on record when the contract ended.'),
+        endedTable(endedClosed),
+      ] : []),
+    ] },
+
     { unbreakable: true, stack: [
       h2('How to read this report'),
       table(['Word', 'What it means'], [
@@ -194,6 +263,7 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
         ['Owes', 'Working days already driven (or today) that are not paid.'],
         ['Not paid', 'A working day ended unpaid: the day is lost and the car is taken back until they pay.'],
         ['Latest call', 'The last conversation recorded about money: a promise (with its time), no answer, refused, or the car taken back.'],
+        ['Contract ended', 'The driver stopped. "Still owes" = what they owed for days driven when it ended, minus anything paid since.'],
       ], { widths: [70, '*'] }),
     ] },
   ];

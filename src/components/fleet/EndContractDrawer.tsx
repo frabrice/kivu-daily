@@ -31,7 +31,9 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
 
   const isOther = reasonKey === 'other';
   const finalReason = isOther ? otherReason.trim() : CONTRACT_END_REASONS.find((r) => r.key === reasonKey)?.label ?? '';
-  const letterError = draftError('driver_termination_letter', letter);
+  // The letter is optional (MD, 27 Nov 2026): the end date and the reason are
+  // enough. Without it, the letter shows under Admin -> Missing until added.
+  const letterError = letter.file ? draftError('driver_termination_letter', letter) : null;
   const canContinue = !!reasonKey && !!eventDate && (!isOther || !!otherReason.trim()) && !letterError;
   const myDeposits = useMemo(() => deposits.filter((d) => d.driver_id === driver.id), [deposits, driver.id]);
   const settle = useMemo(() => contractSettlement(driver, myDeposits, eventDate), [driver, myDeposits, eventDate]);
@@ -41,17 +43,19 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
     if (!canContinue) return;
     setSaving(true);
     setError('');
-    // The letter is uploaded first, then the contract ends and the letter is
-    // recorded in one step - one can't be saved without the other.
-    const up = await uploadDraft('driver_termination_letter', driver.id, letter);
-    if ('error' in up) { setSaving(false); setError(up.error); return; }
-    const { error: err } = await supabase.rpc('end_driver_contract_with_letter', {
-      doc: up.doc,
-      p: {
-        driver_id: driver.id, event_date: eventDate, reason_key: reasonKey, reason: finalReason, details: details.trim(),
-        meta: { decided_by: decidedBy, can_return: canReturn, owed: settle.owes, credit: settle.credit, paid_through: settle.paidThrough, fines_unpaid: finesUnpaid },
-      },
-    });
+    const p = {
+      driver_id: driver.id, event_date: eventDate, reason_key: reasonKey, reason: finalReason, details: details.trim(),
+      meta: { decided_by: decidedBy, can_return: canReturn, owed: settle.owes, credit: settle.credit, paid_through: settle.paidThrough, fines_unpaid: finesUnpaid },
+    };
+    let err: { message: string } | null = null;
+    if (letter.file) {
+      // With a letter: uploaded first, then the contract ends and the letter is recorded in one step.
+      const up = await uploadDraft('driver_termination_letter', driver.id, letter);
+      if ('error' in up) { setSaving(false); setError(up.error); return; }
+      ({ error: err } = await supabase.rpc('end_driver_contract_with_letter', { doc: up.doc, p }));
+    } else {
+      ({ error: err } = await supabase.rpc('end_driver_contract', { p }));
+    }
     setSaving(false);
     if (err) { setError(err.message); return; }
     // Also out of the Kivu Ride app: off the car and out of the fleet company,
@@ -111,7 +115,7 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
             <span className="block text-caption font-medium mb-1.5 text-fg-muted">Notes (optional)</span>
             <textarea value={details} onChange={(e) => setDetails(e.target.value)} rows={2} className="input resize-none" placeholder={canReturn === 'conditions' ? 'Under what conditions can they come back?' : 'Anything else worth knowing'} />
           </label>
-          <LegalDocFields kind="driver_termination_letter" draft={letter} onChange={setLetter} />
+          <LegalDocFields kind="driver_termination_letter" draft={letter} onChange={setLetter} title="Termination letter (optional — if you don't have it now, it shows under Admin → Missing)" />
           {error && <div className="text-caption text-danger bg-danger-muted rounded-md px-3 py-2">{error}</div>}
           {!error && reasonKey && letterError && <p className="text-caption text-fg-muted">{letterError}</p>}
           <div className="flex justify-end gap-2 pt-3 border-t border-line-muted">
@@ -127,7 +131,7 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
             <p className="text-small text-fg-muted">Reason: {finalReason} · {CONTRACT_END_DECIDED_BY.find((d) => d.key === decidedBy)?.label} · Come back: {CONTRACT_CAN_RETURN.find((c) => c.key === canReturn)?.label}</p>
           </div>
           {money}
-          <p className="text-small">Termination letter: <b>{letter.file?.name}</b></p>
+          <p className="text-small">Termination letter: {letter.file ? <b>{letter.file.name}</b> : <span className="text-fg-muted">not attached — it will show under Admin → Missing</span>}</p>
           <p className="text-caption text-fg-muted">They move to Inactive and their seat on {driver.vehicle?.plate_number ?? 'their car'} becomes free for another driver. In the Kivu Ride app they are taken off the car and out of the fleet company (their account stays, so they get no requests). The contract can be renewed later from their page.</p>
           {error && <div className="text-caption text-danger bg-danger-muted rounded-md px-3 py-2">{error}</div>}
           <div className="flex justify-end gap-2 pt-3 border-t border-line-muted">
