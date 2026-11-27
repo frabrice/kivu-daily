@@ -1,5 +1,5 @@
 import { useState, useMemo, ReactNode } from 'react';
-import { Search, Wallet, PhoneCall, KeyRound, Info, ChevronDown, AlertOctagon, PhoneMissed, Clock, Handshake, Ban, CarFront, Banknote, X } from 'lucide-react';
+import { Search, Wallet, PhoneCall, KeyRound, Info, ChevronDown, AlertOctagon, PhoneMissed, Clock, Handshake, Ban, CarFront, Banknote, X, FileText, Loader2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFleetData, canEditFleet, computeDepositStanding, nextPaymentText, PAUSE_REASON_LABEL, driverShiftShort, formatDateLabelSafe } from '../../lib/fleet';
@@ -55,6 +55,24 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
   const [loggingDepositFor, setLoggingDepositFor] = useState<Driver | null>(null);
   const [calling, setCalling] = useState<{ driver: Driver; owes: number; mode: 'call' | 'take' | 'return' } | null>(null);
   const today = kigaliToday();
+
+  // The PDF report reads the database itself when pressed, so it is exact to that moment.
+  const [reporting, setReporting] = useState(false);
+  const [reportError, setReportError] = useState('');
+  const makeReport = async () => {
+    setReporting(true); setReportError('');
+    try {
+      const { buildDepositsReport } = await import('../../lib/depositsReportPdf');
+      const blob = await buildDepositsReport(profile?.full_name?.trim() ?? 'Kivu Daily');
+      const stamp = new Date(Date.now() + 2 * 3600_000).toISOString().slice(0, 16).replace('T', '-').replace(':', 'h');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `Kivu-Ride-Deposits-Report-${stamp}.pdf`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e) {
+      setReportError(e instanceof Error ? e.message : 'unknown error');
+    } finally { setReporting(false); }
+  };
 
   const allRows = useMemo(() => drivers.filter((d) => d.vehicle_id).map((d) => {
     const mine = deposits.filter((dep) => dep.driver_id === d.id);
@@ -128,9 +146,13 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search driver or plate" className="input !pl-8 w-full sm:w-60" aria-label="Search" />
           </label>
+          <button onClick={makeReport} disabled={reporting} className="btn-secondary whitespace-nowrap" title="Download a PDF: payments today and yesterday, and where every driver stands right now">
+            {reporting ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} {reporting ? 'Preparing…' : 'PDF report'}
+          </button>
           <ExportButton initial="payments" />
         </div>
       </div>
+      {reportError && <p className="text-caption text-danger -mt-3">Couldn't make the report: {reportError}</p>}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-body -mt-2">
         <span className="text-fg-muted">Paid up today <b className={paidUp < onRoad ? 'text-fg' : 'text-success'}>{paidUp}/{onRoad}</b></span>
         <span className="text-fg-muted">Collected in 7 days <b className="text-fg tabular-nums">{collected7.toLocaleString('en-US')} RWF</b></span>
