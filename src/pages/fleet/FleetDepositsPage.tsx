@@ -9,6 +9,8 @@ import { kigaliToday } from '../../lib/kigali';
 import { usePaymentCalls, callsOf, latestCall, carTaken, promiseState, callLine, lastPayment, canTakeCar, kigaliDayOf } from '../../lib/paymentCalls';
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import LogCallDrawer from '../../components/fleet/LogCallDrawer';
+import ReportAdditionsModal from '../../components/fleet/ReportAdditionsModal';
+import type { ReportAddition } from '../../lib/depositsReportPdf';
 import { moneyStatus, MoneyStatus, MoneyStatusKey, STATUS_STYLE, StatusPill, DriverAvatar, PlateChip, Amount, Field, CallChip, NotCalledChip } from '../../components/fleet/driverUi';
 import { EntityLink } from '../../os/EntityLink';
 import ExportButton from '../../components/fleet/ExportButton';
@@ -59,11 +61,16 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
   // The PDF report reads the database itself when pressed, so it is exact to that moment.
   const [reporting, setReporting] = useState(false);
   const [reportError, setReportError] = useState('');
-  const makeReport = async () => {
+  // Pressing "PDF report" first asks for additions (money from people not in the system yet).
+  const [askAdditions, setAskAdditions] = useState(false);
+  const [lastAdditions, setLastAdditions] = useState<ReportAddition[]>([]);
+  const makeReport = async (additions: ReportAddition[] = []) => {
     setReporting(true); setReportError('');
     try {
       const { buildDepositsReport } = await import('../../lib/depositsReportPdf');
-      const blob = await buildDepositsReport(profile?.full_name?.trim() ?? 'Kivu Daily');
+      const blob = await buildDepositsReport(profile?.full_name?.trim() ?? 'Kivu Daily', additions);
+      setLastAdditions(additions);
+      setAskAdditions(false);
       const stamp = new Date(Date.now() + 2 * 3600_000).toISOString().slice(0, 16).replace('T', '-').replace(':', 'h');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -146,7 +153,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search driver or plate" className="input !pl-8 w-full sm:w-60" aria-label="Search" />
           </label>
-          <button onClick={makeReport} disabled={reporting} className="btn-secondary whitespace-nowrap" title="Download a PDF: payments today and yesterday, and where every driver stands right now">
+          <button onClick={() => setAskAdditions(true)} disabled={reporting} className="btn-secondary whitespace-nowrap" title="Download a PDF: payments today and yesterday, and where every driver stands right now">
             {reporting ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} {reporting ? 'Preparing…' : 'PDF report'}
           </button>
           <ExportButton initial="payments" />
@@ -237,6 +244,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       )}
 
       {loggingDepositFor && <LogDepositDrawer driver={loggingDepositFor} deposits={deposits} onClose={() => setLoggingDepositFor(null)} onSaved={reload} />}
+      {askAdditions && <ReportAdditionsModal initial={lastAdditions} busy={reporting} onCancel={() => setAskAdditions(false)} onMake={(a) => makeReport(a)} />}
       {calling && <LogCallDrawer driver={calling.driver} owes={calling.owes} mode={calling.mode} canTake={canTake} onClose={() => setCalling(null)} onSaved={reloadCalls} />}
     </div>
   );

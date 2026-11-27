@@ -53,7 +53,13 @@ function plainWords(s: DepositStanding, key: MoneyStatusKey, taken: PaymentCall 
   }
 }
 
-export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
+// Money received from someone not (yet) in Kivu Daily as a driver on a car -
+// not registered, not on a car, not started - typed in when the report is
+// made (MD, 27 Nov 2026) so the report's totals cover all money received.
+// Report only: nothing is saved in Kivu Daily.
+export interface ReportAddition { name: string; amount: number; date: string; reason: string }
+
+export async function buildDepositsReport(preparedBy: string, additions: ReportAddition[] = []): Promise<Blob> {
   // ---- Read everything now
   const now = new Date();
   const today = kigaliToday();
@@ -100,6 +106,16 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
   const todayPays = paymentsOn(today);
   const yesterdayPays = paymentsOn(yesterday);
   const sum = (rows: DriverDeposit[]) => rows.reduce((s, x) => s + Number(x.amount), 0);
+  // Additions typed in for this report, counted with the day they were received.
+  const adds = additions.filter((a) => a.name.trim() && a.amount > 0).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  const addsOn = (day: string) => adds.filter((a) => a.date === day);
+  const addSum = (list: ReportAddition[]) => list.reduce((s, a) => s + a.amount, 0);
+  const paidOn = (day: string, sys: DriverDeposit[]) => sum(sys) + addSum(addsOn(day));
+  const countText = (sys: DriverDeposit[], day: string) => `${plural(sys.length, 'payment')}${addsOn(day).length ? ` + ${addsOn(day).length} added by hand` : ''}`;
+  const addsTable = adds.length ? table(['Name', 'Received on', 'Amount', 'Why not in the system yet'], [
+    ...adds.map((a) => [{ text: a.name.trim(), bold: true, fontSize: 8.5 }, dayShort(a.date), rwf(a.amount), a.reason.trim() || '—']),
+    [{ text: 'Total', bold: true, fontSize: 8.5 }, { text: plural(adds.length, 'payment'), fontSize: 8, color: MUTED }, { text: rwf(addSum(adds)), bold: true, fontSize: 8.5 }, ''],
+  ], { widths: [120, 70, 80, '*'], align: ['left', 'left', 'right', 'left'] }) : null;
 
   // ---- Every driver on a car and on contract, where they stand right now
   const rows = drivers.filter((d) => d.vehicle_id && d.contract_status === 'active').map((d) => {
@@ -194,14 +210,15 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
 
     h1('At a glance', '1'),
     kpiRow([
-      { label: 'Paid today', value: rwf(sum(todayPays)), sub: plural(todayPays.length, 'payment'), color: GREEN_TXT },
-      { label: 'Paid yesterday', value: rwf(sum(yesterdayPays)), sub: plural(yesterdayPays.length, 'payment') },
+      { label: 'Paid today', value: rwf(paidOn(today, todayPays)), sub: countText(todayPays, today), color: GREEN_TXT },
+      { label: 'Paid yesterday', value: rwf(paidOn(yesterday, yesterdayPays)), sub: countText(yesterdayPays, yesterday) },
       { label: 'Drivers paid up now', value: `${paidUp} / ${started.length}`, sub: started.length - paidUp ? `${started.length - paidUp} not paid up` : 'Everyone is paid up', color: paidUp < started.length ? RED : GREEN_TXT },
       { label: 'Owed now', value: rwf(owedTotal), sub: `${plural(owing.length, 'driver')}, today included`, color: owedTotal ? RED : NAVY },
     ]),
     para([
-      { text: `Today (${dayShort(today)}) ` }, { text: `${plural(todayPays.length, 'payment')} came in for ${rwf(sum(todayPays))}`, bold: true },
-      { text: `; yesterday (${dayShort(yesterday)}) ` }, { text: `${plural(yesterdayPays.length, 'payment')} for ${rwf(sum(yesterdayPays))}`, bold: true }, { text: '. ' },
+      { text: `Today (${dayShort(today)}) ` }, { text: `${countText(todayPays, today)} came in for ${rwf(paidOn(today, todayPays))}`, bold: true },
+      { text: `; yesterday (${dayShort(yesterday)}) ` }, { text: `${countText(yesterdayPays, yesterday)} for ${rwf(paidOn(yesterday, yesterdayPays))}`, bold: true }, { text: '. ' },
+      ...(adds.length ? [{ text: `This includes ${plural(adds.length, 'payment')} (${rwf(addSum(adds))}) from people not yet in Kivu Daily as drivers on a car — see "Money received, not yet in the system". ` }] : []),
       { text: `Of the ${started.length} drivers on the road, ${paidUp} are paid up right now. ` },
       ...(lateCount ? [{ text: `${plural(lateCount, 'driver')} owe ${rwf(lateOwed)} for days already driven`, bold: true, color: RED }, { text: count('taken') ? `, ${count('taken')} of them with the car taken back. ` : '. ' }] : [{ text: 'Nobody owes money for days already driven. ' }]),
       ...(count('pay_today') ? [{ text: `${plural(count('pay_today'), 'more driver')} must still pay ${rwf(todayOwed)} for today. `, color: ORANGE_TXT }] : []),
@@ -221,6 +238,13 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
     { text: dayLong(yesterday), fontSize: 9, color: MUTED, margin: [0, -6, 0, 6] },
     payTable(yesterdayPays),
     note('"Finance: Waiting" = logged by Fleet but not yet confirmed by Finance; it already counts for the driver.'),
+
+    // Heading, explanation and table stay on one page.
+    ...(addsTable ? [{ unbreakable: adds.length <= 15, stack: [
+      h2('Money received, not yet in the system'),
+      para('Payments from people who are not yet in Kivu Daily as a driver on a car (not registered, no car yet, or not started). They were added by hand for this report so the totals above cover all money received. They are not saved in Kivu Daily: register the driver and log the payment there.'),
+      addsTable,
+    ] }] : []),
 
     { text: '', pageBreak: 'before' },
     h1('Where every driver stands', '4'),
