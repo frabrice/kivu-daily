@@ -1,5 +1,5 @@
 import { useState, useMemo, ReactNode } from 'react';
-import { Search, Wallet, PhoneCall, KeyRound, Info, ChevronDown, AlertOctagon, PhoneMissed, Clock, Handshake, Ban, CarFront, Banknote, X, FileText, Loader2 } from 'lucide-react';
+import { Search, Wallet, PhoneCall, KeyRound, Info, ChevronDown, AlertOctagon, PhoneMissed, Clock, Handshake, Ban, CarFront, Banknote, X, FileText, Loader2, HandCoins } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../../lib/auth';
 import { useFleetData, canEditFleet, computeDepositStanding, nextPaymentText, PAUSE_REASON_LABEL, driverShiftShort, formatDateLabelSafe } from '../../lib/fleet';
@@ -10,7 +10,7 @@ import { usePaymentCalls, callsOf, latestCall, carTaken, promiseState, callLine,
 import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import LogCallDrawer from '../../components/fleet/LogCallDrawer';
 import ReportAdditionsModal from '../../components/fleet/ReportAdditionsModal';
-import type { ReportAddition } from '../../lib/depositsReportPdf';
+import { useOtherMoney } from '../../lib/otherMoney';
 import { moneyStatus, MoneyStatus, MoneyStatusKey, STATUS_STYLE, StatusPill, DriverAvatar, PlateChip, Amount, Field, CallChip, NotCalledChip } from '../../components/fleet/driverUi';
 import { EntityLink } from '../../os/EntityLink';
 import ExportButton from '../../components/fleet/ExportButton';
@@ -61,16 +61,16 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
   // The PDF report reads the database itself when pressed, so it is exact to that moment.
   const [reporting, setReporting] = useState(false);
   const [reportError, setReportError] = useState('');
-  // Pressing "PDF report" first asks for additions (money from people not in the system yet).
-  const [askAdditions, setAskAdditions] = useState(false);
-  const [lastAdditions, setLastAdditions] = useState<ReportAddition[]>([]);
-  const makeReport = async (additions: ReportAddition[] = []) => {
+  // Other money received (people not in the system yet): recorded with its
+  // own button, or when "PDF report" is pressed. Saved, and in every report.
+  const otherMoney = useOtherMoney();
+  const [otherMode, setOtherMode] = useState<'record' | 'report' | null>(null);
+  const makeReport = async () => {
     setReporting(true); setReportError('');
     try {
       const { buildDepositsReport } = await import('../../lib/depositsReportPdf');
-      const blob = await buildDepositsReport(profile?.full_name?.trim() ?? 'Kivu Daily', additions);
-      setLastAdditions(additions);
-      setAskAdditions(false);
+      const blob = await buildDepositsReport(profile?.full_name?.trim() ?? 'Kivu Daily');
+      setOtherMode(null);
       const stamp = new Date(Date.now() + 2 * 3600_000).toISOString().slice(0, 16).replace('T', '-').replace(':', 'h');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -113,6 +113,7 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
   const collected7 = deposits.filter((x) => x.paid_date > weekAgo).reduce((s, x) => s + Number(x.amount), 0);
   const pending = deposits.filter((x) => x.status === 'pending');
+  const otherWeek = otherMoney.items.filter((m) => m.received_on > weekAgo);
   const paidUp = live.filter((r) => r.standing.hasStarted && r.standing.isCleared).length;
   const onRoad = live.filter((r) => r.standing.hasStarted).length;
 
@@ -153,7 +154,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search driver or plate" className="input !pl-8 w-full sm:w-60" aria-label="Search" />
           </label>
-          <button onClick={() => setAskAdditions(true)} disabled={reporting} className="btn-secondary whitespace-nowrap" title="Download a PDF: payments today and yesterday, and where every driver stands right now">
+          {canTake && (
+            <button onClick={() => setOtherMode('record')} className="btn-secondary whitespace-nowrap" title="Money received from someone not in Kivu Daily as a driver on a car yet - kept and counted in every report">
+              <HandCoins size={14} /> Record other money
+            </button>
+          )}
+          <button onClick={() => (canTake ? setOtherMode('report') : makeReport())} disabled={reporting} className="btn-secondary whitespace-nowrap" title="Download a PDF: payments today and yesterday, and where every driver stands right now">
             {reporting ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} {reporting ? 'Preparing…' : 'PDF report'}
           </button>
           <ExportButton initial="payments" />
@@ -163,6 +169,9 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-body -mt-2">
         <span className="text-fg-muted">Paid up today <b className={paidUp < onRoad ? 'text-fg' : 'text-success'}>{paidUp}/{onRoad}</b></span>
         <span className="text-fg-muted">Collected in 7 days <b className="text-fg tabular-nums">{collected7.toLocaleString('en-US')} RWF</b></span>
+        {otherWeek.length > 0 && (
+          <button onClick={() => setOtherMode('record')} disabled={!canTake} className="text-fg-muted hover:text-fg disabled:hover:text-fg-muted">Other money in 7 days <b className="text-fg tabular-nums">{otherWeek.reduce((s, m) => s + Number(m.amount), 0).toLocaleString('en-US')} RWF</b><span className="text-fg-subtle"> · {otherWeek.length}</span></button>
+        )}
         <span className="text-fg-muted">Waiting for confirmation <b className={pending.length ? 'text-attention' : 'text-fg'}>{pending.length}</b>{pending.length ? <span className="text-fg-subtle"> · {pending.reduce((s, x) => s + Number(x.amount), 0).toLocaleString('en-US')} RWF</span> : null}</span>
       </div>
       {showRule && (
@@ -244,7 +253,10 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       )}
 
       {loggingDepositFor && <LogDepositDrawer driver={loggingDepositFor} deposits={deposits} onClose={() => setLoggingDepositFor(null)} onSaved={reload} />}
-      {askAdditions && <ReportAdditionsModal initial={lastAdditions} busy={reporting} onCancel={() => setAskAdditions(false)} onMake={(a) => makeReport(a)} />}
+      {otherMode && (
+        <ReportAdditionsModal mode={otherMode} recorded={otherMoney.items} profileId={profile?.id} isMd={profile?.role === 'managing_director'}
+          busy={reporting} onCancel={() => setOtherMode(null)} onSaved={otherMoney.reload} onMake={makeReport} />
+      )}
       {calling && <LogCallDrawer driver={calling.driver} owes={calling.owes} mode={calling.mode} canTake={canTake} onClose={() => setCalling(null)} onSaved={reloadCalls} />}
     </div>
   );
