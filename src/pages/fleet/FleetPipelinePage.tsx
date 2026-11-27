@@ -240,7 +240,7 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                 <tr className="border-b border-line">
                   <th className={th}>Driver</th>
                   <th className={th}>Car</th>
-                  {showMoney && <><th className={th}>Payment</th><th className={th}>Next payment</th><th className={th}>Last paid</th><th className={th}>Latest call</th><th className={`${th} text-right`}>Lost · 30d</th></>}
+                  {showMoney && <><th className={th}>Payment</th><th className={th}>Next payment</th><th className={th}>Last paid</th><th className={th}>Collateral</th><th className={th}>Latest call</th><th className={`${th} text-right`}>Lost · 30d</th></>}
                   <th className={th}><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
@@ -295,6 +295,12 @@ function FleetPipelinePageView({ data }: { data: ReturnType<typeof useFleetData>
                               <p className="text-body font-medium">{formatDateLabelSafe(m.last.date)}</p>
                               <p className="text-caption text-fg-subtle tabular-nums">{m.last.amount.toLocaleString('en-US')} RWF{m.last.pending ? <span className="text-attention"> · unconfirmed</span> : ''}</p>
                             </>) : <span className="text-caption text-fg-subtle">{m ? 'Never' : '—'}</span>}
+                          </td>
+                          <td className="px-3 py-2.5 whitespace-nowrap">
+                            {Number(d.collateral_amount ?? 0) > 0 ? (<>
+                              <p className="text-body font-medium tabular-nums">{Number(d.collateral_amount).toLocaleString('en-US')} <span className="text-micro text-fg-subtle">RWF</span></p>
+                              <p className="text-caption text-fg-subtle">{d.collateral_settled_on ? (Number(d.collateral_kept ?? 0) > 0 ? `${Number(d.collateral_kept).toLocaleString('en-US')} kept` : 'Given back') : d.collateral_date ? `Held · ${formatDateLabelSafe(d.collateral_date)}` : 'Held'}</p>
+                            </>) : <span className="text-caption text-fg-subtle">—</span>}
                           </td>
                           <td className="px-3 py-2.5 max-w-[280px]">
                             {m?.taken ? <CallChip call={m.taken} line={callLine(m.taken, deposits, today)} />

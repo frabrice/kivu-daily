@@ -149,7 +149,18 @@ export default function DriverEntity({ id, mode }: EntityViewProps) {
         { label: 'Started', value: driver.start_date ? formatDateLabelSafe(driver.start_date) : 'Not set' },
         { label: 'Rest day', value: restDay ? <span className="flex items-center gap-1"><BedDouble size={12} />{restDay}</span> : 'Not set' },
         { label: 'Usual pay day', value: driver.payment_day ? REST_DAYS.find((r) => r.key === driver.payment_day)?.label ?? driver.payment_day : 'Not set' },
-        { label: 'Initial deposit', value: driver.initial_deposit_paid ? `${rwf(driver.initial_deposit_amount ?? 0)}${driver.initial_deposit_date ? ` · ${formatDateLabelSafe(driver.initial_deposit_date)}` : ''}` : 'Not paid' },
+        { label: 'Initial deposit', value: driver.initial_deposit_paid ? `${rwf(driver.initial_deposit_amount ?? 0)}${driver.initial_deposit_date ? ` · ${formatDateLabelSafe(driver.initial_deposit_date)}` : ''}` : Number(driver.collateral_amount ?? 0) > 0 ? 'None (pays collateral)' : 'Not paid' },
+        // Collateral (MD, 27 Nov 2026): held, never counted as paying for days.
+        { label: 'Collateral', value: Number(driver.collateral_amount ?? 0) > 0 ? (
+          <span>
+            <b>{rwf(Number(driver.collateral_amount))}</b>{driver.collateral_date ? ` · ${formatDateLabelSafe(driver.collateral_date)}` : ''}
+            <span className="block text-caption text-fg-muted">
+              {driver.collateral_settled_on
+                ? `Settled ${formatDateLabelSafe(driver.collateral_settled_on)}: ${rwf(Number(driver.collateral_returned ?? 0))} given back${Number(driver.collateral_kept ?? 0) > 0 ? `, ${rwf(Number(driver.collateral_kept))} kept (${driver.collateral_kept_reason || 'no reason given'})` : ''}`
+                : 'Held — given back at the end if nothing is owed'}
+            </span>
+          </span>
+        ) : 'None' },
         { label: 'Notes', value: driver.notes },
       ]} />
     </Box>
