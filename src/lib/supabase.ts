@@ -219,6 +219,14 @@ export interface Driver {
   payments_from?: string | null;
   // Credit carried from the previous contract, counted as paid on start_date.
   opening_credit?: number | null;
+  // Collateral (MD, 27 Nov 2026): security money held, never counted as paying
+  // for days; given back at the end unless kept for debt, fines or damage.
+  collateral_amount?: number | null;
+  collateral_date?: string | null;
+  collateral_returned?: number | null;
+  collateral_kept?: number | null;
+  collateral_kept_reason?: string | null;
+  collateral_settled_on?: string | null;
   // Terms from each date within the current contract (model changes): rate, model and rest day.
   rate_history?: import('../../supabase/functions/_shared/depositRules').RateChange[] | null;
   // Adjust button entries (depositRules BalanceAdjustment).

@@ -223,6 +223,19 @@ export default function DriverProfilePage({
             </p>
           </div>
           )}
+          {showMoney && Number(driver.collateral_amount ?? 0) > 0 && (
+          <div className="card p-2.5 bg-inset ">
+            <p className="text-micro font-semibold uppercase tracking-wide text-fg-subtle mb-1 flex items-center gap-1"><Clock size={10} /> Collateral</p>
+            <p className="text-small font-medium">
+              {Number(driver.collateral_amount).toLocaleString()} RWF{driver.collateral_date ? ` · ${formatDateLabelSafe(driver.collateral_date)}` : ''}
+            </p>
+            <p className="text-micro text-fg-muted mt-0.5">
+              {driver.collateral_settled_on
+                ? `Settled ${formatDateLabelSafe(driver.collateral_settled_on)}: ${Number(driver.collateral_returned ?? 0).toLocaleString()} RWF given back${Number(driver.collateral_kept ?? 0) > 0 ? `, ${Number(driver.collateral_kept).toLocaleString()} RWF kept (${driver.collateral_kept_reason || 'no reason given'})` : ''}`
+                : 'Held — not counted as paying for days. Given back at the end if nothing is owed.'}
+            </p>
+          </div>
+          )}
         </div>
 
         {driver.notes && (

@@ -12,6 +12,7 @@ import VehicleDrawer from './VehicleDrawer';
 import DriverDocumentsSection from './DriverDocumentsSection';
 import { LegalDocFields } from '../legal/LegalDocFields';
 import { LegalDraft, draftError, emptyDraft, uploadDraft, useLegalDocs } from '../../lib/legalDocs';
+import { KIND_LABEL, OtherMoney, linkOtherMoney, nameMatch, useOtherMoney } from '../../lib/otherMoney';
 
 // Editing only - clicking a driver on the Pipeline now opens the full
 // DriverProfilePage instead of a view mode here; this drawer's only job
@@ -53,6 +54,16 @@ export default function DriverDrawer({
   const [restDay, setRestDay] = useState<DriverRestDay | ''>(driver?.rest_day ?? '');
   const [paymentDay, setPaymentDay] = useState<PaymentDay | ''>(driver?.payment_day ?? '');
   const [replacedDriverId, setReplacedDriverId] = useState(driver?.replaced_driver_id ?? '');
+  // Collateral (MD, 27 Nov 2026): security money held, never counted as paying for days.
+  const [collateralAmount, setCollateralAmount] = useState(driver?.collateral_amount ? String(driver.collateral_amount) : '');
+  const [collateralDate, setCollateralDate] = useState(driver?.collateral_date ?? '');
+  // Money already recorded under Deposits -> Record other money for this
+  // person: connected here so it is counted once (as their start deposit,
+  // a payment, or their collateral), never again as "not in the system".
+  const { items: otherMoney } = useOtherMoney();
+  const [picked, setPicked] = useState<string[]>([]);
+  const [showAllWaiting, setShowAllWaiting] = useState(false);
+  const [depositMethod, setDepositMethod] = useState<'momo' | 'bank'>('momo');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [flagOpen, setFlagOpen] = useState(false);
@@ -122,8 +133,41 @@ export default function DriverDrawer({
     setModel(m);
   };
 
+  const waiting = otherMoney.filter((m) => !m.driver_id);
+  const scored = waiting.map((m) => ({ m, score: fullName.trim() ? nameMatch(m.payer_name, fullName) : 0 }))
+    .sort((a, b) => b.score - a.score || b.m.received_on.localeCompare(a.m.received_on));
+  const matches = scored.filter((x) => x.score > 0 || picked.includes(x.m.id));
+  const shownWaiting = showAllWaiting ? scored : matches;
+  const pickedRows = waiting.filter((m) => picked.includes(m.id));
+  const pickedDeposits = pickedRows.filter((m) => m.kind === 'deposit');
+  const pickedCollateral = pickedRows.filter((m) => m.kind === 'collateral');
+  const total = (rs: OtherMoney[]) => rs.reduce((t, m) => t + Number(m.amount), 0);
+  const earliest = (rs: OtherMoney[]) => rs.map((m) => m.received_on).sort()[0] ?? '';
+  // A driver who already has a start deposit saved: connected deposits are logged as payments instead.
+  const depositsAsPayments = !!driver?.initial_deposit_paid;
+  const togglePick = (id: string) => {
+    const next = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id];
+    setPicked(next);
+    const rows = waiting.filter((m) => next.includes(m.id));
+    const dep = rows.filter((m) => m.kind === 'deposit');
+    const col = rows.filter((m) => m.kind === 'collateral');
+    const m = waiting.find((x) => x.id === id);
+    if (m?.kind === 'deposit' && !depositsAsPayments) {
+      setInitialDepositPaid(dep.length > 0);
+      setInitialDepositAmount(dep.length ? String(total(dep)) : String(modelWeekly(model)));
+      setInitialDepositDate(dep.length ? earliest(dep) : '');
+    }
+    if (m?.kind === 'collateral') {
+      const had = Number(driver?.collateral_amount ?? 0);
+      setCollateralAmount(col.length ? String(total(col) + had) : (had ? String(had) : ''));
+      const first = [earliest(col), driver?.collateral_date ?? ''].filter(Boolean).sort()[0] ?? '';
+      setCollateralDate(col.length ? first : (driver?.collateral_date ?? ''));
+    }
+  };
+
   const save = async () => {
     if (!fullName.trim() || !phone.trim()) return;
+    if (Number(collateralAmount) > 0 && !collateralDate) { setError('Enter the date the collateral was received.'); return; }
     if (vehicleId && !terms.wholeCar && !shift) {
       setError('Pick the day or the night shift for this driver on the car.');
       return;
@@ -183,6 +227,8 @@ export default function DriverDrawer({
       shift: vehicleId ? (terms.wholeCar ? 'full' : shift || null) : null,
       rest_day: terms.restDay ? restDay || null : null,
       replaced_driver_id: replacedDriverId || null,
+      ...((Number(collateralAmount) || null) !== (driver?.collateral_amount ?? null) || (collateralDate || null) !== (driver?.collateral_date ?? null)
+        ? { collateral_amount: Number(collateralAmount) > 0 ? Number(collateralAmount) : null, collateral_date: Number(collateralAmount) > 0 ? collateralDate || null : null } : {}),
       // Sent only when it changed, so saving never depends on the column being there.
       ...(paymentDay !== (driver?.payment_day ?? '') ? { payment_day: paymentDay || null } : {}),
       updated_at: new Date().toISOString(),
@@ -201,6 +247,18 @@ export default function DriverDrawer({
       return;
     }
     if (!driver) setInserted(true);
+    if (picked.length) {
+      // Connected deposits for a driver who already had a start deposit become payments.
+      if (depositsAsPayments && pickedDeposits.length) {
+        const { error: pErr } = await supabase.from('driver_deposits').insert(pickedDeposits.map((m) => ({
+          driver_id: driverId, amount: Number(m.amount), paid_date: m.received_on, payment_method: depositMethod, created_by: profile!.id,
+        })));
+        if (pErr) { setSaving(false); onSaved(); setError(`The driver is saved, but the payments weren't logged: ${pErr.message}`); return; }
+      }
+      const lErr = await linkOtherMoney(driverId, picked);
+      if (lErr) { setSaving(false); onSaved(); setError(`The driver is saved, but the money wasn't marked as connected: ${lErr}. Press save again.`); return; }
+      setPicked([]);
+    }
     if (up) {
       const { error: docErr } = await supabase.rpc('add_driver_document', { p_driver: driverId, p_kind: 'driver_contract', d: up.doc });
       if (docErr) {
@@ -330,6 +388,61 @@ export default function DriverDrawer({
             {REST_DAYS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
           </select>
           <p className="text-micro text-fg-subtle mt-1">The day they usually pay on — a reminder for whoever follows up payments. Being cleared to drive still depends on what they have paid.</p>
+        </div>
+
+        {editing && waiting.length > 0 && (
+          <div className={`p-2.5 rounded-lg border space-y-2 ${matches.length ? 'border-attention/40 bg-attention-muted' : 'border-line'}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-caption font-medium">Money already received from {fullName.trim() ? fullName.trim().split(' ')[0] : 'this person'}?</p>
+                <p className="text-micro text-fg-subtle">
+                  {matches.length ? 'Recorded under Deposits → Other money with a similar name. Tick what is theirs so it is counted once.' : `${waiting.length} payment${waiting.length === 1 ? '' : 's'} recorded under Other money ${waiting.length === 1 ? 'is' : 'are'} not connected to a driver yet.`}
+                </p>
+              </div>
+              <button type="button" onClick={() => setShowAllWaiting((v) => !v)} className="text-micro text-brand-600 dark:text-brand-300 hover:underline whitespace-nowrap">{showAllWaiting ? 'Only similar names' : `Show all ${waiting.length}`}</button>
+            </div>
+            {shownWaiting.length > 0 && (
+              <div className="space-y-1">
+                {shownWaiting.map(({ m }) => (
+                  <label key={m.id} className={`flex items-center gap-2.5 rounded-md border px-2.5 py-1.5 cursor-pointer ${picked.includes(m.id) ? 'border-brand bg-brand/10' : 'border-line bg-surface hover:bg-hover'}`}>
+                    <input type="checkbox" checked={picked.includes(m.id)} onChange={() => togglePick(m.id)} className="w-4 h-4 accent-brand" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-caption font-medium truncate">{m.payer_name} <span className="text-micro font-semibold text-fg-muted">· {KIND_LABEL[m.kind]}</span></span>
+                      <span className="block text-micro text-fg-subtle truncate">{formatDateLabelSafe(m.received_on)}{m.reason ? ` · ${m.reason}` : ''}</span>
+                    </span>
+                    <span className="text-caption font-semibold tabular-nums whitespace-nowrap">{formatRwf(Number(m.amount))}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            {pickedRows.length > 0 && (
+              <div className="text-micro text-fg-muted space-y-1">
+                {pickedDeposits.length > 0 && (depositsAsPayments ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>{formatRwf(total(pickedDeposits))} is logged as {pickedDeposits.length === 1 ? 'a payment' : 'payments'} on the day received (they already have a start deposit), paid by</span>
+                    <select value={depositMethod} onChange={(e) => setDepositMethod(e.target.value as 'momo' | 'bank')} className="input !py-0.5 !w-auto text-micro"><option value="momo">MoMo</option><option value="bank">Bank</option></select>
+                  </div>
+                ) : <p>{formatRwf(total(pickedDeposits))} becomes the start deposit below.</p>)}
+                {pickedCollateral.length > 0 && <p>{formatRwf(total(pickedCollateral))} becomes their collateral below — not counted as paying for days.</p>}
+                <p>Once saved, {pickedRows.length === 1 ? 'it shows' : 'they show'} as connected to this driver and {pickedRows.length === 1 ? 'is' : 'are'} not counted again as other money.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className={`p-2.5 rounded-lg border space-y-2 ${Number(collateralAmount) > 0 ? 'border-accent/40 bg-accent/5' : 'border-line'}`}>
+          <p className="text-caption font-medium">Collateral (optional)</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-micro font-medium mb-1 text-fg-muted">Amount (RWF)</label>
+              <input inputMode="numeric" value={collateralAmount} onChange={(e) => { const v = e.target.value.replace(/[^\d]/g, ''); setCollateralAmount(v); if (v && !collateralDate) setCollateralDate(todayStr()); }} disabled={!editing || pickedCollateral.length > 0} className="input" placeholder="e.g. 100000" />
+            </div>
+            <div>
+              <label className="block text-micro font-medium mb-1 text-fg-muted flex items-center gap-1"><CalendarDays size={10} /> Received on</label>
+              <DateInput value={collateralDate} onChange={setCollateralDate} disabled={!editing || !collateralAmount || pickedCollateral.length > 0} />
+            </div>
+          </div>
+          <p className="text-micro text-fg-subtle">Security money we hold — it never counts as paying for days. Given back at the end of the contract unless they owe money, have fines or damaged the car. Collateral drivers are on Solo car and pay no start deposit.</p>
         </div>
 
         <div className={`p-2.5 rounded-lg border space-y-2 ${initialDepositPaid ? 'border-brand/30 bg-brand/5' : 'border-line '}`}>

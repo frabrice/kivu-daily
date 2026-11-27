@@ -77,11 +77,15 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
     supabase.from('driver_car_assignments').select('driver_id, from_date, vehicle:vehicles(plate_number)').order('from_date', { ascending: false }),
     supabase.from('driver_money_reviews').select('driver_id, outcome, created_at').order('created_at', { ascending: false }),
     // Other money received, recorded on Deposits or before a report.
-    supabase.from('other_money_received').select('payer_name, amount, received_on, reason').gte('received_on', addDays(today, -(OTHER_MONEY_REPORT_DAYS - 1))).lte('received_on', today),
+    // Only what is not connected to a driver yet: connected money is counted on the driver.
+    supabase.from('other_money_received').select('payer_name, amount, received_on, reason, kind').is('driver_id', null).gte('received_on', addDays(today, -(OTHER_MONEY_REPORT_DAYS - 1))).lte('received_on', today),
   ]);
   if (om.error) throw new Error(`other money received: ${om.error.message}`);
-  const additions: ReportAddition[] = ((om.data ?? []) as { payer_name: string; amount: number; received_on: string; reason: string | null }[])
-    .map((m) => ({ name: m.payer_name, amount: Number(m.amount), date: m.received_on, reason: m.reason ?? '' }));
+  const omRows = ((om.data ?? []) as { payer_name: string; amount: number; received_on: string; reason: string | null; kind: string }[])
+    .map((m) => ({ name: m.payer_name, amount: Number(m.amount), date: m.received_on, reason: m.reason ?? '', kind: m.kind }));
+  // Deposits pay for days and are in the day's totals; collateral is listed apart and never added to them.
+  const additions: ReportAddition[] = omRows.filter((m) => m.kind !== 'collateral');
+  const collateralFree = omRows.filter((m) => m.kind === 'collateral');
   // Confirmed terminated in Driver Adjust: their money is closed (nothing chased or changed any more).
   const latestReview = new Map<string, string>();
   for (const r of (rv.data ?? []) as { driver_id: string; outcome: string }[]) if (!latestReview.has(r.driver_id)) latestReview.set(r.driver_id, r.outcome);
@@ -95,13 +99,21 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
   const driverOf = new Map(drivers.map((d) => [d.id, d]));
 
   // ---- Payments of a day
-  const paymentsOn = (day: string) => deposits.filter((x) => x.paid_date === day).sort((a, b) => a.created_at.localeCompare(b.created_at));
-  const payTable = (rows: DriverDeposit[]) => {
+  // A start deposit counts on the day it was paid, like any payment (MD, 27 Nov 2026) - so money
+  // recorded as "other money" and later connected to the driver moves line without changing the totals.
+  type DayPay = DriverDeposit & { start?: boolean };
+  const startDeposits: DayPay[] = drivers.filter((d) => d.initial_deposit_paid && d.initial_deposit_date && Number(d.initial_deposit_amount ?? 0) > 0).map((d) => ({
+    id: `start-${d.id}`, driver_id: d.id, amount: Number(d.initial_deposit_amount), paid_date: d.initial_deposit_date!, payment_method: 'momo', bank_name: null,
+    status: 'confirmed', confirmed_by: null, confirmed_at: null, created_by: null, created_at: `${d.initial_deposit_date}T00:00:00Z`, start: true,
+  }));
+  const paymentsOn = (day: string): DayPay[] => [...startDeposits.filter((x) => x.paid_date === day), ...deposits.filter((x) => x.paid_date === day).sort((a, b) => a.created_at.localeCompare(b.created_at))];
+  const payTable = (rows: DayPay[]) => {
     if (!rows.length) return note('No payment recorded for this day.');
     const total = rows.reduce((s, x) => s + Number(x.amount), 0);
     return table(['Logged at', 'Driver', 'Car', 'Amount', 'Paid by', 'Logged by', 'Finance'], [
       ...rows.map((x) => {
         const d = driverOf.get(x.driver_id);
+        if (x.start) return ['—', d?.full_name ?? 'Unknown driver', d?.vehicle?.plate_number ?? '—', rwf(Number(x.amount)), { text: 'Start deposit', fontSize: 8, color: MUTED }, '—', '—'];
         return [timeOf(x.created_at), d?.full_name ?? 'Unknown driver', d?.vehicle?.plate_number ?? '—', rwf(Number(x.amount)),
           x.payment_method === 'bank' ? `Bank${x.bank_name ? ` (${x.bank_name})` : ''}` : 'MoMo', x.created_by ? (nameOf.get(x.created_by) ?? '—').split(' ')[0] : '—',
           x.status === 'confirmed' ? { text: 'Confirmed', color: GREEN_TXT, fontSize: 8 } : { text: 'Waiting', color: ORANGE_TXT, fontSize: 8 }];
@@ -112,6 +124,17 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
   const todayPays = paymentsOn(today);
   const yesterdayPays = paymentsOn(yesterday);
   const sum = (rows: DriverDeposit[]) => rows.reduce((s, x) => s + Number(x.amount), 0);
+  // Collateral received (held, not paying for days): on drivers, and recorded but not connected yet.
+  const collSince = addDays(today, -(OTHER_MONEY_REPORT_DAYS - 1));
+  const collateralRows = [
+    ...drivers.filter((d) => Number(d.collateral_amount ?? 0) > 0 && d.collateral_date && d.collateral_date >= collSince && d.collateral_date <= today)
+      .map((d) => ({ name: d.full_name, amount: Number(d.collateral_amount), date: d.collateral_date!, where: d.vehicle?.plate_number ? `Driver on ${d.vehicle.plate_number}` : 'Driver, no car yet' })),
+    ...collateralFree.map((m) => ({ name: m.name, amount: m.amount, date: m.date, where: m.reason.trim() || 'Not in the system yet' })),
+  ].sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  const collateralTable = collateralRows.length ? table(['Name', 'Received on', 'Amount', 'Who'], [
+    ...collateralRows.map((c) => [{ text: c.name.trim(), bold: true, fontSize: 8.5 }, dayShort(c.date), rwf(c.amount), c.where]),
+    [{ text: 'Total', bold: true, fontSize: 8.5 }, { text: plural(collateralRows.length, 'payment'), fontSize: 8, color: MUTED }, { text: rwf(collateralRows.reduce((t, c) => t + c.amount, 0)), bold: true, fontSize: 8.5 }, ''],
+  ], { widths: [120, 70, 80, '*'], align: ['left', 'left', 'right', 'left'] }) : null;
   // Other money received, counted with the day it was received.
   const adds = additions.filter((a) => a.name.trim() && a.amount > 0).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
   const addsOn = (day: string) => adds.filter((a) => a.date === day);
@@ -249,8 +272,13 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
     // Heading, explanation and table stay on one page.
     ...(addsTable ? [{ unbreakable: adds.length <= 15, stack: [
       h2('Money received, not yet in the system'),
-      para(`Payments from people who are not yet in Kivu Daily as a driver on a car (not registered, no car yet, or not started), received in the last ${OTHER_MONEY_REPORT_DAYS} days. They are recorded under Deposits → Record other money; those of today and yesterday are in the totals above. Once the driver is registered and on a car, log their payments there.`),
+      para(`Payments from people who are not yet in Kivu Daily as a driver on a car (not registered, no car yet, or not started), received in the last ${OTHER_MONEY_REPORT_DAYS} days. They are recorded under Deposits → Record other money and not connected to a driver yet; those of today and yesterday are in the totals above. When the person is added as a driver, the money is connected to them and counted on the driver instead — never twice.`),
       addsTable,
+    ] }] : []),
+    ...(collateralTable ? [{ unbreakable: collateralRows.length <= 15, stack: [
+      h2('Collateral received'),
+      para(`Security money received in the last ${OTHER_MONEY_REPORT_DAYS} days. It is held and given back at the end of the contract unless the driver owes money, has fines or damaged the car — so it is not in the payments or totals above.`),
+      collateralTable,
     ] }] : []),
 
     { text: '', pageBreak: 'before' },

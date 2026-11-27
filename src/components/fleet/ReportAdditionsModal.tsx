@@ -4,15 +4,15 @@ import Modal from '../Modal';
 import DateInput from '../DateInput';
 import { kigaliToday } from '../../lib/kigali';
 import { addDays } from '../../lib/performance';
-import { OtherMoney, OTHER_MONEY_REPORT_DAYS, canRemoveOtherMoney, deleteOtherMoney, saveOtherMoney } from '../../lib/otherMoney';
+import { OtherMoney, OtherMoneyKind, KIND_LABEL, OTHER_MONEY_REPORT_DAYS, canRemoveOtherMoney, deleteOtherMoney, saveOtherMoney } from '../../lib/otherMoney';
 
 // Money received from people who aren't in Kivu Daily as a driver on a car
 // yet (not registered, no car, not started). Opened from "Record other money"
 // on Deposits, or before the PDF report is made (MD, 27 Nov 2026). What is
 // entered here is saved, so every report counts it on the day it came in.
 
-interface Row { name: string; amount: string; date: string; reason: string }
-const blank = (): Row => ({ name: '', amount: '', date: kigaliToday(), reason: '' });
+interface Row { name: string; amount: string; date: string; reason: string; kind: OtherMoneyKind }
+const blank = (): Row => ({ name: '', amount: '', date: kigaliToday(), reason: '', kind: 'deposit' });
 const REASONS = ['Not registered in Kivu Daily yet', 'Registered, no car yet', 'Has a car, has not started yet', 'Paid for someone else'];
 const rwf = (n: number) => `${n.toLocaleString('en-US')} RWF`;
 const dayLabel = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -37,7 +37,8 @@ export default function ReportAdditionsModal({ mode, recorded, profileId, isMd, 
   const incomplete = filled.some((r) => !r.name.trim() || !(Number(r.amount) > 0) || !r.date);
   const total = filled.reduce((s, r) => s + (Number(r.amount) || 0), 0);
   const since = addDays(kigaliToday(), -(OTHER_MONEY_REPORT_DAYS - 1));
-  const recent = recorded.filter((m) => m.received_on >= since);
+  // The last week, and anything older still waiting to be connected to a driver.
+  const recent = recorded.filter((m) => m.received_on >= since || !m.driver_id);
   const recentTotal = recent.reduce((s, m) => s + Number(m.amount), 0);
   const working = busy || saving;
 
@@ -45,7 +46,7 @@ export default function ReportAdditionsModal({ mode, recorded, profileId, isMd, 
     setError('');
     if (filled.length) {
       setSaving(true);
-      const err = await saveOtherMoney(filled.map((r) => ({ payer_name: r.name, amount: Number(r.amount), received_on: r.date, reason: r.reason })));
+      const err = await saveOtherMoney(filled.map((r) => ({ payer_name: r.name, amount: Number(r.amount), received_on: r.date, reason: r.reason, kind: r.kind })));
       setSaving(false);
       if (err) { setError(`Couldn't save: ${err}`); return; }
       setRows([]);
@@ -71,11 +72,12 @@ export default function ReportAdditionsModal({ mode, recorded, profileId, isMd, 
       <div className="space-y-3 text-small">
         <p className="text-body text-fg-muted">
           If someone paid but isn't registered, has no car yet or hasn't started, record it here. <b className="text-fg">It is saved</b>, and every Deposits report counts it on the day it was received.
+          When you add them as a driver, connect it there so it is never counted twice. <b className="text-fg">Collateral</b> is security money: held, given back at the end, never counted as paying for days.
         </p>
 
         <div>
           <p className="text-caption font-semibold text-fg-muted mb-1.5">
-            Recorded in the last {OTHER_MONEY_REPORT_DAYS} days{recent.length ? ` · ${rwf(recentTotal)}` : ''}
+            Recorded in the last {OTHER_MONEY_REPORT_DAYS} days, and any not connected yet{recent.length ? ` · ${rwf(recentTotal)}` : ''}
           </p>
           {recent.length === 0 ? (
             <p className="text-caption text-fg-subtle">Nothing recorded yet.</p>
@@ -84,7 +86,11 @@ export default function ReportAdditionsModal({ mode, recorded, profileId, isMd, 
               {recent.map((m) => (
                 <div key={m.id} className="flex items-center gap-3 px-3 py-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-body font-medium truncate">{m.payer_name}</p>
+                    <p className="text-body font-medium truncate flex items-center gap-1.5">
+                      {m.payer_name}
+                      <span className={`text-micro font-semibold px-1.5 py-0.5 rounded ${m.kind === 'collateral' ? 'bg-accent-muted text-accent-fg' : 'bg-surface-2 text-fg-muted'}`}>{KIND_LABEL[m.kind]}</span>
+                    </p>
+                    <p className={`text-caption truncate ${m.driver_id ? 'text-success' : 'text-attention'}`}>{m.driver_id ? `Connected to ${m.driver?.full_name ?? 'a driver'}` : 'Not connected to a driver yet'}</p>
                     <p className="text-caption text-fg-subtle truncate">{dayLabel(m.received_on)}{m.reason ? ` · ${m.reason}` : ''}{m.author?.full_name ? ` · by ${m.author.full_name.split(' ')[0]}` : ''}</p>
                   </div>
                   <span className="text-body font-semibold tabular-nums whitespace-nowrap">{rwf(Number(m.amount))}</span>
@@ -117,6 +123,15 @@ export default function ReportAdditionsModal({ mode, recorded, profileId, isMd, 
                 <label className="block"><span className="text-caption font-medium text-fg-muted">Received on</span>
                   <div className="mt-1"><DateInput value={r.date} onChange={(v) => set(i, { date: v })} max={kigaliToday()} /></div></label>
                 <button onClick={() => setRows((rs) => rs.filter((_, k) => k !== i))} className="btn-ghost text-fg-subtle hover:text-danger h-8" title="Remove" aria-label="Remove"><Trash2 size={14} /></button>
+                <div className="sm:col-span-4 flex gap-1.5" role="radiogroup" aria-label="What is this money">
+                  {(['deposit', 'collateral'] as const).map((k) => (
+                    <button key={k} type="button" role="radio" aria-checked={r.kind === k} onClick={() => set(i, { kind: k })}
+                      className={`flex-1 rounded-md border px-2.5 py-1.5 text-left ${r.kind === k ? 'border-accent bg-accent/10' : 'border-line text-fg-muted hover:bg-hover'}`}>
+                      <span className="block text-caption font-medium">{KIND_LABEL[k]}</span>
+                      <span className="block text-micro text-fg-subtle">{k === 'deposit' ? 'Pays for driving days once they start' : 'Security money, given back at the end'}</span>
+                    </button>
+                  ))}
+                </div>
                 <label className="block sm:col-span-4"><span className="text-caption font-medium text-fg-muted">Why they aren't in the system yet</span>
                   <input className="input mt-1" value={r.reason} onChange={(e) => set(i, { reason: e.target.value })} placeholder="e.g. Registered, no car yet" list="report-addition-reasons" /></label>
               </div>

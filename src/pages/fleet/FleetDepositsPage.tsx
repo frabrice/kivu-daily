@@ -111,9 +111,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
 
   // Money in: the last 7 days, and payments Finance hasn't confirmed yet.
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
-  const collected7 = deposits.filter((x) => x.paid_date > weekAgo).reduce((s, x) => s + Number(x.amount), 0);
+  // Start deposits count on the day they were paid, like in the PDF report.
+  const collected7 = deposits.filter((x) => x.paid_date > weekAgo).reduce((s, x) => s + Number(x.amount), 0)
+    + drivers.filter((d) => d.initial_deposit_paid && d.initial_deposit_date && d.initial_deposit_date > weekAgo).reduce((s, d) => s + Number(d.initial_deposit_amount ?? 0), 0);
   const pending = deposits.filter((x) => x.status === 'pending');
-  const otherWeek = otherMoney.items.filter((m) => m.received_on > weekAgo);
+  // Other money not connected to a driver yet (connected money is counted on the driver).
+  const otherWaiting = otherMoney.items.filter((m) => !m.driver_id);
   const paidUp = live.filter((r) => r.standing.hasStarted && r.standing.isCleared).length;
   const onRoad = live.filter((r) => r.standing.hasStarted).length;
 
@@ -169,8 +172,8 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-body -mt-2">
         <span className="text-fg-muted">Paid up today <b className={paidUp < onRoad ? 'text-fg' : 'text-success'}>{paidUp}/{onRoad}</b></span>
         <span className="text-fg-muted">Collected in 7 days <b className="text-fg tabular-nums">{collected7.toLocaleString('en-US')} RWF</b></span>
-        {otherWeek.length > 0 && (
-          <button onClick={() => setOtherMode('record')} disabled={!canTake} className="text-fg-muted hover:text-fg disabled:hover:text-fg-muted">Other money in 7 days <b className="text-fg tabular-nums">{otherWeek.reduce((s, m) => s + Number(m.amount), 0).toLocaleString('en-US')} RWF</b><span className="text-fg-subtle"> · {otherWeek.length}</span></button>
+        {otherWaiting.length > 0 && (
+          <button onClick={() => setOtherMode('record')} disabled={!canTake} className="text-fg-muted hover:text-fg disabled:hover:text-fg-muted" title="Recorded under Other money, not connected to a driver yet - connect it when you add them as a driver">Other money, not connected <b className="text-attention tabular-nums">{otherWaiting.reduce((s, m) => s + Number(m.amount), 0).toLocaleString('en-US')} RWF</b><span className="text-fg-subtle"> · {otherWaiting.length}</span></button>
         )}
         <span className="text-fg-muted">Waiting for confirmation <b className={pending.length ? 'text-attention' : 'text-fg'}>{pending.length}</b>{pending.length ? <span className="text-fg-subtle"> · {pending.reduce((s, x) => s + Number(x.amount), 0).toLocaleString('en-US')} RWF</span> : null}</span>
       </div>

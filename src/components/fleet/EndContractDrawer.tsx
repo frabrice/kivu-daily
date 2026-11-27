@@ -34,10 +34,24 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
   // The letter is optional (MD, 27 Nov 2026): the end date and the reason are
   // enough. Without it, the letter shows under Admin -> Missing until added.
   const letterError = letter.file ? draftError('driver_termination_letter', letter) : null;
-  const canContinue = !!reasonKey && !!eventDate && (!isOther || !!otherReason.trim()) && !letterError;
   const myDeposits = useMemo(() => deposits.filter((d) => d.driver_id === driver.id), [deposits, driver.id]);
   const settle = useMemo(() => contractSettlement(driver, myDeposits, eventDate), [driver, myDeposits, eventDate]);
   const finesUnpaid = fines.filter((f) => f.driver_id === driver.id).reduce((s, f) => s + Math.max(0, f.amount - fineAmountPaid(f.id, finePayments)), 0);
+  // Collateral (MD, 27 Nov 2026): given back unless they owe money, have
+  // fines or damaged the car. Suggested: keep what they owe plus unpaid fines.
+  const collateral = driver.collateral_settled_on ? 0 : Number(driver.collateral_amount ?? 0);
+  const suggestedKeep = Math.min(collateral, settle.owes + finesUnpaid);
+  const [keepText, setKeepText] = useState<string | null>(null);
+  const keep = Math.min(collateral, Math.max(0, Number(keepText ?? suggestedKeep) || 0));
+  const giveBack = collateral - keep;
+  const [damageNote, setDamageNote] = useState('');
+  const keepReason = [
+    settle.owes > 0 ? `owed ${formatRwf(settle.owes)} for days driven` : '',
+    finesUnpaid > 0 ? `unpaid fines ${formatRwf(finesUnpaid)}` : '',
+    damageNote.trim(),
+  ].filter(Boolean).join('; ');
+  const collateralError = collateral > 0 && keep > 0 && !keepReason ? 'Say why part of the collateral is kept (for example: damage to the car).' : null;
+  const canContinue = !!reasonKey && !!eventDate && (!isOther || !!otherReason.trim()) && !letterError && !collateralError;
 
   const save = async () => {
     if (!canContinue) return;
@@ -45,7 +59,10 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
     setError('');
     const p = {
       driver_id: driver.id, event_date: eventDate, reason_key: reasonKey, reason: finalReason, details: details.trim(),
-      meta: { decided_by: decidedBy, can_return: canReturn, owed: settle.owes, credit: settle.credit, paid_through: settle.paidThrough, fines_unpaid: finesUnpaid },
+      meta: {
+        decided_by: decidedBy, can_return: canReturn, owed: settle.owes, credit: settle.credit, paid_through: settle.paidThrough, fines_unpaid: finesUnpaid,
+        ...(collateral > 0 ? { collateral, collateral_returned: giveBack, collateral_kept: keep, collateral_kept_reason: keep > 0 ? keepReason : null } : {}),
+      },
     };
     let err: { message: string } | null = null;
     if (letter.file) {
@@ -56,8 +73,14 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
     } else {
       ({ error: err } = await supabase.rpc('end_driver_contract', { p }));
     }
+    if (err) { setSaving(false); setError(err.message); return; }
+    if (collateral > 0) {
+      const { error: cErr } = await supabase.from('drivers').update({
+        collateral_returned: giveBack, collateral_kept: keep, collateral_kept_reason: keep > 0 ? keepReason : null, collateral_settled_on: eventDate,
+      }).eq('id', driver.id);
+      if (cErr) { setSaving(false); onSaved(); setError(`The contract is ended, but the collateral decision wasn't saved: ${cErr.message}`); return; }
+    }
     setSaving(false);
-    if (err) { setError(err.message); return; }
     // Also out of the Kivu Ride app: off the car and out of the fleet company,
     // so no more requests. If it fails (or the person isn't Fleet/MD), it
     // stays on Under Management > To confirm for Fleet.
@@ -84,6 +107,27 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
       {settle.owes === 0 && settle.credit === 0 && <p>Fully paid up to the end date, nothing ahead.</p>}
       {finesUnpaid > 0 && <p className="text-attention">Unpaid fines: {formatRwf(finesUnpaid)}</p>}
       <p className="text-fg-muted">Paid in this contract: {formatRwf(settle.totalPaid)}{settle.paidThrough ? ` · paid through ${formatDateLabelSafe(settle.paidThrough)}` : ''}</p>
+      {collateral > 0 && (
+        <p className="pt-1 border-t border-line-muted">
+          Collateral {formatRwf(collateral)}: <b className="text-success">give back {formatRwf(giveBack)}</b>
+          {keep > 0 && <> · <b className="text-attention">keep {formatRwf(keep)}</b> ({keepReason || 'reason needed'})</>}
+        </p>
+      )}
+    </div>
+  );
+
+  const collateralBox = collateral > 0 && (
+    <div className="rounded-lg border border-line p-3 space-y-2 text-small">
+      <p className="text-caption font-semibold text-fg-muted">Collateral held: {formatRwf(collateral)}</p>
+      <p className="text-caption text-fg-muted">Given back in full unless they owe money, have unpaid fines or damaged the car.{suggestedKeep > 0 ? ` Suggested to keep ${formatRwf(suggestedKeep)} for what they owe.` : ''}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="block"><span className="block text-caption font-medium mb-1 text-fg-muted">Keep (RWF)</span>
+          <input inputMode="numeric" value={keepText ?? String(suggestedKeep)} onChange={(e) => setKeepText(e.target.value.replace(/[^\d]/g, ''))} className="input" /></label>
+        <div><span className="block text-caption font-medium mb-1 text-fg-muted">Give back</span><p className="input bg-inset font-semibold tabular-nums">{formatRwf(giveBack)}</p></div>
+      </div>
+      <label className="block"><span className="block text-caption font-medium mb-1 text-fg-muted">Damage or other reason to keep some (optional)</span>
+        <input value={damageNote} onChange={(e) => setDamageNote(e.target.value)} className="input" placeholder="e.g. Scratches on the rear door, 40,000" /></label>
+      {collateralError && <p className="text-caption text-attention">{collateralError}</p>}
     </div>
   );
 
@@ -111,6 +155,7 @@ export default function EndContractDrawer({ driver, deposits = [], fines = [], f
             <DateInput value={eventDate} onChange={setEventDate} />
           </label>
           {money}
+          {collateralBox}
           <label className="block">
             <span className="block text-caption font-medium mb-1.5 text-fg-muted">Notes (optional)</span>
             <textarea value={details} onChange={(e) => setDetails(e.target.value)} rows={2} className="input resize-none" placeholder={canReturn === 'conditions' ? 'Under what conditions can they come back?' : 'Anything else worth knowing'} />
