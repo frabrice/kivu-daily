@@ -2,7 +2,7 @@ import { supabase, Driver, DriverDeposit } from './supabase';
 import { computeDepositStanding, DepositStanding, driverShiftShort } from './fleet';
 import { kigaliToday } from './kigali';
 import { addDays } from './performance';
-import { PaymentCall, callLine, carTaken, latestCall } from './paymentCalls';
+import { PaymentCall, callLine, carTaken, lastPayment, latestCall } from './paymentCalls';
 import { moneyStatus, MoneyStatusKey } from '../components/fleet/driverUi';
 import { NAVY, TEAL, MUTED, INK, RED, SOFT, baseDoc, h1, h2, kpiRow, note, para, render, smallLogo, table } from './stationReportPdf';
 
@@ -44,7 +44,8 @@ function plainWords(s: DepositStanding, key: MoneyStatusKey, taken: PaymentCall 
     case 'pay_today': return `Has not paid for today yet: ${rwf(s.owes)} must come in today, or the car is taken back tonight.`;
     case 'due_soon': return `Paid until ${dayShort(s.paidThrough)}. ${next}`;
     case 'paid': return `Paid until ${dayShort(s.paidThrough)}. ${next}`;
-    case 'paused': return `On days off (${s.pausedToday?.reason ?? 'approved'}). Paid until ${dayShort(s.paidThrough)}.`;
+    // An open-ended day off counts as covered, so "paid until" would read far in the future: say since when instead.
+    case 'paused': return `On days off (${s.pausedToday?.reason ?? 'approved'}) since ${dayShort(s.pausedToday?.start_date)}${s.pausedToday?.end_date ? ` until ${dayShort(s.pausedToday.end_date)}` : ''}. Nothing is owed while off.`;
     case 'not_started': return `Starts on a later date. First payment ${rwf(s.nextDueAmount)}.`;
     default: return '';
   }
@@ -95,7 +96,8 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
     const s = computeDepositStanding(d, mine, today);
     const taken = carTaken(calls, d.id);
     const status = moneyStatus(s, { ended: false, taken: !!taken, today });
-    const last = [...mine].sort((a, b) => b.paid_date.localeCompare(a.paid_date) || b.created_at.localeCompare(a.created_at))[0] ?? null;
+    // The start deposit counts as a payment too.
+    const last = lastPayment(d, mine);
     const call = latestCall(calls, d.id);
     return { d, s, status, taken, last, call };
   }).sort((a, b) => a.status.rank - b.status.rank || b.s.owes - a.s.owes || a.d.full_name.localeCompare(b.d.full_name));
@@ -105,6 +107,10 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
   const owing = started.filter((r) => r.s.owes > 0);
   const owedTotal = owing.reduce((s, r) => s + r.s.owes, 0);
   const count = (k: MoneyStatusKey) => rows.filter((r) => r.status.key === k).length;
+  const owedIn = (...ks: MoneyStatusKey[]) => rows.filter((r) => ks.includes(r.status.key)).reduce((s, r) => s + r.s.owes, 0);
+  const lateCount = count('late') + count('taken');
+  const lateOwed = owedIn('late', 'taken');
+  const todayOwed = owedIn('pay_today');
 
   const generatedAt = `${dayLong(today)} at ${timeOf(now.toISOString())} (Kigali time)`;
 
@@ -112,7 +118,7 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
   const groupTable = (rs: typeof rows) => table(['Driver and car', 'Where they stand, in simple words', 'Last payment', 'Latest call'], rs.map((r) => [
     { stack: [{ text: r.d.full_name, bold: true, fontSize: 8.5, color: INK }, { text: `${r.d.vehicle?.plate_number ?? '—'} · ${driverShiftShort(r.d) || 'One shift'}`, fontSize: 7.5, color: MUTED }] },
     { stack: [{ text: r.status.label.toUpperCase(), bold: true, fontSize: 7, color: STATUS_COLOR[r.status.key], characterSpacing: 0.3 }, { text: plainWords(r.s, r.status.key, r.taken), fontSize: 8, color: INK, margin: [0, 1, 0, 0] }] },
-    r.last ? { stack: [{ text: dayShort(r.last.paid_date), fontSize: 8 }, { text: rwf(Number(r.last.amount)), fontSize: 7.5, color: MUTED }] } : { text: 'Never', fontSize: 8, color: MUTED },
+    r.last ? { stack: [{ text: dayShort(r.last.date), fontSize: 8 }, { text: `${rwf(r.last.amount)}${r.last.pending ? ' · unconfirmed' : ''}`, fontSize: 7.5, color: MUTED }] } : { text: 'Never', fontSize: 8, color: MUTED },
     r.call ? { text: callLine(r.call, deposits, today).text, fontSize: 7.5, color: INK } : { text: 'No call recorded', fontSize: 7.5, color: MUTED },
   ]), { widths: [108, '*', 62, 118] });
 
@@ -136,14 +142,14 @@ export async function buildDepositsReport(preparedBy: string): Promise<Blob> {
       { label: 'Paid today', value: rwf(sum(todayPays)), sub: plural(todayPays.length, 'payment'), color: GREEN_TXT },
       { label: 'Paid yesterday', value: rwf(sum(yesterdayPays)), sub: plural(yesterdayPays.length, 'payment') },
       { label: 'Drivers paid up now', value: `${paidUp} / ${started.length}`, sub: started.length - paidUp ? `${started.length - paidUp} not paid up` : 'Everyone is paid up', color: paidUp < started.length ? RED : GREEN_TXT },
-      { label: 'Owed for days driven', value: rwf(owedTotal), sub: plural(owing.length, 'driver'), color: owedTotal ? RED : NAVY },
+      { label: 'Owed now', value: rwf(owedTotal), sub: `${plural(owing.length, 'driver')}, today included`, color: owedTotal ? RED : NAVY },
     ]),
     para([
       { text: `Today (${dayShort(today)}) ` }, { text: `${plural(todayPays.length, 'payment')} came in for ${rwf(sum(todayPays))}`, bold: true },
       { text: `; yesterday (${dayShort(yesterday)}) ` }, { text: `${plural(yesterdayPays.length, 'payment')} for ${rwf(sum(yesterdayPays))}`, bold: true }, { text: '. ' },
       { text: `Of the ${started.length} drivers on the road, ${paidUp} are paid up right now. ` },
-      ...(count('late') + count('taken') ? [{ text: `${plural(count('late') + count('taken'), 'driver')} owe money for days already driven (${rwf(owedTotal)} in total)`, bold: true, color: RED }, { text: count('taken') ? `, ${count('taken')} of them with the car taken back. ` : '. ' }] : [{ text: 'Nobody owes money for days already driven. ' }]),
-      ...(count('pay_today') ? [{ text: `${plural(count('pay_today'), 'driver')} must still pay for today. `, color: ORANGE_TXT }] : []),
+      ...(lateCount ? [{ text: `${plural(lateCount, 'driver')} owe ${rwf(lateOwed)} for days already driven`, bold: true, color: RED }, { text: count('taken') ? `, ${count('taken')} of them with the car taken back. ` : '. ' }] : [{ text: 'Nobody owes money for days already driven. ' }]),
+      ...(count('pay_today') ? [{ text: `${plural(count('pay_today'), 'more driver')} must still pay ${rwf(todayOwed)} for today. `, color: ORANGE_TXT }] : []),
       ...(count('due_soon') ? [{ text: `${plural(count('due_soon'), 'driver')} must pay today or tomorrow for the next day.` }] : []),
     ]),
     table(['Group', 'Drivers', 'Owed'], GROUPS.filter((g) => count(g.key)).map((g) => [
