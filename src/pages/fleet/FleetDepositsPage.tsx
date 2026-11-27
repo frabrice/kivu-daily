@@ -11,7 +11,7 @@ import LogDepositDrawer from '../../components/fleet/LogDepositDrawer';
 import LogCallDrawer from '../../components/fleet/LogCallDrawer';
 import ReportAdditionsModal from '../../components/fleet/ReportAdditionsModal';
 import { useOtherMoney } from '../../lib/otherMoney';
-import { moneyStatus, MoneyStatus, MoneyStatusKey, STATUS_STYLE, StatusPill, DriverAvatar, PlateChip, Amount, Field, CallChip, NotCalledChip } from '../../components/fleet/driverUi';
+import { moneyStatus, MoneyStatus, MoneyStatusKey, STATUS_STYLE, StatusPill, DriverAvatar, PlateChip, Amount, Field, CallChip, NotCalledChip, HoverCard, CardLines } from '../../components/fleet/driverUi';
 import { EntityLink } from '../../os/EntityLink';
 import ExportButton from '../../components/fleet/ExportButton';
 
@@ -96,7 +96,8 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
     const settle = isEnded ? null : contractSettlement(d, mine, today);
     const finesUnpaid = isEnded ? 0 : fines.filter((f) => f.driver_id === d.id).reduce((t, f) => t + Math.max(0, f.amount - fineAmountPaid(f.id, finePayments)), 0);
     const collateral = d.collateral_settled_on ? 0 : Number(d.collateral_amount ?? 0);
-    const ifEnded = settle ? { owes: settle.owes, credit: settle.credit, fines: finesUnpaid, collateral, deposits: settle.credit - settle.owes - finesUnpaid } : null;
+    const depositsNet = settle ? settle.credit - settle.owes - finesUnpaid : 0;
+    const ifEnded = settle ? { cost: settle.cost, paid: settle.paid, days: settle.days, owes: settle.owes, credit: settle.credit, fines: finesUnpaid, collateral, deposits: depositsNet, net: depositsNet + collateral } : null;
     return {
       driver: d, standing, status, taken, call, late, calledToday, isEnded, ifEnded,
       last: lastPayment(d, mine), pendingDeposit: mine.some((x) => x.status === 'pending'),
@@ -126,11 +127,11 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
   const otherWaiting = otherMoney.items.filter((m) => !m.driver_id);
   // If every contract ended today: what we would lose, and what we would give back.
   const endedNow = live.filter((r) => r.standing.hasStarted && r.ifEnded).map((r) => r.ifEnded!);
-  // Deposits only (collateral apart): what would be owed to us, and what was paid ahead.
-  const wouldBeOwed = endedNow.filter((x) => x.deposits < 0).reduce((t, x) => t - x.deposits, 0);
+  // After each driver's own collateral: what we would still be owed, and what we would return.
+  const wouldBeOwed = endedNow.filter((x) => x.net < 0).reduce((t, x) => t - x.net, 0);
+  const wouldReturn = endedNow.filter((x) => x.net > 0).reduce((t, x) => t + x.net, 0);
+  const owedBeforeCollateral = endedNow.filter((x) => x.deposits < 0).reduce((t, x) => t - x.deposits, 0);
   const collateralHeld = live.reduce((t, r) => t + (r.ifEnded?.collateral ?? 0), 0);
-  // Of what would be owed, how much the debtors' own collateral could cover.
-  const collateralCovers = endedNow.filter((x) => x.deposits < 0 && x.collateral).reduce((t, x) => t + Math.min(x.collateral, -x.deposits), 0);
   const paidUp = live.filter((r) => r.standing.hasStarted && r.standing.isCleared).length;
   const onRoad = live.filter((r) => r.standing.hasStarted).length;
 
@@ -184,14 +185,23 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
       </div>
       {reportError && <p className="text-caption text-danger -mt-3">Couldn't make the report: {reportError}</p>}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-body -mt-2">
-        <span className="text-fg-muted">Paid up today <b className={paidUp < onRoad ? 'text-fg' : 'text-success'}>{paidUp}/{onRoad}</b></span>
+        <span className="text-fg-muted">Paid up today <b className="text-fg">{paidUp}/{onRoad}</b></span>
         <span className="text-fg-muted">Collected in 7 days <b className="text-fg tabular-nums">{collected7.toLocaleString('en-US')} RWF</b></span>
         {otherWaiting.length > 0 && (
-          <button onClick={() => setOtherMode('record')} disabled={!canTake} className="text-fg-muted hover:text-fg disabled:hover:text-fg-muted" title="Recorded under Other money, not connected to a driver yet - connect it when you add them as a driver">Other money, not connected <b className="text-attention tabular-nums">{otherWaiting.reduce((s, m) => s + Number(m.amount), 0).toLocaleString('en-US')} RWF</b><span className="text-fg-subtle"> · {otherWaiting.length}</span></button>
+          <button onClick={() => setOtherMode('record')} disabled={!canTake} className="text-fg-muted hover:text-fg disabled:hover:text-fg-muted" title="Recorded under Other money, not connected to a driver yet - connect it when you add them as a driver">Other money, not connected <b className="text-fg tabular-nums">{otherWaiting.reduce((s, m) => s + Number(m.amount), 0).toLocaleString('en-US')} RWF</b><span className="text-fg-subtle"> · {otherWaiting.length}</span></button>
         )}
-        <span className="text-fg-muted" title="Deposits only: if every contract ended today, the days worked and today are owed, minus money paid ahead. Collateral is not counted.">If all ended today: <b className={`tabular-nums ${wouldBeOwed ? 'text-danger' : 'text-fg'}`}>{wouldBeOwed.toLocaleString('en-US')} RWF owed to us</b></span>
-        {collateralHeld > 0 && <span className="text-fg-muted" title="Collateral is held apart: it is not a deposit and never pays for days">Collateral held apart <b className="text-accent-fg tabular-nums">{collateralHeld.toLocaleString('en-US')} RWF</b>{collateralCovers ? <span className="text-fg-subtle"> · could cover {collateralCovers.toLocaleString('en-US')} of that</span> : null}</span>}
-        <span className="text-fg-muted">Waiting for confirmation <b className={pending.length ? 'text-attention' : 'text-fg'}>{pending.length}</b>{pending.length ? <span className="text-fg-subtle"> · {pending.reduce((s, x) => s + Number(x.amount), 0).toLocaleString('en-US')} RWF</span> : null}</span>
+        <span className="text-fg-muted">If all ended today{' '}
+          <HoverCard width="w-80" card={<CardLines title="If every contract ended today" lines={[
+            { label: 'Owed for days driven (today included)', value: `${owedBeforeCollateral.toLocaleString('en-US')} RWF` },
+            { label: 'Covered by their own collateral', value: `− ${(owedBeforeCollateral - wouldBeOwed).toLocaleString('en-US')} RWF` },
+          ]} total={{ label: 'Still owed to us', value: `${wouldBeOwed.toLocaleString('en-US')} RWF` }}
+            note={<>Collateral held: {collateralHeld.toLocaleString('en-US')} RWF. It never pays for days; it only settles a debt when a contract ends. To return: {wouldReturn.toLocaleString('en-US')} RWF (collateral left over and money paid ahead).</>} />}>
+            <b className="text-fg tabular-nums">{wouldBeOwed.toLocaleString('en-US')} RWF owed</b>
+          </HoverCard>
+          <span className="text-fg-subtle"> · {wouldReturn.toLocaleString('en-US')} to return</span>
+        </span>
+        {collateralHeld > 0 && <span className="text-fg-muted">Collateral held <b className="text-fg tabular-nums">{collateralHeld.toLocaleString('en-US')} RWF</b></span>}
+        <span className="text-fg-muted">Waiting for confirmation <b className="text-fg">{pending.length}</b>{pending.length ? <span className="text-fg-subtle"> · {pending.reduce((s, x) => s + Number(x.amount), 0).toLocaleString('en-US')} RWF</span> : null}</span>
       </div>
       {showRule && (
         <div className="card-muted px-4 py-3 text-body text-fg-muted flex items-start gap-2">
@@ -205,14 +215,13 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
         {tiles.map((t) => {
           const on = filter === t.key;
           const hot = t.value > 0;
-          const color = !hot ? 'text-fg-subtle' : t.tone === 'danger' ? 'text-danger' : 'text-attention';
-          const iconBg = !hot ? 'bg-inset text-fg-subtle' : t.tone === 'danger' ? 'bg-danger-muted text-danger' : 'bg-attention-muted text-attention';
+          const color = hot ? 'text-fg' : 'text-fg-subtle';
           return (
             <button key={t.key} onClick={() => setFilter(on ? 'all' : t.key)}
               className={`card p-3.5 text-left transition-all hover:border-line-strong ${on ? '!border-accent ring-2 ring-accent/30' : ''}`}>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-caption font-medium text-fg-muted truncate">{t.label}</span>
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${iconBg}`}><t.Icon size={14} /></span>
+                <span className="text-caption font-medium text-fg-muted truncate flex items-center gap-1.5">{hot && t.tone === 'danger' && <span className="w-1.5 h-1.5 rounded-full bg-danger shrink-0" aria-hidden />}{t.label}</span>
+                <t.Icon size={14} className="text-fg-subtle shrink-0" />
               </div>
               <p className={`text-h2 font-semibold tabular-nums leading-none mt-1.5 ${color}`}>{t.value}</p>
               <p className="text-micro text-fg-subtle mt-1.5 truncate">{t.sub}</p>
@@ -242,12 +251,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
               <span className={`w-2.5 h-2.5 rounded-full ${style.bar}`} />
               <h3 className="text-ui font-semibold">{sec.title}</h3>
               <span className="counter">{rows.length}</span>
-              {owed > 0 && sec.key !== 'ended' && <span className={`text-caption font-semibold ${style.text}`}>{owed.toLocaleString('en-US')} RWF owed</span>}
+              {owed > 0 && sec.key !== 'ended' && <span className="text-caption font-medium text-fg-muted tabular-nums">{owed.toLocaleString('en-US')} RWF owed</span>}
               {sec.hint && <span className="text-caption text-fg-subtle hidden md:inline">· {sec.hint}</span>}
               {collapsible && <ChevronDown size={15} className={`ml-auto text-fg-subtle transition-transform ${open ? 'rotate-180' : ''}`} />}
             </button>
             {open && (
-              <div className="card p-0 overflow-hidden divide-y divide-line-muted">
+              <div className="card p-0 divide-y divide-line-muted [&>*:first-child]:rounded-t-card [&>*:last-child]:rounded-b-card">
                 {rows.map((row) => (
                   <DepositRow key={row.driver.id} row={row} today={today} deposits={deposits}
                     actions={!row.isEnded && (
@@ -288,43 +297,50 @@ const paidNothingText = (s: ReturnType<typeof computeDepositStanding>) =>
 interface Row {
   driver: Driver; standing: ReturnType<typeof computeDepositStanding>; status: MoneyStatus; isEnded: boolean; late: boolean; calledToday: boolean;
   taken: ReturnType<typeof carTaken>; call: ReturnType<typeof latestCall>; last: ReturnType<typeof lastPayment>; pendingDeposit: boolean; promise: ReturnType<typeof promiseState>;
-  ifEnded: { owes: number; credit: number; fines: number; collateral: number; deposits: number } | null;
+  ifEnded: { cost: number; paid: number; days: number; owes: number; credit: number; fines: number; collateral: number; deposits: number; net: number } | null;
 }
 
 const k = (n: number) => `${n.toLocaleString('en-US')}`;
-// "If ended today", in two separate parts: the deposits (days worked and today, minus money
-// paid ahead, plus unpaid fines) - then the collateral, held apart, and what it could cover.
+// "If ended today" (MD, 27 Nov 2026): one final amount - what they would still owe us, or what
+// we would return - and the whole sum on hover: days driven (today included), paid, fines, then
+// the collateral, which is held apart and only settles a debt when the contract ends.
 function IfEnded({ x, started }: { x: Row['ifEnded']; started: boolean }) {
   if (!x || !started) return <p className="text-fg-subtle">—</p>;
-  const owed = -x.deposits;
-  const detail = [x.owes ? `days ${k(x.owes)}` : '', x.fines ? `fines ${k(x.fines)}` : '', x.credit && x.deposits < 0 ? `paid ahead ${k(x.credit)}` : ''].filter(Boolean).join(' + ').replace('+ paid ahead', '− paid ahead');
-  const cover = owed > 0 ? Math.min(x.collateral, owed) : 0;
-  return (<>
-    {owed > 0 ? <p className="font-semibold text-danger tabular-nums" title={detail}>Owes {k(owed)}</p>
-      : x.deposits > 0 ? <p className="font-semibold text-success tabular-nums">Paid ahead {k(x.deposits)}</p>
-      : <p className="font-medium text-fg-muted">Even</p>}
-    {x.collateral > 0 ? (
-      <p className="text-caption text-accent-fg truncate" title="Collateral is held apart: it is not a deposit and never pays for days">
-        Collateral {k(x.collateral)} apart{cover ? ` · could cover ${k(cover)}${x.collateral > cover ? `, give back ${k(x.collateral - cover)}` : owed > cover ? `, still ${k(owed - cover)} short` : ''}` : ' · give back in full'}
-      </p>
-    ) : <p className="text-caption text-fg-muted truncate" title={detail}>{owed > 0 ? (detail || 'days worked and today') : x.deposits > 0 ? 'kept as credit if renewed' : 'Nothing owed, nothing ahead'}</p>}
-  </>);
+  const r = (n: number) => `${k(n)} RWF`;
+  const lines = [
+    { label: `${x.days} day${x.days === 1 ? '' : 's'} driven, today included`, value: r(x.cost) },
+    { label: 'Paid', value: `− ${r(x.paid)}` },
+    ...(x.fines ? [{ label: 'Unpaid fines', value: r(x.fines) }] : []),
+    ...(x.collateral ? [
+      { label: x.deposits < 0 ? 'Owed for the days' : 'Paid ahead', value: r(Math.abs(x.deposits)), strong: true },
+      { label: 'Collateral held', value: `− ${r(x.collateral)}` },
+    ] : []),
+  ];
+  const label = x.net < 0 ? 'Owes us' : x.net > 0 ? 'We return' : 'Even';
+  const note = x.collateral
+    ? 'Collateral is held apart: it never pays for days, it only settles what is owed when the contract ends.'
+    : x.net > 0 ? 'Money paid ahead — kept as credit if the contract is renewed.' : undefined;
+  return (
+    <HoverCard width="w-80" card={<CardLines title="If the contract ended today" lines={lines} total={{ label, value: x.net ? r(Math.abs(x.net)) : '0 RWF' }} note={note} />}>
+      {x.net < 0 ? <span className="font-semibold tabular-nums text-danger">Owes {k(-x.net)}</span>
+        : x.net > 0 ? <span className="font-semibold tabular-nums text-fg">Return {k(x.net)}</span>
+        : <span className="font-medium text-fg-muted">Even</span>}
+    </HoverCard>
+  );
 }
 
 // One driver: who and which car | status and what they owe | paid to and next | last payment | latest call | actions.
 function DepositRow({ row, today, deposits, actions }: { row: Row; today: string; deposits: Parameters<typeof callLine>[1]; actions: ReactNode }) {
   const { driver: d, standing: s, status } = row;
-  const style = STATUS_STYLE[status.key];
   const next = !row.isEnded && s.hasStarted ? nextPaymentText(s) : null;
   return (
-    <div className={`relative flex flex-col lg:grid lg:grid-cols-[minmax(190px,1.1fr)_minmax(120px,0.65fr)_minmax(140px,0.8fr)_minmax(105px,0.6fr)_minmax(150px,0.85fr)_minmax(210px,1.5fr)_auto] lg:items-center gap-3 lg:gap-4 pl-5 pr-4 py-3.5 hover:bg-hover/40 transition-colors ${row.isEnded ? 'opacity-60' : ''}`}>
-      <span className={`absolute left-0 top-0 bottom-0 w-1 ${style.bar}`} aria-hidden />
+    <div className={`relative flex flex-col lg:grid lg:grid-cols-[minmax(230px,1.5fr)_minmax(115px,0.6fr)_minmax(135px,0.75fr)_minmax(105px,0.6fr)_minmax(120px,0.65fr)_minmax(170px,1fr)_auto] lg:items-center gap-3 lg:gap-4 pl-5 pr-4 py-3.5 hover:bg-hover/40 transition-colors ${row.isEnded ? 'opacity-60' : ''}`}>
 
       {/* Who */}
       <div className="flex items-center gap-3 min-w-0">
         <DriverAvatar name={d.full_name} status={status} />
         <div className="min-w-0">
-          <p className="text-ui font-semibold truncate"><EntityLink type="driver" id={d.id} label={d.full_name} /></p>
+          <p className="text-ui font-semibold leading-snug break-words"><EntityLink type="driver" id={d.id} label={d.full_name} /></p>
           <p className="flex items-center gap-1.5 mt-0.5 text-caption text-fg-subtle min-w-0">
             <PlateChip plate={d.vehicle?.plate_number} />
             <span className="truncate">{driverShiftShort(d)}</span>
@@ -336,8 +352,8 @@ function DepositRow({ row, today, deposits, actions }: { row: Row; today: string
       <div className="flex lg:flex-col items-center lg:items-start gap-2 lg:gap-1">
         <StatusPill status={status} />
         {s.pausedToday ? <span className="text-caption text-done">{PAUSE_REASON_LABEL[(s.pausedToday.reason ?? 'other') as keyof typeof PAUSE_REASON_LABEL]}</span>
-          : s.owes > 0 && !row.isEnded ? <span className="text-caption text-fg-muted">owes <Amount value={s.owes} size="sm" tone={style.text} /></span> : null}
-        {row.pendingDeposit && <span className="text-micro font-medium text-attention">Payment awaiting confirmation</span>}
+          : s.owes > 0 && !row.isEnded ? <span className="text-caption text-fg-muted">owes <Amount value={s.owes} size="sm" /></span> : null}
+        {row.pendingDeposit && <span className="text-micro text-fg-subtle">Payment awaiting confirmation</span>}
       </div>
 
       {/* Paid to and next */}
@@ -345,7 +361,7 @@ function DepositRow({ row, today, deposits, actions }: { row: Row; today: string
         {row.isEnded ? <span className="text-fg-subtle">—</span> : (
           <>
             <p className="font-medium">{s.paidThrough ? formatDateLabelSafe(s.paidThrough) : <span className="text-fg-subtle">{paidNothingText(s)}</span>}</p>
-            {next && <p className={`text-caption truncate ${next.tone === 'danger' ? 'text-danger' : next.tone === 'attention' ? 'text-attention' : 'text-fg-muted'}`} title={next.text}>
+            {next && <p className="text-caption truncate text-fg-muted" title={next.text}>
               {s.nextDueAmount > 0 && s.nextDueDate ? `${s.nextDueAmount.toLocaleString('en-US')} by ${formatDateLabelSafe(s.nextDueDate)}` : next.text}</p>}
           </>
         )}
@@ -355,7 +371,7 @@ function DepositRow({ row, today, deposits, actions }: { row: Row; today: string
       <Field label="Last paid" className="hidden lg:block">
         {row.last ? (<>
           <p className="font-medium">{formatDateLabelSafe(row.last.date)}</p>
-          <p className="text-caption text-fg-muted"><Amount value={row.last.amount} size="sm" />{row.last.pending ? <span className="text-attention"> · unconfirmed</span> : ''}</p>
+          <p className="text-caption text-fg-muted"><Amount value={row.last.amount} size="sm" />{row.last.pending ? <span className="text-fg-subtle"> · unconfirmed</span> : ''}</p>
         </>) : <p className="text-fg-subtle">Never</p>}
       </Field>
 
