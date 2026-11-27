@@ -91,11 +91,12 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
     const late = !isEnded && standing.hasStarted && standing.owes > 0;
     const calledToday = callsOf(calls, d.id).some((c) => kigaliDayOf(c.happened_at) === today);
     // If the contract ended today (MD, 27 Nov 2026): the days worked and today itself are owed
-    // (no new driver starts the same day); collateral and money paid ahead are against it.
+    // (no new driver starts the same day), against money paid ahead. Collateral is held apart
+    // and never counted as a deposit - it is only shown next to it, as what could cover a debt.
     const settle = isEnded ? null : contractSettlement(d, mine, today);
     const finesUnpaid = isEnded ? 0 : fines.filter((f) => f.driver_id === d.id).reduce((t, f) => t + Math.max(0, f.amount - fineAmountPaid(f.id, finePayments)), 0);
     const collateral = d.collateral_settled_on ? 0 : Number(d.collateral_amount ?? 0);
-    const ifEnded = settle ? { owes: settle.owes, credit: settle.credit, fines: finesUnpaid, collateral, net: collateral + settle.credit - settle.owes - finesUnpaid } : null;
+    const ifEnded = settle ? { owes: settle.owes, credit: settle.credit, fines: finesUnpaid, collateral, deposits: settle.credit - settle.owes - finesUnpaid } : null;
     return {
       driver: d, standing, status, taken, call, late, calledToday, isEnded, ifEnded,
       last: lastPayment(d, mine), pendingDeposit: mine.some((x) => x.status === 'pending'),
@@ -125,9 +126,11 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
   const otherWaiting = otherMoney.items.filter((m) => !m.driver_id);
   // If every contract ended today: what we would lose, and what we would give back.
   const endedNow = live.filter((r) => r.standing.hasStarted && r.ifEnded).map((r) => r.ifEnded!);
-  const wouldLose = endedNow.filter((x) => x.net < 0).reduce((t, x) => t - x.net, 0);
-  const wouldGiveBack = endedNow.filter((x) => x.net > 0).reduce((t, x) => t + x.net, 0);
+  // Deposits only (collateral apart): what would be owed to us, and what was paid ahead.
+  const wouldBeOwed = endedNow.filter((x) => x.deposits < 0).reduce((t, x) => t - x.deposits, 0);
   const collateralHeld = live.reduce((t, r) => t + (r.ifEnded?.collateral ?? 0), 0);
+  // Of what would be owed, how much the debtors' own collateral could cover.
+  const collateralCovers = endedNow.filter((x) => x.deposits < 0 && x.collateral).reduce((t, x) => t + Math.min(x.collateral, -x.deposits), 0);
   const paidUp = live.filter((r) => r.standing.hasStarted && r.standing.isCleared).length;
   const onRoad = live.filter((r) => r.standing.hasStarted).length;
 
@@ -186,8 +189,8 @@ function FleetDepositsPageView({ data }: { data: ReturnType<typeof useFleetData>
         {otherWaiting.length > 0 && (
           <button onClick={() => setOtherMode('record')} disabled={!canTake} className="text-fg-muted hover:text-fg disabled:hover:text-fg-muted" title="Recorded under Other money, not connected to a driver yet - connect it when you add them as a driver">Other money, not connected <b className="text-attention tabular-nums">{otherWaiting.reduce((s, m) => s + Number(m.amount), 0).toLocaleString('en-US')} RWF</b><span className="text-fg-subtle"> · {otherWaiting.length}</span></button>
         )}
-        {collateralHeld > 0 && <span className="text-fg-muted">Collateral held <b className="text-fg tabular-nums">{collateralHeld.toLocaleString('en-US')} RWF</b></span>}
-        <span className="text-fg-muted" title="If every contract ended today: the days worked and today are owed, against collateral and money paid ahead">If all ended today: <b className={`tabular-nums ${wouldLose ? 'text-danger' : 'text-fg'}`}>{wouldLose.toLocaleString('en-US')} RWF lost</b>{wouldGiveBack ? <span className="text-fg-subtle"> · {wouldGiveBack.toLocaleString('en-US')} RWF left over</span> : null}</span>
+        <span className="text-fg-muted" title="Deposits only: if every contract ended today, the days worked and today are owed, minus money paid ahead. Collateral is not counted.">If all ended today: <b className={`tabular-nums ${wouldBeOwed ? 'text-danger' : 'text-fg'}`}>{wouldBeOwed.toLocaleString('en-US')} RWF owed to us</b></span>
+        {collateralHeld > 0 && <span className="text-fg-muted" title="Collateral is held apart: it is not a deposit and never pays for days">Collateral held apart <b className="text-accent-fg tabular-nums">{collateralHeld.toLocaleString('en-US')} RWF</b>{collateralCovers ? <span className="text-fg-subtle"> · could cover {collateralCovers.toLocaleString('en-US')} of that</span> : null}</span>}
         <span className="text-fg-muted">Waiting for confirmation <b className={pending.length ? 'text-attention' : 'text-fg'}>{pending.length}</b>{pending.length ? <span className="text-fg-subtle"> · {pending.reduce((s, x) => s + Number(x.amount), 0).toLocaleString('en-US')} RWF</span> : null}</span>
       </div>
       {showRule && (
@@ -285,25 +288,26 @@ const paidNothingText = (s: ReturnType<typeof computeDepositStanding>) =>
 interface Row {
   driver: Driver; standing: ReturnType<typeof computeDepositStanding>; status: MoneyStatus; isEnded: boolean; late: boolean; calledToday: boolean;
   taken: ReturnType<typeof carTaken>; call: ReturnType<typeof latestCall>; last: ReturnType<typeof lastPayment>; pendingDeposit: boolean; promise: ReturnType<typeof promiseState>;
-  ifEnded: { owes: number; credit: number; fines: number; collateral: number; net: number } | null;
+  ifEnded: { owes: number; credit: number; fines: number; collateral: number; deposits: number } | null;
 }
 
 const k = (n: number) => `${n.toLocaleString('en-US')}`;
-// "If ended today": lost (what they owe beyond collateral and money ahead) or left over
-// (collateral to give back, or money paid ahead - kept as credit if renewed).
+// "If ended today", in two separate parts: the deposits (days worked and today, minus money
+// paid ahead, plus unpaid fines) - then the collateral, held apart, and what it could cover.
 function IfEnded({ x, started }: { x: Row['ifEnded']; started: boolean }) {
   if (!x || !started) return <p className="text-fg-subtle">—</p>;
-  const parts = [
-    x.collateral ? `collateral ${k(x.collateral)}` : '',
-    x.credit ? `paid ahead ${k(x.credit)}` : '',
-    x.owes ? `owes ${k(x.owes)}` : '',
-    x.fines ? `fines ${k(x.fines)}` : '',
-  ].filter(Boolean).join(' · ');
+  const owed = -x.deposits;
+  const detail = [x.owes ? `days ${k(x.owes)}` : '', x.fines ? `fines ${k(x.fines)}` : '', x.credit && x.deposits < 0 ? `paid ahead ${k(x.credit)}` : ''].filter(Boolean).join(' + ').replace('+ paid ahead', '− paid ahead');
+  const cover = owed > 0 ? Math.min(x.collateral, owed) : 0;
   return (<>
-    {x.net < 0 ? <p className="font-semibold text-danger tabular-nums">Lose {k(-x.net)}</p>
-      : x.net > 0 ? <p className="font-semibold text-success tabular-nums">Left {k(x.net)}</p>
+    {owed > 0 ? <p className="font-semibold text-danger tabular-nums" title={detail}>Owes {k(owed)}</p>
+      : x.deposits > 0 ? <p className="font-semibold text-success tabular-nums">Paid ahead {k(x.deposits)}</p>
       : <p className="font-medium text-fg-muted">Even</p>}
-    <p className="text-caption text-fg-muted truncate" title={parts}>{parts || 'Nothing owed, nothing ahead'}</p>
+    {x.collateral > 0 ? (
+      <p className="text-caption text-accent-fg truncate" title="Collateral is held apart: it is not a deposit and never pays for days">
+        Collateral {k(x.collateral)} apart{cover ? ` · could cover ${k(cover)}${x.collateral > cover ? `, give back ${k(x.collateral - cover)}` : owed > cover ? `, still ${k(owed - cover)} short` : ''}` : ' · give back in full'}
+      </p>
+    ) : <p className="text-caption text-fg-muted truncate" title={detail}>{owed > 0 ? (detail || 'days worked and today') : x.deposits > 0 ? 'kept as credit if renewed' : 'Nothing owed, nothing ahead'}</p>}
   </>);
 }
 
