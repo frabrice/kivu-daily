@@ -256,12 +256,37 @@ Deno.serve(async (req) => {
     const statusLog = changed.filter((r) => existing.get(r.id)?.status !== r.status).map((r) => ({ trip_id: r.id, status: r.status, seen_at: now }));
     for (let i = 0; i < statusLog.length; i += 500) await db.from("platform_trip_status_log").insert(statusLog.slice(i, i + 500));
 
+    // 3. Offers (28 Nov 2026, Driver performance): the list has no offers, a trip's detail
+    // does. Read each finished trip's detail once, newest first, with the time left;
+    // older trips fill in over the next runs. A failed read is tried again next run.
+    let offersRead = 0, offersSaved = 0;
+    const { data: unread } = await db.from("platform_trips").select("id").in("status", ["completed", "cancelled"]).is("offers_read_at", null).order("created_at", { ascending: false }).limit(40);
+    for (const u of unread ?? []) {
+      if (left() < 20_000) break;
+      const one = await api(`/admin/trips/${u.id}`).catch(() => null);
+      if (!one?.data) continue;
+      // deno-lint-ignore no-explicit-any
+      const offers = (Array.isArray(one.data.offers) ? one.data.offers : []).filter((o: any) => o?.id && o?.offered_at).map((o: any) => ({
+        trip_id: Number(u.id), platform_driver_id: Number(o.id), offered_at: o.offered_at, responded_at: o.responded_at ?? null,
+        status: String(o.status ?? "unknown"), rejection_reason: o.rejection_reason ?? null, distance_km: num(o.distance_to_pickup_km),
+        wave_index: num(o.wave_index), offer_sequence: num(o.offer_sequence), vehicle_type: o.vehicle_type ?? null, plate: o.plate ?? null, driver_name: o.name ?? null,
+      }));
+      // The same driver can't be offered the same trip twice at the same moment; keep one.
+      const unique = [...new Map(offers.map((o: { platform_driver_id: number; offered_at: string }) => [`${o.platform_driver_id}|${o.offered_at}`, o])).values()];
+      if (unique.length) {
+        const { error } = await db.from("platform_trip_offers").upsert(unique, { onConflict: "trip_id,platform_driver_id,offered_at" });
+        if (error) throw new Error(`Saving offers: ${error.message}`);
+      }
+      await db.from("platform_trips").update({ offers_read_at: new Date().toISOString() }).eq("id", u.id);
+      offersRead++; offersSaved += unique.length;
+    }
+
     await db.from("platform_sync_state").upsert({
       key: "trips", last_run_at: started, last_ok_at: new Date().toISOString(), last_changed: changed.length,
       last_error: fullError ? `New trips synced; the full re-read failed: ${fullError}`.slice(0, 500) : null,
       ...(didFull ? { last_full_at: new Date().toISOString(), platform_total: total } : {}),
     });
-    return json({ ok: true, full: didFull, fullError, since, read: rows.length, changed: changed.length, new: changed.filter((r) => !existing.has(r.id)).length });
+    return json({ ok: true, full: didFull, fullError, since, read: rows.length, changed: changed.length, new: changed.filter((r) => !existing.has(r.id)).length, offersRead, offersSaved });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await db.from("platform_sync_state").upsert({ key: "trips", last_run_at: started, last_error: msg.slice(0, 500) });

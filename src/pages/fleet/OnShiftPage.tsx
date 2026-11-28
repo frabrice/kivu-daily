@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Ban, Clock, Link2, Phone, Radio, RefreshCw, Search, Settings2, Wifi, WifiOff, HelpCircle } from 'lucide-react';
+import { Ban, Clock, Link2, Navigation, Phone, Radio, RefreshCw, Search, Settings2, Wifi, WifiOff, HelpCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { APP_STATUS, Presence, RosterRow, ShiftKey, needsCall, onlineMinutes, presenceOf, shiftLabelOf, stateOf, toExpected, useOnShift, OFFLINE_GRACE_MIN } from '../../lib/onShift';
+import { APP_STATUS, Presence, RosterRow, ShiftKey, kigaliDay, needsCall, onlineMinutes, presenceOf, shiftLabelOf, stateOf, toExpected, useOnShift, OFFLINE_GRACE_MIN } from '../../lib/onShift';
+import { Offer, Trip, loadActivity } from '../../lib/driverPerformance';
+import { DriverAvatar } from '../../components/fleet/driverUi';
 import { useAccess } from '../../os/access';
 import { usePageTitle } from '../../os/workspace';
-import { Box, EmptyState, Label, PageHeader, StatCard, StatGrid, UnderlineTabs } from '../../ui/kit';
+import { EmptyState, Label, PageHeader, UnderlineTabs } from '../../ui/kit';
 import Modal from '../../components/Modal';
 import { kFormat } from '../../lib/kigali';
 
@@ -58,26 +60,44 @@ export default function OnShiftPage({ embedded = false }: { embedded?: boolean }
   const lastOk = d.sync?.last_ok_at ?? null;
   const late = !lastOk || d.now - Date.parse(lastOk) > 6 * 60000;
 
+  // Today's trips and offers for everyone here (Driver performance has the full record).
+  const [today, setToday] = useState<{ trips: Trip[]; offers: Offer[] } | null>(null);
+  const pidKey = d.states.map((s) => s.platform_driver_id).sort().join(',');
+  useEffect(() => {
+    const pids = pidKey ? pidKey.split(',').map(Number) : [];
+    const start = Date.parse(`${kigaliDay(Date.now())}T00:00:00+02:00`);
+    let live = true;
+    loadActivity(pids, start, Date.now() + 60_000).then((x) => { if (live) setToday(x); }).catch(() => { if (live) setToday({ trips: [], offers: [] }); });
+    return () => { live = false; };
+  }, [pidKey, d.sync?.last_ok_at]);
+  const todayOf = (s: ReturnType<typeof stateOf>) => {
+    if (!s || !today) return null;
+    const pid = s.platform_driver_id;
+    const trips = today.trips.filter((t) => t.platform_driver_id === pid);
+    const offers = today.offers.filter((o) => o.platform_driver_id === pid);
+    return { trips: trips.length, fare: trips.reduce((a, t) => a + Number(t.total_fare ?? 0), 0), ignored: offers.filter((o) => o.outcome === 'ignored').length, refused: offers.filter((o) => o.outcome === 'refused').length, accepted: offers.filter((o) => o.outcome === 'accepted' || o.outcome === 'dropped').length };
+  };
+  const tripsToday = driving.reduce((a, x) => a + (todayOf(x.s)?.trips ?? 0), 0);
+
   const refresh = async () => { setBusy(true); setError(''); const err = await d.refresh(); setBusy(false); if (err) setError(err); };
 
   if (d.loading) return <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-24 skeleton rounded-card" />)}</div>;
+  const actions = <>
+    {canEditHours && <button onClick={() => setEditing(true)} className="btn-ghost whitespace-nowrap"><Settings2 size={14} /> Shift hours</button>}
+    <button onClick={refresh} disabled={busy} className="btn-secondary"><RefreshCw size={14} className={busy ? 'animate-spin' : ''} /> {busy ? 'Checking…' : 'Check now'}</button>
+  </>;
+  const checked = <span className={late ? 'text-danger' : ''}>App checked {ago(lastOk, d.now)}{late ? ' — the check is late' : ' · every 2 minutes'}</span>;
   return (
     <div className="animate-fade-in">
       {embedded ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3 text-caption text-fg-muted">
-          <span className={late ? 'text-danger' : ''}>Online status checked {ago(lastOk, d.now)}{late ? ' — the check is late' : ' · every 2 minutes'}</span><span>{shiftLabelOf(d.hours, 'day')} · {shiftLabelOf(d.hours, 'night')}</span>
-          <span className="ml-auto flex gap-2">
-            {canEditHours && <button onClick={() => setEditing(true)} className="btn-ghost"><Settings2 size={14} /> Shift hours</button>}
-            <button onClick={refresh} disabled={busy} className="btn-secondary"><RefreshCw size={14} className={busy ? 'animate-spin' : ''} /> {busy ? 'Checking…' : 'Check now'}</button>
-          </span>
+          {checked}<span>{shiftLabelOf(d.hours, 'day')} · {shiftLabelOf(d.hours, 'night')}</span>
+          <span className="ml-auto flex gap-2">{actions}</span>
         </div>
       ) : <PageHeader icon={Radio} title="Ours On Shift"
-        subtitle="Our drivers who should be driving, and whether they are online in the Kivu Ride app. Anyone offline during their shift gets a call."
-        meta={<><span className={late ? 'text-danger' : ''}>App checked {ago(lastOk, d.now)}{late ? ' — the check is late' : ' · every 2 minutes'}</span><span>{shiftLabelOf(d.hours, 'day')} · {shiftLabelOf(d.hours, 'night')}</span></>}
-        actions={<>
-          {canEditHours && <button onClick={() => setEditing(true)} className="btn-ghost"><Settings2 size={14} /> Shift hours</button>}
-          <button onClick={refresh} disabled={busy} className="btn-secondary"><RefreshCw size={14} className={busy ? 'animate-spin' : ''} /> {busy ? 'Checking…' : 'Check now'}</button>
-        </>} />}
+        subtitle="Our drivers who should be driving now, and whether they are online in the Kivu Ride app. Anyone offline during their shift gets a call."
+        meta={<>{checked}<span>{shiftLabelOf(d.hours, 'day')} · {shiftLabelOf(d.hours, 'night')}</span>{inFleet && <Link to="/fleet/performance" className="link">Driver performance →</Link>}</>}
+        actions={actions} />}
       {(error || d.sync?.last_error) && <p className="mb-3 text-caption text-danger bg-danger-muted rounded-md px-3 py-2">Couldn't read the app: {error || d.sync?.last_error}</p>}
 
       <UnderlineTabs<View> value={view} onChange={setView} tabs={[
@@ -86,43 +106,49 @@ export default function OnShiftPage({ embedded = false }: { embedded?: boolean }
         { key: 'night', label: shiftLabelOf(d.hours, 'night'), icon: Clock },
       ]} />
 
-      <StatGrid cols={4}>
-        <StatCard icon={Radio} label={view === 'now' ? 'Should be driving now' : 'On this shift'} value={driving.length} sub={kept.length ? `+ ${kept.length} kept off the road` : 'Drivers and freelancers'} />
-        <StatCard icon={Wifi} label="Online in the app" value={onlineN} tone={driving.length && onlineN === driving.length ? 'success' : undefined} sub={driving.length ? `${Math.round((onlineN / driving.length) * 100)}% of them` : '—'} />
-        <StatCard icon={WifiOff} label="Offline — call them" value={toCall.length} tone={toCall.length ? 'danger' : 'success'} sub={toCall.length ? `Offline ${OFFLINE_GRACE_MIN}+ min during their shift` : 'Nobody to call'} />
-        <StatCard icon={HelpCircle} label="Not found in the app" value={missing.length} tone={missing.length ? 'attention' : undefined} sub={missing.length ? 'Phone in Kivu Daily ≠ phone in the app' : 'Everyone matched'} />
-      </StatGrid>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+        <Tile label={view === 'now' ? 'Should be driving now' : 'On this shift'} icon={Radio} value={driving.length} sub={kept.length ? `+ ${kept.length} kept off the road` : 'Drivers and freelancers'} />
+        <Tile label="Online in the app" icon={Wifi} value={onlineN} sub={driving.length ? `${Math.round((onlineN / driving.length) * 100)}% of them` : '—'} />
+        <Tile label="Offline — call them" icon={WifiOff} value={toCall.length} alarm={toCall.length > 0} sub={toCall.length ? `Offline ${OFFLINE_GRACE_MIN}+ min in their shift` : 'Nobody to call'} />
+        <Tile label="Not found in the app" icon={HelpCircle} value={missing.length} alarm={missing.length > 0} sub={missing.length ? 'Phone differs from the app' : 'Everyone matched'} />
+        <Tile label="Trips today" icon={Navigation} value={today ? tripsToday : '…'} sub="By the drivers listed here" />
+      </div>
 
-      <Box title={view === 'now' ? 'Who should be driving now' : `${shiftLabelOf(d.hours, view as ShiftKey)} · ${rows[0] ? kFormat(rows[0].e.start, 'en-GB', { weekday: 'long', day: 'numeric', month: 'short' }) : ''}`} icon={Radio} padded={false} className="mb-4">
-        {driving.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-small min-w-[760px]">
-              <thead><tr className="text-caption text-fg-muted text-left bg-inset">
-                <th className="px-3 py-2">Driver</th><th className="px-3 py-2">Car · shift</th><th className="px-3 py-2">In the app</th><th className="px-3 py-2">Online this shift</th><th className="px-3 py-2">Last seen</th><th className="px-3 py-2" />
-              </tr></thead>
-              <tbody>{driving.map((x) => <Row key={x.r.key} x={x} now={d.now} inFleet={inFleet} onLink={canLink ? () => setLinking(x.r) : undefined} />)}</tbody>
-            </table>
+      <div className="card p-0 mb-4">
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-line-muted">
+          <h2 className="text-small font-semibold mr-auto">{view === 'now' ? 'Who should be driving now' : `${shiftLabelOf(d.hours, view as ShiftKey)} · ${rows[0] ? kFormat(rows[0].e.start, 'en-GB', { weekday: 'long', day: 'numeric', month: 'short' }) : ''}`}
+            <span className="text-fg-muted font-normal"> · {driving.length}</span></h2>
+          {toCall.length > 0 && <span className="text-caption text-fg-muted flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-danger" aria-hidden />{toCall.length} to call, at the top</span>}
+        </div>
+        {driving.length ? (<>
+          <div className={`hidden lg:grid ${ROW_GRID} gap-4 px-4 py-2 text-micro font-medium uppercase tracking-wide text-fg-subtle border-b border-line-muted bg-surface-2`}>
+            <span>Driver</span><span>Car · shift</span><span>In the app</span><span>Online this shift</span><span>Today</span><span />
           </div>
-        ) : <EmptyState icon={Radio} title={view === 'now' ? 'Nobody should be driving right now' : 'Nobody on this shift'} body="Drivers appear here from their car, shift, rest day and approved days off, plus freelancers covering a seat." />}
-      </Box>
+          <ul className="divide-y divide-line-muted">{driving.map((x) => <Row key={x.r.key} x={x} now={d.now} inFleet={inFleet} today={todayOf(x.s)} onLink={canLink ? () => setLinking(x.r) : undefined} />)}</ul>
+        </>) : <EmptyState icon={Radio} title={view === 'now' ? 'Nobody should be driving right now' : 'Nobody on this shift'} body="Drivers appear here from their car, shift, rest day and approved days off, plus freelancers covering a seat." />}
+      </div>
 
       {kept.length > 0 && (
-        <Box title={`Kept off the road (${kept.length})`} icon={Ban} padded={false} className="mb-4">
-          <p className="px-4 pt-3 text-caption text-fg-muted">Not cleared to drive until they pay — they are not expected online, so don't ask them to go online.</p>
-          <ul className="divide-y divide-line-muted mt-2">{kept.map((x) => (
-            <li key={x.r.key} className="flex flex-wrap items-center gap-3 px-4 py-2 text-small">
+        <div className="card p-0 mb-4">
+          <div className="px-4 py-3 border-b border-line-muted">
+            <h2 className="text-small font-semibold flex items-center gap-2"><Ban size={14} className="text-fg-subtle" /> Kept off the road <span className="text-fg-muted font-normal">· {kept.length}</span></h2>
+            <p className="text-caption text-fg-muted mt-0.5">Not cleared to drive until they pay — they are not expected online, so don't ask them to go online.</p>
+          </div>
+          <ul className="divide-y divide-line-muted">{kept.map((x) => (
+            <li key={x.r.key} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-small">
+              <DriverAvatar name={x.r.name} size={28} />
               <span className="flex-1 min-w-[180px] font-medium">{x.r.name}</span>
-              <span className="text-fg-muted">{x.r.plate ?? '—'} · {x.r.shift === 'day' ? 'Day' : 'Night'}</span>
-              <Label tone="neutral">{x.r.blocked}</Label>
-              {x.s?.is_online && <Label tone="attention">Online anyway</Label>}
+              <span className="text-caption text-fg-muted">{x.r.plate ?? '—'} · {x.r.shift === 'day' ? 'Day' : 'Night'}</span>
+              <span className="text-caption text-fg-muted">{x.r.blocked}</span>
+              {x.s?.is_online && <span className="text-caption text-fg flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-attention" aria-hidden />Online anyway</span>}
             </li>
           ))}</ul>
-        </Box>
+        </div>
       )}
 
       <p className="text-caption text-fg-muted">
         Online = the driver switched themselves online in the Kivu Ride driver app. Someone offline less than {OFFLINE_GRACE_MIN} minutes isn't flagged yet (between trips, a phone restarting).
-        "No sign of the app" = shown online, but the phone hasn't reached the app for 15+ minutes (phone off, no data).
+        "No sign of the app" = shown online, but the phone hasn't reached the app for 15+ minutes (phone off, no data). Today = completed trips, and offers they let run out without answering.
         {missing.length > 0 && inFleet && <> To match someone not found, make their phone in <Link to="/fleet/drivers" className="link">Drivers</Link> the same as in the app.</>}
       </p>
       {linking && <LinkModal row={linking} onClose={() => setLinking(null)} onLinked={async () => { setLinking(null); await refresh(); }} />}
@@ -131,36 +157,70 @@ export default function OnShiftPage({ embedded = false }: { embedded?: boolean }
   );
 }
 
-function Row({ x, now, inFleet, onLink }: { x: { r: RosterRow; s: ReturnType<typeof stateOf>; p: { presence: Presence; minutes: number }; online: number; length: number; started: boolean; call: boolean }; now: number; inFleet: boolean; onLink?: () => void }) {
+const ROW_GRID = 'lg:grid-cols-[minmax(220px,1.4fr)_minmax(130px,0.8fr)_minmax(190px,1.1fr)_minmax(150px,0.9fr)_minmax(130px,0.8fr)_auto]';
+
+function Tile({ label, value, sub, icon: Icon, alarm }: { label: string; value: ReactNode; sub: ReactNode; icon: typeof Wifi; alarm?: boolean }) {
+  return (
+    <div className="card p-3.5 min-w-0">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-caption font-medium text-fg-muted truncate flex items-center gap-1.5">{alarm && <span className="w-1.5 h-1.5 rounded-full bg-danger shrink-0" aria-hidden />}{label}</span>
+        <Icon size={14} className="text-fg-subtle shrink-0" />
+      </div>
+      <p className="mt-2 text-h2 font-semibold leading-none tabular-nums text-fg">{value}</p>
+      <p className="text-caption text-fg-muted mt-1.5 truncate">{sub}</p>
+    </div>
+  );
+}
+
+type TodayNums = { trips: number; fare: number; ignored: number; refused: number; accepted: number } | null;
+function Row({ x, now, inFleet, today, onLink }: { x: { r: RosterRow; s: ReturnType<typeof stateOf>; p: { presence: Presence; minutes: number }; online: number; length: number; started: boolean; call: boolean }; now: number; inFleet: boolean; today: TodayNums; onLink?: () => void }) {
   const { r, s, p } = x;
   const pct = x.length ? Math.min(100, Math.round((x.online / x.length) * 100)) : 0;
-  const chip = !s ? <Label tone="neutral" icon={HelpCircle}>Not found in the app</Label>
-    : !x.started ? <Label tone="neutral">Starts {clock(Date.parse(r.starts_at))}</Label>
-    : p.presence === 'online' ? <Label tone="success" icon={Wifi}>{APP_STATUS[s?.driver_status ?? 'online'] ?? 'Online'}{p.minutes >= 1 ? ` · ${dur(p.minutes)}` : ''}</Label>
-    : p.presence === 'stale' ? <Label tone="attention" icon={WifiOff}>No sign of the app for {dur(p.minutes)}</Label>
-    : p.presence === 'offline' ? <Label tone={x.call ? 'danger' : 'attention'} icon={WifiOff}>Offline · {dur(p.minutes)}</Label>
-    : <Label tone="neutral" icon={HelpCircle}>Not found in the app</Label>;
+  // One dot carries the state; the words say it.
+  const state: { dot: string; text: string } = !s ? { dot: 'bg-line-strong', text: 'Not found in the app' }
+    : !x.started ? { dot: 'bg-line-strong', text: `Starts ${clock(Date.parse(r.starts_at))}` }
+    : p.presence === 'online' ? { dot: 'bg-success', text: `${APP_STATUS[s.driver_status ?? 'online'] ?? 'Online'}${p.minutes >= 1 ? ` · ${dur(p.minutes)}` : ''}` }
+    : p.presence === 'stale' ? { dot: 'bg-attention', text: `No sign of the app for ${dur(p.minutes)}` }
+    : p.presence === 'offline' ? { dot: x.call ? 'bg-danger' : 'bg-attention', text: `Offline · ${dur(p.minutes)}` }
+    : { dot: 'bg-line-strong', text: 'Not found in the app' };
   return (
-    <tr className={`border-t border-line-muted ${x.call ? 'bg-danger-muted/30' : ''}`}>
-      <td className="px-3 py-2">
-        <span className="font-medium">{r.name}</span>{r.kind === 'freelancer' && <span className="ml-1.5"><Label tone="info">Freelancer</Label></span>}
-        {r.phone && <span className="block text-caption text-fg-muted tabular-nums">{r.phone}</span>}
-      </td>
-      <td className="px-3 py-2 whitespace-nowrap">{inFleet && r.vehicle_id ? <Link to={`/fleet/cars`} className="link">{r.plate ?? '—'}</Link> : r.plate ?? '—'}<span className="block text-caption text-fg-muted">{r.shift === 'day' ? 'Day' : 'Night'} {clock(Date.parse(r.starts_at))}–{clock(Date.parse(r.ends_at))}</span></td>
-      <td className="px-3 py-2">{chip}
-        {!s && onLink && <button onClick={onLink} className="ml-1.5 btn-ghost h-6 text-caption inline-flex items-center gap-1"><Link2 size={12} /> Link</button>}
-        {s?.match_method === 'plate_name' && <span className="block mt-0.5 text-caption text-attention" title={`Phone in the app: ${s.phone ?? '—'}`}>Found by car &amp; name — the phone differs from the app ({s.phone ?? '—'}){onLink && <button onClick={onLink} className="ml-1 link">Check</button>}</span>}
-        {s?.match_method === 'link' && <span className="block mt-0.5 text-caption text-fg-muted">Linked by hand{onLink && <> · <button onClick={onLink} className="link">change</button></>}</span>}
-      </td>
-      <td className="px-3 py-2 w-48">{x.started && s ? (
-        <div>
-          <div className="h-1.5 rounded-full bg-inset overflow-hidden"><div className={`h-full rounded-full ${pct >= 90 ? 'bg-success' : pct >= 60 ? 'bg-attention' : 'bg-danger'}`} style={{ width: `${pct}%` }} /></div>
-          <span className="text-caption text-fg-muted tabular-nums">{dur(x.online)} of {dur(x.length)} · {pct}%</span>
+    <li className={`grid grid-cols-2 ${ROW_GRID} gap-x-4 gap-y-2 px-4 py-3 items-center`}>
+      <div className="col-span-2 lg:col-span-1 flex items-center gap-3 min-w-0">
+        <DriverAvatar name={r.name} size={34} />
+        <div className="min-w-0">
+          <p className="font-medium leading-snug break-words">{r.name}{r.kind === 'freelancer' && <span className="ml-1.5 text-micro font-medium text-fg-muted border border-line rounded-full px-1.5 py-px align-middle">Freelancer</span>}</p>
+          {r.phone && <p className="text-caption text-fg-muted tabular-nums">{r.phone}</p>}
         </div>
-      ) : <span className="text-caption text-fg-subtle">—</span>}</td>
-      <td className="px-3 py-2 text-caption text-fg-muted whitespace-nowrap">{s ? ago(s.last_seen_at, now) : '—'}{s?.app_version && <span className="block text-fg-subtle">app {s.app_version}</span>}</td>
-      <td className="px-3 py-2 text-right">{r.phone && <a href={`tel:${r.phone.replace(/\s/g, '')}`} className={`${x.call ? 'btn-primary' : 'btn-ghost'} h-8 inline-flex items-center gap-1 whitespace-nowrap`}><Phone size={13} /> Call</a>}</td>
-    </tr>
+      </div>
+      <div className="min-w-0 text-small">
+        {inFleet && r.vehicle_id ? <Link to="/fleet/cars" className="link">{r.plate ?? '—'}</Link> : <span>{r.plate ?? '—'}</span>}
+        <p className="text-caption text-fg-muted">{r.shift === 'day' ? 'Day' : 'Night'} {clock(Date.parse(r.starts_at))}–{clock(Date.parse(r.ends_at))}</p>
+      </div>
+      <div className="min-w-0">
+        <p className={`text-small flex items-center gap-1.5 ${x.call ? 'text-danger font-medium' : 'text-fg'}`}><span className={`w-2 h-2 rounded-full shrink-0 ${state.dot}`} aria-hidden />{state.text}</p>
+        <p className="text-caption text-fg-muted truncate">
+          {s ? <>Seen {ago(s.last_seen_at, now)}{s.app_version ? ` · app ${s.app_version}` : ''}</> : null}
+          {!s && onLink && <button onClick={onLink} className="link inline-flex items-center gap-1"><Link2 size={11} /> Link to the app</button>}
+        </p>
+        {s?.match_method === 'plate_name' && <p className="text-caption text-fg-muted" title={`Phone in the app: ${s.phone ?? '—'}`}>Found by car &amp; name — phone differs ({s.phone ?? '—'}){onLink && <> · <button onClick={onLink} className="link">check</button></>}</p>}
+        {s?.match_method === 'link' && <p className="text-caption text-fg-subtle">Linked by hand{onLink && <> · <button onClick={onLink} className="link">change</button></>}</p>}
+      </div>
+      <div className="min-w-0">
+        {x.started && s ? (<>
+          <div className="flex items-baseline justify-between gap-2 text-caption"><span className="text-fg font-medium tabular-nums">{dur(x.online)}</span><span className="text-fg-muted tabular-nums">{pct}% of {dur(x.length)}</span></div>
+          <div className="mt-1 h-1.5 rounded-full bg-inset overflow-hidden"><div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} /></div>
+        </>) : <span className="text-caption text-fg-subtle">—</span>}
+      </div>
+      <div className="min-w-0 text-caption">
+        {today ? (<>
+          <p><span className="text-small font-semibold tabular-nums">{today.trips}</span> <span className="text-fg-muted">trip{today.trips === 1 ? '' : 's'}{today.fare ? ` · ${Math.round(today.fare / 1000)}k` : ''}</span></p>
+          <p className="text-fg-muted">{today.ignored ? <span className="text-fg">{today.ignored} ignored</span> : 'none ignored'}{today.refused ? ` · ${today.refused} refused` : ''}</p>
+        </>) : <span className="text-fg-subtle">—</span>}
+      </div>
+      <div className="col-span-2 lg:col-span-1 flex lg:justify-end">
+        {r.phone && <a href={`tel:${r.phone.replace(/\s/g, '')}`} className={`${x.call ? 'btn-primary' : 'btn-ghost'} h-8 inline-flex items-center gap-1 whitespace-nowrap`}><Phone size={13} /> Call</a>}
+      </div>
+    </li>
   );
 }
 
